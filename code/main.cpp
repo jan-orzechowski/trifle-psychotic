@@ -176,6 +176,47 @@ void render_text(sdl_game_data sdl_game, std::string textureText, int x, int y, 
 	}
 }
 
+struct read_file_result
+{
+	void* contents;
+	int size;
+};
+
+read_file_result read_file(std::string path)
+{
+	read_file_result result = {};
+	
+	SDL_RWops* file = SDL_RWFromFile(path.c_str(), "r");
+	if (file)		
+	{
+		int64_t file_size = SDL_RWsize(file);
+		if (file_size != -1 // błąd
+			&& file_size < 1024*1024*5) // zabezpieczenie
+		{
+			result.size = file_size;
+			result.contents = new char[file_size];
+			for (int byte_index = 0; 
+				byte_index < file_size; 
+				++byte_index)
+			{
+				SDL_RWread(file, (void*)((char*)result.contents + byte_index), sizeof(char), 1);
+			}
+		}
+		else
+		{
+			print_sdl_error();
+		}
+
+		SDL_RWclose(file);
+	}
+	else
+	{
+		print_sdl_error();
+	}
+
+	return result;
+}
+
 struct key_press
 {
 	int number_of_presses;
@@ -197,6 +238,9 @@ int main(int argc, char* args[])
 		bool run = true;
 
 		SDL_Event e;
+
+		std::string map_path = "data/trifle_map_01.tmx";
+		read_file_result map = read_file(map_path);
 
 		while (run)
 		{
@@ -250,6 +294,8 @@ int main(int argc, char* args[])
 
 			SDL_RenderPresent(sdl_game.renderer);
 		}
+
+		delete map.contents;
 	}
 	else
 	{			
