@@ -18,19 +18,27 @@ struct sdl_game_data
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 	SDL_Texture* tileset_texture;
+	TTF_Font* font;
 };
 
 void print_sdl_error()
 {
 	const char* error = SDL_GetError();
-	printf("SDL Error: %s\n", error);
+	printf("SDL error: %s\n", error);
 	invalid_code_path;
 }
 
 void print_sdl_image_error()
 {
 	const char* error = IMG_GetError();
-	printf("SDL_image Error: %s\n", IMG_GetError());
+	printf("SDL_image error: %s\n", error);
+	invalid_code_path;
+}
+
+void print_sdl_ttf_error()
+{
+	const char* error = TTF_GetError();
+	printf("SDL_ttf error: %s\n", error);
 	invalid_code_path;
 }
 
@@ -87,7 +95,27 @@ sdl_game_data init_sdl()
 				{
 					print_sdl_image_error();
 					success = false;
-				}				
+				}
+
+				int ttf_init = TTF_Init();
+				if (ttf_init == 0) // wg dokumentacji 0 oznacza sukces
+				{
+					TTF_Font* font = TTF_OpenFont("gfx/kenney_pixel.ttf", 20);
+					if (font)
+					{
+						sdl_game.font = font;
+					}
+					else
+					{					
+						print_sdl_ttf_error();
+						success = false;
+					}
+				}
+				else
+				{
+					print_sdl_ttf_error();
+					success = false;
+				}
 			}
 			else
 			{
@@ -115,6 +143,36 @@ sdl_game_data init_sdl()
 	else
 	{
 		return {};
+	}
+}
+
+void render_text(sdl_game_data sdl_game, std::string textureText, int x, int y, SDL_Color color)
+{
+	SDL_Surface* text_surface = TTF_RenderText_Solid(sdl_game.font, textureText.c_str(), color);
+	if (text_surface)
+	{
+		SDL_Texture* font_texture = SDL_CreateTextureFromSurface(sdl_game.renderer, text_surface);
+		if (font_texture)
+		{
+			SDL_Rect dest = {};
+			dest.w = text_surface->w;
+			dest.h = text_surface->h;
+			dest.x = x;
+			dest.y = y;
+
+			SDL_RenderCopy(sdl_game.renderer, font_texture, NULL, &dest);
+			SDL_DestroyTexture(font_texture);
+		}
+		else
+		{
+			print_sdl_error();
+		}
+
+		SDL_FreeSurface(text_surface);
+	}
+	else
+	{
+		print_sdl_ttf_error();
 	}
 }
 
@@ -181,9 +239,15 @@ int main(int argc, char* args[])
 			}
 
 			SDL_Texture* texture_to_draw = sdl_game.tileset_texture;
-
 			SDL_RenderClear(sdl_game.renderer);
 			SDL_RenderCopy(sdl_game.renderer, texture_to_draw, NULL, NULL);
+			
+			{
+				SDL_Color text_color = { 255, 255, 255, 0 };
+				std::string text_test = "najwyrazniej ten piekny font nie obsluguje polskich znakow";
+				render_text(sdl_game, text_test, 0, 50, text_color);
+			}
+
 			SDL_RenderPresent(sdl_game.renderer);
 		}
 	}
@@ -192,13 +256,15 @@ int main(int argc, char* args[])
 		invalid_code_path;
 	}
 
+	TTF_CloseFont(sdl_game.font);
 	SDL_DestroyTexture(sdl_game.tileset_texture);
 
 	SDL_DestroyRenderer(sdl_game.renderer);
 	SDL_DestroyWindow(sdl_game.window);
 
+	TTF_Quit();
 	IMG_Quit();
 	SDL_Quit();
-
+	
 	return 0;
 }
