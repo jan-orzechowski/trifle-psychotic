@@ -118,6 +118,19 @@ sdl_game_data init_sdl()
 	}
 }
 
+struct key_press
+{
+	int number_of_presses;
+};
+
+struct game_input
+{
+	key_press up;
+	key_press down;
+	key_press left;
+	key_press right;
+};
+
 int main(int argc, char* args[])
 {
 	sdl_game_data sdl_game = init_sdl();
@@ -129,12 +142,42 @@ int main(int argc, char* args[])
 
 		while (run)
 		{
+			game_input input = {};
+
 			while (SDL_PollEvent(&e) != 0)
 			{
 				if (e.type == SDL_QUIT)
 				{
 					run = false;
 				}
+				else if (e.type == SDL_KEYDOWN)
+				{
+					switch (e.key.keysym.sym)
+					{
+						case SDLK_UP:
+						case SDLK_w:
+							input.up.number_of_presses++;
+							printf("UP\n");
+							break;
+						case SDLK_DOWN:
+						case SDLK_s:
+							input.down.number_of_presses++;
+							printf("DOWN\n");
+							break;
+						case SDLK_LEFT:
+						case SDLK_a:
+							input.left.number_of_presses++;
+							printf("LEFT\n");
+							break;
+						case SDLK_RIGHT:
+						case SDLK_d:
+							input.right.number_of_presses++;
+							printf("RIGHT\n");
+							break;
+						default:
+							break;
+					}
+				}		
 			}
 
 			SDL_Texture* texture_to_draw = sdl_game.tileset_texture;
