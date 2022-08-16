@@ -430,7 +430,8 @@ void parse_tilemap(read_file_result file)
 		index++;
 	}
 
-	while (src_buf[index] != '\0') // null terminating string
+	while (src_buf[index] != '\0' // null terminating string
+		&& index < file.size) // zabezpieczenie
 	{
 		// pomijamy nowe linie
 		if (src_buf[index] == '\r' && src_buf[index + 1] == '\n')
@@ -442,6 +443,12 @@ void parse_tilemap(read_file_result file)
 		while (src_buf[index] == ' ')
 		{
 			index++;
+		}
+
+		// po enterze i po spacjach może zakończyć się plik
+		if (src_buf[index] == '\0')
+		{
+			break;
 		}
 
 		if (src_buf[index] == '<')
@@ -475,6 +482,12 @@ void parse_tilemap(read_file_result file)
 			// czytanie atrybutów
 			while (src_buf[index] != '>')
 			{
+				if (src_buf[index] == '/' && src_buf[index + 1] == '>')
+				{
+					index += 2;
+					break;
+				}
+			
 				// teraz idziemy do przodu, aż napotkamy jakiś atrybut
 				while (src_buf[index] == ' ')
 				{
@@ -565,7 +578,7 @@ void parse_tilemap(read_file_result file)
 
 				current_node->inner_text = SDL_strdup(data_lex_buf);
 
-				delete data_lex_buf;
+				delete[] data_lex_buf;
 			}
 			else
 			{
@@ -577,9 +590,7 @@ void parse_tilemap(read_file_result file)
 		}
 	}
 
-	int x = 1;
-
-	delete lex_buf;
+	delete[] lex_buf;
 }
 
 struct key_press
@@ -604,8 +615,7 @@ int main(int argc, char* args[])
 
 		SDL_Event e;
 
-		//std::string map_path = "data/trifle_map_01.tmx";
-		std::string map_path = "data/test.xml";
+		std::string map_path = "data/trifle_map_01.tmx";
 		read_file_result map = read_file(map_path);
 
 		parse_tilemap(map);
