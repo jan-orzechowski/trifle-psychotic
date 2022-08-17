@@ -205,7 +205,8 @@ int main(int argc, char* args[])
 		std::string map_path = "data/trifle_map_01.tmx";
 		read_file_result map = read_file(map_path);
 
-		parse_tilemap(map);
+		//parse_tilemap(map);
+		better_parse_tilemap(map);
 
 		while (run)
 		{

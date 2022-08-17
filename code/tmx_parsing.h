@@ -3,6 +3,7 @@
 #include "main.h"
 
 void parse_tilemap(read_file_result);
+void better_parse_tilemap(read_file_result);
 
 enum tmx_node_type // już wszystkie
 {
