@@ -1,5 +1,6 @@
 ﻿#include <SDL.h>
 #include "tmx_parsing.h"
+#include "jorutils.h"
 
 #define ATTR_MAX_COUNT 10
 #define LEXER_BUFFER_SIZE 256
