@@ -1,5 +1,4 @@
-﻿
-#include <SDL.h>
+﻿#include <SDL.h>
 #include "tmx_parsing.h"
 #include "jorutils.h"
 
@@ -370,6 +369,47 @@ b32 operator ==(string_ref a, string_ref b)
 			}
 		}
 	}
+	return result;
+}
+
+b32 compare_c_string(string_ref my_str, const char* c_str)
+{
+	b32 result = true;
+
+	if (my_str.ptr == NULL || c_str == NULL)
+	{
+		result = false;
+		invalid_code_path;
+	}
+
+	u32 my_str_char_index = 0;
+	while (*c_str)
+	{
+		if (my_str_char_index == my_str.string_size)
+		{
+			// stringi są różnej długości - przeszliśmy my_str, a nie przeszliśmy c_str
+			result = false;
+			break;
+		}
+
+		char my_char = *(my_str.ptr + my_str_char_index);
+		char c_char = *c_str;
+		if (my_char != c_char)
+		{
+			result = false;
+			break;
+		}
+
+		my_str_char_index++;
+		c_str++;
+	}
+
+	if (my_str_char_index < my_str.string_size)
+	{
+		// stringi są różnej długości - przeszliśmy c_str, a nie przeszliśmy my_str
+		result = false;
+	}
+
 	return result;
 }
 
@@ -1044,6 +1084,144 @@ xml_node* parse_tokens(parser* pars)
 	return current_node;
 }
 
+xml_node* find_tag_in_children(xml_node* node, const char* tag)
+{
+	xml_node* result = NULL;
+	if (node)
+	{
+		if (compare_c_string(node->tag, tag))
+		{
+			result = node;
+		}
+		else
+		{
+			if (node->first_child)
+			{
+				xml_node* child = node->first_child;
+				while (child)
+				{
+					if (compare_c_string(child->tag, tag))
+					{
+						result = child;
+						break;
+					}
+					else
+					{
+						child = child->next;
+					}
+				}
+			}
+		}
+	}
+
+	return result;
+}
+
+xml_node* find_tag_in_nested_children(xml_node* node, const char* tag)
+{
+	xml_node* result = NULL;
+	if (node && node->first_child)
+	{
+		xml_node* child = node->first_child;
+		while (child)
+		{
+			if (compare_c_string(child->tag, tag))
+			{
+				result = child;
+				break;
+			}
+			else
+			{
+				xml_node* tag_in_child = find_tag_in_nested_children(child, tag);
+				if (tag_in_child)
+				{
+					result = tag_in_child;
+					break;
+				}
+				else
+				{
+					child = child->next;
+				}
+			}
+		}
+	}
+
+	return result;
+}
+
+xml_node* find_tag_with_attribute_in_children(xml_node* node, const char* tag, const char* attribute_name)
+{
+	xml_node* result = NULL;
+
+	xml_node* node_with_tag = NULL;
+	if (node && node->first_child)
+	{
+		xml_node* child = node->first_child;
+		while (child)
+		{
+			if (compare_c_string(child->tag, tag))
+			{
+				node_with_tag = child;
+				break;
+			}
+			else
+			{
+				child = child->next;
+			}
+		}
+	}
+
+	if (node_with_tag)
+	{
+		xml_attribute* attribute = node_with_tag->first_attribute;
+		while (attribute)
+		{
+			if (compare_c_string(attribute->name, attribute_name))
+			{
+				result = node_with_tag;
+				break;
+			}
+			else
+			{
+				attribute = attribute->next;
+			}
+		}
+	}
+
+	return result;
+}
+
+string_ref get_attribute_value(xml_node* node, const char* attribute_name)
+{
+	string_ref result = {};
+	if (node)
+	{
+		xml_attribute* attribute = node->first_attribute;
+		while (attribute)
+		{
+			if (compare_c_string(attribute->name, attribute_name))
+			{
+				result = attribute->value;
+				break;
+			}
+			else
+			{
+				attribute = attribute->next;
+			}
+		}
+	}
+	return result;
+}
+
+struct tilemap
+{
+	string_ref tilemap_source;
+	u32 width;
+	u32 height;
+	u32* tiles;
+	u32 tiles_count;
+};
+
 void better_parse_tilemap(read_file_result file)
 {
 	int memory_for_parsing_size = megabytes_to_bytes(10);
@@ -1055,12 +1233,13 @@ void better_parse_tilemap(read_file_result file)
 	const char* string_test = "no i co teraz kurde balans";
 	int string_test_count = SDL_strlen(string_test);
 
-	string_ref str = {};
-	str.string_size = string_test_count;
-	
-	copy_string_to_memory_arena(&parsing_arena, string_test, string_test_count);
+	string_ref my_string = copy_string_to_memory_arena(&parsing_arena, string_test, string_test_count);
 
-	xml_token* tk = push_struct(&parsing_arena, xml_token);
+	//my_string.string_size--;
+	//*(my_string.ptr + my_string.string_size - 1) = 'x';
+	b32 compare = compare_c_string(my_string, string_test);
+
+	//xml_token* tk = push_struct(&parsing_arena, xml_token);
 
 	scanner scan = {};
 	scan.source = (char*)file.contents;
@@ -1087,6 +1266,30 @@ void better_parse_tilemap(read_file_result file)
 		if (root)
 		{
 			debug_breakpoint;
+
+			tilemap map = {};
+
+			xml_node* object_test = find_tag_in_nested_children(root, "object");
+
+			xml_node* map_node = find_tag_in_children(root, "map");
+			if (map_node)
+			{
+				string_ref width = get_attribute_value(map_node, "width");
+				string_ref height = get_attribute_value(map_node, "height");
+
+				if (width.ptr && height.ptr)
+				{
+					//SDL_strtol()
+				}
+				else
+				{
+					// błąd
+				}
+			}
+			else
+			{
+				// błąd
+			}
 		}
 	}
 
