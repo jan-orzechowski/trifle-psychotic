@@ -343,13 +343,13 @@ struct string_ref
 enum xml_token_type
 {
 	XML_TOKEN_LEFT_CHEVRON, // <
+	XML_TOKEN_CLOSING_LEFT_CHEVRON, // </
 	XML_TOKEN_RIGHT_CHEVRON, // >
-	XML_TOKEN_LEFT_PROC_INSTRUCTION_CHEVRON, // <? // Zmienić nazwę na PROLOG?
-	XML_TOKEN_RIGHT_PROC_INSTRUCTION_CHEVRON, // ?>
+	XML_TOKEN_SELF_CLOSE_RIGHT_CHEVRON, // />
+	XML_TOKEN_LEFT_PROLOG_CHEVRON, // <?
+	XML_TOKEN_RIGHT_PROLOG_CHEVRON, // ?>
 	XML_TOKEN_TAG,
 	XML_TOKEN_ATTRIBUTE_NAME,
-	XML_TOKEN_ATTRIBUTE_VALUE_START, // ="
-	XML_TOKEN_ATTRIBUTE_VALUE_END, // "
 	XML_TOKEN_ATTRIBUTE_VALUE,
 	XML_TOKEN_INNER_TEXT,
 	XML_END_OF_FILE
@@ -469,26 +469,11 @@ string_ref copy_string_to_memory_arena(memory_arena* arena, const char* str, int
 	return result;
 }
 
-inline char peek(scanner* scan)
-{
-	if (false == is_at_end(scan)) 
-		// czy to jest potrzebne? może po prostu powinniśmy zaalokować jeden bajt więcej na ostatni peek?
-	{
-		char result = *(scan->text + scan->current_char_index);
-		return result;
-	}
-	else
-	{
-		return '\0'; 
-	}
-}
-
-inline char consume(scanner* scan)
+inline char get_current_char(scanner* scan)
 {
 	if (false == is_at_end(scan))
 	{
 		char result = *(scan->text + scan->current_char_index);
-		scan->current_char_index++;
 		return result;
 	}
 	else
@@ -505,31 +490,58 @@ inline void advance(scanner* scan)
 	}
 }
 
+inline char peek(scanner* scan)
+{
+	if (false == is_at_end(scan))
+		// czy to jest potrzebne? może po prostu powinniśmy zaalokować jeden bajt więcej na ostatni peek?
+	{
+		char result = *(scan->text + scan->current_char_index + 1);
+		return result;
+	}
+	else
+	{
+		return '\0';
+	}
+}
+
+inline b32 is_whitespace(char c)
+{
+	b32 result = (c == ' ' || c == '\r' || c == '\t' || c == '\n');
+	return result;
+}
+
 void omit_whitespace(scanner* scan)
 {
-	char next_c = peek(scan);
-	while (next_c == ' '
-		||  next_c == '\r'
-		||  next_c == '\t'
-		||  next_c == '\n')
+	while (is_whitespace(peek(scan)))
 	{
 		scan->current_char_index++;
 	}
 }
 
-string_ref scan_text(scanner* scan)
+b32 is_charater_allowed_for_text(char c, bool allow_whitespace)
+{
+	b32 result = (c != '\0'
+		&& c != '"'
+		&& c != '<'
+		&& c != '='
+		&& c != '>'
+		&& (is_whitespace(c) == false || allow_whitespace));
+	return result;
+}
+
+string_ref scan_text(scanner* scan, bool allow_whitespace = true)
 {
 	string_ref ref_to_source = {};
 
 	u32 lexeme_start_char_index = scan->current_char_index;
 	char next_c = peek(scan);
-	while (SDL_isalnum(next_c)) // is alphanumerical
+	while (is_charater_allowed_for_text(next_c, allow_whitespace))
 	{
-		scan->current_char_index++;
+		advance(scan);
 		next_c = peek(scan);
 	}
 	u32 lexeme_end_char_index = scan->current_char_index;
-	u32 lexeme_length = lexeme_end_char_index - lexeme_start_char_index;
+	u32 lexeme_length = lexeme_end_char_index - lexeme_start_char_index + 1;
 	char* lexeme_start_ptr = scan->text + lexeme_start_char_index;
 	
 	ref_to_source.string_size = lexeme_length;
@@ -540,7 +552,7 @@ string_ref scan_text(scanner* scan)
 
 bool scan_token(scanner* scan)
 {
-	char c = consume(scan);
+	char c = get_current_char(scan);
 	switch (c)
 	{
 		case '<':
@@ -549,7 +561,12 @@ bool scan_token(scanner* scan)
 			if (next_c == '?')
 			{
 				advance(scan);
-				add_token(scan, xml_token_type::XML_TOKEN_LEFT_PROC_INSTRUCTION_CHEVRON);
+				add_token(scan, xml_token_type::XML_TOKEN_LEFT_PROLOG_CHEVRON);
+			}
+			else if (next_c == '/')
+			{
+				advance(scan);
+				add_token(scan, xml_token_type::XML_TOKEN_CLOSING_LEFT_CHEVRON);
 			}
 			else
 			{
@@ -558,9 +575,10 @@ bool scan_token(scanner* scan)
 
 			omit_whitespace(scan);
 
-			if (SDL_isalnum(peek(scan)))
+			if (is_charater_allowed_for_text(peek(scan), false))
 			{
-				string_ref tag_name = scan_text(scan);
+				advance(scan);
+				string_ref tag_name = scan_text(scan, false);
 				add_token(scan, xml_token_type::XML_TOKEN_TAG, tag_name);
 			}
 		}
@@ -571,34 +589,51 @@ bool scan_token(scanner* scan)
 			if (next_c == '>')
 			{
 				advance(scan);
-				add_token(scan, xml_token_type::XML_TOKEN_RIGHT_PROC_INSTRUCTION_CHEVRON);
+				add_token(scan, xml_token_type::XML_TOKEN_RIGHT_PROLOG_CHEVRON);
 
 				omit_whitespace(scan);
-				if (SDL_isalnum(peek(scan)))
+				if (is_charater_allowed_for_text(peek(scan), true))
 				{
+					advance(scan);
 					string_ref inner_text = scan_text(scan);
 					add_token(scan, xml_token_type::XML_TOKEN_INNER_TEXT, inner_text);
 				}
 			}
 			else
 			{
-				// samodzielny "?" ?
+				// błąd - samodzielny ?
 				invalid_code_path;
 			}
 		}
 		break;
 		case '>':
 		{
-			add_token(scan, xml_token_type::XML_TOKEN_RIGHT_CHEVRON);
-
-			omit_whitespace(scan);
-			if (SDL_isalnum(peek(scan)))
+			add_token(scan, xml_token_type::XML_TOKEN_RIGHT_CHEVRON);			
+			advance(scan);
+			
+			if (is_charater_allowed_for_text(peek(scan), true))
 			{
 				string_ref inner_text = scan_text(scan);
 				add_token(scan, xml_token_type::XML_TOKEN_INNER_TEXT, inner_text);
 			}
 
-		} break;
+		} 
+		break;
+		case '/':
+		{
+			char next_c = peek(scan);
+			if (next_c == '>')
+			{
+				advance(scan);
+				add_token(scan, xml_token_type::XML_TOKEN_SELF_CLOSE_RIGHT_CHEVRON);
+			}
+			else
+			{
+				// błąd - samodzielny / bez >
+				invalid_code_path;
+			}
+		}
+		break;
 		case '=':
 		{
 			while (peek(scan) != '"' && false == is_at_end(scan))
@@ -606,46 +641,71 @@ bool scan_token(scanner* scan)
 				advance(scan);
 			}
 
-			add_token(scan, xml_token_type::XML_TOKEN_ATTRIBUTE_VALUE_START);
-
 			omit_whitespace(scan);
 
-			if (SDL_isalnum(peek(scan)))
+			if (peek(scan) == '"')
 			{
+				advance(scan);
+			}
+			else
+			{
+				// mamy błąd - było = bez "
+				invalid_code_path;
+			}
+
+			if (is_charater_allowed_for_text(peek(scan), true))
+			{
+				advance(scan);
 				string_ref attr_value = scan_text(scan);
 				add_token(scan, xml_token_type::XML_TOKEN_ATTRIBUTE_VALUE, attr_value);
 			}
 			else
 			{
-				// rzucić błędem?
-			}			
+				// błąd - jako value nie mamy legalnego tekstu
+				invalid_code_path;
+			}
+
+			if (peek(scan) == '"')
+			{
+				advance(scan);
+			}
 		}
 		break;
 		case '"':
 		{
-			add_token(scan, xml_token_type::XML_TOKEN_ATTRIBUTE_VALUE_END);
+			// błąd - nie powinniśmy napotykać " poza ==
+			invalid_code_path;
 		}
 		break;
 
+		// ignorujemy whitespace
 		case ' ':
 		case '\r':
 		case '\t':
 		case '\n':
-			// ignorujemy whitespace
-			break;
+		break;
 
 		default:
 		{			
 			// w tym wypadku mamy attribute name - przypadek inner tekst jest obsłużony przy >
-			if (SDL_isalnum(c))
+			if (is_charater_allowed_for_text(c, false))
 			{
-				string_ref attr_value = scan_text(scan);
+				string_ref attr_value = scan_text(scan, false);
 				add_token(scan, xml_token_type::XML_TOKEN_ATTRIBUTE_NAME, attr_value);
 			}
 		}
 		break;
 	}
-	return true;
+
+	advance(scan);
+	if (is_at_end(scan))
+	{		
+		return false;
+	}
+	else
+	{
+		return true;
+	}
 }
 
 void better_parse_tilemap(read_file_result file)
@@ -678,10 +738,7 @@ void better_parse_tilemap(read_file_result file)
 	scan.token_count = 0;
 	scan.arena = &parsing_arena;
 
-	while (false == is_at_end(&scan))
-	{
-		scan_token(&scan);
-	}	
+	while (scan_token(&scan));
 	add_token(&scan, xml_token_type::XML_END_OF_FILE);
 
 	SDL_free(memory_for_parsing);
