@@ -1,4 +1,5 @@
-﻿#include <SDL.h>
+﻿
+#include <SDL.h>
 #include "tmx_parsing.h"
 #include "jorutils.h"
 
@@ -340,19 +341,50 @@ struct string_ref
 	char* ptr;
 };
 
+b32 operator ==(string_ref a, string_ref b)
+{
+	b32 result = true;
+
+	if (a.ptr == NULL || b.ptr == NULL)
+	{
+		invalid_code_path;
+		result = false;
+	}
+
+	if (a.string_size != b.string_size)
+	{
+		result = false;
+	}
+	else
+	{
+		for (u32 char_index = 0;
+			char_index < a.string_size;
+			char_index++)
+		{
+			char a_char = *(a.ptr + char_index);
+			char b_char = *(b.ptr + char_index);
+			if (a_char != b_char)
+			{
+				result = false;
+				break;
+			}
+		}
+	}
+	return result;
+}
+
 enum xml_token_type
 {
-	XML_TOKEN_LEFT_CHEVRON, // <
-	XML_TOKEN_CLOSING_LEFT_CHEVRON, // </
-	XML_TOKEN_RIGHT_CHEVRON, // >
-	XML_TOKEN_SELF_CLOSE_RIGHT_CHEVRON, // />
-	XML_TOKEN_LEFT_PROLOG_CHEVRON, // <?
-	XML_TOKEN_RIGHT_PROLOG_CHEVRON, // ?>
-	XML_TOKEN_TAG,
-	XML_TOKEN_ATTRIBUTE_NAME,
-	XML_TOKEN_ATTRIBUTE_VALUE,
-	XML_TOKEN_INNER_TEXT,
-	XML_END_OF_FILE
+	LEFT_CHEVRON, // <
+	CLOSING_LEFT_CHEVRON, // </
+	RIGHT_CHEVRON, // >
+	SELF_CLOSING_RIGHT_CHEVRON, // />
+	LEFT_PROLOG_CHEVRON, // <?
+	RIGHT_PROLOG_CHEVRON, // ?>
+	TAG,
+	ATTRIBUTE_NAME,
+	ATTRIBUTE_VALUE,
+	INNER_TEXT
 };
 
 struct xml_token
@@ -364,8 +396,8 @@ struct xml_token
 
 struct scanner
 {
-	char* text;
-	u32 text_length;
+	char* source;
+	u32 source_length;
 
 	//char* temp_buf;
 	//u32 temp_buf_index;
@@ -380,9 +412,18 @@ struct scanner
 	memory_arena* arena;
 };
 
+struct parser
+{
+	scanner scan;
+	u32 current_token_index;
+	xml_token* current_token;
+	memory_arena* arena;
+	u32 nodes_count;
+};
+
 inline b32 is_at_end(scanner* scan)
 {
-	b32 result = (scan->current_char_index >= scan->text_length);
+	b32 result = (scan->current_char_index >= scan->source_length);
 
 	if (result)
 	{
@@ -455,8 +496,8 @@ string_ref copy_string_to_memory_arena(memory_arena* arena, const char* str, int
 	result.string_size = str_size;
 	result.ptr = (char*)push_size(arena, str_size + 1);
 
-	for (int index = 0; 
-		index < str_size; 
+	for (int index = 0;
+		index < str_size;
 		index++)
 	{
 		*(result.ptr + index) = *(str + index);
@@ -473,13 +514,13 @@ inline char get_current_char(scanner* scan)
 {
 	if (false == is_at_end(scan))
 	{
-		char result = *(scan->text + scan->current_char_index);
+		char result = *(scan->source + scan->current_char_index);
 		return result;
 	}
 	else
 	{
 		return '\0';
-	}	
+	}
 }
 
 inline void advance(scanner* scan)
@@ -495,7 +536,7 @@ inline char peek(scanner* scan)
 	if (false == is_at_end(scan))
 		// czy to jest potrzebne? może po prostu powinniśmy zaalokować jeden bajt więcej na ostatni peek?
 	{
-		char result = *(scan->text + scan->current_char_index + 1);
+		char result = *(scan->source + scan->current_char_index + 1);
 		return result;
 	}
 	else
@@ -529,6 +570,23 @@ b32 is_charater_allowed_for_text(char c, bool allow_whitespace)
 	return result;
 }
 
+b32 check_if_string_is_whitespace(string_ref inner_text)
+{
+	b32 result = true;
+	for (u32 char_index = 0;
+		char_index < inner_text.string_size;
+		char_index++)
+	{
+		if (false == is_whitespace(*(inner_text.ptr + char_index)))
+		{
+			result = false;
+			break;
+		}
+	}
+
+	return result;
+}
+
 string_ref scan_text(scanner* scan, bool allow_whitespace = true)
 {
 	string_ref ref_to_source = {};
@@ -542,8 +600,8 @@ string_ref scan_text(scanner* scan, bool allow_whitespace = true)
 	}
 	u32 lexeme_end_char_index = scan->current_char_index;
 	u32 lexeme_length = lexeme_end_char_index - lexeme_start_char_index + 1;
-	char* lexeme_start_ptr = scan->text + lexeme_start_char_index;
-	
+	char* lexeme_start_ptr = scan->source + lexeme_start_char_index;
+
 	ref_to_source.string_size = lexeme_length;
 	ref_to_source.ptr = lexeme_start_ptr;
 
@@ -555,157 +613,435 @@ bool scan_token(scanner* scan)
 	char c = get_current_char(scan);
 	switch (c)
 	{
-		case '<':
+	case '<':
+	{
+		char next_c = peek(scan);
+		if (next_c == '?')
 		{
-			char next_c = peek(scan);
-			if (next_c == '?')
-			{
-				advance(scan);
-				add_token(scan, xml_token_type::XML_TOKEN_LEFT_PROLOG_CHEVRON);
-			}
-			else if (next_c == '/')
-			{
-				advance(scan);
-				add_token(scan, xml_token_type::XML_TOKEN_CLOSING_LEFT_CHEVRON);
-			}
-			else
-			{
-				add_token(scan, xml_token_type::XML_TOKEN_LEFT_CHEVRON);
-			}
-
-			omit_whitespace(scan);
-
-			if (is_charater_allowed_for_text(peek(scan), false))
-			{
-				advance(scan);
-				string_ref tag_name = scan_text(scan, false);
-				add_token(scan, xml_token_type::XML_TOKEN_TAG, tag_name);
-			}
-		}
-		break;
-		case '?':
-		{
-			char next_c = peek(scan);
-			if (next_c == '>')
-			{
-				advance(scan);
-				add_token(scan, xml_token_type::XML_TOKEN_RIGHT_PROLOG_CHEVRON);
-
-				omit_whitespace(scan);
-				if (is_charater_allowed_for_text(peek(scan), true))
-				{
-					advance(scan);
-					string_ref inner_text = scan_text(scan);
-					add_token(scan, xml_token_type::XML_TOKEN_INNER_TEXT, inner_text);
-				}
-			}
-			else
-			{
-				// błąd - samodzielny ?
-				invalid_code_path;
-			}
-		}
-		break;
-		case '>':
-		{
-			add_token(scan, xml_token_type::XML_TOKEN_RIGHT_CHEVRON);			
 			advance(scan);
-			
-			if (is_charater_allowed_for_text(peek(scan), true))
-			{
-				string_ref inner_text = scan_text(scan);
-				add_token(scan, xml_token_type::XML_TOKEN_INNER_TEXT, inner_text);
-			}
-
-		} 
-		break;
-		case '/':
-		{
-			char next_c = peek(scan);
-			if (next_c == '>')
-			{
-				advance(scan);
-				add_token(scan, xml_token_type::XML_TOKEN_SELF_CLOSE_RIGHT_CHEVRON);
-			}
-			else
-			{
-				// błąd - samodzielny / bez >
-				invalid_code_path;
-			}
+			add_token(scan, xml_token_type::LEFT_PROLOG_CHEVRON);
 		}
-		break;
-		case '=':
+		else if (next_c == '/')
 		{
-			while (peek(scan) != '"' && false == is_at_end(scan))
-			{
-				advance(scan);
-			}
+			advance(scan);
+			add_token(scan, xml_token_type::CLOSING_LEFT_CHEVRON);
+		}
+		else
+		{
+			add_token(scan, xml_token_type::LEFT_CHEVRON);
+		}
+
+		omit_whitespace(scan);
+
+		if (is_charater_allowed_for_text(peek(scan), false))
+		{
+			advance(scan);
+			string_ref tag_name = scan_text(scan, false);
+			add_token(scan, xml_token_type::TAG, tag_name);
+		}
+	}
+	break;
+	case '?':
+	{
+		char next_c = peek(scan);
+		if (next_c == '>')
+		{
+			advance(scan);
+			add_token(scan, xml_token_type::RIGHT_PROLOG_CHEVRON);
 
 			omit_whitespace(scan);
-
-			if (peek(scan) == '"')
-			{
-				advance(scan);
-			}
-			else
-			{
-				// mamy błąd - było = bez "
-				invalid_code_path;
-			}
-
 			if (is_charater_allowed_for_text(peek(scan), true))
 			{
 				advance(scan);
-				string_ref attr_value = scan_text(scan);
-				add_token(scan, xml_token_type::XML_TOKEN_ATTRIBUTE_VALUE, attr_value);
-			}
-			else
-			{
-				// błąd - jako value nie mamy legalnego tekstu
-				invalid_code_path;
-			}
-
-			if (peek(scan) == '"')
-			{
-				advance(scan);
+				string_ref inner_text = scan_text(scan);
+				add_token(scan, xml_token_type::INNER_TEXT, inner_text);
 			}
 		}
-		break;
-		case '"':
+		else
 		{
-			// błąd - nie powinniśmy napotykać " poza ==
+			// błąd - samodzielny ?
 			invalid_code_path;
 		}
-		break;
+	}
+	break;
+	case '>':
+	{
+		add_token(scan, xml_token_type::RIGHT_CHEVRON);
+		advance(scan);
 
-		// ignorujemy whitespace
-		case ' ':
-		case '\r':
-		case '\t':
-		case '\n':
-		break;
-
-		default:
-		{			
-			// w tym wypadku mamy attribute name - przypadek inner tekst jest obsłużony przy >
-			if (is_charater_allowed_for_text(c, false))
+		if (is_charater_allowed_for_text(peek(scan), true))
+		{
+			string_ref inner_text = scan_text(scan);
+			if (false == check_if_string_is_whitespace(inner_text))
 			{
-				string_ref attr_value = scan_text(scan, false);
-				add_token(scan, xml_token_type::XML_TOKEN_ATTRIBUTE_NAME, attr_value);
+				add_token(scan, xml_token_type::INNER_TEXT, inner_text);
 			}
 		}
+	}
+	break;
+	case '/':
+	{
+		char next_c = peek(scan);
+		if (next_c == '>')
+		{
+			advance(scan);
+			add_token(scan, xml_token_type::SELF_CLOSING_RIGHT_CHEVRON);
+		}
+		else
+		{
+			// błąd - samodzielny / bez >
+			invalid_code_path;
+		}
+	}
+	break;
+	case '=':
+	{
+		while (peek(scan) != '"' && false == is_at_end(scan))
+		{
+			advance(scan);
+		}
+
+		omit_whitespace(scan);
+
+		if (peek(scan) == '"')
+		{
+			advance(scan);
+		}
+		else
+		{
+			// mamy błąd - było = bez "
+			invalid_code_path;
+		}
+
+		if (is_charater_allowed_for_text(peek(scan), true))
+		{
+			advance(scan);
+			string_ref attr_value = scan_text(scan);
+			add_token(scan, xml_token_type::ATTRIBUTE_VALUE, attr_value);
+		}
+		else
+		{
+			// błąd - jako value nie mamy legalnego tekstu
+			invalid_code_path;
+		}
+
+		if (peek(scan) == '"')
+		{
+			advance(scan);
+		}
+	}
+	break;
+	case '"':
+	{
+		// błąd - nie powinniśmy napotykać " poza ==
+		invalid_code_path;
+	}
+	break;
+
+	// ignorujemy whitespace
+	case ' ':
+	case '\r':
+	case '\t':
+	case '\n':
 		break;
+
+	default:
+	{
+		// w tym wypadku mamy attribute name - przypadek inner tekst jest obsłużony przy >
+		if (is_charater_allowed_for_text(c, false))
+		{
+			string_ref attr_value = scan_text(scan, false);
+			add_token(scan, xml_token_type::ATTRIBUTE_NAME, attr_value);
+		}
+	}
+	break;
 	}
 
 	advance(scan);
 	if (is_at_end(scan))
-	{		
+	{
 		return false;
 	}
 	else
 	{
 		return true;
 	}
+}
+
+struct xml_attribute;
+
+struct xml_node
+{
+	string_ref tag;
+	xml_node* parent;
+
+	xml_attribute* first_attribute;
+	u32 attributes_count;
+
+	xml_node* first_child;
+	u32 children_count;
+
+	//xml_node* prev;
+	xml_node* next; // np. następne dziecko tego samego rodzica
+
+	string_ref inner_text;
+};
+
+struct xml_attribute
+{
+	string_ref name;
+	string_ref value;
+
+	xml_node* owner;
+	xml_attribute* next;
+};
+
+b32 is_at_end(parser* pars)
+{
+	b32 result = (pars->current_token_index >= pars->scan.token_count
+		|| pars->current_token == NULL
+		|| pars->current_token->next == NULL);
+	return result;
+}
+
+xml_token* get_next_token(parser* pars)
+{
+	xml_token* result = NULL;
+	if (false == is_at_end(pars))
+	{
+		pars->current_token = pars->current_token->next;
+		pars->current_token_index++;
+		result = pars->current_token;
+	}
+	return result;
+}
+
+xml_token* peek_next_token(parser* pars)
+{
+	xml_token* result = NULL;
+	if (false == is_at_end(pars))
+	{
+		result = pars->current_token->next;
+	}
+	return result;
+}
+
+xml_token* skip_to_next_type_occurrence(parser* pars, xml_token_type type)
+{
+	xml_token* t = pars->current_token;
+	while (t)
+	{
+		if (t->type == type)
+		{
+			break;
+		}
+		else
+		{
+			t = get_next_token(pars);
+		}
+	}
+
+	if (t->type == type)
+	{
+		return t;
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
+void add_to_children(xml_node* parent_node, xml_node* new_node)
+{
+	new_node->parent = parent_node;
+	parent_node->children_count++;
+
+	if (parent_node->first_child)
+	{
+		xml_node* last_child = parent_node->first_child;
+		while (last_child->next)
+		{
+			last_child = last_child->next;
+		}
+		last_child->next = new_node;
+	}
+	else
+	{
+		parent_node->first_child = new_node;
+	}
+}
+
+void add_to_attributes(xml_node* node, xml_attribute* new_attribute)
+{
+	new_attribute->owner = node;
+	node->attributes_count++;
+
+	if (node->first_attribute)
+	{
+		xml_attribute* last_attribute = node->first_attribute;
+		while (last_attribute->next)
+		{
+			last_attribute = last_attribute->next;
+		}
+		last_attribute->next = new_attribute;
+		node->attributes_count++;
+	}
+	else
+	{
+		node->first_attribute = new_attribute;
+	}
+}
+
+xml_node* parse_tokens(parser* pars)
+{
+	xml_token* t = pars->current_token;
+	xml_node* current_node = NULL;
+
+	while (t)
+	{
+		if (t->type == xml_token_type::LEFT_PROLOG_CHEVRON)
+		{
+			t = skip_to_next_type_occurrence(pars, xml_token_type::RIGHT_PROLOG_CHEVRON);
+			continue;
+		}
+
+		if (t->type == xml_token_type::LEFT_CHEVRON)
+		{
+			t = get_next_token(pars);
+			if (t && t->type == xml_token_type::TAG)
+			{
+				xml_node* new_node = push_struct(pars->arena, xml_node);
+				new_node->tag = t->value;
+				if (current_node)
+				{
+					new_node->parent = current_node;
+					add_to_children(current_node, new_node);
+				}
+				else
+				{
+					// XML ma zawsze jeden root element
+					current_node = new_node;
+				}
+
+				t = get_next_token(pars);
+				while (t
+					&& t->type != xml_token_type::RIGHT_CHEVRON
+					&& t->type != xml_token_type::SELF_CLOSING_RIGHT_CHEVRON)
+				{
+					// teraz mamy pary atrybut wartość
+					if (t->type == xml_token_type::ATTRIBUTE_NAME)
+					{
+						xml_attribute* new_attribute = push_struct(pars->arena, xml_attribute);
+						new_attribute->name = t->value;
+
+						t = get_next_token(pars);
+						if (t && t->type == xml_token_type::ATTRIBUTE_VALUE)
+						{
+							new_attribute->value = t->value;
+							add_to_attributes(new_node, new_attribute);
+						}
+						else
+						{
+							// błąd - nazwa bez wartości
+							invalid_code_path;
+						}
+					}
+					else
+					{
+						//błąd - oczekiwany attribute name
+						invalid_code_path;
+					}
+
+					t = get_next_token(pars);
+				}
+
+				if (false == is_at_end(pars))
+				{
+					if (t->type != xml_token_type::SELF_CLOSING_RIGHT_CHEVRON)
+					{
+						current_node = new_node;
+					}
+				}
+				else
+				{
+					// mamy błąd - doszliśmy do końca, a nie ma taga zamykającego
+					invalid_code_path;
+				}
+
+				t = get_next_token(pars);
+				continue;
+			}
+			else
+			{
+				// błąd - element bez taga
+				invalid_code_path;
+			}
+		}
+
+		if (t->type == xml_token_type::INNER_TEXT)
+		{
+			if (current_node)
+			{
+				current_node->inner_text = t->value;
+				t = get_next_token(pars);
+				continue;
+			}
+			else
+			{
+				// błąd
+			}
+		}
+
+		if (t->type == xml_token_type::CLOSING_LEFT_CHEVRON) // czyli </tag>
+		{
+			// musimy iść w górę
+			t = get_next_token(pars);
+			if (t && t->type == xml_token_type::TAG)
+			{
+				string_ref tag = t->value;
+				if (current_node
+					&& current_node->tag == tag)
+				{
+					if (current_node->parent)
+					{
+						current_node = current_node->parent;
+					}
+					else
+					{
+						break;
+						// skończyliśmy dokument
+					}
+				}
+				else if (current_node
+					&& current_node->parent
+					&& current_node->parent->tag == tag)
+				{
+					// to wystąpi w takiej sytuacji: <tag><innytag/></tag>
+					if (current_node->parent->parent)
+					{
+						current_node = current_node->parent->parent;
+					}
+					else
+					{
+						break;
+						// skończyliśmy dokument
+					}
+				}
+				else
+				{
+					invalid_code_path;
+					// błąd - nie mamy pasującego otwierającego taga
+				}
+
+				t = get_next_token(pars);
+				continue;
+			}
+		}
+
+		t = get_next_token(pars);
+	}
+
+	return current_node;
 }
 
 void better_parse_tilemap(read_file_result file)
@@ -727,8 +1063,8 @@ void better_parse_tilemap(read_file_result file)
 	xml_token* tk = push_struct(&parsing_arena, xml_token);
 
 	scanner scan = {};
-	scan.text = (char*)file.contents;
-	scan.text_length = file.size;
+	scan.source = (char*)file.contents;
+	scan.source_length = file.size;
 	//scan.temp_buf;
 	//scan.temp_buf_index;
 	//scan.temp_buf_length;
@@ -739,7 +1075,20 @@ void better_parse_tilemap(read_file_result file)
 	scan.arena = &parsing_arena;
 
 	while (scan_token(&scan));
-	add_token(&scan, xml_token_type::XML_END_OF_FILE);
+	if (scan.token_count > 0)
+	{
+		parser pars = {};
+		pars.scan = scan;
+		pars.current_token = scan.first_token;
+		pars.current_token_index = 0;
+		pars.arena = scan.arena;
+
+		xml_node* root = parse_tokens(&pars);
+		if (root)
+		{
+			debug_breakpoint;
+		}
+	}
 
 	SDL_free(memory_for_parsing);
 }
