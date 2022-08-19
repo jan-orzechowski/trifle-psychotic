@@ -210,7 +210,7 @@ int main(int argc, char* args[])
 		std::string map_file_path = "data/trifle_map_01.tmx";
 		read_file_result map_file = read_file(map_file_path);
 
-		tilemap map = better_parse_tilemap(&arena, map_file);
+		tilemap map = read_level_data_from_tmx_file(&arena, map_file);
 
 		while (run)
 		{
