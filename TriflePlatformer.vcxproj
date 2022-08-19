@@ -165,6 +165,7 @@
     <ClInclude Include="code\jorutils.h" />
     <ClInclude Include="code\main.h" />
     <ClInclude Include="code\tmx_parsing.h" />
+    <ClInclude Include="code\jorstring.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
