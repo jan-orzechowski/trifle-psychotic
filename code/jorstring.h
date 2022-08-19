@@ -5,7 +5,7 @@
 
 struct string_ref
 {
-	int string_size;
+	i32 string_size;
 	char* ptr;
 };
 
@@ -41,7 +41,7 @@ b32 operator ==(string_ref a, string_ref b)
 	return result;
 }
 
-char* get_c_str(memory_arena* arena, string_ref str)
+char* get_c_string(memory_arena* arena, string_ref str)
 {
 	char* new_c_str = (char*)push_size(arena, str.string_size + 1);
 	{
@@ -98,13 +98,13 @@ b32 compare_to_c_string(string_ref my_str, const char* c_str)
 	return result;
 }
 
-string_ref copy_c_string_to_memory_arena(memory_arena* arena, const char* str, int str_size)
+string_ref copy_c_string_to_memory_arena(memory_arena* arena, const char* str, u32 str_size)
 {
 	string_ref result = {};
 	result.string_size = str_size;
 	result.ptr = (char*)push_size(arena, str_size + 1);
 
-	for (int index = 0;
+	for (u32 index = 0;
 		index < str_size;
 		index++)
 	{
@@ -121,14 +121,14 @@ inline b32 is_whitespace(char c)
 	return result;
 }
 
-b32 check_if_string_is_whitespace(string_ref inner_text)
+b32 check_if_string_is_whitespace(string_ref str)
 {
 	b32 result = true;
 	for (u32 char_index = 0;
-		char_index < inner_text.string_size;
+		char_index < str.string_size;
 		char_index++)
 	{
-		if (false == is_whitespace(*(inner_text.ptr + char_index)))
+		if (false == is_whitespace(*(str.ptr + char_index)))
 		{
 			result = false;
 			break;
@@ -138,7 +138,7 @@ b32 check_if_string_is_whitespace(string_ref inner_text)
 	return result;
 }
 
-i64 parse_int(string_ref str)
+i64 parse_i64(string_ref str)
 {
 	i64 result = 0;
 	if (str.ptr)
@@ -149,7 +149,7 @@ i64 parse_int(string_ref str)
 	return result;
 }
 
-r64 parse_float(string_ref str)
+r64 parse_r64(string_ref str)
 {
 	r64 result = 0;
 	if (str.ptr)
@@ -160,7 +160,7 @@ r64 parse_float(string_ref str)
 	return result;
 }
 
-i32* parse_array_of_ints(memory_arena* arena, u32 array_length, string_ref str, char delimiter)
+i32* parse_array_of_i32(memory_arena* arena, u32 array_length, string_ref str, char delimiter)
 {
 	i32* arr = push_array(arena, array_length, i32);
 	u32 current_int_index = 0;
@@ -176,7 +176,7 @@ i32* parse_array_of_ints(memory_arena* arena, u32 array_length, string_ref str, 
 			end = c;
 			if (start)
 			{
-				int new_int = SDL_strtol(start, &end, 10);
+				i32 new_int = (i32)SDL_strtol(start, &end, 10);
 				if (current_int_index < array_length)
 				{
 					arr[current_int_index++] = new_int;
@@ -215,7 +215,7 @@ i32* parse_array_of_ints(memory_arena* arena, u32 array_length, string_ref str, 
 			{
 				// traktujemy jako delimiter
 				end = c;
-				int new_int = SDL_strtol(start, &end, 10);
+				i32 new_int = (i32)SDL_strtol(start, &end, 10);
 				if (current_int_index < array_length)
 				{
 					arr[current_int_index++] = new_int;

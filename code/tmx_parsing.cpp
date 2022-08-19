@@ -125,7 +125,7 @@ void omit_whitespace(xml_scanner* scan)
 	}
 }
 
-b32 is_charater_allowed_for_text(char c, bool allow_whitespace)
+b32 is_charater_allowed_for_text(char c, b32 allow_whitespace)
 {
 	b32 result = (c != '\0'
 		&& c != '"'
@@ -136,7 +136,7 @@ b32 is_charater_allowed_for_text(char c, bool allow_whitespace)
 	return result;
 }
 
-string_ref scan_text(xml_scanner* scan, bool allow_whitespace = true)
+string_ref scan_text(xml_scanner* scan, b32 allow_whitespace = true)
 {
 	string_ref ref_to_source = {};
 
@@ -721,7 +721,7 @@ tilemap read_level_data_from_tmx_file(memory_arena* permanent_arena, read_file_r
 	tilemap map = {};
 
 	memory_arena parsing_arena = {};
-	int memory_for_parsing_size = megabytes_to_bytes(10);
+	u32 memory_for_parsing_size = megabytes_to_bytes(10);
 	void* memory_for_parsing = SDL_malloc(memory_for_parsing_size);
 	initialize_memory_arena(&parsing_arena, memory_for_parsing_size, (byte*)memory_for_parsing);
 
@@ -754,8 +754,8 @@ tilemap read_level_data_from_tmx_file(memory_arena* permanent_arena, read_file_r
 							
 				if (width.ptr && height.ptr)
 				{
-					i32 map_width = parse_int(width);
-					i32 map_height = parse_int(height);
+					i32 map_width = parse_i64(width);
+					i32 map_height = parse_i64(height);
 
 					xml_node* layer_node = find_tag_in_children(root, "layer");
 					string_ref layer_width_str = get_attribute_value(layer_node, "width");
@@ -763,8 +763,8 @@ tilemap read_level_data_from_tmx_file(memory_arena* permanent_arena, read_file_r
 
 					if (layer_width_str.ptr && layer_height_str.ptr)
 					{
-						i32 layer_width = parse_int(width);
-						i32 layer_height = parse_int(height);
+						i32 layer_width = parse_i64(width);
+						i32 layer_height = parse_i64(height);
 						if (layer_width == map_width && layer_height == map_height)
 						{
 							map.width = map_width;
@@ -779,7 +779,7 @@ tilemap read_level_data_from_tmx_file(memory_arena* permanent_arena, read_file_r
 								if (compare_to_c_string(encoding_str, "csv"))
 								{
 									map.tiles_count = map.width * map.height;
-									map.tiles = parse_array_of_ints(permanent_arena, map.tiles_count, data, ',');
+									map.tiles = parse_array_of_i32(permanent_arena, map.tiles_count, data, ',');
 
 									debug_breakpoint;
 								}
