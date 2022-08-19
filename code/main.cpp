@@ -193,6 +193,28 @@ read_file_result read_file(std::string path)
 	return result;
 }
 
+#define TILESET_WIDTH 64
+#define TILE_X_SIZE 16
+#define TILE_Y_SIZE 16
+
+SDL_Rect get_tile_rect(u32 tile_id)
+{
+	// id liczą się od 1, nie od zera
+	u32 column = (tile_id - 1) % TILESET_WIDTH;
+	u32 row = (tile_id - 1) / TILESET_WIDTH;
+
+	u32 x = column * TILE_X_SIZE;
+	u32 y = row * TILE_Y_SIZE;
+
+	SDL_Rect tile_rect = {};
+	tile_rect.x = x;
+	tile_rect.y = y;
+	tile_rect.w = TILE_X_SIZE;
+	tile_rect.h = TILE_Y_SIZE;
+
+	return tile_rect;
+}
+
 int main(int argc, char* args[])
 {
 	sdl_game_data sdl_game = init_sdl();
@@ -254,13 +276,30 @@ int main(int argc, char* args[])
 
 			SDL_Texture* texture_to_draw = sdl_game.tileset_texture;
 			SDL_RenderClear(sdl_game.renderer);
-			SDL_RenderCopy(sdl_game.renderer, texture_to_draw, NULL, NULL);
-			
+
+			for (u32 y_coord = 0; y_coord < 20; y_coord++)
 			{
+				for (u32 x_coord = 0; x_coord < 20; x_coord++)
+				{
+					u32 tile_in_map_index = x_coord + (map.width * y_coord);
+					u32 tile_value = map.tiles[tile_in_map_index];
+					SDL_Rect tile_bitmap = get_tile_rect(tile_value);
+
+					SDL_Rect screen_rect = {};
+					screen_rect.h = 16;
+					screen_rect.w = 16;
+					screen_rect.x = x_coord * 16;
+					screen_rect.y = y_coord * 16;
+
+					SDL_RenderCopy(sdl_game.renderer, texture_to_draw, &tile_bitmap, &screen_rect);
+				}
+			}
+
+			/*{
 				SDL_Color text_color = { 255, 255, 255, 0 };
 				std::string text_test = "najwyrazniej ten piekny font nie obsluguje polskich znakow";
 				render_text(sdl_game, text_test, 0, 50, text_color);
-			}
+			}*/
 
 			SDL_RenderPresent(sdl_game.renderer);
 		}
@@ -284,3 +323,4 @@ int main(int argc, char* args[])
 	
 	return 0;
 }
+
