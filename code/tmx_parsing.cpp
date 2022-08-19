@@ -413,6 +413,133 @@ b32 compare_c_string(string_ref my_str, const char* c_str)
 	return result;
 }
 
+i64 string_to_int(string_ref str)
+{
+	i64 result = 0;
+	if (str.ptr)
+	{
+		char* next_after_last_char = str.ptr + str.string_size;
+		result = SDL_strtol((char*)str.ptr, &next_after_last_char, 10);
+	}
+	return result;
+}
+
+r64 string_to_float(string_ref str)
+{
+	r64 result = 0;
+	if (str.ptr)
+	{
+		char* next_after_last_char = str.ptr + str.string_size;
+		result = SDL_strtod((char*)str.ptr, &next_after_last_char);
+	}
+	return result;
+}
+
+char* get_c_str(memory_arena* arena, string_ref str)
+{
+	char* new_c_str = (char*)push_size(arena, str.string_size + 1);
+	{
+		char* new_c_str_char = new_c_str;
+		for (u32 char_index = 0; char_index < str.string_size; )
+		{
+			*new_c_str_char = *(str.ptr + char_index);
+			new_c_str_char++;
+			char_index++;
+		}
+		*(new_c_str + str.string_size) = '\0';
+	}
+	return new_c_str;
+}
+
+inline b32 is_whitespace(char c)
+{
+	b32 result = (c == ' ' || c == '\r' || c == '\t' || c == '\n');
+	return result;
+}
+
+i32* parse_array_of_ints(memory_arena* arena, u32 array_length, string_ref str, char delimiter)
+{
+	i32* arr = push_array(arena, array_length, i32);
+	u32 current_int_index = 0;
+	char* start = 0;
+	char* end = 0;
+	for (u32 char_index = 0;
+		char_index < str.string_size;
+		char_index++)
+	{
+		char* c = str.ptr + char_index;
+		if (*c == delimiter)
+		{
+			end = c;
+			if (start)
+			{
+				int new_int = SDL_strtol(start, &end, 10);
+				if (current_int_index < array_length)
+				{
+					arr[current_int_index++] = new_int;
+					start = 0;
+					end = 0;
+				}
+				else
+				{
+					// błąd - wyczerpaliśmy miejsce, a jest jeszcze string do parsowania
+					break;
+				}
+			}
+			else
+			{
+				// przypadek gdy mamy podwójny delimiter bądź plik zaczął się od delimitera
+				end = 0;
+				continue;
+			}
+		}
+		else if (SDL_isdigit(*c))
+		{
+			if (start == 0)
+			{
+				// zaczyna się nowa liczba
+				start = c;
+			}
+			else
+			{
+				// mamy starą liczbę
+				continue;
+			}
+		}
+		else if (is_whitespace(*c))
+		{
+			if (start != 0)
+			{
+				// traktujemy jako delimiter
+				end = c;
+				int new_int = SDL_strtol(start, &end, 10);
+				if (current_int_index < array_length)
+				{
+					arr[current_int_index++] = new_int;
+					start = 0;
+					end = 0;
+				}
+				else
+				{
+					// błąd - wyczerpaliśmy miejsce, a jest jeszcze string do parsowania
+					break;
+				}
+			}
+			else
+			{
+				// po prostu idziemy naprzód
+				continue;
+			}
+		}
+		else
+		{
+			// mamy błąd - napotkaliśmy coś, co nie jest ani liczbą, ani delimiterem...
+			continue;
+		}
+	}
+	return arr;
+}
+
 enum xml_token_type
 {
 	LEFT_CHEVRON, // <
@@ -583,12 +710,6 @@ inline char peek(scanner* scan)
 	{
 		return '\0';
 	}
-}
-
-inline b32 is_whitespace(char c)
-{
-	b32 result = (c == ' ' || c == '\r' || c == '\t' || c == '\n');
-	return result;
 }
 
 void omit_whitespace(scanner* scan)
@@ -1213,17 +1334,10 @@ string_ref get_attribute_value(xml_node* node, const char* attribute_name)
 	return result;
 }
 
-struct tilemap
+tilemap better_parse_tilemap(memory_arena* permanent_arena, read_file_result file)
 {
-	string_ref tilemap_source;
-	u32 width;
-	u32 height;
-	u32* tiles;
-	u32 tiles_count;
-};
+	tilemap map = {};
 
-void better_parse_tilemap(read_file_result file)
-{
 	int memory_for_parsing_size = megabytes_to_bytes(10);
 	void* memory_for_parsing = SDL_malloc(memory_for_parsing_size);
 
@@ -1264,11 +1378,7 @@ void better_parse_tilemap(read_file_result file)
 
 		xml_node* root = parse_tokens(&pars);
 		if (root)
-		{
-			debug_breakpoint;
-
-			tilemap map = {};
-
+		{		
 			xml_node* object_test = find_tag_in_nested_children(root, "object");
 
 			xml_node* map_node = find_tag_in_children(root, "map");
@@ -1276,10 +1386,58 @@ void better_parse_tilemap(read_file_result file)
 			{
 				string_ref width = get_attribute_value(map_node, "width");
 				string_ref height = get_attribute_value(map_node, "height");
-
+							
 				if (width.ptr && height.ptr)
 				{
-					//SDL_strtol()
+					i32 map_width = string_to_int(width);
+					i32 map_height = string_to_int(height);
+
+					xml_node* layer_node = find_tag_in_children(root, "layer");
+					string_ref layer_width_str = get_attribute_value(layer_node, "width");
+					string_ref layer_height_str = get_attribute_value(layer_node, "height");
+
+					if (layer_width_str.ptr && layer_height_str.ptr)
+					{
+						i32 layer_width = string_to_int(width);
+						i32 layer_height = string_to_int(height);
+						if (layer_width == map_width && layer_height == map_height)
+						{
+							map.width = map_width;
+							map.height = map_height;
+
+							xml_node* data_node = find_tag_in_children(layer_node, "data");
+							if (data_node)
+							{
+								string_ref data = data_node->inner_text;		
+
+								string_ref encoding_str = get_attribute_value(data_node, "encoding");
+								if (compare_c_string(encoding_str, "csv"))
+								{
+									map.tiles_count = map.width * map.height;
+									// to powinno być już do permanent area
+									map.tiles = parse_array_of_ints(permanent_arena, map.tiles_count, data, ',');
+
+									debug_breakpoint;
+								}
+								else
+								{
+									// błąd
+								}
+							}
+							else
+							{
+								// błąd
+							}
+						}
+						else
+						{
+							// błąd
+						}
+					}
+					else
+					{
+						// błąd
+					}					
 				}
 				else
 				{
@@ -1294,4 +1452,6 @@ void better_parse_tilemap(read_file_result file)
 	}
 
 	SDL_free(memory_for_parsing);
+
+	return map;
 }

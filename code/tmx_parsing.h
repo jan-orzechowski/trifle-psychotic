@@ -1,9 +1,7 @@
 ﻿#pragma once
 
 #include "main.h"
-
-void parse_tilemap(read_file_result);
-void better_parse_tilemap(read_file_result);
+#include "jorutils.h"
 
 enum tmx_node_type // już wszystkie
 {
@@ -47,3 +45,15 @@ struct tmx_node
 	int attributes_count;
 	char* inner_text;
 };
+
+struct tilemap
+{
+	//string_ref tilemap_source;
+	u32 width;
+	u32 height;
+	i32* tiles;
+	u32 tiles_count;
+};
+
+void parse_tilemap(read_file_result);
+tilemap better_parse_tilemap(memory_arena*, read_file_result);

@@ -200,13 +200,17 @@ int main(int argc, char* args[])
 	{
 		bool run = true;
 
-		SDL_Event e;
+		memory_arena arena = {};
+		u32 memory_for_permanent_arena_size = megabytes_to_bytes(100);
+		void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);
+		initialize_memory_arena(&arena, memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
 
-		std::string map_path = "data/trifle_map_01.tmx";
-		read_file_result map = read_file(map_path);
+		SDL_Event e = {};
 
-		//parse_tilemap(map);
-		better_parse_tilemap(map);
+		std::string map_file_path = "data/trifle_map_01.tmx";
+		read_file_result map_file = read_file(map_file_path);
+
+		tilemap map = better_parse_tilemap(&arena, map_file);
 
 		while (run)
 		{
@@ -261,7 +265,7 @@ int main(int argc, char* args[])
 			SDL_RenderPresent(sdl_game.renderer);
 		}
 
-		delete map.contents;
+		delete map_file.contents;
 	}
 	else
 	{			
