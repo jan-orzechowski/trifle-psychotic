@@ -122,6 +122,20 @@ string_ref copy_c_string_to_memory_arena(memory_arena* arena, const char* str, u
 	return result;
 }
 
+string_ref c_string_to_string_ref(memory_arena* arena, const char* str, u32 max_string_length = 10000)
+{
+	u32 length = 0;
+	const char* str_temp = str;
+	while (*str_temp && length <= max_string_length)
+	{
+		str_temp++;
+		length++;
+	}
+
+	string_ref result = copy_c_string_to_memory_arena(arena, str, length);
+	return result;
+}
+
 inline b32 is_whitespace(char c)
 {
 	b32 result = (c == ' ' || c == '\r' || c == '\t' || c == '\n');
@@ -131,6 +145,23 @@ inline b32 is_whitespace(char c)
 b32 is_digit(char c)
 {
 	b32 result = (c >= '0' && c <= '9');
+	return result;
+}
+
+b32 is_all_digits(string_ref str)
+{
+	b32 result = true;
+	for (u32 char_index = 0;
+		char_index < str.string_size;
+		char_index++)
+	{
+		char c = *(str.ptr + char_index);
+		if (false == is_digit(c))
+		{
+			result = false;
+			break;
+		}
+	}
 	return result;
 }
 
@@ -166,6 +197,10 @@ string_ref omit_leading_whitespace(string_ref str)
 			{
 				new_start = c + 1;
 			}
+			else
+			{
+				break;
+			}
 		}
 
 		if (new_start != 0)
@@ -187,12 +222,59 @@ string_ref omit_leading_whitespace(string_ref str)
 	return result;
 }
 
+string_ref omit_trailing_whitespace(string_ref str)
+{
+	string_ref result = str;
+	if (false == is_empty_string(str))
+	{
+		char* new_end = 0;
+		for (u32 char_index = str.string_size - 1;
+			char_index >= 0;
+			char_index--)
+		{
+			char* c = (str.ptr + char_index);
+			if (is_whitespace(*c))
+			{
+				new_end = c;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		if (new_end != 0)
+		{
+			if (new_end < str.ptr)
+			{
+				result.ptr = 0;
+				result.string_size = 0;
+			}
+			else
+			{
+				u32 new_size = new_end - str.ptr;
+				result.ptr = str.ptr;
+				result.string_size = new_size;
+			}
+		}
+	}
+	return result;
+}
+
 i32 parse_i32(string_ref str)
 {
 	i32 result = 0;
+	b32 negative = false;
 
 	str = omit_leading_whitespace(str);
-	if (str.string_size > 0)
+	if (*str.ptr == '-')
+	{
+		negative = true;
+		str.ptr++;
+		str.string_size--;
+	}
+	str = omit_trailing_whitespace(str);
+	if (false == is_empty_string(str) && is_all_digits(str))
 	{
 		i32 digits_count = str.string_size;
 		if (*(str.ptr + str.string_size) = '\0')
@@ -217,7 +299,7 @@ i32 parse_i32(string_ref str)
 				case '7': digit = 7; break;
 				case '8': digit = 8; break;
 				case '9': digit = 9; break;
-				case '\0': digit = 0; break;
+				case '\0':
 				default: goto function_parse_i32_end;
 			}
 			result += digit * decimal_place_multiplier;
@@ -226,6 +308,10 @@ i32 parse_i32(string_ref str)
 	}
 
 function_parse_i32_end:
+	if (negative)
+	{
+		result = -result;
+	}
 	return result;
 }
 
@@ -242,13 +328,71 @@ i32 parse_i32(char* start, char* end)
 	return result;
 }
 
-r64 parse_r64(string_ref str)
+u32 how_many_digits(u32 num)
 {
-	r64 result = 0;
-	if (str.ptr)
+	// u32 max to 4,294,967,295
+	u32 result = 0;
+	if (num < 10) { result = 1; }
+	else if (num < 100) { result = 2; }
+	else if (num < 1000) { result = 3; }
+	else if (num < 10000) { result = 4; }
+	else if (num < 100000) { result = 5; }
+	else if (num < 1000000) { result = 6; }
+	else if (num < 10000000) { result = 7; }
+	else if (num < 100000000) { result = 8; }
+	else if (num < 1000000000) { result = 9; }
+	else { result = 10; };
+	return result;
+}
+
+r32 parse_r32(string_ref str, char delimiter)
+{
+	r32 result = 0;
+	char* delimiter_ptr = 0;
+	b32 negative = false;
+
+	str = omit_leading_whitespace(str);
+	if (*str.ptr == '-')
 	{
-		char* next_after_last_char = str.ptr + str.string_size;
-		result = SDL_strtod((char*)str.ptr, &next_after_last_char);
+		negative = true;
+		str.ptr++;
+		str.string_size--;
+	}
+	str = omit_trailing_whitespace(str);
+
+	if (false == is_empty_string(str))
+	{
+		for (u32 char_index = 0; char_index < str.string_size; char_index++)
+		{
+			char* c = (str.ptr + char_index);
+			if (*c == delimiter)
+			{				
+				delimiter_ptr = c;
+				break;
+			}
+		}
+
+		if (delimiter_ptr)
+		{
+			string_ref fraction_part = {};
+			fraction_part.ptr = delimiter_ptr + 1;
+			fraction_part.string_size = (str.ptr + str.string_size) - fraction_part.ptr;
+			i32 fraction = parse_i32(fraction_part);
+
+			string_ref integer_part = {};
+			integer_part.ptr = str.ptr;
+			integer_part.string_size = delimiter_ptr - str.ptr;
+			i32 integer = parse_i32(integer_part);
+
+			u32 fraction_digits_number = how_many_digits(fraction);
+			result = integer + (r32)fraction / (r32)power(10, fraction_digits_number);
+		}
+
+	}
+
+	if (negative)
+	{
+		result = -result;
 	}
 	return result;
 }
