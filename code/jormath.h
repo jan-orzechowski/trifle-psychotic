@@ -2,6 +2,40 @@
 
 #include "jorutils.h"
 
+// podstawowe
+
+i32 multiply(i32 num, i32 multiplier, u32 times)
+{
+    i32 result;
+    if (times > 1)
+    {
+        result = multiply(num, multiplier, times - 1) * multiplier;
+    }
+    else
+    {
+        result = num * multiplier;
+    }
+    return result;
+}
+
+i32 power(i32 num, u32 exponent)
+{
+    i32 result;
+    if (exponent >= 2)
+    {
+        result = multiply(num, num, exponent - 1);
+    }
+    else if (exponent == 1)
+    {
+        result = num;
+    }
+    else // 0
+    {
+        result = 1;
+    }
+    return result;
+}
+
 // wektory
 
 union v2

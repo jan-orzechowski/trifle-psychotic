@@ -754,8 +754,8 @@ tilemap read_level_data_from_tmx_file(memory_arena* permanent_arena, read_file_r
 							
 				if (width.ptr && height.ptr)
 				{
-					i32 map_width = parse_i64(width);
-					i32 map_height = parse_i64(height);
+					i32 map_width = parse_i32(width);
+					i32 map_height = parse_i32(height);
 
 					xml_node* layer_node = find_tag_in_children(root, "layer");
 					string_ref layer_width_str = get_attribute_value(layer_node, "width");
@@ -763,8 +763,8 @@ tilemap read_level_data_from_tmx_file(memory_arena* permanent_arena, read_file_r
 
 					if (layer_width_str.ptr && layer_height_str.ptr)
 					{
-						i32 layer_width = parse_i64(width);
-						i32 layer_height = parse_i64(height);
+						i32 layer_width = parse_i32(layer_width_str);
+						i32 layer_height = parse_i32(height);
 						if (layer_width == map_width && layer_height == map_height)
 						{
 							map.width = map_width;

@@ -1,6 +1,7 @@
 ﻿#if !defined(JORSTRING)
 
 #include "jorutils.h"
+#include "jormath.h"
 #include <SDL.h>
 
 struct string_ref
@@ -9,11 +10,17 @@ struct string_ref
 	char* ptr;
 };
 
+b32 is_empty_string(string_ref str)
+{
+	b32 result = (str.ptr == 0 || str.string_size == 0);
+	return result;
+}
+
 b32 operator ==(string_ref a, string_ref b)
 {
 	b32 result = true;
 
-	if (a.ptr == NULL || b.ptr == NULL)
+	if (is_empty_string(a) || is_empty_string(b))
 	{
 		invalid_code_path;
 		result = false;
@@ -121,6 +128,12 @@ inline b32 is_whitespace(char c)
 	return result;
 }
 
+b32 is_digit(char c)
+{
+	b32 result = (c >= '0' && c <= '9');
+	return result;
+}
+
 b32 check_if_string_is_whitespace(string_ref str)
 {
 	b32 result = true;
@@ -138,13 +151,93 @@ b32 check_if_string_is_whitespace(string_ref str)
 	return result;
 }
 
-i64 parse_i64(string_ref str)
+string_ref omit_leading_whitespace(string_ref str)
 {
-	i64 result = 0;
-	if (str.ptr)
+	string_ref result = str;
+	if (false == is_empty_string(str))
 	{
-		char* next_after_last_char = str.ptr + str.string_size;
-		result = SDL_strtol((char*)str.ptr, &next_after_last_char, 10);
+		char* new_start = 0;
+		for (u32 char_index = 0;
+			char_index < str.string_size;
+			char_index++)
+		{
+			char* c = (str.ptr + char_index);
+			if (is_whitespace(*c))
+			{
+				new_start = c + 1;
+			}
+		}
+
+		if (new_start != 0)
+		{
+			if (new_start >= str.ptr + str.string_size)
+			{
+				result.ptr = 0;
+				result.string_size = 0;
+			}
+			else
+			{
+				char* old_end = str.ptr + str.string_size - 1;
+				u32 new_size = old_end - new_start;
+				result.ptr = new_start;
+				result.string_size = new_size;
+			}
+		}
+	}
+	return result;
+}
+
+i32 parse_i32(string_ref str)
+{
+	i32 result = 0;
+
+	str = omit_leading_whitespace(str);
+	if (str.string_size > 0)
+	{
+		i32 digits_count = str.string_size;
+		if (*(str.ptr + str.string_size) = '\0')
+		{
+			digits_count--;
+		}
+		i32 decimal_place_multiplier = power(10, digits_count - 1);
+
+		for (u32 char_index = 0; char_index < str.string_size; char_index++)
+		{
+			u8 digit = 0;
+			char c = *(str.ptr + char_index);
+			switch (c)
+			{
+				case '0': digit = 0; break;
+				case '1': digit = 1; break;
+				case '2': digit = 2; break;
+				case '3': digit = 3; break;
+				case '4': digit = 4; break;
+				case '5': digit = 5; break;
+				case '6': digit = 6; break;
+				case '7': digit = 7; break;
+				case '8': digit = 8; break;
+				case '9': digit = 9; break;
+				case '\0': digit = 0; break;
+				default: goto function_parse_i32_end;
+			}
+			result += digit * decimal_place_multiplier;
+			decimal_place_multiplier = decimal_place_multiplier / 10;
+		}
+	}
+
+function_parse_i32_end:
+	return result;
+}
+
+i32 parse_i32(char* start, char* end)
+{
+	i32 result = 0;
+	string_ref str = {};
+	str.ptr = start;
+	str.string_size = end - start;
+	if (start && end && str.string_size > 0)
+	{
+		result = parse_i32(str);
 	}
 	return result;
 }
@@ -176,7 +269,7 @@ i32* parse_array_of_i32(memory_arena* arena, u32 array_length, string_ref str, c
 			end = c;
 			if (start)
 			{
-				i32 new_int = (i32)SDL_strtol(start, &end, 10);
+				i32 new_int = (i32)parse_i32(start, end);
 				if (current_int_index < array_length)
 				{
 					arr[current_int_index++] = new_int;
@@ -196,7 +289,7 @@ i32* parse_array_of_i32(memory_arena* arena, u32 array_length, string_ref str, c
 				continue;
 			}
 		}
-		else if (SDL_isdigit(*c))
+		else if (is_digit(*c))
 		{
 			if (start == 0)
 			{
@@ -215,7 +308,7 @@ i32* parse_array_of_i32(memory_arena* arena, u32 array_length, string_ref str, c
 			{
 				// traktujemy jako delimiter
 				end = c;
-				i32 new_int = (i32)SDL_strtol(start, &end, 10);
+				i32 new_int = (i32)parse_i32(start, end);
 				if (current_int_index < array_length)
 				{
 					arr[current_int_index++] = new_int;
