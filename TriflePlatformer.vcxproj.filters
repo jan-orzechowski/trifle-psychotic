@@ -30,9 +30,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="data\test.xml" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="code\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

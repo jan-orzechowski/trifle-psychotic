@@ -248,7 +248,32 @@ u32 get_tile_value(level map, u32 x_coord, u32 y_coord)
 	return result;	
 }
 
-b32 move(level map, v2 player_pos, v2 target_pos)
+b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
+{
+	u32 x_coord = (tile_value - 1) % collision_ref_level.width;
+	u32 y_coord = (tile_value - 1) / collision_ref_level.width;
+
+	debug_breakpoint;
+
+	b32 collides = false;
+	u32 collision_tile_value = get_tile_value(collision_ref_level, x_coord, y_coord);
+	u32 first_gid = 3137; // tymczasowe, potrzebna jest obsługa GID w tmx
+	collision_tile_value -= first_gid;
+	collision_tile_value++;
+
+	switch (collision_tile_value)
+	{
+		case 2:
+		case 3:
+		{
+			collides = true;
+		}
+		break;
+	}
+	return collides;
+}
+
+b32 move(level map, level collision_ref, v2 player_pos, v2 target_pos)
 {
 	b32 result = true;
 
@@ -258,7 +283,7 @@ b32 move(level map, v2 player_pos, v2 target_pos)
 	debug_breakpoint;
 
 	u32 target_tile_value = get_tile_value(map, x_coord, y_coord);
-	if (target_tile_value == 0)
+	if (is_tile_colliding(collision_ref, target_tile_value))
 	{
 		result = false;
 	}
@@ -280,10 +305,13 @@ int main(int argc, char* args[])
 
 		SDL_Event e = {};
 
+		std::string collision_file_path = "data/collision_map.tmx";
+		read_file_result collision_file = read_file(collision_file_path);
+		level collision_ref = read_level_from_tmx_file(&arena, collision_file, "collision");
+
 		std::string map_file_path = "data/trifle_map_01.tmx";
 		read_file_result map_file = read_file(map_file_path);
-
-		level map = read_level_from_tmx_file(&arena, map_file);
+		level map = read_level_from_tmx_file(&arena, map_file, "map");
 
 		v2 player_pos = {5, 5};
 		r32 player_speed = 0.10f;
@@ -336,7 +364,7 @@ int main(int argc, char* args[])
 				}		
 			}
 
-			if (move(map, player_pos, target_pos))
+			if (move(map, collision_ref, player_pos, target_pos))
 			{
 				player_pos = target_pos;
 			}
@@ -374,7 +402,7 @@ int main(int argc, char* args[])
 				char buffer[100];
 				SDL_Color text_color = { 0, 0, 0, 0 };
 				int error = SDL_snprintf(buffer, 100, "Player pos: (%0.2f,%0.2f)", player_pos.x, player_pos.y);
-				render_text(sdl_game, buffer, 0, 250, text_color);
+				render_text(sdl_game, buffer, 0, 350, text_color);
 			}
 
 			SDL_RenderPresent(sdl_game.renderer);

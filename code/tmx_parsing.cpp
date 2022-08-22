@@ -652,7 +652,7 @@ xml_node* find_tag_in_nested_children(xml_node* node, const char* tag)
 	return result;
 }
 
-xml_node* find_tag_with_attribute_in_children(xml_node* node, const char* tag, const char* attribute_name)
+xml_node* find_tag_with_attribute_in_children(xml_node* node, const char* tag, const char* attr_name, const char* attr_value)
 {
 	xml_node* result = NULL;
 
@@ -665,32 +665,27 @@ xml_node* find_tag_with_attribute_in_children(xml_node* node, const char* tag, c
 			if (compare_to_c_string(child->tag, tag))
 			{
 				node_with_tag = child;
-				break;
+				xml_attribute* attribute = node_with_tag->first_attribute;
+				while (attribute)
+				{
+					if (compare_to_c_string(attribute->name, attr_name)
+						&& compare_to_c_string(attribute->value, attr_value))
+					{
+						result = node_with_tag;
+						goto find_tag_with_attribute_in_children_end;
+					}
+					else
+					{
+						attribute = attribute->next;
+					}
+				}
 			}
-			else
-			{
-				child = child->next;
-			}
+						
+			child = child->next;			
 		}
 	}
 
-	if (node_with_tag)
-	{
-		xml_attribute* attribute = node_with_tag->first_attribute;
-		while (attribute)
-		{
-			if (compare_to_c_string(attribute->name, attribute_name))
-			{
-				result = node_with_tag;
-				break;
-			}
-			else
-			{
-				attribute = attribute->next;
-			}
-		}
-	}
-
+	find_tag_with_attribute_in_children_end:
 	return result;
 }
 
@@ -716,7 +711,7 @@ string_ref get_attribute_value(xml_node* node, const char* attribute_name)
 	return result;
 }
 
-level read_level_from_tmx_file(memory_arena* permanent_arena, read_file_result file)
+level read_level_from_tmx_file(memory_arena* permanent_arena, read_file_result file, const char* layer_name)
 {
 	level map = {};
 
@@ -759,7 +754,8 @@ level read_level_from_tmx_file(memory_arena* permanent_arena, read_file_result f
 					i32 map_width = parse_i32(width);
 					i32 map_height = parse_i32(height);
 
-					xml_node* layer_node = find_tag_in_children(root, "layer");
+					xml_node* layer_node = find_tag_with_attribute_in_children(root, "layer", "name", layer_name);
+
 					string_ref layer_width_str = get_attribute_value(layer_node, "width");
 					string_ref layer_height_str = get_attribute_value(layer_node, "height");
 

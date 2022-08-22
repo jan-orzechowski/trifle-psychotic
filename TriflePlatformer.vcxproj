@@ -155,9 +155,6 @@
     <Image Include="gfx\surt_tileset.png" />
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="data\test.xml" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="code\main.cpp" />
     <ClCompile Include="code\tmx_parsing.cpp" />
   </ItemGroup>
