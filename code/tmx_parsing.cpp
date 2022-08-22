@@ -725,6 +725,8 @@ tilemap read_level_data_from_tmx_file(memory_arena* permanent_arena, read_file_r
 	void* memory_for_parsing = SDL_malloc(memory_for_parsing_size);
 	initialize_memory_arena(&parsing_arena, memory_for_parsing_size, (byte*)memory_for_parsing);
 
+	string_function_test(&parsing_arena);
+
 	xml_scanner scan = {};
 	scan.source = (char*)file.contents;
 	scan.source_length = file.size;

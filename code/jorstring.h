@@ -480,5 +480,44 @@ i32* parse_array_of_i32(memory_arena* arena, u32 array_length, string_ref str, c
 	return arr;
 }
 
+void string_function_test(memory_arena* test_arena)
+{
+	temporary_memory test = begin_temporary_memory(test_arena);
+
+	string_ref integer = c_string_to_string_ref(test_arena, "  100  ");
+	i32 integer_parsed = parse_i32(integer);
+	assert(integer_parsed == 100);
+
+	string_ref integer2 = c_string_to_string_ref(test_arena, "432358192");
+	i32 integer2_parsed = parse_i32(integer2);
+	assert(integer2_parsed == 432358192);
+
+	string_ref integer3 = c_string_to_string_ref(test_arena, "-2137");
+	i32 integer3_parsed = parse_i32(integer3);
+	assert(integer3_parsed == -2137);
+
+	string_ref integer4 = c_string_to_string_ref(test_arena, "   -10   ");
+	i32 integer4_parsed = parse_i32(integer4);
+	assert(integer4_parsed == -10);
+
+	string_ref fraction1 = c_string_to_string_ref(test_arena, "  10,0  ");
+	r32 fraction1_parsed = parse_r32(fraction1, ',');
+	assert(fraction1_parsed == 10);
+
+	string_ref fraction2 = c_string_to_string_ref(test_arena, "10.5");
+	r32 fraction2_parsed = parse_r32(fraction2, '.');
+	assert(fraction2_parsed == 10.5f);
+
+	string_ref fraction3 = c_string_to_string_ref(test_arena, "123.123");
+	r32 fraction3_parsed = parse_r32(fraction3, '.');
+	assert(fraction3_parsed == 123.123f);
+
+	string_ref fraction4 = c_string_to_string_ref(test_arena, "-192.19");
+	r32 fraction4_parsed = parse_r32(fraction4, '.');
+	assert(fraction4_parsed == -192.19f);
+
+	end_temporary_memory(test);
+}
+
 #define JORSTRING
 #endif
