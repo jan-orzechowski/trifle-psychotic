@@ -716,9 +716,9 @@ string_ref get_attribute_value(xml_node* node, const char* attribute_name)
 	return result;
 }
 
-tilemap read_level_data_from_tmx_file(memory_arena* permanent_arena, read_file_result file)
+level read_level_from_tmx_file(memory_arena* permanent_arena, read_file_result file)
 {
-	tilemap map = {};
+	level map = {};
 
 	memory_arena parsing_arena = {};
 	u32 memory_for_parsing_size = megabytes_to_bytes(10);

@@ -1,6 +1,7 @@
 ﻿#include "main.h"
 #include "tmx_parsing.h"
 #include "jorutils.h"
+#include "jormath.h"
 
 void print_sdl_error()
 {
@@ -199,20 +200,70 @@ read_file_result read_file(std::string path)
 
 SDL_Rect get_tile_rect(u32 tile_id)
 {
-	// id liczą się od 1, nie od zera
-	u32 column = (tile_id - 1) % TILESET_WIDTH;
-	u32 row = (tile_id - 1) / TILESET_WIDTH;
-
-	u32 x = column * TILE_X_SIZE;
-	u32 y = row * TILE_Y_SIZE;
-
 	SDL_Rect tile_rect = {};
-	tile_rect.x = x;
-	tile_rect.y = y;
-	tile_rect.w = TILE_X_SIZE;
-	tile_rect.h = TILE_Y_SIZE;
+	if (tile_id == 0)
+	{
+		
+	}
+	else
+	{
+		// id liczą się od 1, nie od zera
+		u32 column = (tile_id - 1) % TILESET_WIDTH;
+		u32 row = (tile_id - 1) / TILESET_WIDTH;
 
+		u32 x = column * TILE_X_SIZE;
+		u32 y = row * TILE_Y_SIZE;
+
+		tile_rect.x = x;
+		tile_rect.y = y;
+		tile_rect.w = TILE_X_SIZE;
+		tile_rect.h = TILE_Y_SIZE;
+	}
+	
 	return tile_rect;
+}
+
+struct tile_pos
+{
+	u32 x;
+	u32 y;
+};
+
+tile_pos get_tile_pos(u32 x_coord, u32 y_coord)
+{
+	tile_pos result = {};
+	result.x = x_coord;
+	result.y = y_coord;
+	return result;
+}
+
+u32 get_tile_value(level map, u32 x_coord, u32 y_coord)
+{
+	u32 result = 0;
+	if (x_coord < map.width && y_coord < map.height)
+	{
+		u32 tile_index = x_coord + (map.width * y_coord);
+		result = map.tiles[tile_index];
+	}
+	return result;	
+}
+
+b32 move(level map, v2 player_pos, v2 target_pos)
+{
+	b32 result = true;
+
+	u32 x_coord = (u32)target_pos.x;
+	u32 y_coord = (u32)target_pos.y;
+
+	debug_breakpoint;
+
+	u32 target_tile_value = get_tile_value(map, x_coord, y_coord);
+	if (target_tile_value == 0)
+	{
+		result = false;
+	}
+
+	return result;
 }
 
 int main(int argc, char* args[])
@@ -232,11 +283,18 @@ int main(int argc, char* args[])
 		std::string map_file_path = "data/trifle_map_01.tmx";
 		read_file_result map_file = read_file(map_file_path);
 
-		tilemap map = read_level_data_from_tmx_file(&arena, map_file);
+		level map = read_level_from_tmx_file(&arena, map_file);
 
+		v2 player_pos = {5, 5};
+		r32 player_speed = 0.10f;
+
+		v2 target_pos = player_pos;
+		
 		while (run)
 		{
 			game_input input = {};
+
+			target_pos = player_pos;
 
 			while (SDL_PollEvent(&e) != 0)
 			{
@@ -251,27 +309,36 @@ int main(int argc, char* args[])
 						case SDLK_UP:
 						case SDLK_w:
 							input.up.number_of_presses++;
-							printf("UP\n");
+							target_pos.y = player_pos.y - player_speed;
+							//printf("UP\n");
 							break;
 						case SDLK_DOWN:
 						case SDLK_s:
 							input.down.number_of_presses++;
-							printf("DOWN\n");
+							target_pos.y = player_pos.y + player_speed;
+							//printf("DOWN\n");
 							break;
 						case SDLK_LEFT:
 						case SDLK_a:
 							input.left.number_of_presses++;
-							printf("LEFT\n");
+							target_pos.x = player_pos.x - player_speed;
+							//printf("LEFT\n");
 							break;
 						case SDLK_RIGHT:
 						case SDLK_d:
-							input.right.number_of_presses++;
-							printf("RIGHT\n");
+							input.right.number_of_presses++;							
+							target_pos.x = player_pos.x + player_speed;
+							//printf("RIGHT\n");
 							break;
 						default:
 							break;
 					}
 				}		
+			}
+
+			if (move(map, player_pos, target_pos))
+			{
+				player_pos = target_pos;
 			}
 
 			SDL_Texture* texture_to_draw = sdl_game.tileset_texture;
@@ -295,11 +362,20 @@ int main(int argc, char* args[])
 				}
 			}
 
-			/*{
-				SDL_Color text_color = { 255, 255, 255, 0 };
-				std::string text_test = "najwyrazniej ten piekny font nie obsluguje polskich znakow";
-				render_text(sdl_game, text_test, 0, 50, text_color);
-			}*/
+			SDL_Rect tile_bitmap = get_tile_rect(1);
+			SDL_Rect player_rect = {};
+			player_rect.h = 16;
+			player_rect.w = 16;
+			player_rect.x = (player_pos.x * 16) - 8;
+			player_rect.y = (player_pos.y * 16) - 16;
+			SDL_RenderCopy(sdl_game.renderer, texture_to_draw, &tile_bitmap, &player_rect);
+			
+			{
+				char buffer[100];
+				SDL_Color text_color = { 0, 0, 0, 0 };
+				int error = SDL_snprintf(buffer, 100, "Player pos: (%0.2f,%0.2f)", player_pos.x, player_pos.y);
+				render_text(sdl_game, buffer, 0, 250, text_color);
+			}
 
 			SDL_RenderPresent(sdl_game.renderer);
 		}

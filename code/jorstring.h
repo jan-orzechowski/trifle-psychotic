@@ -1,7 +1,7 @@
 ﻿#if !defined(JORSTRING)
 
 #include "jorutils.h"
-#include "jormath.h"
+//#include "jormath.h"
 #include <SDL.h>
 
 struct string_ref
@@ -260,6 +260,8 @@ string_ref omit_trailing_whitespace(string_ref str)
 	}
 	return result;
 }
+
+i32 power(i32, u32);
 
 i32 parse_i32(string_ref str)
 {

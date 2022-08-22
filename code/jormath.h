@@ -1,4 +1,4 @@
-﻿#pragma once
+﻿#if !defined(JORMATH)
 
 #include "jorutils.h"
 
@@ -1037,3 +1037,6 @@ struct coordinate_system
     v2 x_axis; // względem origin (0,0)
     v2 y_axis; // względem origin (0,0)
 };
+
+#define JORMATH
+#endif

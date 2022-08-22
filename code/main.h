@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <string>
+#include "jorutils.h"
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
@@ -40,4 +41,13 @@ struct game_input
 	key_press down;
 	key_press left;
 	key_press right;
+};
+
+struct level
+{
+	//string_ref tilemap_source;
+	u32 width;
+	u32 height;
+	i32* tiles;
+	u32 tiles_count;
 };
