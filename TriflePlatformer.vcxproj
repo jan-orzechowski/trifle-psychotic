@@ -162,6 +162,7 @@
     <ClCompile Include="code\tmx_parsing.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="code\jormath.h" />
     <ClInclude Include="code\jorutils.h" />
     <ClInclude Include="code\main.h" />
     <ClInclude Include="code\tmx_parsing.h" />

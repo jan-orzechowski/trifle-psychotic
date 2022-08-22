@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <string>
 
+#include "jormath.h"
+
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 

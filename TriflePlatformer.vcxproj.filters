@@ -53,5 +53,8 @@
     <ClInclude Include="code\jorstring.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="code\jormath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
