@@ -223,17 +223,39 @@ SDL_Rect get_tile_rect(u32 tile_id)
 	return tile_rect;
 }
 
-struct tile_pos
+struct tile_position
 {
 	u32 x;
 	u32 y;
 };
 
-tile_pos get_tile_pos(u32 x_coord, u32 y_coord)
+tile_position get_tile_position(u32 tile_x, u32 tile_y)
 {
-	tile_pos result = {};
-	result.x = x_coord;
-	result.y = y_coord;
+	tile_position result = {};
+	result.x = tile_x;
+	result.y = tile_y;
+	return result;
+}
+
+tile_position get_tile_position(v2 world_position)
+{
+	tile_position result = {};
+	// każde pole ma środek w pełnych współrzędnych, np. (1, 1) i ma szerokość boku 1
+	// tak więc zamieniamy np. (0.6, 0.6) -> (1, 1), (1.6, 1.6) -> (2, 2)
+	result.x = (u32)(world_position.x + 0.5f);
+	result.y = (u32)(world_position.y + 0.5f);
+	return result;
+}
+
+v2 get_tile_v2_position(u32 tile_x, u32 tile_y)
+{
+	v2 result = get_v2(tile_x, tile_y);
+	return result;
+}
+
+v2 get_tile_v2_position(tile_position tile)
+{
+	v2 result = get_tile_v2_position(tile.x, tile.y);
 	return result;
 }
 
@@ -273,21 +295,159 @@ b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
 	return collides;
 }
 
-b32 move(level map, level collision_ref, v2 player_pos, v2 target_pos)
+// nie ma znaczenia, czy sprawdzamy na osi x, czy y
+b32 check_line_intersection(r32 start_coord, r32 movement_delta, r32 line_coord, r32* movement_perc)
 {
-	b32 result = true;
+	b32 result = false;
 
-	u32 x_coord = (u32)target_pos.x;
-	u32 y_coord = (u32)target_pos.y;
-
-	debug_breakpoint;
-
-	u32 target_tile_value = get_tile_value(map, x_coord, y_coord);
-	if (is_tile_colliding(collision_ref, target_tile_value))
+	r32 distance_to_line = line_coord - start_coord;
+	if (movement_delta == 0)
 	{
-		result = false;
+		result = false; // jesteśmy równolegli do ściany        
 	}
+	else if (start_coord == line_coord)
+	{
+		result = false; // stoimy dokładnie na ścianie
+	}
+	else
+	{
+		*movement_perc = distance_to_line / movement_delta;
+		if (*movement_perc < 0.0f)
+		{
+			result = false; // ściana jest w drugą stronę
+		}
+		else if (*movement_perc > 1.0f)
+		{
+			result = false; // nie trafimy w tej klatce
+		}
+		else
+		{
+			result = true;
+		}
+	}
+	return result;
+}
 
+// działa także, gdy zamienimy x z y
+b32 check_segment_intersection (v2 movement_start, v2 movement_delta, r32 line_x, 
+	r32 min_segment_y, r32 max_segment_y, r32* min_movement_perc)
+{
+	b32 result = false;
+	r32 movement_perc = 0;
+	if (check_line_intersection(movement_start.x, movement_delta.x, line_x, &movement_perc))
+	{
+		v2 intersection_pos = movement_start + (movement_perc * movement_delta);
+		// wiemy, że trafiliśmy w linię - sprawdzamy, czy mieścimy się w zakresie, który nas interesuje
+		if (intersection_pos.y > min_segment_y && intersection_pos.y < max_segment_y)
+		{
+			result = true;
+			if (*min_movement_perc > movement_perc)
+			{
+				*min_movement_perc = movement_perc;
+			}
+		}
+	}
+	return result;
+}
+
+void move(level map, level collision_ref, v2* player_pos, v2 target_pos)
+{
+	b32 moved = true;
+
+	//*player_pos = get_v2(0, 0);
+	//target_pos = get_v2(10.5f, 10.5f);
+
+	r32 movement_apron = 0.0001f;
+	v2 player_delta = target_pos - *player_pos;
+	if (false == is_zero(player_delta))
+	{
+		r32 min_movement_perc = 1.0f;
+		b32 was_intersection = false;
+
+		tile_position player_tile = get_tile_position(*player_pos);
+		tile_position target_tile = get_tile_position(target_pos);
+
+		i32 min_tile_x_to_check = min(player_tile.x, target_tile.x);
+		i32 min_tile_y_to_check = min(player_tile.y, target_tile.y);
+		i32 max_tile_x_to_check = max(player_tile.x, target_tile.x);
+		i32 max_tile_y_to_check = max(player_tile.y, target_tile.y);
+
+		for (i32 tile_y_to_check = min_tile_y_to_check;
+			tile_y_to_check <= max_tile_y_to_check;
+			tile_y_to_check++)
+		{
+			for (i32 tile_x_to_check = min_tile_x_to_check;
+				tile_x_to_check <= max_tile_x_to_check;
+				tile_x_to_check++)
+			{
+				//u32 tile_value = 1;
+				u32 tile_value = get_tile_value(map, tile_x_to_check, tile_y_to_check);
+				v2 tile_to_check_pos = get_tile_v2_position(get_tile_position(tile_x_to_check, tile_y_to_check));
+				if (is_tile_colliding(collision_ref, tile_value))
+				{
+					v2 relative_player_pos = *player_pos - tile_to_check_pos;
+
+					// pseudominkowski
+					// czyli uwzględnienie rozmiaru pola
+					relative_player_pos += get_v2(0.5f, 0.5f);
+
+					b32 west = check_segment_intersection(
+						get_v2(relative_player_pos.x, relative_player_pos.y), player_delta,
+						0.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od zachodu
+
+					b32 east = check_segment_intersection(
+						get_v2(relative_player_pos.x, relative_player_pos.y), player_delta,
+						1.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od wschodu
+
+					// uwaga: zamienione miejscami x z y
+					b32 north = check_segment_intersection(
+						get_v2(relative_player_pos.y, relative_player_pos.x), get_v2(player_delta.y, player_delta.x),
+						1.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od północy
+
+					b32 south = check_segment_intersection(
+						get_v2(relative_player_pos.y, relative_player_pos.x), get_v2(player_delta.y, player_delta.x),
+						0.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od południa
+
+					was_intersection = (was_intersection || west || east || north || south);
+				}
+			}
+		}
+
+		if (was_intersection)
+		{
+			printf("kolizja\n");
+		}
+
+		if ((min_movement_perc - movement_apron) > 0.0f)
+		{
+			v2 possible_movement = player_delta * (min_movement_perc - movement_apron);
+			*player_pos += possible_movement;
+		}
+	}
+}
+
+#define TILE_SIDE_IN_PIXELS 16
+
+// kształt każdego obiektu w grze ma środek w pozycji w świecie tego obiektu
+SDL_Rect get_render_rect(v2 position, rect entity_rect)
+{
+	v2 entity_rect_dim = get_rect_dimensions(entity_rect);
+	SDL_Rect result = {};
+	result.w = entity_rect_dim.x;
+	result.h = entity_rect_dim.y;	
+	result.x = (position.x * entity_rect_dim.x) - (entity_rect_dim.x / 2);
+	result.y = (position.y * entity_rect_dim.y) - (entity_rect_dim.y / 2);
+	return result;
+}
+
+// każde pole ma środek w miejscu o pełnych współrzędnych, np. (1, 1)
+SDL_Rect get_tile_render_rect(v2 position)
+{
+	SDL_Rect result = {};
+	result.w = TILE_SIDE_IN_PIXELS;
+	result.h = TILE_SIDE_IN_PIXELS;
+	result.x = (position.x * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
+	result.y = (position.y * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
 	return result;
 }
 
@@ -313,8 +473,8 @@ int main(int argc, char* args[])
 		read_file_result map_file = read_file(map_file_path);
 		level map = read_level_from_tmx_file(&arena, map_file, "map");
 
-		v2 player_pos = {5, 5};
-		r32 player_speed = 0.10f;
+		v2 player_pos = {0, 0};
+		r32 player_speed = 0.4f;
 
 		v2 target_pos = player_pos;
 		
@@ -364,10 +524,7 @@ int main(int argc, char* args[])
 				}		
 			}
 
-			if (move(map, collision_ref, player_pos, target_pos))
-			{
-				player_pos = target_pos;
-			}
+			move(map, collision_ref, &player_pos, target_pos);			
 
 			SDL_Texture* texture_to_draw = sdl_game.tileset_texture;
 			SDL_RenderClear(sdl_game.renderer);
@@ -380,22 +537,13 @@ int main(int argc, char* args[])
 					u32 tile_value = map.tiles[tile_in_map_index];
 					SDL_Rect tile_bitmap = get_tile_rect(tile_value);
 
-					SDL_Rect screen_rect = {};
-					screen_rect.h = 16;
-					screen_rect.w = 16;
-					screen_rect.x = x_coord * 16;
-					screen_rect.y = y_coord * 16;
-
+					SDL_Rect screen_rect = get_tile_render_rect(get_v2(x_coord, y_coord));
 					SDL_RenderCopy(sdl_game.renderer, texture_to_draw, &tile_bitmap, &screen_rect);
 				}
 			}
 
 			SDL_Rect tile_bitmap = get_tile_rect(1);
-			SDL_Rect player_rect = {};
-			player_rect.h = 16;
-			player_rect.w = 16;
-			player_rect.x = (player_pos.x * 16) - 8;
-			player_rect.y = (player_pos.y * 16) - 16;
+			SDL_Rect player_rect = get_tile_render_rect(player_pos);
 			SDL_RenderCopy(sdl_game.renderer, texture_to_draw, &tile_bitmap, &player_rect);
 			
 			{
