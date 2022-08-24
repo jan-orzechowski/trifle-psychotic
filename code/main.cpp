@@ -107,7 +107,7 @@ sdl_game_data init_sdl()
 				int ttf_init = TTF_Init();
 				if (ttf_init == 0) // wg dokumentacji 0 oznacza sukces
 				{
-					TTF_Font* font = TTF_OpenFont("gfx/kenney_pixel.ttf", 20);
+					TTF_Font* font = TTF_OpenFont("gfx/kenney_pixel.ttf", 15);
 					if (font)
 					{
 						sdl_game.font = font;
@@ -561,8 +561,16 @@ int main(int argc, char* args[])
 
 		v2 target_pos = {};
 		
+		u64 current_ticks_number = SDL_GetPerformanceCounter();
+		u64 last_ticks_number = 0;
+		r32 delta_time = 0;
+
 		while (run)
-		{
+		{		
+			last_ticks_number = current_ticks_number;
+			current_ticks_number = SDL_GetPerformanceCounter();
+			delta_time = ((current_ticks_number - last_ticks_number) * 1000 / (r32)SDL_GetPerformanceFrequency());
+
 			game_input input = {};
 
 			target_pos = game->player_pos;
@@ -610,7 +618,8 @@ int main(int argc, char* args[])
 			move(game, &game->player_pos, target_pos);
 
 			SDL_Texture* texture_to_draw = sdl_game.tileset_texture;
-			SDL_RenderClear(sdl_game.renderer);
+			//SDL_SetRenderDrawColor(sdl_game.renderer, 0, 0, 0, 0);
+			//SDL_RenderClear(sdl_game.renderer);
 
 			for (u32 y_coord = 0; y_coord < 20; y_coord++)
 			{
@@ -638,13 +647,17 @@ int main(int argc, char* args[])
 			SDL_RenderCopy(sdl_game.renderer, texture_to_draw, &player_bitmap, &player_rect);
 	
 			{
+				r32 fps = 1 / delta_time;
+
 				char buffer[100];
 				SDL_Color text_color = { 255, 255, 255, 0 };
-				int error = SDL_snprintf(buffer, 100, "Player pos: (%0.2f,%0.2f)", game->player_pos.x, game->player_pos.y);
-				render_text(sdl_game, buffer, 0, 290, text_color);
+				int error = SDL_snprintf(buffer, 100, "Delta: %0.2f, %0.f FPS: Player pos: (%0.2f,%0.2f)", delta_time, fps, game->player_pos.x, game->player_pos.y);
+				render_text(sdl_game, buffer, 0, 200, text_color);
 			}
 
 			SDL_RenderPresent(sdl_game.renderer);
+
+			last_ticks_number = SDL_GetPerformanceFrequency();
 		}
 
 		delete map_file.contents;
