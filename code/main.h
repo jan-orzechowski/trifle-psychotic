@@ -59,7 +59,7 @@ struct level
 
 struct entity_type
 {
-	rect collision_rect;
+	v2 collision_rect_dim;
 	SDL_Rect graphics;
 	b32 collides;
 };
@@ -74,7 +74,7 @@ struct game_data
 {
 	v2 player_pos;
 	r32 player_speed;
-	rect player_collision_rect;
+	v2 player_collision_rect_dim;
 
 	level current_level;
 	level collision_reference;

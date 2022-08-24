@@ -346,13 +346,16 @@ b32 check_line_intersection(r32 start_coord, r32 movement_delta, r32 line_coord,
 }
 
 // działa także, gdy zamienimy x z y
-b32 check_segment_intersection (v2 movement_start, v2 movement_delta, r32 line_x, 
-	r32 min_segment_y, r32 max_segment_y, r32* min_movement_perc)
+b32 check_segment_intersection (r32 movement_start_x, r32 movement_start_y, 
+	r32 movement_delta_x, r32 movement_delta_y,
+	r32 line_x, r32 min_segment_y, r32 max_segment_y, r32* min_movement_perc)
 {
 	b32 result = false;
 	r32 movement_perc = 0;
-	if (check_line_intersection(movement_start.x, movement_delta.x, line_x, &movement_perc))
+	if (check_line_intersection(movement_start_x, movement_delta_x, line_x, &movement_perc))
 	{
+		v2 movement_start = get_v2(movement_start_x, movement_start_y);
+		v2 movement_delta = get_v2(movement_delta_x, movement_delta_y);
 		v2 intersection_pos = movement_start + (movement_perc * movement_delta);
 		// wiemy, że trafiliśmy w linię - sprawdzamy, czy mieścimy się w zakresie, który nas interesuje
 		if (intersection_pos.y > min_segment_y && intersection_pos.y < max_segment_y)
@@ -379,28 +382,25 @@ entity* add_entity(game_data* game, v2 position, entity_type* type)
 }
 
 void move(game_data* game, v2* player_pos, v2 target_pos)
-{
-	b32 moved = true;
-
-	//*player_pos = get_v2(0, 0);
-	//target_pos = get_v2(10.5f, 10.5f);
-
-	r32 movement_apron = 0.0001f;
+{	
 	v2 player_delta = target_pos - *player_pos;
 	if (false == is_zero(player_delta))
 	{
+		r32 movement_apron = 0.0001f;
 		r32 min_movement_perc = 1.0f;
 		b32 was_intersection = false;
 
 		// collision with tiles
 		{
+			v2 tile_collision_rect_dim = get_v2(1.0f, 1.0f);
+			
 			tile_position player_tile = get_tile_position(*player_pos);
 			tile_position target_tile = get_tile_position(target_pos);
 
-			i32 min_tile_x_to_check = min(player_tile.x, target_tile.x);
-			i32 min_tile_y_to_check = min(player_tile.y, target_tile.y);
-			i32 max_tile_x_to_check = max(player_tile.x, target_tile.x);
-			i32 max_tile_y_to_check = max(player_tile.y, target_tile.y);
+			i32 min_tile_x_to_check = min(player_tile.x - 1, target_tile.x - 1);
+			i32 min_tile_y_to_check = min(player_tile.y - 1, target_tile.y - 1);
+			i32 max_tile_x_to_check = max(player_tile.x + 1, target_tile.x + 1);
+			i32 max_tile_y_to_check = max(player_tile.y + 1, target_tile.y + 1);
 
 			for (i32 tile_y_to_check = min_tile_y_to_check;
 				tile_y_to_check <= max_tile_y_to_check;
@@ -410,33 +410,35 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 					tile_x_to_check <= max_tile_x_to_check;
 					tile_x_to_check++)
 				{
-					//u32 tile_value = 1;
 					u32 tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check);
 					v2 tile_to_check_pos = get_tile_v2_position(get_tile_position(tile_x_to_check, tile_y_to_check));
 					if (is_tile_colliding(game->collision_reference, tile_value))
 					{
 						v2 relative_player_pos = *player_pos - tile_to_check_pos;
 
-						// pseudominkowski
-						// czyli uwzględnienie rozmiaru pola
-						relative_player_pos += get_v2(0.5f, 0.5f);
+						// środkiem zsumowanej figury jest (0,0,0)
+						// pozycję playera traktujemy jako odległość od 0
+						// 0 jest pozycją entity, z którym sprawdzamy kolizję
+
+						v2 minkowski_dimensions = game->player_collision_rect_dim + tile_collision_rect_dim;
+						v2 min_corner = minkowski_dimensions * -0.5f;
+						v2 max_corner = minkowski_dimensions * 0.5f;
 
 						b32 west = check_segment_intersection(
-							get_v2(relative_player_pos.x, relative_player_pos.y), player_delta,
-							0.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od zachodu
+							relative_player_pos.x, relative_player_pos.y, player_delta.x, player_delta.y,
+							min_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od zachodu
 
 						b32 east = check_segment_intersection(
-							get_v2(relative_player_pos.x, relative_player_pos.y), player_delta,
-							1.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od wschodu
+							relative_player_pos.x, relative_player_pos.y, player_delta.x, player_delta.y,
+							max_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od wschodu
 
-						// uwaga: zamienione miejscami x z y
 						b32 north = check_segment_intersection(
-							get_v2(relative_player_pos.y, relative_player_pos.x), get_v2(player_delta.y, player_delta.x),
-							1.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od północy
+							relative_player_pos.y, relative_player_pos.x, player_delta.y, player_delta.x,
+							max_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od północy
 
 						b32 south = check_segment_intersection(
-							get_v2(relative_player_pos.y, relative_player_pos.x), get_v2(player_delta.y, player_delta.x),
-							0.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od południa
+							relative_player_pos.y, relative_player_pos.x, player_delta.y, player_delta.x,
+							min_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od południa
 
 						was_intersection = (was_intersection || west || east || north || south);
 					}
@@ -453,26 +455,25 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 				{
 					v2 relative_player_pos = *player_pos - entity->position;
 
-					// pseudominkowski
-					// czyli uwzględnienie rozmiaru pola
-					relative_player_pos += get_v2(0.5f, 0.5f);
+					v2 minkowski_dimensions = game->player_collision_rect_dim + entity->type->collision_rect_dim;
+					v2 min_corner = minkowski_dimensions * -0.5f;
+					v2 max_corner = minkowski_dimensions * 0.5f;
 
 					b32 west = check_segment_intersection(
-						get_v2(relative_player_pos.x, relative_player_pos.y), player_delta,
-						0.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od zachodu
+						relative_player_pos.x, relative_player_pos.y, player_delta.x, player_delta.y,
+						min_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od zachodu
 
 					b32 east = check_segment_intersection(
-						get_v2(relative_player_pos.x, relative_player_pos.y), player_delta,
-						1.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od wschodu
+						relative_player_pos.x, relative_player_pos.y, player_delta.x, player_delta.y,
+						max_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od wschodu
 
-					// uwaga: zamienione miejscami x z y
 					b32 north = check_segment_intersection(
-						get_v2(relative_player_pos.y, relative_player_pos.x), get_v2(player_delta.y, player_delta.x),
-						1.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od północy
+						relative_player_pos.y, relative_player_pos.x, player_delta.y, player_delta.x,
+						max_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od północy
 
 					b32 south = check_segment_intersection(
-						get_v2(relative_player_pos.y, relative_player_pos.x), get_v2(player_delta.y, player_delta.x),
-						0.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od południa
+						relative_player_pos.y, relative_player_pos.x, player_delta.y, player_delta.x,
+						min_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od południa
 
 					was_intersection = (was_intersection || west || east || north || south);
 				}
@@ -541,7 +542,7 @@ int main(int argc, char* args[])
 
 		game->player_pos = {0, 0};
 		game->player_speed = 0.4f;
-		game->player_collision_rect = get_rect_from_dimensions(get_zero_v2(), get_v2(1.0f, 1.0f));
+		game->player_collision_rect_dim = get_v2(1.0f, 1.0f);
 
 		game->entity_types_count = 5;
 		game->entity_types = push_array(&arena, game->entity_types_count, entity_type);
@@ -551,7 +552,7 @@ int main(int argc, char* args[])
 		game->entities = push_array(&arena, game->entities_max_count, entity);
 
 		entity_type* default_entity_type = &game->entity_types[0];
-		default_entity_type->collision_rect = get_rect_from_dimensions(get_zero_v2(), get_v2(1.0f, 1.0f));
+		default_entity_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 		default_entity_type->graphics = get_tile_rect(837);
 		default_entity_type->collides = true;
 
