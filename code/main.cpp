@@ -219,9 +219,7 @@ read_file_result read_file(std::string path)
 	return result;
 }
 
-#define TILESET_WIDTH 64
-#define TILE_X_SIZE 16
-#define TILE_Y_SIZE 16
+
 
 SDL_Rect get_tile_rect(u32 tile_id)
 {
@@ -236,23 +234,17 @@ SDL_Rect get_tile_rect(u32 tile_id)
 		u32 column = (tile_id - 1) % TILESET_WIDTH;
 		u32 row = (tile_id - 1) / TILESET_WIDTH;
 
-		u32 x = column * TILE_X_SIZE;
-		u32 y = row * TILE_Y_SIZE;
+		u32 x = column * TILE_SIDE_IN_PIXELS;
+		u32 y = row * TILE_SIDE_IN_PIXELS;
 
 		tile_rect.x = x;
 		tile_rect.y = y;
-		tile_rect.w = TILE_X_SIZE;
-		tile_rect.h = TILE_Y_SIZE;
+		tile_rect.w = TILE_SIDE_IN_PIXELS;
+		tile_rect.h = TILE_SIDE_IN_PIXELS;
 	}
 	
 	return tile_rect;
 }
-
-struct tile_position
-{
-	u32 x;
-	u32 y;
-};
 
 tile_position get_tile_position(u32 tile_x, u32 tile_y)
 {
@@ -375,7 +367,18 @@ b32 check_segment_intersection (v2 movement_start, v2 movement_delta, r32 line_x
 	return result;
 }
 
-void move(level map, level collision_ref, v2* player_pos, v2 target_pos)
+entity* add_entity(game_data* game, v2 position, entity_type* type)
+{
+	assert(game->entities_count + 1 < game->entities_max_count);
+
+	entity* new_entity = &game->entities[game->entities_count];
+	game->entities_count++;
+	new_entity->position = position;
+	new_entity->type = type;
+	return new_entity;
+}
+
+void move(game_data* game, v2* player_pos, v2 target_pos)
 {
 	b32 moved = true;
 
@@ -389,28 +392,66 @@ void move(level map, level collision_ref, v2* player_pos, v2 target_pos)
 		r32 min_movement_perc = 1.0f;
 		b32 was_intersection = false;
 
-		tile_position player_tile = get_tile_position(*player_pos);
-		tile_position target_tile = get_tile_position(target_pos);
-
-		i32 min_tile_x_to_check = min(player_tile.x, target_tile.x);
-		i32 min_tile_y_to_check = min(player_tile.y, target_tile.y);
-		i32 max_tile_x_to_check = max(player_tile.x, target_tile.x);
-		i32 max_tile_y_to_check = max(player_tile.y, target_tile.y);
-
-		for (i32 tile_y_to_check = min_tile_y_to_check;
-			tile_y_to_check <= max_tile_y_to_check;
-			tile_y_to_check++)
+		// collision with tiles
 		{
-			for (i32 tile_x_to_check = min_tile_x_to_check;
-				tile_x_to_check <= max_tile_x_to_check;
-				tile_x_to_check++)
+			tile_position player_tile = get_tile_position(*player_pos);
+			tile_position target_tile = get_tile_position(target_pos);
+
+			i32 min_tile_x_to_check = min(player_tile.x, target_tile.x);
+			i32 min_tile_y_to_check = min(player_tile.y, target_tile.y);
+			i32 max_tile_x_to_check = max(player_tile.x, target_tile.x);
+			i32 max_tile_y_to_check = max(player_tile.y, target_tile.y);
+
+			for (i32 tile_y_to_check = min_tile_y_to_check;
+				tile_y_to_check <= max_tile_y_to_check;
+				tile_y_to_check++)
 			{
-				//u32 tile_value = 1;
-				u32 tile_value = get_tile_value(map, tile_x_to_check, tile_y_to_check);
-				v2 tile_to_check_pos = get_tile_v2_position(get_tile_position(tile_x_to_check, tile_y_to_check));
-				if (is_tile_colliding(collision_ref, tile_value))
+				for (i32 tile_x_to_check = min_tile_x_to_check;
+					tile_x_to_check <= max_tile_x_to_check;
+					tile_x_to_check++)
 				{
-					v2 relative_player_pos = *player_pos - tile_to_check_pos;
+					//u32 tile_value = 1;
+					u32 tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check);
+					v2 tile_to_check_pos = get_tile_v2_position(get_tile_position(tile_x_to_check, tile_y_to_check));
+					if (is_tile_colliding(game->collision_reference, tile_value))
+					{
+						v2 relative_player_pos = *player_pos - tile_to_check_pos;
+
+						// pseudominkowski
+						// czyli uwzględnienie rozmiaru pola
+						relative_player_pos += get_v2(0.5f, 0.5f);
+
+						b32 west = check_segment_intersection(
+							get_v2(relative_player_pos.x, relative_player_pos.y), player_delta,
+							0.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od zachodu
+
+						b32 east = check_segment_intersection(
+							get_v2(relative_player_pos.x, relative_player_pos.y), player_delta,
+							1.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od wschodu
+
+						// uwaga: zamienione miejscami x z y
+						b32 north = check_segment_intersection(
+							get_v2(relative_player_pos.y, relative_player_pos.x), get_v2(player_delta.y, player_delta.x),
+							1.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od północy
+
+						b32 south = check_segment_intersection(
+							get_v2(relative_player_pos.y, relative_player_pos.x), get_v2(player_delta.y, player_delta.x),
+							0.0f, 0.0f, 1.0f, &min_movement_perc); // ściana od południa
+
+						was_intersection = (was_intersection || west || east || north || south);
+					}
+				}
+			}
+		}
+
+		// collision with entities
+		{
+			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
+			{
+				entity* entity = game->entities + entity_index;		
+				if (entity->type->collides)
+				{
+					v2 relative_player_pos = *player_pos - entity->position;
 
 					// pseudominkowski
 					// czyli uwzględnienie rozmiaru pola
@@ -451,8 +492,6 @@ void move(level map, level collision_ref, v2* player_pos, v2 target_pos)
 	}
 }
 
-#define TILE_SIDE_IN_PIXELS 16
-
 // kształt każdego obiektu w grze ma środek w pozycji w świecie tego obiektu
 SDL_Rect get_render_rect(v2 position, rect entity_rect)
 {
@@ -490,24 +529,42 @@ int main(int argc, char* args[])
 
 		SDL_Event e = {};
 
+		game_data* game = push_struct(&arena, game_data);
+
 		std::string collision_file_path = "data/collision_map.tmx";
 		read_file_result collision_file = read_file(collision_file_path);
-		level collision_ref = read_level_from_tmx_file(&arena, collision_file, "collision");
+		game->collision_reference = read_level_from_tmx_file(&arena, collision_file, "collision");
 
 		std::string map_file_path = "data/trifle_map_01.tmx";
 		read_file_result map_file = read_file(map_file_path);
-		level map = read_level_from_tmx_file(&arena, map_file, "map");
+		game->current_level = read_level_from_tmx_file(&arena, map_file, "map");
 
-		v2 player_pos = {0, 0};
-		r32 player_speed = 0.4f;
+		game->player_pos = {0, 0};
+		game->player_speed = 0.4f;
+		game->player_collision_rect = get_rect_from_dimensions(get_zero_v2(), get_v2(1.0f, 1.0f));
 
-		v2 target_pos = player_pos;
+		game->entity_types_count = 5;
+		game->entity_types = push_array(&arena, game->entity_types_count, entity_type);
+			
+		game->entities_count = 0;
+		game->entities_max_count = 1000;
+		game->entities = push_array(&arena, game->entities_max_count, entity);
+
+		entity_type* default_entity_type = &game->entity_types[0];
+		default_entity_type->collision_rect = get_rect_from_dimensions(get_zero_v2(), get_v2(1.0f, 1.0f));
+		default_entity_type->graphics = get_tile_rect(837);
+		default_entity_type->collides = true;
+
+		add_entity(game, get_v2(2.0f, 2.0f), default_entity_type);
+		add_entity(game, get_v2(4.0f, 4.0f), default_entity_type);
+
+		v2 target_pos = {};
 		
 		while (run)
 		{
 			game_input input = {};
 
-			target_pos = player_pos;
+			target_pos = game->player_pos;
 
 			while (SDL_PollEvent(&e) != 0)
 			{
@@ -522,25 +579,25 @@ int main(int argc, char* args[])
 						case SDLK_UP:
 						case SDLK_w:
 							input.up.number_of_presses++;
-							target_pos.y = player_pos.y - player_speed;
+							target_pos.y = game->player_pos.y - game->player_speed;
 							//printf("UP\n");
 							break;
 						case SDLK_DOWN:
 						case SDLK_s:
 							input.down.number_of_presses++;
-							target_pos.y = player_pos.y + player_speed;
+							target_pos.y = game->player_pos.y + game->player_speed;
 							//printf("DOWN\n");
 							break;
 						case SDLK_LEFT:
 						case SDLK_a:
 							input.left.number_of_presses++;
-							target_pos.x = player_pos.x - player_speed;
+							target_pos.x = game->player_pos.x - game->player_speed;
 							//printf("LEFT\n");
 							break;
 						case SDLK_RIGHT:
 						case SDLK_d:
 							input.right.number_of_presses++;							
-							target_pos.x = player_pos.x + player_speed;
+							target_pos.x = game->player_pos.x + game->player_speed;
 							//printf("RIGHT\n");
 							break;
 						default:
@@ -549,7 +606,7 @@ int main(int argc, char* args[])
 				}		
 			}
 
-			move(map, collision_ref, &player_pos, target_pos);			
+			move(game, &game->player_pos, target_pos);
 
 			SDL_Texture* texture_to_draw = sdl_game.tileset_texture;
 			SDL_RenderClear(sdl_game.renderer);
@@ -558,8 +615,8 @@ int main(int argc, char* args[])
 			{
 				for (u32 x_coord = 0; x_coord < 20; x_coord++)
 				{
-					u32 tile_in_map_index = x_coord + (map.width * y_coord);
-					u32 tile_value = map.tiles[tile_in_map_index];
+					u32 tile_in_map_index = x_coord + (game->current_level.width * y_coord);
+					u32 tile_value = game->current_level.tiles[tile_in_map_index];
 					SDL_Rect tile_bitmap = get_tile_rect(tile_value);
 
 					SDL_Rect screen_rect = get_tile_render_rect(get_v2(x_coord, y_coord));
@@ -567,15 +624,23 @@ int main(int argc, char* args[])
 				}
 			}
 
-			SDL_Rect tile_bitmap = get_tile_rect(1);
-			SDL_Rect player_rect = get_tile_render_rect(player_pos);
-			SDL_RenderCopy(sdl_game.renderer, texture_to_draw, &tile_bitmap, &player_rect);
-			
+			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
+			{
+				entity* entity = game->entities + entity_index;
+				SDL_Rect entity_bitmap = entity->type->graphics;
+				SDL_Rect entity_rect = get_tile_render_rect(entity->position);
+				SDL_RenderCopy(sdl_game.renderer, texture_to_draw, &entity_bitmap, &entity_rect);
+			}
+
+			SDL_Rect player_bitmap = get_tile_rect(1);
+			SDL_Rect player_rect = get_tile_render_rect(game->player_pos);
+			SDL_RenderCopy(sdl_game.renderer, texture_to_draw, &player_bitmap, &player_rect);
+	
 			{
 				char buffer[100];
-				SDL_Color text_color = { 0, 0, 0, 0 };
-				int error = SDL_snprintf(buffer, 100, "Player pos: (%0.2f,%0.2f)", player_pos.x, player_pos.y);
-				render_text(sdl_game, buffer, 0, 350, text_color);
+				SDL_Color text_color = { 255, 255, 255, 0 };
+				int error = SDL_snprintf(buffer, 100, "Player pos: (%0.2f,%0.2f)", game->player_pos.x, game->player_pos.y);
+				render_text(sdl_game, buffer, 0, 290, text_color);
 			}
 
 			SDL_RenderPresent(sdl_game.renderer);
