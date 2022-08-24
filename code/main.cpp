@@ -24,6 +24,34 @@ void print_sdl_ttf_error()
 	invalid_code_path;
 }
 
+SDL_Renderer* get_renderer(SDL_Window* window)
+{
+	SDL_Renderer* renderer = NULL;
+	for (int driver_index = 0; driver_index < SDL_GetNumRenderDrivers(); ++driver_index)
+	{
+		SDL_RendererInfo rendererInfo = {};
+		SDL_GetRenderDriverInfo(driver_index, &rendererInfo);
+		// direct3d11 i direct3d powoduje freeze
+		if (rendererInfo.name != std::string("direct3d11"))
+		{
+			continue;
+		}
+
+		//renderer = SDL_CreateRenderer(window, driver_index, 0);
+		//printf("found direct3d11\n");
+		break;
+	}
+
+	if (renderer == 0)
+	{
+		// SDL_RENDERER_ACCELERATED powoduje na moim komputerze freeze - trzeba zbadać sprawę
+		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+		printf("direct3d11 not found - software renderer used\n");
+	}
+
+	return renderer;
+}
+
 sdl_game_data init_sdl()
 {
 	sdl_game_data sdl_game = {};
@@ -42,9 +70,8 @@ sdl_game_data init_sdl()
 			SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 
 		if (sdl_game.window)
-		{
-			// SDL_RENDERER_ACCELERATED powoduje zawieszenie się komputera - trzeba zbadać sprawę
-			sdl_game.renderer = SDL_CreateRenderer(sdl_game.window, -1, SDL_RENDERER_SOFTWARE);
+		{		
+			sdl_game.renderer = get_renderer(sdl_game.window);
 			if (sdl_game.renderer)
 			{
 				SDL_SetRenderDrawColor(sdl_game.renderer, 0xFF, 0xFF, 0xFF, 0xFF);

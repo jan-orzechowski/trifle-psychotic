@@ -8,8 +8,8 @@
 #include <string>
 #include "jorutils.h"
 
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 240
 
 struct sdl_game_data
 {
