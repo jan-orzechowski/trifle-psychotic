@@ -155,6 +155,8 @@
     <Image Include="gfx\surt_tileset.png" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="code\jormath.cpp" />
+    <ClCompile Include="code\jorstring.cpp" />
     <ClCompile Include="code\main.cpp" />
     <ClCompile Include="code\tmx_parsing.cpp" />
   </ItemGroup>

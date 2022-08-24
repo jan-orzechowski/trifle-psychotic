@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <string>
 #include "jorutils.h"
+#include "jormath.h"
+#include "jorstring.h"
 
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240

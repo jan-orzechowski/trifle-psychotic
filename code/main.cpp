@@ -1,7 +1,5 @@
 ﻿#include "main.h"
 #include "tmx_parsing.h"
-#include "jorutils.h"
-#include "jormath.h"
 
 void print_sdl_error()
 {

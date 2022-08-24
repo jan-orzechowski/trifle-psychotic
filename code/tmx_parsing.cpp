@@ -1,7 +1,4 @@
-﻿#include <SDL.h>
-#include "tmx_parsing.h"
-#include "jorutils.h"
-#include "jorstring.h"
+﻿#include "tmx_parsing.h"
 
 enum xml_token_type
 {
