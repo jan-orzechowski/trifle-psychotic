@@ -47,7 +47,7 @@ SDL_Renderer* get_renderer(SDL_Window* window)
 		printf("direct3d11 not found - software renderer used\n");
 	}
 
-	SDL_RenderSetScale(renderer, 2, 2);
+	SDL_RenderSetScale(renderer, SCALING_FACTOR, SCALING_FACTOR);
 
 	return renderer;
 }
@@ -566,42 +566,39 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input inpu
 
 	i32 center_screen_x = player_tile_pos.x;
 	i32 center_screen_y = player_tile_pos.y;
-	i32 screen_half_width = 10;
-	i32 screen_half_height = 10;
+	i32 screen_half_width = SDL_ceil(HALF_SCREEN_WIDTH_IN_TILES) + 1;
+	i32 screen_half_height = SDL_ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 1;
 
-	i32 x_begin = center_screen_x - screen_half_width;
-	i32 x_end = center_screen_x + screen_half_width;
-	i32 y_begin = center_screen_y - screen_half_height;
-	i32 y_end = center_screen_y + screen_half_height;
-	
-	if (x_begin < 0) x_begin = 0;
-	if (y_begin < 0) y_begin = 0;
-	if (x_end > game->current_level.width) x_end = game->current_level.width;
-	if (y_end > game->current_level.height) y_end = game->current_level.height;
-
-	for (u32 y_coord = y_begin;
-		y_coord < y_end;
-		y_coord++)
+	for (i32 y_coord_relative = -screen_half_height;
+		y_coord_relative < screen_half_height;
+		y_coord_relative++)
 	{
-		for (u32 x_coord = x_begin;
-			x_coord < x_end;
-			x_coord++)
+		i32 y_coord_on_screen = y_coord_relative + screen_half_height;
+		i32 y_coord_in_world = player_tile_pos.y + y_coord_relative;
+		for (i32 x_coord_relative = -screen_half_width;
+			x_coord_relative < screen_half_width;
+			x_coord_relative++)
 		{
-			u32 tile_value = get_tile_value(game->current_level, x_coord, y_coord);
+			i32 x_coord_on_screen = x_coord_relative + screen_half_width;
+			i32 x_coord_in_world = player_tile_pos.x + x_coord_relative;
+
+			u32 tile_value = get_tile_value(game->current_level, x_coord_in_world, y_coord_in_world);
 			SDL_Rect tile_bitmap = get_tile_rect(tile_value);
 
 			SDL_Rect screen_rect = get_tile_render_rect(
-				get_v2(x_coord, y_coord) - game->player_pos);
+				get_v2(x_coord_on_screen, y_coord_on_screen) - player_offset_in_tile);
 			SDL_RenderCopy(sdl_game->renderer, texture_to_draw, &tile_bitmap, &screen_rect);
 		}
 	}
 
+	v2 center_screen = get_v2(HALF_SCREEN_WIDTH_IN_TILES + 1, HALF_SCREEN_HEIGHT_IN_TILES + 1);
 	for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 	{
 		entity* entity = game->entities + entity_index;
 		SDL_Rect entity_bitmap = entity->type->graphics;
-		SDL_Rect entity_rect = get_tile_render_rect(entity->position);
-		SDL_RenderCopy(sdl_game->renderer, texture_to_draw, &entity_bitmap, &entity_rect);
+		v2 relative_position = center_screen + (entity->position - game->player_pos);
+		SDL_Rect screen_rect = get_tile_render_rect(relative_position);
+		SDL_RenderCopy(sdl_game->renderer, texture_to_draw, &entity_bitmap, &screen_rect);
 	}
 
 	SDL_Rect player_bitmap = get_tile_rect(1);
