@@ -47,6 +47,8 @@ SDL_Renderer* get_renderer(SDL_Window* window)
 		printf("direct3d11 not found - software renderer used\n");
 	}
 
+	SDL_RenderSetScale(renderer, 2, 2);
+
 	return renderer;
 }
 
@@ -77,7 +79,7 @@ sdl_game_data init_sdl()
 				int img_flags = IMG_INIT_PNG;
 				if (IMG_Init(img_flags) & img_flags)
 				{
-					SDL_Surface* loaded_surface = IMG_Load("gfx/surt_tileset.png");
+					SDL_Surface* loaded_surface = IMG_Load("gfx/tileset.png");
 					if (loaded_surface)
 					{
 						SDL_Texture* tileset = SDL_CreateTextureFromSurface(sdl_game.renderer, loaded_surface);
@@ -107,7 +109,7 @@ sdl_game_data init_sdl()
 				int ttf_init = TTF_Init();
 				if (ttf_init == 0) // wg dokumentacji 0 oznacza sukces
 				{
-					TTF_Font* font = TTF_OpenFont("gfx/kenney_pixel.ttf", 15);
+					TTF_Font* font = TTF_OpenFont("gfx/font.ttf", 15);
 					if (font)
 					{
 						sdl_game.font = font;
@@ -276,10 +278,13 @@ v2 get_tile_v2_position(tile_position tile)
 	return result;
 }
 
-u32 get_tile_value(level map, u32 x_coord, u32 y_coord)
+u32 get_tile_value(level map, i32 x_coord, i32 y_coord)
 {
 	u32 result = 0;
-	if (x_coord < map.width && y_coord < map.height)
+	if (x_coord >= 0
+		&& y_coord >= 0
+		&& x_coord < map.width 
+		&& y_coord < map.height)
 	{
 		u32 tile_index = x_coord + (map.width * y_coord);
 		result = map.tiles[tile_index];
@@ -296,9 +301,9 @@ b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
 
 	b32 collides = false;
 	u32 collision_tile_value = get_tile_value(collision_ref_level, x_coord, y_coord);
-	u32 first_gid = 3137; // tymczasowe, potrzebna jest obsługa GID w tmx
-	collision_tile_value -= first_gid;
-	collision_tile_value++;
+	//u32 first_gid = 1; // tymczasowe, potrzebna jest obsługa GID w tmx
+	//collision_tile_value -= first_gid;
+	//collision_tile_value++;
 
 	switch (collision_tile_value)
 	{
@@ -548,19 +553,45 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input inpu
 
 	move(game, &game->player_pos, target_pos);
 
+	u32 scaling_factor = 2;
+
 	SDL_Texture* texture_to_draw = sdl_game->tileset_texture;
 	SDL_SetRenderDrawColor(sdl_game->renderer, 0, 255, 0, 0);
 	SDL_RenderClear(sdl_game->renderer);
 
-	for (u32 y_coord = 0; y_coord < 20; y_coord++)
+	tile_position player_tile_pos = get_tile_position(game->player_pos);	
+	v2 player_offset_in_tile = get_v2(
+		game->player_pos.x - (r32)player_tile_pos.x, 
+		game->player_pos.y - (r32)player_tile_pos.y);
+
+	i32 center_screen_x = player_tile_pos.x;
+	i32 center_screen_y = player_tile_pos.y;
+	i32 screen_half_width = 10;
+	i32 screen_half_height = 10;
+
+	i32 x_begin = center_screen_x - screen_half_width;
+	i32 x_end = center_screen_x + screen_half_width;
+	i32 y_begin = center_screen_y - screen_half_height;
+	i32 y_end = center_screen_y + screen_half_height;
+	
+	if (x_begin < 0) x_begin = 0;
+	if (y_begin < 0) y_begin = 0;
+	if (x_end > game->current_level.width) x_end = game->current_level.width;
+	if (y_end > game->current_level.height) y_end = game->current_level.height;
+
+	for (u32 y_coord = y_begin;
+		y_coord < y_end;
+		y_coord++)
 	{
-		for (u32 x_coord = 0; x_coord < 20; x_coord++)
+		for (u32 x_coord = x_begin;
+			x_coord < x_end;
+			x_coord++)
 		{
-			u32 tile_in_map_index = x_coord + (game->current_level.width * y_coord);
-			u32 tile_value = game->current_level.tiles[tile_in_map_index];
+			u32 tile_value = get_tile_value(game->current_level, x_coord, y_coord);
 			SDL_Rect tile_bitmap = get_tile_rect(tile_value);
 
-			SDL_Rect screen_rect = get_tile_render_rect(get_v2(x_coord, y_coord));
+			SDL_Rect screen_rect = get_tile_render_rect(
+				get_v2(x_coord, y_coord) - game->player_pos);
 			SDL_RenderCopy(sdl_game->renderer, texture_to_draw, &tile_bitmap, &screen_rect);
 		}
 	}
@@ -574,7 +605,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input inpu
 	}
 
 	SDL_Rect player_bitmap = get_tile_rect(1);
-	SDL_Rect player_rect = get_tile_render_rect(game->player_pos);
+	SDL_Rect player_rect = get_tile_render_rect(get_v2(screen_half_width, screen_half_height));
 	SDL_RenderCopy(sdl_game->renderer, texture_to_draw, &player_bitmap, &player_rect);
 
 	render_debug_information(sdl_game, game);
@@ -600,15 +631,13 @@ int main(int argc, char* args[])
 		void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);
 		initialize_memory_arena(&arena, memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
 
-		SDL_Event e = {};
-
 		game_data* game = push_struct(&arena, game_data);
 
 		std::string collision_file_path = "data/collision_map.tmx";
 		read_file_result collision_file = read_file(collision_file_path);
 		game->collision_reference = read_level_from_tmx_file(&arena, collision_file, "collision");
 
-		std::string map_file_path = "data/trifle_map_01.tmx";
+		std::string map_file_path = "data/map_01.tmx";
 		read_file_result map_file = read_file(map_file_path);
 		game->current_level = read_level_from_tmx_file(&arena, map_file, "map");
 
@@ -631,25 +660,21 @@ int main(int argc, char* args[])
 		add_entity(game, get_v2(2.0f, 2.0f), default_entity_type);
 		add_entity(game, get_v2(4.0f, 4.0f), default_entity_type);
 
-		v2 target_pos = {};
 		u32 frame_counter = 0;
 
 		r32 target_hz = 30;
 		r32 target_elapsed_ms = 1000 / target_hz;
 		r32 elapsed_work_ms = 0;
-		
 		r64 delta_time = 1 / target_hz;
-
+		
 		while (run)
 		{		
 			frame_counter++;
 
-			game_input input = {};
-
-			target_pos = game->player_pos;
-
 			u32 start_work_counter = SDL_GetPerformanceCounter();
 			{
+				SDL_Event e = {};
+				game_input input = {};
 				while (SDL_PollEvent(&e) != 0)
 				{
 					if (e.type == SDL_QUIT)

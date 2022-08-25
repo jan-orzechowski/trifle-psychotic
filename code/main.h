@@ -10,8 +10,8 @@
 #include "jormath.h"
 #include "jorstring.h"
 
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 240
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480
 
 #define TILESET_WIDTH 64
 #define TILE_SIDE_IN_PIXELS 16
