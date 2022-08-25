@@ -23,6 +23,9 @@ struct sdl_game_data
 	SDL_Renderer* renderer;
 	SDL_Texture* tileset_texture;
 	TTF_Font* font;
+
+	u32 debug_frame_counter;
+	r32 debug_elapsed_work_ms;
 };
 
 void print_sdl_error();

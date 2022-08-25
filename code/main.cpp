@@ -153,12 +153,12 @@ sdl_game_data init_sdl()
 	}
 }
 
-void render_text(sdl_game_data sdl_game, std::string textureText, int x, int y, SDL_Color color)
+void render_text(sdl_game_data* sdl_game, std::string textureText, int x, int y, SDL_Color color)
 {
-	SDL_Surface* text_surface = TTF_RenderText_Solid(sdl_game.font, textureText.c_str(), color);
+	SDL_Surface* text_surface = TTF_RenderText_Solid(sdl_game->font, textureText.c_str(), color);
 	if (text_surface)
 	{
-		SDL_Texture* font_texture = SDL_CreateTextureFromSurface(sdl_game.renderer, text_surface);
+		SDL_Texture* font_texture = SDL_CreateTextureFromSurface(sdl_game->renderer, text_surface);
 		if (font_texture)
 		{
 			SDL_Rect dest = {};
@@ -167,7 +167,7 @@ void render_text(sdl_game_data sdl_game, std::string textureText, int x, int y, 
 			dest.x = x;
 			dest.y = y;
 
-			SDL_RenderCopy(sdl_game.renderer, font_texture, NULL, &dest);
+			SDL_RenderCopy(sdl_game->renderer, font_texture, NULL, &dest);
 			SDL_DestroyTexture(font_texture);
 		}
 		else
@@ -516,6 +516,78 @@ SDL_Rect get_tile_render_rect(v2 position)
 	return result;
 }
 
+void render_debug_information(sdl_game_data* sdl_game, game_data* game)
+{
+	char buffer[200];
+	SDL_Color text_color = { 0, 255, 255, 0 };
+	int error = SDL_snprintf(buffer, 200, "Frame: %d Elapsed: %0.2f ms, Player pos: (%0.2f,%0.2f)",
+		sdl_game->debug_frame_counter, sdl_game->debug_elapsed_work_ms, game->player_pos.x, game->player_pos.y);
+	render_text(sdl_game, buffer, 10, 100, text_color);
+}
+
+void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input input, r32 delta_time)
+{
+	v2 target_pos = game->player_pos;
+
+	if (input.up.number_of_presses > 0)
+	{
+		target_pos.y = game->player_pos.y - (game->player_speed * delta_time);
+	}
+	else if (input.down.number_of_presses > 0)
+	{
+		target_pos.y = game->player_pos.y + (game->player_speed * delta_time);
+	}
+	else if (input.left.number_of_presses > 0)
+	{
+		target_pos.x = game->player_pos.x - (game->player_speed * delta_time);
+	}
+	else if (input.right.number_of_presses > 0)
+	{
+		target_pos.x = game->player_pos.x + (game->player_speed * delta_time);
+	}
+
+	move(game, &game->player_pos, target_pos);
+
+	SDL_Texture* texture_to_draw = sdl_game->tileset_texture;
+	SDL_SetRenderDrawColor(sdl_game->renderer, 0, 255, 0, 0);
+	SDL_RenderClear(sdl_game->renderer);
+
+	for (u32 y_coord = 0; y_coord < 20; y_coord++)
+	{
+		for (u32 x_coord = 0; x_coord < 20; x_coord++)
+		{
+			u32 tile_in_map_index = x_coord + (game->current_level.width * y_coord);
+			u32 tile_value = game->current_level.tiles[tile_in_map_index];
+			SDL_Rect tile_bitmap = get_tile_rect(tile_value);
+
+			SDL_Rect screen_rect = get_tile_render_rect(get_v2(x_coord, y_coord));
+			SDL_RenderCopy(sdl_game->renderer, texture_to_draw, &tile_bitmap, &screen_rect);
+		}
+	}
+
+	for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
+	{
+		entity* entity = game->entities + entity_index;
+		SDL_Rect entity_bitmap = entity->type->graphics;
+		SDL_Rect entity_rect = get_tile_render_rect(entity->position);
+		SDL_RenderCopy(sdl_game->renderer, texture_to_draw, &entity_bitmap, &entity_rect);
+	}
+
+	SDL_Rect player_bitmap = get_tile_rect(1);
+	SDL_Rect player_rect = get_tile_render_rect(game->player_pos);
+	SDL_RenderCopy(sdl_game->renderer, texture_to_draw, &player_bitmap, &player_rect);
+
+	render_debug_information(sdl_game, game);
+
+	SDL_RenderPresent(sdl_game->renderer);
+}
+
+r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
+{
+	r32 result = ((end_counter - start_counter) * 1000) / (r64)SDL_GetPerformanceFrequency();
+	return result;
+}
+
 int main(int argc, char* args[])
 {
 	sdl_game_data sdl_game = init_sdl();
@@ -541,7 +613,7 @@ int main(int argc, char* args[])
 		game->current_level = read_level_from_tmx_file(&arena, map_file, "map");
 
 		game->player_pos = {0, 0};
-		game->player_speed = 0.4f;
+		game->player_speed = 5.0f;
 		game->player_collision_rect_dim = get_v2(1.0f, 1.0f);
 
 		game->entity_types_count = 5;
@@ -560,104 +632,80 @@ int main(int argc, char* args[])
 		add_entity(game, get_v2(4.0f, 4.0f), default_entity_type);
 
 		v2 target_pos = {};
+		u32 frame_counter = 0;
+
+		r32 target_hz = 30;
+		r32 target_elapsed_ms = 1000 / target_hz;
+		r32 elapsed_work_ms = 0;
 		
-		u64 current_ticks_number = SDL_GetPerformanceCounter();
-		u64 last_ticks_number = 0;
-		r32 delta_time = 0;
+		r64 delta_time = 1 / target_hz;
 
 		while (run)
 		{		
-			last_ticks_number = current_ticks_number;
-			current_ticks_number = SDL_GetPerformanceCounter();
-			delta_time = ((current_ticks_number - last_ticks_number) * 1000 / (r32)SDL_GetPerformanceFrequency());
+			frame_counter++;
 
 			game_input input = {};
 
 			target_pos = game->player_pos;
 
-			while (SDL_PollEvent(&e) != 0)
+			u32 start_work_counter = SDL_GetPerformanceCounter();
 			{
-				if (e.type == SDL_QUIT)
+				while (SDL_PollEvent(&e) != 0)
 				{
-					run = false;
-				}
-				else if (e.type == SDL_KEYDOWN)
-				{
-					switch (e.key.keysym.sym)
+					if (e.type == SDL_QUIT)
 					{
-						case SDLK_UP:
-						case SDLK_w:
-							input.up.number_of_presses++;
-							target_pos.y = game->player_pos.y - game->player_speed;
-							//printf("UP\n");
-							break;
-						case SDLK_DOWN:
-						case SDLK_s:
-							input.down.number_of_presses++;
-							target_pos.y = game->player_pos.y + game->player_speed;
-							//printf("DOWN\n");
-							break;
-						case SDLK_LEFT:
-						case SDLK_a:
-							input.left.number_of_presses++;
-							target_pos.x = game->player_pos.x - game->player_speed;
-							//printf("LEFT\n");
-							break;
-						case SDLK_RIGHT:
-						case SDLK_d:
-							input.right.number_of_presses++;							
-							target_pos.x = game->player_pos.x + game->player_speed;
-							//printf("RIGHT\n");
-							break;
-						default:
-							break;
+						run = false;
 					}
-				}		
+					else if (e.type == SDL_KEYDOWN)
+					{
+						switch (e.key.keysym.sym)
+						{
+							case SDLK_UP:
+							case SDLK_w:
+								input.up.number_of_presses++;
+								break;
+							case SDLK_DOWN:
+							case SDLK_s:
+								input.down.number_of_presses++;
+								break;
+							case SDLK_LEFT:
+							case SDLK_a:
+								input.left.number_of_presses++;
+								break;
+							case SDLK_RIGHT:
+							case SDLK_d:
+								input.right.number_of_presses++;
+								break;
+							default:
+								break;
+						}
+					}
+				}
+
+				update_and_render(&sdl_game, game, input, delta_time);
 			}
-
-			move(game, &game->player_pos, target_pos);
-
-			SDL_Texture* texture_to_draw = sdl_game.tileset_texture;
-			//SDL_SetRenderDrawColor(sdl_game.renderer, 0, 0, 0, 0);
-			//SDL_RenderClear(sdl_game.renderer);
-
-			for (u32 y_coord = 0; y_coord < 20; y_coord++)
+			u32 end_work_counter = SDL_GetPerformanceCounter();
+			
+			elapsed_work_ms = get_elapsed_miliseconds(start_work_counter, end_work_counter);
+			if (elapsed_work_ms < target_elapsed_ms)
 			{
-				for (u32 x_coord = 0; x_coord < 20; x_coord++)
+				r32 how_long_to_sleep_ms = target_elapsed_ms - elapsed_work_ms;
+				if (how_long_to_sleep_ms > 1)
 				{
-					u32 tile_in_map_index = x_coord + (game->current_level.width * y_coord);
-					u32 tile_value = game->current_level.tiles[tile_in_map_index];
-					SDL_Rect tile_bitmap = get_tile_rect(tile_value);
+					SDL_Delay(how_long_to_sleep_ms);					
+				}
 
-					SDL_Rect screen_rect = get_tile_render_rect(get_v2(x_coord, y_coord));
-					SDL_RenderCopy(sdl_game.renderer, texture_to_draw, &tile_bitmap, &screen_rect);
+				r32 total_elapsed_ms = get_elapsed_miliseconds(start_work_counter, SDL_GetPerformanceCounter());
+				while (target_elapsed_ms > total_elapsed_ms)
+				{
+					total_elapsed_ms = get_elapsed_miliseconds(start_work_counter, SDL_GetPerformanceCounter());
 				}
 			}
 
-			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
-			{
-				entity* entity = game->entities + entity_index;
-				SDL_Rect entity_bitmap = entity->type->graphics;
-				SDL_Rect entity_rect = get_tile_render_rect(entity->position);
-				SDL_RenderCopy(sdl_game.renderer, texture_to_draw, &entity_bitmap, &entity_rect);
-			}
+			sdl_game.debug_elapsed_work_ms = elapsed_work_ms;
+			sdl_game.debug_frame_counter = frame_counter + 1;
 
-			SDL_Rect player_bitmap = get_tile_rect(1);
-			SDL_Rect player_rect = get_tile_render_rect(game->player_pos);
-			SDL_RenderCopy(sdl_game.renderer, texture_to_draw, &player_bitmap, &player_rect);
-	
-			{
-				r32 fps = 1 / delta_time;
-
-				char buffer[100];
-				SDL_Color text_color = { 255, 255, 255, 0 };
-				int error = SDL_snprintf(buffer, 100, "Delta: %0.2f, %0.f FPS: Player pos: (%0.2f,%0.2f)", delta_time, fps, game->player_pos.x, game->player_pos.y);
-				render_text(sdl_game, buffer, 0, 200, text_color);
-			}
-
-			SDL_RenderPresent(sdl_game.renderer);
-
-			last_ticks_number = SDL_GetPerformanceFrequency();
+			debug_breakpoint;
 		}
 
 		delete map_file.contents;
