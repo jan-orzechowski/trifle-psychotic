@@ -30,6 +30,7 @@ struct sdl_game_data
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 	SDL_Texture* tileset_texture;
+	SDL_Texture* player_texture;
 	TTF_Font* font;
 
 	u32 debug_frame_counter;

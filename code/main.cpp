@@ -47,9 +47,19 @@ SDL_Renderer* get_renderer(SDL_Window* window)
 		printf("direct3d11 not found - software renderer used\n");
 	}
 
-	SDL_RenderSetScale(renderer, SCALING_FACTOR, SCALING_FACTOR);
-
 	return renderer;
+}
+
+SDL_Texture* load_image(SDL_Renderer* renderer, const char* path)
+{
+	SDL_Texture* result = NULL;
+	SDL_Surface* loaded_surface = IMG_Load(path);
+	if (loaded_surface)
+	{
+		result  = SDL_CreateTextureFromSurface(renderer, loaded_surface);		
+		SDL_FreeSurface(loaded_surface);
+	}
+	return result;
 }
 
 sdl_game_data init_sdl()
@@ -71,30 +81,25 @@ sdl_game_data init_sdl()
 
 		if (sdl_game.window)
 		{		
-			sdl_game.renderer = get_renderer(sdl_game.window);
+			sdl_game.renderer = SDL_CreateRenderer(sdl_game.window, -1, SDL_RENDERER_SOFTWARE); 
+			//get_renderer(sdl_game.window);
 			if (sdl_game.renderer)
 			{
+				SDL_RenderSetScale(sdl_game.renderer, SCALING_FACTOR, SCALING_FACTOR);
 				SDL_SetRenderDrawColor(sdl_game.renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
 				int img_flags = IMG_INIT_PNG;
 				if (IMG_Init(img_flags) & img_flags)
 				{
-					SDL_Surface* loaded_surface = IMG_Load("gfx/tileset.png");
-					if (loaded_surface)
+					sdl_game.tileset_texture = load_image(sdl_game.renderer, "gfx/tileset.png");
+					if (sdl_game.tileset_texture == NULL)
 					{
-						SDL_Texture* tileset = SDL_CreateTextureFromSurface(sdl_game.renderer, loaded_surface);
-						if (tileset)
-						{
-							sdl_game.tileset_texture = tileset;
-						}
-						else
-						{
-							print_sdl_error();
-							success = false;
-						}
-						SDL_FreeSurface(loaded_surface);
+						print_sdl_image_error();
+						success = false;
 					}
-					else
+
+					sdl_game.player_texture = load_image(sdl_game.renderer, "gfx/player.png");
+					if (sdl_game.player_texture == NULL)
 					{
 						print_sdl_image_error();
 						success = false;
@@ -596,6 +601,19 @@ void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 	render_text(sdl_game, buffer, 10, 100, text_color);
 }
 
+void render_rect(sdl_game_data* sdl_game, rect rectangle)
+{
+	SDL_SetRenderDrawColor(sdl_game->renderer, 255, 255, 255, 0);
+	SDL_RenderDrawLine(sdl_game->renderer, // dół
+		rectangle.min_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.min_corner.y);
+	SDL_RenderDrawLine(sdl_game->renderer, // lewa
+		rectangle.min_corner.x, rectangle.min_corner.y, rectangle.min_corner.x, rectangle.max_corner.y);
+	SDL_RenderDrawLine(sdl_game->renderer, // prawa
+		rectangle.max_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
+	SDL_RenderDrawLine(sdl_game->renderer, // góra
+		rectangle.min_corner.x, rectangle.max_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
+}
+
 void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input input, r32 delta_time)
 {
 	//v2 gravity = get_v2(0, 2.0f);
@@ -636,9 +654,6 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input inpu
 
 	move(game, &game->player_pos, target_pos);
 
-	u32 scaling_factor = 2;
-
-	SDL_Texture* texture_to_draw = sdl_game->tileset_texture;
 	SDL_SetRenderDrawColor(sdl_game->renderer, 0, 255, 0, 0);
 	SDL_RenderClear(sdl_game->renderer);
 
@@ -670,7 +685,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input inpu
 
 			SDL_Rect screen_rect = get_tile_render_rect(
 				get_v2(x_coord_on_screen, y_coord_on_screen) - player_offset_in_tile);
-			SDL_RenderCopy(sdl_game->renderer, texture_to_draw, &tile_bitmap, &screen_rect);
+			SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &tile_bitmap, &screen_rect);
 		}
 	}
 
@@ -681,12 +696,39 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input inpu
 		SDL_Rect entity_bitmap = entity->type->graphics;
 		v2 relative_position = center_screen + (entity->position - game->player_pos);
 		SDL_Rect screen_rect = get_tile_render_rect(relative_position);
-		SDL_RenderCopy(sdl_game->renderer, texture_to_draw, &entity_bitmap, &screen_rect);
+		SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &entity_bitmap, &screen_rect);
 	}
 
-	SDL_Rect player_bitmap = get_tile_rect(1);
-	SDL_Rect player_rect = get_tile_render_rect(get_v2(screen_half_width, screen_half_height));
-	SDL_RenderCopy(sdl_game->renderer, texture_to_draw, &player_bitmap, &player_rect);
+	SDL_Rect player_head_bitmap = {};
+	player_head_bitmap.x = 0;
+	player_head_bitmap.y = 0;
+	player_head_bitmap.w = 24;
+	player_head_bitmap.h = 24;
+
+	SDL_Rect player_legs_bitmap = {};
+	player_legs_bitmap.x = 0;
+	player_legs_bitmap.y = 24;
+	player_legs_bitmap.w = 24;
+	player_legs_bitmap.h = 24;
+
+	SDL_Rect player_legs_render_rect = {};
+	player_legs_render_rect.w = 24;
+	player_legs_render_rect.h = 24;
+	player_legs_render_rect.x = (screen_half_width * TILE_SIDE_IN_PIXELS) - 24/2;
+	player_legs_render_rect.y = (screen_half_height * TILE_SIDE_IN_PIXELS) - 24/2 - 4;
+
+	v2 screen_half_size = get_v2(screen_half_width, screen_half_height) * TILE_SIDE_IN_PIXELS;
+
+	SDL_Rect player_head_render_rect = player_legs_render_rect;
+	player_head_render_rect.x += 4;
+	player_head_render_rect.y += -16;
+
+	SDL_RenderCopy(sdl_game->renderer, sdl_game->player_texture, &player_legs_bitmap, &player_legs_render_rect);
+	SDL_RenderCopy(sdl_game->renderer, sdl_game->player_texture, &player_head_bitmap, &player_head_render_rect);
+
+	rect current_player_collision_rect = get_rect_from_center(
+		screen_half_size, game->player_collision_rect_dim * TILE_SIDE_IN_PIXELS);
+	//render_rect(sdl_game, current_player_collision_rect);
 
 	render_debug_information(sdl_game, game);
 
@@ -724,7 +766,7 @@ int main(int argc, char* args[])
 		game->player_pos = {0, 0};
 		game->player_velocity_multiplier = 40.0f;
 		game->player_slowdown_multiplier = 0.80f;
-		game->player_collision_rect_dim = get_v2(1.0f, 1.0f);
+		game->player_collision_rect_dim = get_v2(0.7f, 1.0f);
 
 		game->entity_types_count = 5;
 		game->entity_types = push_array(&arena, game->entity_types_count, entity_type);
