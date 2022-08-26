@@ -322,20 +322,53 @@ b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
 	return collides;
 }
 
-b32 is_standing_on_ground(level map, level collision_ref, v2 position)
+v2 get_standing_collision_rect_offset(v2 collision_rect_dim)
+{
+	// zakładamy że wszystkie obiekty mają pozycję na środku pola, czyli 0.5f nad górną krawędzią pola pod nimi
+	v2 offset = get_zero_v2();
+	offset.y = (collision_rect_dim.y / 2);
+	return offset;
+}
+
+b32 is_standing_on_ground(level map, level collision_ref, v2 position, v2 collision_rect_dim)
 {
 	b32 result = false;
-	r32 distance_apron = 0.001f;
-	tile_position tile_pos = get_tile_position(position);
-	u32 tile_value = get_tile_value(map, tile_pos.x, tile_pos.y + 1);
-	if (is_tile_colliding(collision_ref, tile_value))
+	r32 corner_distance_apron = 0.1f;
+	r32 max_distance_to_tile = 0.05f;
+
+	v2 left_corner_position = get_v2(
+		position.x - collision_rect_dim.x / 2, 
+		position.y + 0.5f - corner_distance_apron);
+	v2 right_corner_position = get_v2(
+		position.x + collision_rect_dim.x / 2,
+		position.y + 0.5f - corner_distance_apron);
+
+	tile_position left_tile_pos = get_tile_position(left_corner_position);
+	tile_position right_tile_pos = get_tile_position(right_corner_position);
+
+	u32 tile_under_left_corner = get_tile_value(map, left_tile_pos.x, left_tile_pos.y + 1);
+	u32 tile_under_right_corner = get_tile_value(map, right_tile_pos.x, right_tile_pos.y + 1);
+	
+	if (is_tile_colliding(collision_ref, tile_under_left_corner))
 	{
-		r32 distance_to_tile = position.y - get_tile_v2_position(tile_pos.x, tile_pos.y + 1).y;
-		if (distance_to_tile < distance_apron)
+		r32 distance_to_tile = get_tile_v2_position(left_tile_pos.x, left_tile_pos.y + 1).y
+			- left_corner_position.y - corner_distance_apron - 0.5f;
+		if (distance_to_tile < max_distance_to_tile)
 		{
 			result = true;
 		}
 	}
+
+	if (is_tile_colliding(collision_ref, tile_under_right_corner))
+	{
+		r32 distance_to_tile = get_tile_v2_position(right_tile_pos.x, right_tile_pos.y + 1).y
+			- right_corner_position.y - corner_distance_apron - 0.5f;
+		if (distance_to_tile < max_distance_to_tile)
+		{
+			result = true;
+		}
+	}
+
 	return result;
 }
 
@@ -444,7 +477,8 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 					v2 tile_to_check_pos = get_tile_v2_position(get_tile_position(tile_x_to_check, tile_y_to_check));
 					if (is_tile_colliding(game->collision_reference, tile_value))
 					{
-						v2 relative_player_pos = *player_pos - tile_to_check_pos;
+						v2 relative_player_pos = (*player_pos - game->player_collision_rect_offset)
+							- tile_to_check_pos;
 
 						// środkiem zsumowanej figury jest (0,0,0)
 						// pozycję playera traktujemy jako odległość od 0
@@ -500,7 +534,8 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 				entity* entity = game->entities + entity_index;		
 				if (entity->type->collides)
 				{
-					v2 relative_player_pos = *player_pos - entity->position;
+					v2 relative_player_pos = (*player_pos - game->player_collision_rect_offset) 
+						- (entity->position - entity->type->collision_rect_offset);
 
 					v2 minkowski_dimensions = game->player_collision_rect_dim + entity->type->collision_rect_dim;
 					v2 min_corner = minkowski_dimensions * -0.5f;
@@ -591,12 +626,15 @@ SDL_Rect get_tile_render_rect(v2 position)
 
 void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 {
-	b32 is_standing = is_standing_on_ground(game->current_level, game->collision_reference, game->player_pos);
+	b32 is_standing = is_standing_on_ground(game->current_level, game->collision_reference, game->player_pos, game->player_collision_rect_dim);
 
 	char buffer[200];
 	SDL_Color text_color = { 255, 255, 255, 0 };
-	int error = SDL_snprintf(buffer, 200, "Frame: %d Elapsed: %0.2f ms, Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d ",
+	/*int error = SDL_snprintf(buffer, 200, "Frame: %d Elapsed: %0.2f ms, Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d ",
 		sdl_game->debug_frame_counter, sdl_game->debug_elapsed_work_ms, game->player_pos.x, game->player_pos.y,
+		game->player_acceleration.x, game->player_acceleration.y, is_standing);*/
+	int error = SDL_snprintf(buffer, 200, "Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d ",
+		game->player_pos.x, game->player_pos.y,
 		game->player_acceleration.x, game->player_acceleration.y, is_standing);
 	render_text(sdl_game, buffer, 10, 100, text_color);
 }
@@ -727,8 +765,9 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input inpu
 	SDL_RenderCopy(sdl_game->renderer, sdl_game->player_texture, &player_head_bitmap, &player_head_render_rect);
 
 	rect current_player_collision_rect = get_rect_from_center(
-		screen_half_size, game->player_collision_rect_dim * TILE_SIDE_IN_PIXELS);
-	//render_rect(sdl_game, current_player_collision_rect);
+		screen_half_size - (game->player_collision_rect_offset * TILE_SIDE_IN_PIXELS), 
+		game->player_collision_rect_dim * TILE_SIDE_IN_PIXELS);
+	render_rect(sdl_game, current_player_collision_rect);
 
 	render_debug_information(sdl_game, game);
 
@@ -766,7 +805,9 @@ int main(int argc, char* args[])
 		game->player_pos = {0, 0};
 		game->player_velocity_multiplier = 40.0f;
 		game->player_slowdown_multiplier = 0.80f;
-		game->player_collision_rect_dim = get_v2(0.7f, 1.0f);
+		game->player_collision_rect_dim = get_v2(0.5f, 2.0f); //get_v2(0.5f, 2.0f);
+		game->player_collision_rect_offset = 
+			get_standing_collision_rect_offset(game->player_collision_rect_dim);
 
 		game->entity_types_count = 5;
 		game->entity_types = push_array(&arena, game->entity_types_count, entity_type);
@@ -776,9 +817,11 @@ int main(int argc, char* args[])
 		game->entities = push_array(&arena, game->entities_max_count, entity);
 
 		entity_type* default_entity_type = &game->entity_types[0];
-		default_entity_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 		default_entity_type->graphics = get_tile_rect(837);
 		default_entity_type->collides = true;
+		default_entity_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+		game->player_collision_rect_offset =
+			get_standing_collision_rect_offset(default_entity_type->collision_rect_dim);
 
 		add_entity(game, get_v2(2.0f, 2.0f), default_entity_type);
 		add_entity(game, get_v2(4.0f, 4.0f), default_entity_type);
