@@ -84,7 +84,10 @@ struct entity
 struct game_data
 {
 	v2 player_pos;
-	r32 player_speed;
+	v2 player_velocity;
+	r32 player_velocity_multiplier;
+	r32 player_slowdown_multiplier;
+	v2 player_acceleration;
 	v2 player_collision_rect_dim;
 
 	level current_level;

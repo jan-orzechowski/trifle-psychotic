@@ -317,6 +317,23 @@ b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
 	return collides;
 }
 
+b32 is_standing_on_ground(level map, level collision_ref, v2 position)
+{
+	b32 result = false;
+	r32 distance_apron = 0.001f;
+	tile_position tile_pos = get_tile_position(position);
+	u32 tile_value = get_tile_value(map, tile_pos.x, tile_pos.y + 1);
+	if (is_tile_colliding(collision_ref, tile_value))
+	{
+		r32 distance_to_tile = position.y - get_tile_v2_position(tile_pos.x, tile_pos.y + 1).y;
+		if (distance_to_tile < distance_apron)
+		{
+			result = true;
+		}
+	}
+	return result;
+}
+
 // nie ma znaczenia, czy sprawdzamy na osi x, czy y
 b32 check_line_intersection(r32 start_coord, r32 movement_delta, r32 line_coord, r32* movement_perc)
 {
@@ -394,6 +411,9 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 		r32 movement_apron = 0.0001f;
 		r32 min_movement_perc = 1.0f;
 		b32 was_intersection = false;
+		v2 collided_wall_normal = {};
+
+		v2 goal_position = *player_pos + player_delta;
 
 		// collision with tiles
 		{
@@ -446,13 +466,30 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 							min_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od południa
 
 						was_intersection = (was_intersection || west || east || north || south);
+
+						if (west)
+						{
+							collided_wall_normal = get_v2(-1, 0);
+						}
+						else if (east)
+						{
+							collided_wall_normal = get_v2(1, 0);
+						}
+						else if (north)
+						{
+							collided_wall_normal = get_v2(0, 1);
+						}
+						else if (south)
+						{
+							collided_wall_normal = get_v2(0, -1);
+						}
 					}
 				}
 			}
 		}
 
 		// collision with entities
-		{
+		{			
 			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 			{
 				entity* entity = game->entities + entity_index;		
@@ -481,13 +518,39 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 						min_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od południa
 
 					was_intersection = (was_intersection || west || east || north || south);
+
+					if (west)
+					{
+						collided_wall_normal = get_v2(-1, 0);
+					}
+					else if (east)
+					{
+						collided_wall_normal = get_v2(1, 0);
+					}
+					else if (north)
+					{
+						collided_wall_normal = get_v2(0, 1);
+					}
+					else if (south)
+					{
+						collided_wall_normal = get_v2(0, -1);
+					}					
 				}
 			}
 		}
 
 		if (was_intersection)
 		{
-			printf("kolizja\n");
+			i32 how_many_times_subtract = 1; // 1 dla ślizgania się, 2 dla odbijania    
+
+			v2 bounced = collided_wall_normal * inner(collided_wall_normal, game->player_velocity);
+			game->player_velocity -= how_many_times_subtract * bounced;
+
+			// zmniejszamy deltę o tyle, o ile udało nam się poruszyć oraz o fragment delty, który wchodzi w ścianę
+			player_delta = goal_position - game->player_pos;
+			player_delta -= how_many_times_subtract * (collided_wall_normal * inner(player_delta, collided_wall_normal));
+
+			debug_breakpoint;
 		}
 
 		if ((min_movement_perc - movement_apron) > 0.0f)
@@ -523,33 +586,53 @@ SDL_Rect get_tile_render_rect(v2 position)
 
 void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 {
+	b32 is_standing = is_standing_on_ground(game->current_level, game->collision_reference, game->player_pos);
+
 	char buffer[200];
-	SDL_Color text_color = { 0, 255, 255, 0 };
-	int error = SDL_snprintf(buffer, 200, "Frame: %d Elapsed: %0.2f ms, Player pos: (%0.2f,%0.2f)",
-		sdl_game->debug_frame_counter, sdl_game->debug_elapsed_work_ms, game->player_pos.x, game->player_pos.y);
+	SDL_Color text_color = { 255, 255, 255, 0 };
+	int error = SDL_snprintf(buffer, 200, "Frame: %d Elapsed: %0.2f ms, Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d ",
+		sdl_game->debug_frame_counter, sdl_game->debug_elapsed_work_ms, game->player_pos.x, game->player_pos.y,
+		game->player_acceleration.x, game->player_acceleration.y, is_standing);
 	render_text(sdl_game, buffer, 10, 100, text_color);
 }
 
 void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input input, r32 delta_time)
 {
-	v2 target_pos = game->player_pos;
+	//v2 gravity = get_v2(0, 2.0f);
 
+	game->player_acceleration = get_zero_v2();
 	if (input.up.number_of_presses > 0)
 	{
-		target_pos.y = game->player_pos.y - (game->player_speed * delta_time);
+		game->player_acceleration += get_v2(0, -1);
 	}
 	else if (input.down.number_of_presses > 0)
 	{
-		target_pos.y = game->player_pos.y + (game->player_speed * delta_time);
+		game->player_acceleration += get_v2(0, 1);
 	}
-	else if (input.left.number_of_presses > 0)
+
+	if (input.left.number_of_presses > 0)
 	{
-		target_pos.x = game->player_pos.x - (game->player_speed * delta_time);
+		game->player_acceleration += get_v2(-1, 0);
 	}
 	else if (input.right.number_of_presses > 0)
 	{
-		target_pos.x = game->player_pos.x + (game->player_speed * delta_time);
+		game->player_acceleration += get_v2(1, 0);
 	}
+
+	/*if (false == is_zero(game->player_acceleration) 
+		&& length(game->player_velocity) < 0.01f)
+	{
+		game->player_velocity = 5.0f * game->player_acceleration * delta_time;
+		printf("przyspieszenie\n");
+	}*/
+	//else
+	//{
+		game->player_velocity = game->player_slowdown_multiplier *
+			(game->player_velocity + (game->player_acceleration * delta_time));
+	//}
+	
+	v2 target_pos = game->player_pos + 
+		(game->player_velocity * game->player_velocity_multiplier * delta_time);
 
 	move(game, &game->player_pos, target_pos);
 
@@ -639,7 +722,8 @@ int main(int argc, char* args[])
 		game->current_level = read_level_from_tmx_file(&arena, map_file, "map");
 
 		game->player_pos = {0, 0};
-		game->player_speed = 5.0f;
+		game->player_velocity_multiplier = 40.0f;
+		game->player_slowdown_multiplier = 0.80f;
 		game->player_collision_rect_dim = get_v2(1.0f, 1.0f);
 
 		game->entity_types_count = 5;
