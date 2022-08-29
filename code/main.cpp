@@ -439,42 +439,6 @@ entity* add_entity(game_data* game, v2 position, entity_type* type)
 	return new_entity;
 }
 
-void state_machine_draft()
-{
-	// poniżej szybki szkic, jak można by zrobić maszynę stanową animacji bez function pointers
-	// jeśli bloki switch zrobią się za duże, mogę to potem rozdzielić do osobnych funkcji
-	// i skorzystać z function pointers
-
-	int current_state = 0; // zamienić na enum
-	b32 current_state_initialized = false;
-	int state_to_transition_to = 0;
-
-	switch (current_state)
-	{
-		case 1:
-		{
-			if (false == current_state_initialized)
-			{
-				// inicjalizacja
-
-				current_state_initialized = true;
-			}
-			
-			{
-			}
-
-			if (state_to_transition_to)
-			{
-
-
-				current_state = state_to_transition_to;
-				current_state_initialized = false;
-			}
-		}
-		break;
-	}
-}
-
 void move(game_data* game, v2* player_pos, v2 target_pos)
 {	
 	v2 player_delta = target_pos - *player_pos;
@@ -715,6 +679,22 @@ game_input* get_last_frame_input(input_buffer* buffer)
 	return result;
 }
 
+// żeby działało na dowolnych przyciskach, trzeba dodać nowy enum
+b32 was_up_key_pressed_in_last_frames(input_buffer* buffer, u32 number_of_frames)
+{
+	b32 result = false;
+	for (u32 frame = 1; frame <= number_of_frames; frame++)
+	{
+		game_input* input = get_past_input(buffer, frame);
+		if (input->up.number_of_presses > 0)
+		{
+			result = true;
+			break;
+		}
+	}
+	return result;
+}
+
 void circular_buffer_test(memory_arena* arena)
 {
 	temporary_memory test_memory = begin_temporary_memory(arena);
@@ -745,52 +725,149 @@ void circular_buffer_test(memory_arena* arena)
 	end_temporary_memory(test_memory);
 }
 
-void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
+void change_movement_mode(player_movement* movement, movement_mode mode)
+{
+	movement->previous_mode = movement->current_mode;
+	movement->previous_mode_frame_duration = movement->frame_duration;
+	movement->current_mode = mode;
+	movement->frame_duration = 0;
+
+	//debug
+	switch (mode)
+	{
+		case movement_mode::WALK:
+			printf("switch to WALK after %d frames\n", movement->previous_mode_frame_duration);
+		break;
+		case movement_mode::JUMP:
+			printf("switch to JUMP after %d frames\n", movement->previous_mode_frame_duration);
+		break;
+		case movement_mode::FALL: 
+			printf("switch to FALL after %d frames\n", movement->previous_mode_frame_duration);
+		break;
+	}
+}
+
+v2 process_input(game_data* game, r32 delta_time)
 {
 	game_input* input = get_last_frame_input(&game->input);
 
-	//v2 gravity = get_v2(0, 1.0f);
+	b32 is_standing_at_frame_beginning = is_standing_on_ground(
+		game->current_level, game->collision_reference,
+		game->player_pos, game->player_collision_rect_dim);
 
-	game->player_acceleration = get_zero_v2();// +gravity;
-	if (input->up.number_of_presses > 0)
+	v2 gravity = get_v2(0, 1.0f);
+
+	// zmiana statusu
+	switch (game->player_movement.current_mode)
 	{
-	/*	if (is_standing_on_ground(game->current_level, game->collision_reference, game->player_pos, game->player_collision_rect_dim))
+		case movement_mode::WALK:
 		{
-			game->player_acceleration += get_v2(0, -30);
-		}*/
-		game->player_acceleration += get_v2(0, -1);
-	}
-	
-	if (input->down.number_of_presses > 0)
-	{
-		game->player_acceleration += get_v2(0, 1);
+			if (false == is_standing_at_frame_beginning)
+			{
+				change_movement_mode(&game->player_movement, movement_mode::JUMP);						
+			}
+		}
+		break;
+		case movement_mode::JUMP:
+		{
+			if (is_standing_at_frame_beginning)
+			{
+				change_movement_mode(&game->player_movement, movement_mode::WALK);
+			}
+		}
+		break;
+		case movement_mode::FALL:
+		{
+			if (is_standing_at_frame_beginning)
+			{
+				change_movement_mode(&game->player_movement, movement_mode::WALK);
+			}
+		}
+		break;
 	}
 
-	if (input->left.number_of_presses > 0)
+	game->player_movement.frame_duration++;
+
+	// przetwarzanie inputu
+	game->player_acceleration = get_zero_v2();
+	switch (game->player_movement.current_mode)
 	{
-		game->player_acceleration += get_v2(-1, 0);
-	}
-	
-	if (input->right.number_of_presses > 0)
-	{
-		game->player_acceleration += get_v2(1, 0);
+		case movement_mode::WALK:
+		{				
+			// ułatwienie dla gracza - jeśli gracz nacisnął skok w ostatnich klatkach skoku, wykonujemy skok i tak
+			if (game->player_movement.frame_duration == 1)
+			{
+				if (is_standing_at_frame_beginning 
+					&& game->player_movement.previous_mode == movement_mode::JUMP)
+				{
+					if (was_up_key_pressed_in_last_frames(&game->input, 3))
+					{
+						game->player_acceleration += get_v2(0, -30);
+						change_movement_mode(&game->player_movement, movement_mode::JUMP);
+						printf("ułatwienie!\n");
+						break;
+					}					
+				}
+			}
+
+			if (input->up.number_of_presses > 0)
+			{
+				if (is_standing_at_frame_beginning)
+				{
+					game->player_acceleration += get_v2(0, -30);
+					change_movement_mode(&game->player_movement, movement_mode::JUMP);
+					break;
+				}
+			}
+
+			if (input->left.number_of_presses > 0)
+			{
+				game->player_acceleration += get_v2(-1, 0);
+			}
+
+			if (input->right.number_of_presses > 0)
+			{
+				game->player_acceleration += get_v2(1, 0);
+			}
+		}
+		break;
+		case movement_mode::JUMP:
+		{
+			game->player_acceleration = gravity;
+
+			if (input->left.number_of_presses > 0)
+			{
+				game->player_acceleration += get_v2(-0.5f, 0);
+			}
+
+			if (input->right.number_of_presses > 0)
+			{
+				game->player_acceleration += get_v2(0.5f, 0);
+			}
+		}
+		break;
+		case movement_mode::FALL:
+		{
+			// ignorujemy input
+			// tutaj trzeba będzie też uwzględnić siłę odrzutu
+			game->player_acceleration = gravity;
+		}
+		break;
 	}
 
-	/*if (false == is_zero(game->player_acceleration) 
-		&& length(game->player_velocity) < 0.01f)
-	{
-		game->player_velocity = 5.0f * game->player_acceleration * delta_time;
-		printf("przyspieszenie\n");
-	}*/
-	//else
-	//{
-		game->player_velocity = game->player_slowdown_multiplier *
-			(game->player_velocity + (game->player_acceleration * delta_time));
-	//}
-	
-	v2 target_pos = game->player_pos + 
+	game->player_velocity = game->player_slowdown_multiplier *
+		(game->player_velocity + (game->player_acceleration * delta_time));
+
+	v2 target_pos = game->player_pos +
 		(game->player_velocity * game->player_velocity_multiplier * delta_time);
 
+	return target_pos;
+}
+
+void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
+{	
+	v2 target_pos = process_input(game, delta_time);
+	
 	move(game, &game->player_pos, target_pos);
 
 	SDL_SetRenderDrawColor(sdl_game->renderer, 0, 255, 0, 0);
@@ -927,6 +1004,8 @@ int main(int argc, char* args[])
 		default_entity_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 		game->player_collision_rect_offset =
 			get_standing_collision_rect_offset(default_entity_type->collision_rect_dim);
+
+		game->player_movement.current_mode = movement_mode::WALK;
 
 		add_entity(game, get_v2(2.0f, 2.0f), default_entity_type);
 		add_entity(game, get_v2(4.0f, 4.0f), default_entity_type);

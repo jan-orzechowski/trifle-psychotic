@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <SDL.h>
 #include <SDL_image.h>
@@ -90,6 +90,21 @@ struct input_buffer
 	u32 current_index;
 };
 
+enum movement_mode
+{
+	JUMP,
+	WALK,
+	FALL
+};
+
+struct player_movement
+{
+	movement_mode current_mode;
+	u32 frame_duration; // 0 oznacza bieżącą klatkę
+	movement_mode previous_mode;
+	u32 previous_mode_frame_duration;
+};
+
 struct game_data
 {
 	v2 player_pos;
@@ -101,6 +116,7 @@ struct game_data
 	v2 player_collision_rect_offset;
 
 	input_buffer input;
+	player_movement player_movement;
 
 	level current_level;
 	level collision_reference;
