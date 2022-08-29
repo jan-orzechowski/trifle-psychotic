@@ -326,7 +326,7 @@ v2 get_standing_collision_rect_offset(v2 collision_rect_dim)
 {
 	// zakładamy że wszystkie obiekty mają pozycję na środku pola, czyli 0.5f nad górną krawędzią pola pod nimi
 	v2 offset = get_zero_v2();
-	offset.y = (collision_rect_dim.y / 2);
+	offset.y = -(collision_rect_dim.y / 2);
 	return offset;
 }
 
@@ -460,8 +460,10 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 			tile_position player_tile = get_tile_position(*player_pos);
 			tile_position target_tile = get_tile_position(target_pos);
 
+			// -2 w y ze względu na wysokość gracza i offset - gracz wystaje do góry na dwa pola
+			// przydałoby się to obliczać na podstawie wielkości gracza, bez magicznych stałych
 			i32 min_tile_x_to_check = min(player_tile.x - 1, target_tile.x - 1);
-			i32 min_tile_y_to_check = min(player_tile.y - 1, target_tile.y - 1);
+			i32 min_tile_y_to_check = min(player_tile.y - 2, target_tile.y - 2);
 			i32 max_tile_x_to_check = max(player_tile.x + 1, target_tile.x + 1);
 			i32 max_tile_y_to_check = max(player_tile.y + 1, target_tile.y + 1);
 
@@ -477,7 +479,7 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 					v2 tile_to_check_pos = get_tile_v2_position(get_tile_position(tile_x_to_check, tile_y_to_check));
 					if (is_tile_colliding(game->collision_reference, tile_value))
 					{
-						v2 relative_player_pos = (*player_pos - game->player_collision_rect_offset)
+						v2 relative_player_pos = (*player_pos + game->player_collision_rect_offset)
 							- tile_to_check_pos;
 
 						// środkiem zsumowanej figury jest (0,0,0)
@@ -534,8 +536,8 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 				entity* entity = game->entities + entity_index;		
 				if (entity->type->collides)
 				{
-					v2 relative_player_pos = (*player_pos - game->player_collision_rect_offset) 
-						- (entity->position - entity->type->collision_rect_offset);
+					v2 relative_player_pos = (*player_pos + game->player_collision_rect_offset) 
+						- (entity->position + entity->type->collision_rect_offset);
 
 					v2 minkowski_dimensions = game->player_collision_rect_dim + entity->type->collision_rect_dim;
 					v2 min_corner = minkowski_dimensions * -0.5f;
@@ -765,7 +767,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input inpu
 	SDL_RenderCopy(sdl_game->renderer, sdl_game->player_texture, &player_head_bitmap, &player_head_render_rect);
 
 	rect current_player_collision_rect = get_rect_from_center(
-		screen_half_size - (game->player_collision_rect_offset * TILE_SIDE_IN_PIXELS), 
+		screen_half_size + (game->player_collision_rect_offset * TILE_SIDE_IN_PIXELS), 
 		game->player_collision_rect_dim * TILE_SIDE_IN_PIXELS);
 	render_rect(sdl_game, current_player_collision_rect);
 
