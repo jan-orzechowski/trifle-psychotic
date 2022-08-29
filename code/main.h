@@ -83,6 +83,13 @@ struct entity
 	entity_type* type;
 };
 
+struct input_buffer
+{
+	game_input* buffer;
+	u32 size;
+	u32 current_index;
+};
+
 struct game_data
 {
 	v2 player_pos;
@@ -92,6 +99,8 @@ struct game_data
 	v2 player_acceleration;
 	v2 player_collision_rect_dim;
 	v2 player_collision_rect_offset;
+
+	input_buffer input;
 
 	level current_level;
 	level collision_reference;

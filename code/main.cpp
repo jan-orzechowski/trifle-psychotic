@@ -226,8 +226,6 @@ read_file_result read_file(std::string path)
 	return result;
 }
 
-
-
 SDL_Rect get_tile_rect(u32 tile_id)
 {
 	SDL_Rect tile_rect = {};
@@ -439,6 +437,42 @@ entity* add_entity(game_data* game, v2 position, entity_type* type)
 	new_entity->position = position;
 	new_entity->type = type;
 	return new_entity;
+}
+
+void state_machine_draft()
+{
+	// poniżej szybki szkic, jak można by zrobić maszynę stanową animacji bez function pointers
+	// jeśli bloki switch zrobią się za duże, mogę to potem rozdzielić do osobnych funkcji
+	// i skorzystać z function pointers
+
+	int current_state = 0; // zamienić na enum
+	b32 current_state_initialized = false;
+	int state_to_transition_to = 0;
+
+	switch (current_state)
+	{
+		case 1:
+		{
+			if (false == current_state_initialized)
+			{
+				// inicjalizacja
+
+				current_state_initialized = true;
+			}
+			
+			{
+			}
+
+			if (state_to_transition_to)
+			{
+
+
+				current_state = state_to_transition_to;
+				current_state_initialized = false;
+			}
+		}
+		break;
+	}
 }
 
 void move(game_data* game, v2* player_pos, v2 target_pos)
@@ -654,25 +688,90 @@ void render_rect(sdl_game_data* sdl_game, rect rectangle)
 		rectangle.min_corner.x, rectangle.max_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
 }
 
-void update_and_render(sdl_game_data* sdl_game, game_data* game, game_input input, r32 delta_time)
+void write_to_input_buffer(input_buffer* buffer, game_input* new_input)
 {
-	//v2 gravity = get_v2(0, 2.0f);
-
-	game->player_acceleration = get_zero_v2();
-	if (input.up.number_of_presses > 0)
+	buffer->buffer[buffer->current_index] = *new_input;
+	buffer->current_index++;
+	if (buffer->current_index == buffer->size)
 	{
+		buffer->current_index = 0;
+	}
+}
+
+game_input* get_past_input(input_buffer* buffer, u32 how_many_frames_backwards)
+{
+	i32 input_index = buffer->current_index - 1 - how_many_frames_backwards;
+	while (input_index < 0)
+	{
+		input_index = buffer->size + input_index;
+	}
+	game_input* result = &buffer->buffer[input_index];
+	return result;
+}
+
+game_input* get_last_frame_input(input_buffer* buffer)
+{
+	game_input* result = get_past_input(buffer, 0);
+	return result;
+}
+
+void circular_buffer_test(memory_arena* arena)
+{
+	temporary_memory test_memory = begin_temporary_memory(arena);
+
+	u32 test_input_count = 200;
+
+	input_buffer* input_buf = push_struct(test_memory.arena, input_buffer);
+	input_buf->size = 100;
+	input_buf->buffer = push_array(test_memory.arena, input_buf->size, game_input);
+
+	for (u32 input_index = 0; input_index < test_input_count; input_index++)
+	{
+		game_input* new_test_input = push_struct(test_memory.arena, game_input);
+		new_test_input->up.number_of_presses = input_index;
+		write_to_input_buffer(input_buf, new_test_input);
+	}
+
+	game_input* test_input = 0;
+	test_input = get_past_input(input_buf, 0);
+	assert(test_input->up.number_of_presses == test_input_count - 1);
+
+	test_input = get_past_input(input_buf, input_buf->size);
+	assert(test_input->up.number_of_presses == test_input_count - 1)
+
+	test_input = get_past_input(input_buf, 1);
+	assert(test_input->up.number_of_presses == test_input_count - 2)
+
+	end_temporary_memory(test_memory);
+}
+
+void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
+{
+	game_input* input = get_last_frame_input(&game->input);
+
+	//v2 gravity = get_v2(0, 1.0f);
+
+	game->player_acceleration = get_zero_v2();// +gravity;
+	if (input->up.number_of_presses > 0)
+	{
+	/*	if (is_standing_on_ground(game->current_level, game->collision_reference, game->player_pos, game->player_collision_rect_dim))
+		{
+			game->player_acceleration += get_v2(0, -30);
+		}*/
 		game->player_acceleration += get_v2(0, -1);
 	}
-	else if (input.down.number_of_presses > 0)
+	
+	if (input->down.number_of_presses > 0)
 	{
 		game->player_acceleration += get_v2(0, 1);
 	}
 
-	if (input.left.number_of_presses > 0)
+	if (input->left.number_of_presses > 0)
 	{
 		game->player_acceleration += get_v2(-1, 0);
 	}
-	else if (input.right.number_of_presses > 0)
+	
+	if (input->right.number_of_presses > 0)
 	{
 		game->player_acceleration += get_v2(1, 0);
 	}
@@ -794,7 +893,11 @@ int main(int argc, char* args[])
 		void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);
 		initialize_memory_arena(&arena, memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
 
+		circular_buffer_test(&arena);
+
 		game_data* game = push_struct(&arena, game_data);
+		game->input.size = 60 * 2; // 2 sekundy
+		game->input.buffer = push_array(&arena, game->input.size, game_input);
 
 		std::string collision_file_path = "data/collision_map.tmx";
 		read_file_result collision_file = read_file(collision_file_path);
@@ -848,34 +951,18 @@ int main(int argc, char* args[])
 					if (e.type == SDL_QUIT)
 					{
 						run = false;
-					}
-					else if (e.type == SDL_KEYDOWN)
-					{
-						switch (e.key.keysym.sym)
-						{
-							case SDLK_UP:
-							case SDLK_w:
-								input.up.number_of_presses++;
-								break;
-							case SDLK_DOWN:
-							case SDLK_s:
-								input.down.number_of_presses++;
-								break;
-							case SDLK_LEFT:
-							case SDLK_a:
-								input.left.number_of_presses++;
-								break;
-							case SDLK_RIGHT:
-							case SDLK_d:
-								input.right.number_of_presses++;
-								break;
-							default:
-								break;
-						}
-					}
+					}					
 				}
+	
+				const Uint8* state = SDL_GetKeyboardState(NULL);
+				if (state[SDL_SCANCODE_UP] || state[SDL_SCANCODE_W]) input.up.number_of_presses++;
+				if (state[SDL_SCANCODE_DOWN] || state[SDL_SCANCODE_S]) input.down.number_of_presses++;
+				if (state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A]) input.left.number_of_presses++;
+				if (state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D]) input.right.number_of_presses++;
 
-				update_and_render(&sdl_game, game, input, delta_time);
+				write_to_input_buffer(&game->input, &input);
+
+				update_and_render(&sdl_game, game, delta_time);
 			}
 			u32 end_work_counter = SDL_GetPerformanceCounter();
 			
