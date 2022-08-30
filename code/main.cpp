@@ -324,12 +324,15 @@ v2 get_standing_collision_rect_offset(v2 collision_rect_dim)
 {
 	// zakładamy że wszystkie obiekty mają pozycję na środku pola, czyli 0.5f nad górną krawędzią pola pod nimi
 	v2 offset = get_zero_v2();
-	offset.y = -(collision_rect_dim.y / 2);
+	offset.y = -((collision_rect_dim.y / 2) - 0.5f);
 	return offset;
 }
 
-b32 is_standing_on_ground(level map, level collision_ref, v2 position, v2 collision_rect_dim)
+b32 is_standing_on_ground(level map, level collision_ref, entity* entity_to_check)
 {
+	v2 position = entity_to_check->position;
+	v2 collision_rect_dim = entity_to_check->type->collision_rect_dim;
+
 	b32 result = false;
 	r32 corner_distance_apron = 0.1f;
 	r32 max_distance_to_tile = 0.05f;
@@ -439,23 +442,35 @@ entity* add_entity(game_data* game, v2 position, entity_type* type)
 	return new_entity;
 }
 
-void move(game_data* game, v2* player_pos, v2 target_pos)
+b32 are_entity_flags_set(entity* entity, u32 flag_values)
+{
+	b32 result = are_flags_set((u32*)&entity->type->flags, flag_values);
+	return result;
+}
+
+entity* get_player(game_data* game)
+{
+	entity* result = &game->entities[0];
+	return result;
+}
+
+void move(game_data* game, entity* moving_entity, v2 target_pos)
 {	
-	v2 player_delta = target_pos - *player_pos;
-	if (false == is_zero(player_delta))
+	v2 movement_delta = target_pos - moving_entity->position;
+	if (false == is_zero(movement_delta))
 	{
 		r32 movement_apron = 0.0001f;
 		r32 min_movement_perc = 1.0f;
 		b32 was_intersection = false;
 		v2 collided_wall_normal = {};
 
-		v2 goal_position = *player_pos + player_delta;
+		v2 goal_position = moving_entity->position + movement_delta;
 
 		// collision with tiles
 		{
 			v2 tile_collision_rect_dim = get_v2(1.0f, 1.0f);
 			
-			tile_position player_tile = get_tile_position(*player_pos);
+			tile_position player_tile = get_tile_position(moving_entity->position);
 			tile_position target_tile = get_tile_position(target_pos);
 
 			// -2 w y ze względu na wysokość gracza i offset - gracz wystaje do góry na dwa pola
@@ -477,31 +492,31 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 					v2 tile_to_check_pos = get_tile_v2_position(get_tile_position(tile_x_to_check, tile_y_to_check));
 					if (is_tile_colliding(game->collision_reference, tile_value))
 					{
-						v2 relative_player_pos = (*player_pos + game->player_collision_rect_offset)
+						v2 relative_entity_pos = (moving_entity->position + moving_entity->type->collision_rect_offset)
 							- tile_to_check_pos;
 
 						// środkiem zsumowanej figury jest (0,0,0)
 						// pozycję playera traktujemy jako odległość od 0
 						// 0 jest pozycją entity, z którym sprawdzamy kolizję
 
-						v2 minkowski_dimensions = game->player_collision_rect_dim + tile_collision_rect_dim;
+						v2 minkowski_dimensions = moving_entity->type->collision_rect_dim + tile_collision_rect_dim;
 						v2 min_corner = minkowski_dimensions * -0.5f;
 						v2 max_corner = minkowski_dimensions * 0.5f;
 
 						b32 west = check_segment_intersection(
-							relative_player_pos.x, relative_player_pos.y, player_delta.x, player_delta.y,
+							relative_entity_pos.x, relative_entity_pos.y, movement_delta.x, movement_delta.y,
 							min_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od zachodu
 
 						b32 east = check_segment_intersection(
-							relative_player_pos.x, relative_player_pos.y, player_delta.x, player_delta.y,
+							relative_entity_pos.x, relative_entity_pos.y, movement_delta.x, movement_delta.y,
 							max_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od wschodu
 
 						b32 north = check_segment_intersection(
-							relative_player_pos.y, relative_player_pos.x, player_delta.y, player_delta.x,
+							relative_entity_pos.y, relative_entity_pos.x, movement_delta.y, movement_delta.x,
 							max_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od północy
 
 						b32 south = check_segment_intersection(
-							relative_player_pos.y, relative_player_pos.x, player_delta.y, player_delta.x,
+							relative_entity_pos.y, relative_entity_pos.x, movement_delta.y, movement_delta.x,
 							min_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od południa
 
 						was_intersection = (was_intersection || west || east || north || south);
@@ -531,30 +546,31 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 		{			
 			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 			{
-				entity* entity = game->entities + entity_index;		
-				if (entity->type->collides)
+				entity* entity_to_check = game->entities + entity_index;		
+				if (entity_to_check != moving_entity
+					&& are_entity_flags_set(entity_to_check, entity_flags::COLLIDES))
 				{
-					v2 relative_player_pos = (*player_pos + game->player_collision_rect_offset) 
-						- (entity->position + entity->type->collision_rect_offset);
+					v2 relative_entity_pos = (moving_entity->position + moving_entity->type->collision_rect_offset)
+						- (entity_to_check->position + entity_to_check->type->collision_rect_offset);
 
-					v2 minkowski_dimensions = game->player_collision_rect_dim + entity->type->collision_rect_dim;
+					v2 minkowski_dimensions = moving_entity->type->collision_rect_dim + entity_to_check->type->collision_rect_dim;
 					v2 min_corner = minkowski_dimensions * -0.5f;
 					v2 max_corner = minkowski_dimensions * 0.5f;
 
 					b32 west = check_segment_intersection(
-						relative_player_pos.x, relative_player_pos.y, player_delta.x, player_delta.y,
+						relative_entity_pos.x, relative_entity_pos.y, movement_delta.x, movement_delta.y,
 						min_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od zachodu
 
 					b32 east = check_segment_intersection(
-						relative_player_pos.x, relative_player_pos.y, player_delta.x, player_delta.y,
+						relative_entity_pos.x, relative_entity_pos.y, movement_delta.x, movement_delta.y,
 						max_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od wschodu
 
 					b32 north = check_segment_intersection(
-						relative_player_pos.y, relative_player_pos.x, player_delta.y, player_delta.x,
+						relative_entity_pos.y, relative_entity_pos.x, movement_delta.y, movement_delta.x,
 						max_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od północy
 
 					b32 south = check_segment_intersection(
-						relative_player_pos.y, relative_player_pos.x, player_delta.y, player_delta.x,
+						relative_entity_pos.y, relative_entity_pos.x, movement_delta.y, movement_delta.x,
 						min_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od południa
 
 					was_intersection = (was_intersection || west || east || north || south);
@@ -583,20 +599,20 @@ void move(game_data* game, v2* player_pos, v2 target_pos)
 		{
 			i32 how_many_times_subtract = 1; // 1 dla ślizgania się, 2 dla odbijania    
 
-			v2 bounced = collided_wall_normal * inner(collided_wall_normal, game->player_velocity);
-			game->player_velocity -= how_many_times_subtract * bounced;
+			v2 bounced = collided_wall_normal * inner(collided_wall_normal, moving_entity->velocity);
+			moving_entity->velocity -= how_many_times_subtract * bounced;
 
 			// zmniejszamy deltę o tyle, o ile udało nam się poruszyć oraz o fragment delty, który wchodzi w ścianę
-			player_delta = goal_position - game->player_pos;
-			player_delta -= how_many_times_subtract * (collided_wall_normal * inner(player_delta, collided_wall_normal));
+			movement_delta = goal_position - moving_entity->position;
+			movement_delta -= how_many_times_subtract * (collided_wall_normal * inner(movement_delta, collided_wall_normal));
 
 			debug_breakpoint;
 		}
 
 		if ((min_movement_perc - movement_apron) > 0.0f)
 		{
-			v2 possible_movement = player_delta * (min_movement_perc - movement_apron);
-			*player_pos += possible_movement;
+			v2 possible_movement = movement_delta * (min_movement_perc - movement_apron);
+			moving_entity->position += possible_movement;
 		}
 	}
 }
@@ -626,16 +642,18 @@ SDL_Rect get_tile_render_rect(v2 position)
 
 void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 {
-	b32 is_standing = is_standing_on_ground(game->current_level, game->collision_reference, game->player_pos, game->player_collision_rect_dim);
+	entity* player = get_player(game);
+	
+	b32 is_standing = is_standing_on_ground(game->current_level, game->collision_reference, player);
 
 	char buffer[200];
 	SDL_Color text_color = { 255, 255, 255, 0 };
 	/*int error = SDL_snprintf(buffer, 200, "Frame: %d Elapsed: %0.2f ms, Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d ",
-		sdl_game->debug_frame_counter, sdl_game->debug_elapsed_work_ms, game->player_pos.x, game->player_pos.y,
-		game->player_acceleration.x, game->player_acceleration.y, is_standing);*/
+		sdl_game->debug_frame_counter, sdl_game->debug_elapsed_work_ms, player->position.x, player->position.y,
+		player->acceleration.x, player->acceleration.y, is_standing);*/
 	int error = SDL_snprintf(buffer, 200, "Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d ",
-		game->player_pos.x, game->player_pos.y,
-		game->player_acceleration.x, game->player_acceleration.y, is_standing);
+		player->position.x, player->position.y,
+		player->acceleration.x, player->acceleration.y, is_standing);
 	render_text(sdl_game, buffer, 10, 100, text_color);
 }
 
@@ -747,13 +765,12 @@ void change_movement_mode(player_movement* movement, movement_mode mode)
 	}
 }
 
-v2 process_input(game_data* game, r32 delta_time)
-{
+v2 process_input(game_data* game, entity* player, r32 delta_time)
+{	
 	game_input* input = get_last_frame_input(&game->input);
 
 	b32 is_standing_at_frame_beginning = is_standing_on_ground(
-		game->current_level, game->collision_reference,
-		game->player_pos, game->player_collision_rect_dim);
+		game->current_level, game->collision_reference, player);
 
 	v2 gravity = get_v2(0, 1.0f);
 
@@ -789,7 +806,7 @@ v2 process_input(game_data* game, r32 delta_time)
 	game->player_movement.frame_duration++;
 
 	// przetwarzanie inputu
-	game->player_acceleration = get_zero_v2();
+	player->acceleration = get_zero_v2();
 	switch (game->player_movement.current_mode)
 	{
 		case movement_mode::WALK:
@@ -802,11 +819,11 @@ v2 process_input(game_data* game, r32 delta_time)
 				{
 					if (was_up_key_pressed_in_last_frames(&game->input, 3))
 					{
-						game->player_acceleration += get_v2(0, -30);
+						player->acceleration += get_v2(0, -30);
 						change_movement_mode(&game->player_movement, movement_mode::JUMP);
 						printf("ułatwienie!\n");
 						break;
-					}					
+					}
 				}
 			}
 
@@ -814,7 +831,7 @@ v2 process_input(game_data* game, r32 delta_time)
 			{
 				if (is_standing_at_frame_beginning)
 				{
-					game->player_acceleration += get_v2(0, -30);
+					player->acceleration += get_v2(0, -30);
 					change_movement_mode(&game->player_movement, movement_mode::JUMP);
 					break;
 				}
@@ -822,27 +839,27 @@ v2 process_input(game_data* game, r32 delta_time)
 
 			if (input->left.number_of_presses > 0)
 			{
-				game->player_acceleration += get_v2(-1, 0);
+				player->acceleration += get_v2(-1, 0);
 			}
 
 			if (input->right.number_of_presses > 0)
 			{
-				game->player_acceleration += get_v2(1, 0);
+				player->acceleration += get_v2(1, 0);
 			}
 		}
 		break;
 		case movement_mode::JUMP:
 		{
-			game->player_acceleration = gravity;
+			player->acceleration = gravity;
 
 			if (input->left.number_of_presses > 0)
 			{
-				game->player_acceleration += get_v2(-0.5f, 0);
+				player->acceleration += get_v2(-0.5f, 0);
 			}
 
 			if (input->right.number_of_presses > 0)
 			{
-				game->player_acceleration += get_v2(0.5f, 0);
+				player->acceleration += get_v2(0.5f, 0);
 			}
 		}
 		break;
@@ -850,33 +867,35 @@ v2 process_input(game_data* game, r32 delta_time)
 		{
 			// ignorujemy input
 			// tutaj trzeba będzie też uwzględnić siłę odrzutu
-			game->player_acceleration = gravity;
+			player->acceleration = gravity;
 		}
 		break;
 	}
 
-	game->player_velocity = game->player_slowdown_multiplier *
-		(game->player_velocity + (game->player_acceleration * delta_time));
+	player->velocity = player->type->slowdown_multiplier *
+		(player->velocity + (player->acceleration * delta_time));
 
-	v2 target_pos = game->player_pos +
-		(game->player_velocity * game->player_velocity_multiplier * delta_time);
+	v2 target_pos = player->position +
+		(player->velocity * player->type->velocity_multiplier * delta_time);
 
 	return target_pos;
 }
 
 void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 {	
-	v2 target_pos = process_input(game, delta_time);
+	entity* player = get_player(game);
+
+	v2 target_pos = process_input(game, player, delta_time);
 	
-	move(game, &game->player_pos, target_pos);
+	move(game, player, target_pos);
 
 	SDL_SetRenderDrawColor(sdl_game->renderer, 0, 255, 0, 0);
 	SDL_RenderClear(sdl_game->renderer);
 
-	tile_position player_tile_pos = get_tile_position(game->player_pos);	
+	tile_position player_tile_pos = get_tile_position(player->position);
 	v2 player_offset_in_tile = get_v2(
-		game->player_pos.x - (r32)player_tile_pos.x, 
-		game->player_pos.y - (r32)player_tile_pos.y);
+		player->position.x - (r32)player_tile_pos.x,
+		player->position.y - (r32)player_tile_pos.y);
 
 	i32 center_screen_x = player_tile_pos.x;
 	i32 center_screen_y = player_tile_pos.y;
@@ -909,10 +928,13 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 	for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 	{
 		entity* entity = game->entities + entity_index;
-		SDL_Rect entity_bitmap = entity->type->graphics;
-		v2 relative_position = center_screen + (entity->position - game->player_pos);
-		SDL_Rect screen_rect = get_tile_render_rect(relative_position);
-		SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &entity_bitmap, &screen_rect);
+		if (false == are_entity_flags_set(entity, entity_flags::PLAYER))
+		{
+			SDL_Rect entity_bitmap = entity->type->graphics;
+			v2 relative_position = center_screen + (entity->position - player->position);
+			SDL_Rect screen_rect = get_tile_render_rect(relative_position);
+			SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &entity_bitmap, &screen_rect);
+		}
 	}
 
 	SDL_Rect player_head_bitmap = {};
@@ -943,8 +965,8 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 	SDL_RenderCopy(sdl_game->renderer, sdl_game->player_texture, &player_head_bitmap, &player_head_render_rect);
 
 	rect current_player_collision_rect = get_rect_from_center(
-		screen_half_size + (game->player_collision_rect_offset * TILE_SIDE_IN_PIXELS), 
-		game->player_collision_rect_dim * TILE_SIDE_IN_PIXELS);
+		screen_half_size + (player->type->collision_rect_offset * TILE_SIDE_IN_PIXELS),
+		player->type->collision_rect_dim * TILE_SIDE_IN_PIXELS);
 	render_rect(sdl_game, current_player_collision_rect);
 
 	render_debug_information(sdl_game, game);
@@ -984,13 +1006,6 @@ int main(int argc, char* args[])
 		read_file_result map_file = read_file(map_file_path);
 		game->current_level = read_level_from_tmx_file(&arena, map_file, "map");
 
-		game->player_pos = {0, 0};
-		game->player_velocity_multiplier = 40.0f;
-		game->player_slowdown_multiplier = 0.80f;
-		game->player_collision_rect_dim = get_v2(0.5f, 2.0f); //get_v2(0.5f, 2.0f);
-		game->player_collision_rect_offset = 
-			get_standing_collision_rect_offset(game->player_collision_rect_dim);
-
 		game->entity_types_count = 5;
 		game->entity_types = push_array(&arena, game->entity_types_count, entity_type);
 			
@@ -998,15 +1013,26 @@ int main(int argc, char* args[])
 		game->entities_max_count = 1000;
 		game->entities = push_array(&arena, game->entities_max_count, entity);
 
-		entity_type* default_entity_type = &game->entity_types[0];
+		entity_type* player_entity_type = &game->entity_types[0];
+		player_entity_type->graphics = {};
+		player_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::PLAYER);
+		player_entity_type->velocity_multiplier = 40.0f;
+		player_entity_type->slowdown_multiplier = 0.80f;
+		player_entity_type->collision_rect_dim = get_v2(0.5f, 2.0f);
+		player_entity_type->collision_rect_offset = 
+			get_standing_collision_rect_offset(player_entity_type->collision_rect_dim);
+
+		entity* player = add_entity(game, get_v2(0, 0), player_entity_type);
+
+		entity_type* default_entity_type = &game->entity_types[1];
 		default_entity_type->graphics = get_tile_rect(837);
-		default_entity_type->collides = true;
+		default_entity_type->flags = entity_flags::COLLIDES;
 		default_entity_type->collision_rect_dim = get_v2(1.0f, 1.0f);
-		game->player_collision_rect_offset =
+		default_entity_type->collision_rect_offset = 
 			get_standing_collision_rect_offset(default_entity_type->collision_rect_dim);
 
 		game->player_movement.current_mode = movement_mode::WALK;
-
+		
 		add_entity(game, get_v2(2.0f, 2.0f), default_entity_type);
 		add_entity(game, get_v2(4.0f, 4.0f), default_entity_type);
 

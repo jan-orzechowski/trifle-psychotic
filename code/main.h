@@ -69,17 +69,34 @@ struct level
 	u32 tiles_count;
 };
 
+enum entity_flags
+{
+	PLAYER =       (1 << 0),
+	COLLIDES =     (1 << 1),
+	ENEMY =		   (1 << 2),
+	TAKES_DAMAGE = (1 << 3),
+};
+
 struct entity_type
 {
 	v2 collision_rect_dim;
 	v2 collision_rect_offset;
+
+	r32 velocity_multiplier;
+	r32 slowdown_multiplier;
+
+	r32 max_health;
+	
 	SDL_Rect graphics;
-	b32 collides;
+	entity_flags flags;
 };
 
 struct entity
 {
 	v2 position;
+	v2 velocity;
+	v2 acceleration;
+	r32 health;
 	entity_type* type;
 };
 
@@ -106,15 +123,7 @@ struct player_movement
 };
 
 struct game_data
-{
-	v2 player_pos;
-	v2 player_velocity;
-	r32 player_velocity_multiplier;
-	r32 player_slowdown_multiplier;
-	v2 player_acceleration;
-	v2 player_collision_rect_dim;
-	v2 player_collision_rect_offset;
-
+{	
 	input_buffer input;
 	player_movement player_movement;
 

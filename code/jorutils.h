@@ -160,5 +160,21 @@ internal void check_arena(memory_arena* arena)
 #define swap_pointers(a, b, type) { type* temp = a; a = b; b = temp; }
 #define swap_values(a, b, type) { type temp = a; a = b; b = temp; }
 
+inline b32 are_flags_set(u32* flags, u32 flag_values_to_check)
+{
+	b32 result = *flags & flag_values_to_check;
+	return result;
+}
+
+inline void set_flags(u32* flags, u32 flag_values_to_check)
+{
+	*flags |= flag_values_to_check;
+}
+
+inline void unset_flags(u32* flags, u32 flag_values_to_check)
+{
+	*flags &= ~flag_values_to_check;
+}
+
 #define JORUTILS
 #endif
