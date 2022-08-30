@@ -30,6 +30,7 @@ struct sdl_game_data
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 	SDL_Texture* tileset_texture;
+	SDL_Texture* bullets_texture;
 	SDL_Texture* player_texture;
 	TTF_Font* font;
 
@@ -58,6 +59,7 @@ struct game_input
 	key_press down;
 	key_press left;
 	key_press right;
+	key_press fire;
 };
 
 struct level
@@ -71,10 +73,11 @@ struct level
 
 enum entity_flags
 {
-	PLAYER =       (1 << 0),
-	COLLIDES =     (1 << 1),
-	ENEMY =		   (1 << 2),
-	TAKES_DAMAGE = (1 << 3),
+	PLAYER =         (1 << 0),
+	COLLIDES =       (1 << 1),
+	ENEMY =		     (1 << 2),
+	TAKES_DAMAGE =   (1 << 3),
+	DAMAGES_PLAYER = (1 << 4)
 };
 
 struct entity_type
@@ -82,13 +85,17 @@ struct entity_type
 	v2 collision_rect_dim;
 	v2 collision_rect_offset;
 
+	r32 constant_velocity;
 	r32 velocity_multiplier;
 	r32 slowdown_multiplier;
 
-	r32 max_health;
+	i32 damage;
+	i32 max_health;
 	
 	SDL_Rect graphics;
 	entity_flags flags;
+
+	entity_type* fired_bullet_type;
 };
 
 struct entity
@@ -96,7 +103,14 @@ struct entity
 	v2 position;
 	v2 velocity;
 	v2 acceleration;
-	r32 health;
+	i32 health;
+	entity_type* type;
+};
+
+struct bullet
+{
+	v2 position;
+	v2 velocity;
 	entity_type* type;
 };
 
@@ -132,10 +146,15 @@ struct game_data
 
 	entity_type* entity_types;
 	u32 entity_types_count;
-
-	entity* entities;
+	entity* entities; // compact array
 	u32 entities_max_count;
 	u32 entities_count;
+
+	entity_type* bullet_types;
+	u32 bullet_types_count;
+	bullet* bullets; // compact array
+	u32 bullets_max_count;
+	u32 bullets_count;
 };
 
 struct tile_position

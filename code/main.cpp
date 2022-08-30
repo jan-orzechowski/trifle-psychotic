@@ -104,6 +104,13 @@ sdl_game_data init_sdl()
 						print_sdl_image_error();
 						success = false;
 					}
+
+					sdl_game.bullets_texture = load_image(sdl_game.renderer, "gfx/bullets.png");
+					if (sdl_game.bullets_texture == NULL)
+					{
+						print_sdl_image_error();
+						success = false;
+					}
 				}
 				else
 				{
@@ -320,6 +327,39 @@ b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
 	return collides;
 }
 
+SDL_Rect get_bullet_graphic(sdl_game_data* sdl_game, u32 x, u32 y)
+{
+	SDL_Rect result = {};
+	result.w = 10;
+	result.h = 10;
+	result.x = y * 10;
+	result.y = x * 10;
+	return result;
+}
+
+void add_bullet(game_data* game, entity_type* type, v2 position, v2 velocity)
+{
+	if (game->bullets_count < game->bullets_max_count)
+	{
+		bullet* bul = &game->bullets[game->bullets_count];
+		bul->type = type;
+		bul->position = position;
+		bul->velocity = velocity;
+		game->bullets_count++;		
+	}
+}
+
+void remove_bullet(game_data* game, u32 bullet_index)
+{
+	assert(game->bullets_count > 0);
+	assert(bullet_index < game->bullets_max_count);
+
+	// compact array - działa też w przypadku bullet_index == bullets_count - 1
+	bullet last_bullet = game->bullets[game->bullets_count - 1];
+	game->bullets[bullet_index] = last_bullet;
+	game->bullets_count--;	
+}
+
 v2 get_standing_collision_rect_offset(v2 collision_rect_dim)
 {
 	// zakładamy że wszystkie obiekty mają pozycję na środku pola, czyli 0.5f nad górną krawędzią pola pod nimi
@@ -440,6 +480,18 @@ entity* add_entity(game_data* game, v2 position, entity_type* type)
 	new_entity->position = position;
 	new_entity->type = type;
 	return new_entity;
+}
+
+void remove_entity(game_data* game, u32 entity_index)
+{
+	assert(game->entities_count > 1);
+	assert(entity_index != 0);
+	assert(entity_index < game->entities_max_count);
+
+	// compact array - działa też w przypadku entity_index == entities_count - 1
+	entity last_entity = game->entities[game->entities_count - 1];
+	game->entities[entity_index] = last_entity;
+	game->entities_count--;
 }
 
 b32 are_entity_flags_set(entity* entity, u32 flag_values)
@@ -615,6 +667,150 @@ void move(game_data* game, entity* moving_entity, v2 target_pos)
 			moving_entity->position += possible_movement;
 		}
 	}
+}
+
+inline void chceck_minkowski_collision(
+	v2 position_a, v2 collision_rect_offset_a, v2 collision_rect_dim_a,
+	v2 position_b, v2 collision_rect_offset_b, v2 collision_rect_dim_b,
+	v2 movement_delta,
+	b32* was_intersection, v2* collided_wall_normal, r32* min_movement_perc)
+{
+	v2 relative_pos = (position_a + collision_rect_offset_a)
+		- (position_b + collision_rect_offset_b);
+
+	// środkiem zsumowanej figury jest (0,0,0)
+	// pozycję playera traktujemy jako odległość od 0
+	// 0 jest pozycją entity, z którym sprawdzamy kolizję
+
+	v2 minkowski_dimensions = collision_rect_dim_a + collision_rect_dim_b;
+	v2 min_corner = minkowski_dimensions * -0.5f;
+	v2 max_corner = minkowski_dimensions * 0.5f;
+
+	b32 west = check_segment_intersection(
+		relative_pos.x, relative_pos.y, movement_delta.x, movement_delta.y,
+		min_corner.x, min_corner.y, max_corner.y, min_movement_perc); // ściana od zachodu
+
+	b32 east = check_segment_intersection(
+		relative_pos.x, relative_pos.y, movement_delta.x, movement_delta.y,
+		max_corner.x, min_corner.y, max_corner.y, min_movement_perc); // ściana od wschodu
+
+	b32 north = check_segment_intersection(
+		relative_pos.y, relative_pos.x, movement_delta.y, movement_delta.x,
+		max_corner.y, min_corner.x, max_corner.x, min_movement_perc); // ściana od północy
+
+	b32 south = check_segment_intersection(
+		relative_pos.y, relative_pos.x, movement_delta.y, movement_delta.x,
+		min_corner.y, min_corner.x, max_corner.x, min_movement_perc); // ściana od południa
+
+	*was_intersection = (*was_intersection || west || east || north || south);
+
+	if (west)
+	{
+		*collided_wall_normal = get_v2(-1, 0);
+	}
+	else if (east)
+	{
+		*collided_wall_normal = get_v2(1, 0);
+	}
+	else if (north)
+	{
+		*collided_wall_normal = get_v2(0, 1);
+	}
+	else if (south)
+	{
+		*collided_wall_normal = get_v2(0, -1);
+	}
+}
+
+b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 target_pos)
+{
+	v2 movement_delta = target_pos - moving_bullet->position;
+	b32 was_intersection = false;
+	if (false == is_zero(movement_delta))
+	{
+		r32 movement_apron = 0.0001f;
+		r32 min_movement_perc = 1.0f;	
+		v2 collided_wall_normal = {};
+
+		v2 goal_position = moving_bullet->position + movement_delta;
+
+		// collision with tiles
+		{
+			v2 tile_collision_rect_dim = get_v2(1.0f, 1.0f);
+
+			tile_position player_tile = get_tile_position(moving_bullet->position);
+			tile_position target_tile = get_tile_position(target_pos);
+
+			// -2 w y ze względu na wysokość gracza i offset - gracz wystaje do góry na dwa pola
+			// przydałoby się to obliczać na podstawie wielkości gracza, bez magicznych stałych
+			i32 min_tile_x_to_check = min(player_tile.x - 1, target_tile.x - 1);
+			i32 min_tile_y_to_check = min(player_tile.y - 2, target_tile.y - 2);
+			i32 max_tile_x_to_check = max(player_tile.x + 1, target_tile.x + 1);
+			i32 max_tile_y_to_check = max(player_tile.y + 1, target_tile.y + 1);
+
+			for (i32 tile_y_to_check = min_tile_y_to_check;
+				tile_y_to_check <= max_tile_y_to_check;
+				tile_y_to_check++)
+			{
+				for (i32 tile_x_to_check = min_tile_x_to_check;
+					tile_x_to_check <= max_tile_x_to_check;
+					tile_x_to_check++)
+				{
+					u32 tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check);
+					v2 tile_to_check_pos = get_tile_v2_position(get_tile_position(tile_x_to_check, tile_y_to_check));
+					if (is_tile_colliding(game->collision_reference, tile_value))
+					{
+						chceck_minkowski_collision(
+							moving_bullet->position, moving_bullet->type->collision_rect_offset, moving_bullet->type->collision_rect_dim,
+							tile_to_check_pos, get_zero_v2(), tile_collision_rect_dim,
+							movement_delta, &was_intersection, &collided_wall_normal, &min_movement_perc);
+					}
+				}
+			}
+		}
+
+		entity* collided_entity = NULL;
+
+		// collision with entities
+		{
+			for (u32 entity_index = 1; entity_index < game->entities_count; entity_index++)
+			{
+				entity* entity_to_check = game->entities + entity_index;
+				if (are_entity_flags_set(entity_to_check, entity_flags::COLLIDES))
+				{
+					chceck_minkowski_collision(
+						moving_bullet->position, moving_bullet->type->collision_rect_offset, moving_bullet->type->collision_rect_dim,
+						entity_to_check->position, entity_to_check->type->collision_rect_offset, entity_to_check->type->collision_rect_dim,
+						movement_delta, &was_intersection, &collided_wall_normal, &min_movement_perc);
+
+					if (was_intersection)
+					{
+						collided_entity = entity_to_check;
+					}
+				}
+			}
+		}
+
+		if ((min_movement_perc - movement_apron) > 0.0f)
+		{
+			v2 possible_movement = movement_delta * (min_movement_perc - movement_apron);
+			moving_bullet->position += possible_movement;
+		}
+
+		if (was_intersection)
+		{
+			if (collided_entity)
+			{
+				collided_entity->health - moving_bullet->type->damage;
+				printf("pocisk trafil w entity, %i obrazen\n", moving_bullet->type->damage);
+			}
+			remove_bullet(game, bullet_index);	
+			printf("pocisk znika\n", moving_bullet->type->damage);
+			debug_breakpoint;
+		}		
+	}
+
+	return was_intersection;
 }
 
 // kształt każdego obiektu w grze ma środek w pozycji w świecie tego obiektu
@@ -827,6 +1023,13 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 				}
 			}
 
+			if (input->fire.number_of_presses > 0)
+			{
+				add_bullet(game, player->type->fired_bullet_type, player->position + get_v2(0, -0.5f), 
+					get_v2(1, 0) * player->type->fired_bullet_type->constant_velocity);
+				printf("strzał!\n");
+			}
+
 			if (input->up.number_of_presses > 0)
 			{
 				if (is_standing_at_frame_beginning)
@@ -889,6 +1092,21 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 	
 	move(game, player, target_pos);
 
+	// updating bullets
+	for (u32 bullet_index = 0; bullet_index < game->bullets_count; bullet_index++)
+	{
+		bullet* bullet = game->bullets + bullet_index;
+		if (bullet->type)
+		{			
+			v2 bullet_target_pos = bullet->position + (bullet->velocity * delta_time);
+			b32 hit = move_bullet(game, bullet, bullet_index, bullet_target_pos);
+			if (hit)
+			{
+				bullet_index--; // ze względu na compact array - został usunięty bullet, ale nowy został wstawiony na jego miejsce
+			}
+		}
+	}
+
 	SDL_SetRenderDrawColor(sdl_game->renderer, 0, 255, 0, 0);
 	SDL_RenderClear(sdl_game->renderer);
 
@@ -934,6 +1152,18 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			v2 relative_position = center_screen + (entity->position - player->position);
 			SDL_Rect screen_rect = get_tile_render_rect(relative_position);
 			SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &entity_bitmap, &screen_rect);
+		}
+	}
+
+	for (u32 bullet_index = 0; bullet_index < game->bullets_count; bullet_index++)
+	{
+		bullet* bullet = game->bullets + bullet_index;
+		if (bullet->type)
+		{
+			SDL_Rect bullet_bitmap = bullet->type->graphics;
+			v2 relative_position = center_screen + (bullet->position - player->position);
+			SDL_Rect screen_rect = get_tile_render_rect(relative_position);
+			SDL_RenderCopy(sdl_game->renderer, sdl_game->bullets_texture, &bullet_bitmap, &screen_rect);
 		}
 	}
 
@@ -1007,8 +1237,7 @@ int main(int argc, char* args[])
 		game->current_level = read_level_from_tmx_file(&arena, map_file, "map");
 
 		game->entity_types_count = 5;
-		game->entity_types = push_array(&arena, game->entity_types_count, entity_type);
-			
+		game->entity_types = push_array(&arena, game->entity_types_count, entity_type);		
 		game->entities_count = 0;
 		game->entities_max_count = 1000;
 		game->entities = push_array(&arena, game->entities_max_count, entity);
@@ -1024,6 +1253,8 @@ int main(int argc, char* args[])
 
 		entity* player = add_entity(game, get_v2(0, 0), player_entity_type);
 
+		game->player_movement.current_mode = movement_mode::WALK;
+		
 		entity_type* default_entity_type = &game->entity_types[1];
 		default_entity_type->graphics = get_tile_rect(837);
 		default_entity_type->flags = entity_flags::COLLIDES;
@@ -1031,10 +1262,21 @@ int main(int argc, char* args[])
 		default_entity_type->collision_rect_offset = 
 			get_standing_collision_rect_offset(default_entity_type->collision_rect_dim);
 
-		game->player_movement.current_mode = movement_mode::WALK;
-		
 		add_entity(game, get_v2(2.0f, 2.0f), default_entity_type);
 		add_entity(game, get_v2(4.0f, 4.0f), default_entity_type);
+
+		game->bullet_types_count = 5;
+		game->bullet_types = push_array(&arena, game->bullet_types_count, entity_type);
+		game->bullets_count = 0;
+		game->bullets_max_count = 5000;
+		game->bullets = push_array(&arena, game->bullets_max_count, bullet);
+
+		entity_type* default_bullet_type = &game->bullet_types[0];
+		default_bullet_type->damage = 2137;
+		default_bullet_type->constant_velocity = 15.0f;
+		default_bullet_type->graphics = get_bullet_graphic(&sdl_game, 1, 1);
+
+		player_entity_type->fired_bullet_type = default_bullet_type;
 
 		u32 frame_counter = 0;
 
@@ -1056,7 +1298,12 @@ int main(int argc, char* args[])
 					if (e.type == SDL_QUIT)
 					{
 						run = false;
-					}					
+					}		
+
+					if (e.type == SDL_MOUSEBUTTONDOWN)
+					{
+						input.fire.number_of_presses++;
+					}
 				}
 	
 				const Uint8* state = SDL_GetKeyboardState(NULL);
@@ -1064,7 +1311,7 @@ int main(int argc, char* args[])
 				if (state[SDL_SCANCODE_DOWN] || state[SDL_SCANCODE_S]) input.down.number_of_presses++;
 				if (state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A]) input.left.number_of_presses++;
 				if (state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D]) input.right.number_of_presses++;
-
+			
 				write_to_input_buffer(&game->input, &input);
 
 				update_and_render(&sdl_game, game, delta_time);
