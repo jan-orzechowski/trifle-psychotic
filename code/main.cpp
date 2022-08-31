@@ -543,8 +543,6 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 			b32 was_intersection = false;
 			v2 collided_wall_normal = {};
 			
-			//v2 goal_position = moving_entity->position + movement_delta;
-
 			// collision with tiles
 			{
 				tile_position player_tile = get_tile_position(moving_entity->position);
@@ -572,25 +570,6 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 						{
 							v2 tile_collision_rect_dim = get_v2(1.0f, 1.0f);
 							v2 tile_collision_rect_offset = get_zero_v2();
-							// hack ze względu na możliwy błąd, gdy poruszamy się w bok i w dół i znajdujemy się dokładnie pomiędzy dwoma polami
-							// możemy wtedy wejść pomiędzy nie, mimo, że oba powinny nas blokować
-							// zamiast kolidować ze ścianą boczną któregoś z nich, kolidujemy z górną ścianą dolnego pola
-							// poniżej zabezpieczenie
-							u32 upper_tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check - 1);
-							if (is_tile_colliding(game->collision_reference, upper_tile_value))
-							{
-								tile_collision_rect_dim += get_v2(0.0f, 1.0f);
-								tile_collision_rect_offset -= get_v2(0.0f, 0.5f);
-							}
-							u32 lower_tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check + 1);
-							if (is_tile_colliding(game->collision_reference, lower_tile_value))
-							{
-								tile_collision_rect_dim += get_v2(0.0f, 1.0f);
-								tile_collision_rect_offset += get_v2(0.0f, 0.5f);
-							}
-
-							/*v2 screen_center = get_v2(SCREEN_WIDTH, SCREEN_HEIGHT);
-							render_rect(sdl_game, get_rect_from_center(screen_center, tile_collision_rect_dim));*/
 
 							v2 relative_entity_pos = (moving_entity->position + moving_entity->type->collision_rect_offset)
 								- (tile_to_check_pos + tile_collision_rect_offset);
@@ -600,6 +579,7 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 							// 0 jest pozycją entity, z którym sprawdzamy kolizję
 
 							v2 minkowski_dimensions = moving_entity->type->collision_rect_dim + tile_collision_rect_dim;
+							
 							v2 min_corner = minkowski_dimensions * -0.5f;
 							v2 max_corner = minkowski_dimensions * 0.5f;
 
@@ -623,23 +603,38 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 
 							if (west)
 							{
-								printf("tile west, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								//printf("tile west, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
 								collided_wall_normal = get_v2(-1, 0);
 							}
 							else if (east)
 							{
-								printf("tile east, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								//printf("tile east, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
 								collided_wall_normal = get_v2(1, 0);
 							}
 							else if (north)
 							{
-								printf("tile north, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								//printf("tile north, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
 								collided_wall_normal = get_v2(0, 1);
 							}
 							else if (south)
 							{
-								printf("tile south, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								//printf("tile south, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
 								collided_wall_normal = get_v2(0, -1);
+
+								// paskudny hack rozwiązujący problem blokowania się na ścianie, jeśli kolidujemy z nią podczas spadania
+								u32 upper_tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check - 1);
+								if (is_tile_colliding(game->collision_reference, upper_tile_value))
+								{
+									if (relative_entity_pos.x > 0)
+									{
+										collided_wall_normal = get_v2(-1, 0);
+									}
+									else
+									{
+										collided_wall_normal = get_v2(1, 0);
+									}
+								}
+								
 							}												
 						}
 					}
@@ -665,13 +660,13 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 
 					movement_delta -= how_many_times_subtract * (collided_wall_normal * inner(movement_delta, collided_wall_normal));
 
-					printf("collision fr: %d, iter: %d, before: (%.04f, %.04f) after: (%.04f, %.04f) \n",
-						sdl_game->debug_frame_counter, iteration, movement_delta_orig.x, movement_delta_orig.y, movement_delta.x, movement_delta.y);				
+					//printf("collision fr: %d, iter: %d, before: (%.04f, %.04f) after: (%.04f, %.04f) \n",
+					//	sdl_game->debug_frame_counter, iteration, movement_delta_orig.x, movement_delta_orig.y, movement_delta.x, movement_delta.y);				
 				}
 			}
 		
 			// collision with entities
-			/*{
+			{
 				for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 				{
 					entity* entity_to_check = game->entities + entity_index;
@@ -705,28 +700,23 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 
 						if (west)
 						{
-							//printf("west\n");
 							collided_wall_normal = get_v2(-1, 0);
 						}
 						else if (east)
 						{
-							printf("east\n");
 							collided_wall_normal = get_v2(1, 0);
 						}
 						else if (north)
 						{
-							printf("north\n");
 							collided_wall_normal = get_v2(0, 1);
 						}
 						else if (south)
 						{
-							printf("south\n");
 							collided_wall_normal = get_v2(0, -1);
 						}
 					}
 				}
 			}
-			*/			
 		}
 	}
 }
