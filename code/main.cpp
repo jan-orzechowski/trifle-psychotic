@@ -167,6 +167,19 @@ sdl_game_data init_sdl()
 	}
 }
 
+void render_rect(sdl_game_data* sdl_game, rect rectangle)
+{
+	SDL_SetRenderDrawColor(sdl_game->renderer, 255, 255, 255, 0);
+	SDL_RenderDrawLine(sdl_game->renderer, // dół
+		rectangle.min_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.min_corner.y);
+	SDL_RenderDrawLine(sdl_game->renderer, // lewa
+		rectangle.min_corner.x, rectangle.min_corner.y, rectangle.min_corner.x, rectangle.max_corner.y);
+	SDL_RenderDrawLine(sdl_game->renderer, // prawa
+		rectangle.max_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
+	SDL_RenderDrawLine(sdl_game->renderer, // góra
+		rectangle.min_corner.x, rectangle.max_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
+}
+
 void render_text(sdl_game_data* sdl_game, std::string textureText, int x, int y, SDL_Color color)
 {
 	SDL_Surface* text_surface = TTF_RenderText_Solid(sdl_game->font, textureText.c_str(), color);
@@ -300,6 +313,12 @@ u32 get_tile_value(level map, i32 x_coord, i32 y_coord)
 		result = map.tiles[tile_index];
 	}
 	return result;	
+}
+
+u32 get_tile_value(level map, tile_position tile)
+{
+	u32 result = get_tile_value(map, tile.x, tile.y);
+	return result;
 }
 
 b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
@@ -506,52 +525,163 @@ entity* get_player(game_data* game)
 	return result;
 }
 
-void move(game_data* game, entity* moving_entity, v2 target_pos)
+void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 target_pos)
 {	
 	v2 movement_delta = target_pos - moving_entity->position;
 	if (false == is_zero(movement_delta))
 	{
-		r32 movement_apron = 0.0001f;
-		r32 min_movement_perc = 1.0f;
-		b32 was_intersection = false;
-		v2 collided_wall_normal = {};
-
-		v2 goal_position = moving_entity->position + movement_delta;
-
-		// collision with tiles
-		{
-			v2 tile_collision_rect_dim = get_v2(1.0f, 1.0f);
-			
-			tile_position player_tile = get_tile_position(moving_entity->position);
-			tile_position target_tile = get_tile_position(target_pos);
-
-			// -2 w y ze względu na wysokość gracza i offset - gracz wystaje do góry na dwa pola
-			// przydałoby się to obliczać na podstawie wielkości gracza, bez magicznych stałych
-			i32 min_tile_x_to_check = min(player_tile.x - 1, target_tile.x - 1);
-			i32 min_tile_y_to_check = min(player_tile.y - 2, target_tile.y - 2);
-			i32 max_tile_x_to_check = max(player_tile.x + 1, target_tile.x + 1);
-			i32 max_tile_y_to_check = max(player_tile.y + 1, target_tile.y + 1);
-
-			for (i32 tile_y_to_check = min_tile_y_to_check;
-				tile_y_to_check <= max_tile_y_to_check;
-				tile_y_to_check++)
+		u32 tile_collision_interations = 4;
+		for (u32 iteration = 0; iteration < tile_collision_interations; iteration++)	
+		{			
+			if (is_zero(movement_delta))
 			{
-				for (i32 tile_x_to_check = min_tile_x_to_check;
-					tile_x_to_check <= max_tile_x_to_check;
-					tile_x_to_check++)
+				break;
+			}
+			
+			r32 movement_apron = 0.0001f;
+			r32 min_movement_perc = 1.0f;
+			b32 was_intersection = false;
+			v2 collided_wall_normal = {};
+			
+			//v2 goal_position = moving_entity->position + movement_delta;
+
+			// collision with tiles
+			{
+				tile_position player_tile = get_tile_position(moving_entity->position);
+				tile_position target_tile = get_tile_position(target_pos);
+
+				// -2 w y ze względu na wysokość gracza i offset - gracz wystaje do góry na dwa pola
+				// przydałoby się to obliczać na podstawie wielkości gracza, bez magicznych stałych
+				i32 min_tile_x_to_check = min(player_tile.x - 1, target_tile.x - 1);
+				i32 min_tile_y_to_check = min(player_tile.y - 2, target_tile.y - 2);
+				i32 max_tile_x_to_check = max(player_tile.x + 1, target_tile.x + 1);
+				i32 max_tile_y_to_check = max(player_tile.y + 2, target_tile.y + 2);
+
+				for (i32 tile_y_to_check = min_tile_y_to_check;
+					tile_y_to_check <= max_tile_y_to_check;
+					tile_y_to_check++)
 				{
-					u32 tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check);
-					v2 tile_to_check_pos = get_tile_v2_position(get_tile_position(tile_x_to_check, tile_y_to_check));
-					if (is_tile_colliding(game->collision_reference, tile_value))
+					for (i32 tile_x_to_check = min_tile_x_to_check;
+						tile_x_to_check <= max_tile_x_to_check;
+						tile_x_to_check++)
+					{
+						u32 tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check);
+						tile_position tile_to_check = get_tile_position(tile_x_to_check, tile_y_to_check);
+						v2 tile_to_check_pos = get_tile_v2_position(tile_to_check);
+						if (is_tile_colliding(game->collision_reference, tile_value))
+						{
+							v2 tile_collision_rect_dim = get_v2(1.0f, 1.0f);
+							v2 tile_collision_rect_offset = get_zero_v2();
+							// hack ze względu na możliwy błąd, gdy poruszamy się w bok i w dół i znajdujemy się dokładnie pomiędzy dwoma polami
+							// możemy wtedy wejść pomiędzy nie, mimo, że oba powinny nas blokować
+							// zamiast kolidować ze ścianą boczną któregoś z nich, kolidujemy z górną ścianą dolnego pola
+							// poniżej zabezpieczenie
+							u32 upper_tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check - 1);
+							if (is_tile_colliding(game->collision_reference, upper_tile_value))
+							{
+								tile_collision_rect_dim += get_v2(0.0f, 1.0f);
+								tile_collision_rect_offset -= get_v2(0.0f, 0.5f);
+							}
+							u32 lower_tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check + 1);
+							if (is_tile_colliding(game->collision_reference, lower_tile_value))
+							{
+								tile_collision_rect_dim += get_v2(0.0f, 1.0f);
+								tile_collision_rect_offset += get_v2(0.0f, 0.5f);
+							}
+
+							/*v2 screen_center = get_v2(SCREEN_WIDTH, SCREEN_HEIGHT);
+							render_rect(sdl_game, get_rect_from_center(screen_center, tile_collision_rect_dim));*/
+
+							v2 relative_entity_pos = (moving_entity->position + moving_entity->type->collision_rect_offset)
+								- (tile_to_check_pos + tile_collision_rect_offset);
+
+							// środkiem zsumowanej figury jest (0,0,0)
+							// pozycję playera traktujemy jako odległość od 0
+							// 0 jest pozycją entity, z którym sprawdzamy kolizję
+
+							v2 minkowski_dimensions = moving_entity->type->collision_rect_dim + tile_collision_rect_dim;
+							v2 min_corner = minkowski_dimensions * -0.5f;
+							v2 max_corner = minkowski_dimensions * 0.5f;
+
+							b32 west = check_segment_intersection(
+								relative_entity_pos.x, relative_entity_pos.y, movement_delta.x, movement_delta.y,
+								min_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od zachodu
+
+							b32 east = check_segment_intersection(
+								relative_entity_pos.x, relative_entity_pos.y, movement_delta.x, movement_delta.y,
+								max_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od wschodu
+
+							b32 north = check_segment_intersection(
+								relative_entity_pos.y, relative_entity_pos.x, movement_delta.y, movement_delta.x,
+								max_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od północy
+
+							b32 south = check_segment_intersection(
+								relative_entity_pos.y, relative_entity_pos.x, movement_delta.y, movement_delta.x,
+								min_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od południa
+
+							was_intersection = (was_intersection || west || east || north || south);
+
+							if (west)
+							{
+								printf("tile west, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								collided_wall_normal = get_v2(-1, 0);
+							}
+							else if (east)
+							{
+								printf("tile east, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								collided_wall_normal = get_v2(1, 0);
+							}
+							else if (north)
+							{
+								printf("tile north, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								collided_wall_normal = get_v2(0, 1);
+							}
+							else if (south)
+							{
+								printf("tile south, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								collided_wall_normal = get_v2(0, -1);
+							}												
+						}
+					}
+				}
+
+				// przesuwamy się o tyle, o ile możemy
+				if ((min_movement_perc - movement_apron) > 0.0f)
+				{
+					v2 possible_movement = movement_delta * (min_movement_perc - movement_apron);
+					moving_entity->position += possible_movement;
+					// pozostałą deltę zmniejszamy o tyle, o ile się poruszyliśmy
+					movement_delta -= possible_movement;
+				}
+
+				if (was_intersection)
+				{
+					v2 movement_delta_orig = movement_delta;
+
+					// i sprawdzamy, co zrobić z pozostałą deltą - czy możemy się poruszyć wzdłuż ściany lub odbić
+					i32 how_many_times_subtract = 1; // 1 dla ślizgania się, 2 dla odbijania    
+					v2 bounced = collided_wall_normal * inner(collided_wall_normal, moving_entity->velocity);
+					moving_entity->velocity -= how_many_times_subtract * bounced;
+
+					movement_delta -= how_many_times_subtract * (collided_wall_normal * inner(movement_delta, collided_wall_normal));
+
+					printf("collision fr: %d, iter: %d, before: (%.04f, %.04f) after: (%.04f, %.04f) \n",
+						sdl_game->debug_frame_counter, iteration, movement_delta_orig.x, movement_delta_orig.y, movement_delta.x, movement_delta.y);				
+				}
+			}
+		
+			// collision with entities
+			/*{
+				for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
+				{
+					entity* entity_to_check = game->entities + entity_index;
+					if (entity_to_check != moving_entity
+						&& are_entity_flags_set(entity_to_check, entity_flags::COLLIDES))
 					{
 						v2 relative_entity_pos = (moving_entity->position + moving_entity->type->collision_rect_offset)
-							- tile_to_check_pos;
+							- (entity_to_check->position + entity_to_check->type->collision_rect_offset);
 
-						// środkiem zsumowanej figury jest (0,0,0)
-						// pozycję playera traktujemy jako odległość od 0
-						// 0 jest pozycją entity, z którym sprawdzamy kolizję
-
-						v2 minkowski_dimensions = moving_entity->type->collision_rect_dim + tile_collision_rect_dim;
+						v2 minkowski_dimensions = moving_entity->type->collision_rect_dim + entity_to_check->type->collision_rect_dim;
 						v2 min_corner = minkowski_dimensions * -0.5f;
 						v2 max_corner = minkowski_dimensions * 0.5f;
 
@@ -575,96 +705,28 @@ void move(game_data* game, entity* moving_entity, v2 target_pos)
 
 						if (west)
 						{
+							//printf("west\n");
 							collided_wall_normal = get_v2(-1, 0);
 						}
 						else if (east)
 						{
+							printf("east\n");
 							collided_wall_normal = get_v2(1, 0);
 						}
 						else if (north)
 						{
+							printf("north\n");
 							collided_wall_normal = get_v2(0, 1);
 						}
 						else if (south)
 						{
+							printf("south\n");
 							collided_wall_normal = get_v2(0, -1);
 						}
 					}
 				}
 			}
-		}
-
-		// collision with entities
-		{			
-			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
-			{
-				entity* entity_to_check = game->entities + entity_index;		
-				if (entity_to_check != moving_entity
-					&& are_entity_flags_set(entity_to_check, entity_flags::COLLIDES))
-				{
-					v2 relative_entity_pos = (moving_entity->position + moving_entity->type->collision_rect_offset)
-						- (entity_to_check->position + entity_to_check->type->collision_rect_offset);
-
-					v2 minkowski_dimensions = moving_entity->type->collision_rect_dim + entity_to_check->type->collision_rect_dim;
-					v2 min_corner = minkowski_dimensions * -0.5f;
-					v2 max_corner = minkowski_dimensions * 0.5f;
-
-					b32 west = check_segment_intersection(
-						relative_entity_pos.x, relative_entity_pos.y, movement_delta.x, movement_delta.y,
-						min_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od zachodu
-
-					b32 east = check_segment_intersection(
-						relative_entity_pos.x, relative_entity_pos.y, movement_delta.x, movement_delta.y,
-						max_corner.x, min_corner.y, max_corner.y, &min_movement_perc); // ściana od wschodu
-
-					b32 north = check_segment_intersection(
-						relative_entity_pos.y, relative_entity_pos.x, movement_delta.y, movement_delta.x,
-						max_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od północy
-
-					b32 south = check_segment_intersection(
-						relative_entity_pos.y, relative_entity_pos.x, movement_delta.y, movement_delta.x,
-						min_corner.y, min_corner.x, max_corner.x, &min_movement_perc); // ściana od południa
-
-					was_intersection = (was_intersection || west || east || north || south);
-
-					if (west)
-					{
-						collided_wall_normal = get_v2(-1, 0);
-					}
-					else if (east)
-					{
-						collided_wall_normal = get_v2(1, 0);
-					}
-					else if (north)
-					{
-						collided_wall_normal = get_v2(0, 1);
-					}
-					else if (south)
-					{
-						collided_wall_normal = get_v2(0, -1);
-					}					
-				}
-			}
-		}
-
-		if (was_intersection)
-		{
-			i32 how_many_times_subtract = 1; // 1 dla ślizgania się, 2 dla odbijania    
-
-			v2 bounced = collided_wall_normal * inner(collided_wall_normal, moving_entity->velocity);
-			moving_entity->velocity -= how_many_times_subtract * bounced;
-
-			// zmniejszamy deltę o tyle, o ile udało nam się poruszyć oraz o fragment delty, który wchodzi w ścianę
-			movement_delta = goal_position - moving_entity->position;
-			movement_delta -= how_many_times_subtract * (collided_wall_normal * inner(movement_delta, collided_wall_normal));
-
-			debug_breakpoint;
-		}
-
-		if ((min_movement_perc - movement_apron) > 0.0f)
-		{
-			v2 possible_movement = movement_delta * (min_movement_perc - movement_apron);
-			moving_entity->position += possible_movement;
+			*/			
 		}
 	}
 }
@@ -851,19 +913,6 @@ void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 		player->position.x, player->position.y,
 		player->acceleration.x, player->acceleration.y, is_standing);
 	render_text(sdl_game, buffer, 10, 100, text_color);
-}
-
-void render_rect(sdl_game_data* sdl_game, rect rectangle)
-{
-	SDL_SetRenderDrawColor(sdl_game->renderer, 255, 255, 255, 0);
-	SDL_RenderDrawLine(sdl_game->renderer, // dół
-		rectangle.min_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.min_corner.y);
-	SDL_RenderDrawLine(sdl_game->renderer, // lewa
-		rectangle.min_corner.x, rectangle.min_corner.y, rectangle.min_corner.x, rectangle.max_corner.y);
-	SDL_RenderDrawLine(sdl_game->renderer, // prawa
-		rectangle.max_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
-	SDL_RenderDrawLine(sdl_game->renderer, // góra
-		rectangle.min_corner.x, rectangle.max_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
 }
 
 void write_to_input_buffer(input_buffer* buffer, game_input* new_input)
@@ -1090,7 +1139,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 
 	v2 target_pos = process_input(game, player, delta_time);
 	
-	move(game, player, target_pos);
+	move(sdl_game, game, player, target_pos);
 
 	// updating bullets
 	for (u32 bullet_index = 0; bullet_index < game->bullets_count; bullet_index++)
@@ -1247,7 +1296,7 @@ int main(int argc, char* args[])
 		player_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::PLAYER);
 		player_entity_type->velocity_multiplier = 40.0f;
 		player_entity_type->slowdown_multiplier = 0.80f;
-		player_entity_type->collision_rect_dim = get_v2(0.5f, 2.0f);
+		player_entity_type->collision_rect_dim = get_v2(0.5f, 1.9f);
 		player_entity_type->collision_rect_offset = 
 			get_standing_collision_rect_offset(player_entity_type->collision_rect_dim);
 
