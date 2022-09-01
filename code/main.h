@@ -91,6 +91,7 @@ struct entity_type
 
 	i32 damage;
 	i32 max_health;
+	r32 default_attack_cooldown;
 	
 	SDL_Rect graphics;
 	entity_flags flags;
@@ -105,6 +106,7 @@ struct entity
 	v2 acceleration;
 	i32 health;
 	entity_type* type;
+	r32 attack_cooldown;
 };
 
 struct bullet

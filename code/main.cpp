@@ -498,6 +498,7 @@ entity* add_entity(game_data* game, v2 position, entity_type* type)
 	game->entities_count++;
 	new_entity->position = position;
 	new_entity->type = type;
+	new_entity->health = type->max_health;
 	return new_entity;
 }
 
@@ -830,7 +831,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 
 		// collision with entities
 		{
-			for (u32 entity_index = 1; entity_index < game->entities_count; entity_index++)
+			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 			{
 				entity* entity_to_check = game->entities + entity_index;
 				if (are_entity_flags_set(entity_to_check, entity_flags::COLLIDES))
@@ -841,8 +842,29 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 						movement_delta, &was_intersection_with_entity, &collided_wall_normal, &min_movement_perc);
 
 					if (was_intersection_with_entity)
-					{
-						collided_entity = entity_to_check;
+					{						
+						if (entity_index == 0)
+						{
+							if (are_flags_set((u32*)&moving_bullet->type->flags, entity_flags::DAMAGES_PLAYER))
+							{
+								collided_entity = entity_to_check;
+							}
+							else
+							{
+								was_intersection_with_entity = false;
+							}
+						}
+						else
+						{
+							if (false == are_flags_set((u32*)&moving_bullet->type->flags, entity_flags::DAMAGES_PLAYER))
+							{
+								collided_entity = entity_to_check;
+							}
+							else
+							{
+								was_intersection_with_entity = false;
+							}
+						}						
 					}
 				}
 			}
@@ -856,8 +878,8 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 
 		if (was_intersection_with_entity)
 		{
-			collided_entity->health - moving_bullet->type->damage;
-			printf("pocisk trafil w entity, %i obrazen\n", moving_bullet->type->damage);
+			collided_entity->health -= moving_bullet->type->damage;
+			printf("pocisk trafil w entity, %i obrazen, zostalo %i\n", moving_bullet->type->damage, collided_entity->health);
 		}
 
 		if (was_intersection_with_entity || was_intersection_with_tile)
@@ -1045,6 +1067,11 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 
 	game->player_movement.frame_duration++;
 
+	if (player->attack_cooldown > 0)
+	{
+		player->attack_cooldown -= delta_time;
+	}
+
 	// przetwarzanie inputu
 	player->acceleration = get_zero_v2();
 	switch (game->player_movement.current_mode)
@@ -1069,9 +1096,13 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 
 			if (input->fire.number_of_presses > 0)
 			{
-				add_bullet(game, player->type->fired_bullet_type, player->position + get_v2(0, -0.5f), 
-					get_v2(1, 0) * player->type->fired_bullet_type->constant_velocity);
-				printf("strzal!\n");
+				if (player->attack_cooldown <= 0)
+				{
+					add_bullet(game, player->type->fired_bullet_type, player->position + get_v2(0.5f, -0.85f),
+						get_v2(1, 0) * player->type->fired_bullet_type->constant_velocity);
+					printf("strzal w skoku!\n");
+					player->attack_cooldown = player->type->default_attack_cooldown;
+				}							
 			}
 
 			if (input->up.number_of_presses > 0)
@@ -1098,6 +1129,16 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 		case movement_mode::JUMP:
 		{
 			player->acceleration = gravity;
+
+			if (input->fire.number_of_presses > 0)
+			{
+				if (player->attack_cooldown <= 0)
+				{
+					add_bullet(game, player->type->fired_bullet_type, player->position + get_v2(0.5f, -0.85f),
+						get_v2(1, 0) * player->type->fired_bullet_type->constant_velocity);
+					printf("strzal!\n");
+				}
+			}
 
 			if (input->left.number_of_presses > 0)
 			{
@@ -1187,15 +1228,43 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 	}
 
 	v2 center_screen = get_v2(HALF_SCREEN_WIDTH_IN_TILES + 1, HALF_SCREEN_HEIGHT_IN_TILES + 1);
-	for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
+	for (u32 entity_index = 1; entity_index < game->entities_count; entity_index++)
 	{
 		entity* entity = game->entities + entity_index;
-		if (false == are_entity_flags_set(entity, entity_flags::PLAYER))
+	
+		SDL_Rect entity_bitmap = entity->type->graphics;
+		v2 relative_position = center_screen + (entity->position - player->position);
+		SDL_Rect screen_rect = get_tile_render_rect(relative_position);
+		SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &entity_bitmap, &screen_rect);
+
+		if (entity->health <= 0)
 		{
-			SDL_Rect entity_bitmap = entity->type->graphics;
-			v2 relative_position = center_screen + (entity->position - player->position);
-			SDL_Rect screen_rect = get_tile_render_rect(relative_position);
-			SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &entity_bitmap, &screen_rect);
+			remove_entity(game, entity_index);
+			entity_index--; // ze względu na działanie compact array
+		}
+
+		if (entity->attack_cooldown > 0)
+		{
+			entity->attack_cooldown -= delta_time;
+		}
+
+		if (are_entity_flags_set(entity, entity_flags::ENEMY) 
+			&& entity->type->fired_bullet_type)
+		{
+			if (entity->attack_cooldown <= 0)
+			{
+				v2 player_relative_pos = player->position - entity->position;
+				r32 distance_to_player = length(player_relative_pos);
+				if (distance_to_player < 5.0f)
+				{
+					v2 direction_to_player = get_unit_vector(player_relative_pos);
+					add_bullet(game, entity->type->fired_bullet_type, entity->position + get_v2(1.0f, 1.0f),
+						player->type->fired_bullet_type->constant_velocity * direction_to_player);
+					printf("wrog strzela!\n");
+
+					entity->attack_cooldown = entity->type->default_attack_cooldown;
+				}
+			}
 		}
 	}
 
@@ -1208,6 +1277,12 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			v2 relative_position = center_screen + (bullet->position - player->position);
 			SDL_Rect screen_rect = get_tile_render_rect(relative_position);
 			SDL_RenderCopy(sdl_game->renderer, sdl_game->bullets_texture, &bullet_bitmap, &screen_rect);
+
+			if (is_zero(bullet->velocity))
+			{
+				remove_bullet(game, bullet_index);
+				bullet_index--;
+			}
 		}
 	}
 
@@ -1291,6 +1366,7 @@ int main(int argc, char* args[])
 		player_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::PLAYER);
 		player_entity_type->velocity_multiplier = 40.0f;
 		player_entity_type->slowdown_multiplier = 0.80f;
+		player_entity_type->default_attack_cooldown = 0.1f;
 		player_entity_type->collision_rect_dim = get_v2(0.5f, 1.9f);
 		player_entity_type->collision_rect_offset = 
 			get_standing_collision_rect_offset(player_entity_type->collision_rect_dim);
@@ -1301,13 +1377,15 @@ int main(int argc, char* args[])
 		
 		entity_type* default_entity_type = &game->entity_types[1];
 		default_entity_type->graphics = get_tile_rect(837);
-		default_entity_type->flags = entity_flags::COLLIDES;
+		default_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::ENEMY);
+		default_entity_type->max_health = 10;
+		default_entity_type->default_attack_cooldown = 0.5f;
 		default_entity_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 		default_entity_type->collision_rect_offset = 
 			get_standing_collision_rect_offset(default_entity_type->collision_rect_dim);
 
 		add_entity(game, get_v2(2.0f, 2.0f), default_entity_type);
-		add_entity(game, get_v2(4.0f, 4.0f), default_entity_type);
+		add_entity(game, get_v2(16.0f, 6.0f), default_entity_type);
 
 		game->bullet_types_count = 5;
 		game->bullet_types = push_array(&arena, game->bullet_types_count, entity_type);
@@ -1315,12 +1393,19 @@ int main(int argc, char* args[])
 		game->bullets_max_count = 5000;
 		game->bullets = push_array(&arena, game->bullets_max_count, bullet);
 
-		entity_type* default_bullet_type = &game->bullet_types[0];
-		default_bullet_type->damage = 2137;
-		default_bullet_type->constant_velocity = 15.0f;
-		default_bullet_type->graphics = get_bullet_graphic(&sdl_game, 1, 1);
+		entity_type* player_bullet_type = &game->bullet_types[0];
+		player_bullet_type->damage = 5;
+		player_bullet_type->constant_velocity = 12.0f;
+		player_bullet_type->graphics = get_bullet_graphic(&sdl_game, 1, 1);
 
-		player_entity_type->fired_bullet_type = default_bullet_type;
+		entity_type* enemy_bullet_type = &game->bullet_types[1];
+		enemy_bullet_type->damage = 5;
+		enemy_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
+		enemy_bullet_type->constant_velocity = 12.0f;
+		enemy_bullet_type->graphics = get_bullet_graphic(&sdl_game, 1, 1);
+
+		player_entity_type->fired_bullet_type = player_bullet_type;
+		default_entity_type->fired_bullet_type = enemy_bullet_type;
 
 		u32 frame_counter = 0;
 
