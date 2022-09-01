@@ -116,6 +116,29 @@ struct bullet
 	entity_type* type;
 };
 
+enum direction
+{
+	NONE = 0,
+	N = (1 << 0),
+	E = (1 << 1),
+	W = (1 << 3),
+	S = (1 << 4)
+};
+
+struct collision
+{
+	direction collided_wall;
+	v2 collided_wall_normal;
+	r32 possible_movement_perc;
+};
+
+struct entity_collision_data
+{
+	v2 position;
+	v2 collision_rect_offset;
+	v2 collision_rect_dim;
+};
+
 struct input_buffer
 {
 	game_input* buffer;
