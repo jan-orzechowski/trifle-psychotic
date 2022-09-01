@@ -538,7 +538,7 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 				break;
 			}
 			
-			r32 movement_apron = 0.0001f;
+			r32 movement_apron = 0.001f;
 			r32 min_movement_perc = 1.0f;
 			b32 was_intersection = false;
 			v2 collided_wall_normal = {};
@@ -603,22 +603,22 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 
 							if (west)
 							{
-								//printf("tile west, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								printf("tile west, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
 								collided_wall_normal = get_v2(-1, 0);
 							}
 							else if (east)
 							{
-								//printf("tile east, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								printf("tile east, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
 								collided_wall_normal = get_v2(1, 0);
 							}
 							else if (north)
 							{
-								//printf("tile north, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								printf("tile north, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
 								collided_wall_normal = get_v2(0, 1);
 							}
 							else if (south)
 							{
-								//printf("tile south, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
+								printf("tile south, iter: %d, (%d,%d)\n", iteration, tile_x_to_check, tile_y_to_check);
 								collided_wall_normal = get_v2(0, -1);
 
 								// paskudny hack rozwiązujący problem blokowania się na ścianie, jeśli kolidujemy z nią podczas spadania
@@ -638,30 +638,6 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 							}												
 						}
 					}
-				}
-
-				// przesuwamy się o tyle, o ile możemy
-				if ((min_movement_perc - movement_apron) > 0.0f)
-				{
-					v2 possible_movement = movement_delta * (min_movement_perc - movement_apron);
-					moving_entity->position += possible_movement;
-					// pozostałą deltę zmniejszamy o tyle, o ile się poruszyliśmy
-					movement_delta -= possible_movement;
-				}
-
-				if (was_intersection)
-				{
-					v2 movement_delta_orig = movement_delta;
-
-					// i sprawdzamy, co zrobić z pozostałą deltą - czy możemy się poruszyć wzdłuż ściany lub odbić
-					i32 how_many_times_subtract = 1; // 1 dla ślizgania się, 2 dla odbijania    
-					v2 bounced = collided_wall_normal * inner(collided_wall_normal, moving_entity->velocity);
-					moving_entity->velocity -= how_many_times_subtract * bounced;
-
-					movement_delta -= how_many_times_subtract * (collided_wall_normal * inner(movement_delta, collided_wall_normal));
-
-					//printf("collision fr: %d, iter: %d, before: (%.04f, %.04f) after: (%.04f, %.04f) \n",
-					//	sdl_game->debug_frame_counter, iteration, movement_delta_orig.x, movement_delta_orig.y, movement_delta.x, movement_delta.y);				
 				}
 			}
 		
@@ -700,23 +676,51 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 
 						if (west)
 						{
+							printf("entity collision west\n");
 							collided_wall_normal = get_v2(-1, 0);
 						}
 						else if (east)
 						{
+							printf("entity collision east\n");
 							collided_wall_normal = get_v2(1, 0);
 						}
 						else if (north)
 						{
+							printf("entity collision north\n");
 							collided_wall_normal = get_v2(0, 1);
 						}
 						else if (south)
 						{
+							printf("entity collision south\n");
 							collided_wall_normal = get_v2(0, -1);
 						}
 					}
 				}
 			}
+
+			// przesuwamy się o tyle, o ile możemy
+			if ((min_movement_perc - movement_apron) > 0.0f)
+			{
+				v2 possible_movement = movement_delta * (min_movement_perc - movement_apron);
+				moving_entity->position += possible_movement;
+				// pozostałą deltę zmniejszamy o tyle, o ile się poruszyliśmy
+				movement_delta -= possible_movement;
+			}
+
+			if (was_intersection)
+			{
+				v2 movement_delta_orig = movement_delta;
+
+				// i sprawdzamy, co zrobić z pozostałą deltą - czy możemy się poruszyć wzdłuż ściany lub odbić
+				i32 how_many_times_subtract = 1; // 1 dla ślizgania się, 2 dla odbijania    
+				v2 bounced = collided_wall_normal * inner(collided_wall_normal, moving_entity->velocity);
+				moving_entity->velocity -= how_many_times_subtract * bounced;
+
+				movement_delta -= how_many_times_subtract * (collided_wall_normal * inner(movement_delta, collided_wall_normal));
+
+				//printf("collision fr: %d, iter: %d, before: (%.04f, %.04f) after: (%.04f, %.04f) \n",
+				//	sdl_game->debug_frame_counter, iteration, movement_delta_orig.x, movement_delta_orig.y, movement_delta.x, movement_delta.y);				
+			}	
 		}
 	}
 }
@@ -777,11 +781,12 @@ inline void chceck_minkowski_collision(
 b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 target_pos)
 {
 	v2 movement_delta = target_pos - moving_bullet->position;
-	b32 was_intersection = false;
+	b32 was_intersection_with_tile = false;
+	b32 was_intersection_with_entity = false;
 	if (false == is_zero(movement_delta))
 	{
 		r32 movement_apron = 0.0001f;
-		r32 min_movement_perc = 1.0f;	
+		r32 min_movement_perc = 1.0f;
 		v2 collided_wall_normal = {};
 
 		v2 goal_position = moving_bullet->position + movement_delta;
@@ -815,7 +820,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 						chceck_minkowski_collision(
 							moving_bullet->position, moving_bullet->type->collision_rect_offset, moving_bullet->type->collision_rect_dim,
 							tile_to_check_pos, get_zero_v2(), tile_collision_rect_dim,
-							movement_delta, &was_intersection, &collided_wall_normal, &min_movement_perc);
+							movement_delta, &was_intersection_with_tile, &collided_wall_normal, &min_movement_perc);
 					}
 				}
 			}
@@ -833,9 +838,9 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 					chceck_minkowski_collision(
 						moving_bullet->position, moving_bullet->type->collision_rect_offset, moving_bullet->type->collision_rect_dim,
 						entity_to_check->position, entity_to_check->type->collision_rect_offset, entity_to_check->type->collision_rect_dim,
-						movement_delta, &was_intersection, &collided_wall_normal, &min_movement_perc);
+						movement_delta, &was_intersection_with_entity, &collided_wall_normal, &min_movement_perc);
 
-					if (was_intersection)
+					if (was_intersection_with_entity)
 					{
 						collided_entity = entity_to_check;
 					}
@@ -849,20 +854,20 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 			moving_bullet->position += possible_movement;
 		}
 
-		if (was_intersection)
+		if (was_intersection_with_entity)
 		{
-			if (collided_entity)
-			{
-				collided_entity->health - moving_bullet->type->damage;
-				printf("pocisk trafil w entity, %i obrazen\n", moving_bullet->type->damage);
-			}
-			remove_bullet(game, bullet_index);	
-			printf("pocisk znika\n", moving_bullet->type->damage);
+			collided_entity->health - moving_bullet->type->damage;
+			printf("pocisk trafil w entity, %i obrazen\n", moving_bullet->type->damage);
+		}
+
+		if (was_intersection_with_entity || was_intersection_with_tile)
+		{			
+			remove_bullet(game, bullet_index);
 			debug_breakpoint;
-		}		
+		}
 	}
 
-	return was_intersection;
+	return (was_intersection_with_entity || was_intersection_with_tile);
 }
 
 // kształt każdego obiektu w grze ma środek w pozycji w świecie tego obiektu
@@ -1056,7 +1061,7 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 					{
 						player->acceleration += get_v2(0, -30);
 						change_movement_mode(&game->player_movement, movement_mode::JUMP);
-						printf("ułatwienie!\n");
+						printf("ulatwienie!\n");
 						break;
 					}
 				}
@@ -1066,7 +1071,7 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 			{
 				add_bullet(game, player->type->fired_bullet_type, player->position + get_v2(0, -0.5f), 
 					get_v2(1, 0) * player->type->fired_bullet_type->constant_velocity);
-				printf("strzał!\n");
+				printf("strzal!\n");
 			}
 
 			if (input->up.number_of_presses > 0)
