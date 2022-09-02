@@ -71,6 +71,12 @@ struct level
 	u32 tiles_count;
 };
 
+struct sprite_effect
+{
+	SDL_Color tint;
+	r32 duration;
+};
+
 enum entity_flags
 {
 	PLAYER =         (1 << 0),
@@ -108,6 +114,8 @@ struct entity
 	i32 health;
 	entity_type* type;
 	r32 attack_cooldown;
+	sprite_effect* visual_effect;
+	r32 visual_effect_timer;
 };
 
 struct bullet
@@ -187,6 +195,9 @@ struct game_data
 	bullet* bullets; // compact array
 	u32 bullets_max_count;
 	u32 bullets_count;
+
+	sprite_effect* visual_effects;
+	u32 visual_effects_count;
 };
 
 struct tile_position

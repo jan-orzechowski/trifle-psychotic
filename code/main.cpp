@@ -526,6 +526,14 @@ entity* get_player(game_data* game)
 	return result;
 }
 
+void start_visual_effect(game_data* game, entity* entity, u32 sprite_effect_index)
+{
+	assert(sprite_effect_index < game->visual_effects_count);
+	sprite_effect* effect = &game->visual_effects[sprite_effect_index];
+	entity->visual_effect = effect;
+	entity->visual_effect_timer = effect->duration;
+}
+
 b32 damage_player(game_data* game, i32 damage_amount)
 {
 	b32 damaged = false;
@@ -533,6 +541,7 @@ b32 damage_player(game_data* game, i32 damage_amount)
 	{
 		damaged = true;
 		game->entities[0].health -= damage_amount;
+		start_visual_effect(game, &game->entities[0], 0);
 		printf("gracz dostaje %d obrazen, zostalo %d zdrowia\n", damage_amount, game->entities[0].health);
 		if (game->entities[0].health < 0.0f)
 		{
@@ -929,6 +938,8 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 			}
 			else
 			{
+				start_visual_effect(game, collided_entity, 0);
+				collided_entity->health -= moving_bullet->type->damage_on_contact;
 				printf("pocisk trafil w entity, %i obrazen, zostalo %i\n", moving_bullet->type->damage_on_contact, collided_entity->health);
 			}
 		}
@@ -1259,7 +1270,6 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		if (damage_player(game, collision.collided_entity->type->damage_on_contact))
 		{
 			// odrzut
-
 			v2 direction = player->position - collision.collided_entity->position;
 			r32 acceleration = collision.collided_entity->type->player_acceleration_on_collision;
 
@@ -1329,11 +1339,39 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 	for (u32 entity_index = 1; entity_index < game->entities_count; entity_index++)
 	{
 		entity* entity = game->entities + entity_index;
-	
+			
+		b32 tint_modified = false;
+		SDL_Color tint = { 255,255,255,255 };
+
+		if (entity->visual_effect)
+		{
+			if (entity->visual_effect_timer > 0.0f)
+			{
+				entity->visual_effect_timer -= delta_time;
+				tint = entity->visual_effect->tint;
+				tint_modified = true;
+			}
+			else
+			{
+				entity->visual_effect = NULL;
+			}
+		}
+
+		if (tint_modified)
+		{
+			SDL_SetTextureColorMod(sdl_game->tileset_texture, tint.r, tint.g, tint.b);
+		}
+
 		SDL_Rect entity_bitmap = entity->type->graphics;
 		v2 relative_position = center_screen + (entity->position - player->position);
 		SDL_Rect screen_rect = get_tile_render_rect(relative_position);
 		SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &entity_bitmap, &screen_rect);
+
+		if (tint_modified)
+		{
+			// przywracamy domyślne ustawienia
+			SDL_SetTextureColorMod(sdl_game->tileset_texture, 255, 255, 255);
+		}
 
 		if (entity->health <= 0)
 		{
@@ -1408,8 +1446,36 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 	player_head_render_rect.x += 4;
 	player_head_render_rect.y += -16;
 
+	b32 tint_modified = false;
+	SDL_Color tint = { 255,255,255,255 };
+
+	if (player->visual_effect)
+	{
+		if (player->visual_effect_timer > 0.0f)
+		{
+			player->visual_effect_timer -= delta_time;
+			tint = player->visual_effect->tint;
+			tint_modified = true;
+		}
+		else
+		{
+			player->visual_effect = NULL;
+		}
+	}
+
+	if (tint_modified)
+	{
+		SDL_SetTextureColorMod(sdl_game->player_texture, tint.r, tint.g, tint.b);
+	}
+
 	SDL_RenderCopy(sdl_game->renderer, sdl_game->player_texture, &player_legs_bitmap, &player_legs_render_rect);
 	SDL_RenderCopy(sdl_game->renderer, sdl_game->player_texture, &player_head_bitmap, &player_head_render_rect);
+
+	if (tint_modified)
+	{
+		// przywracamy domyślne ustawienia
+		SDL_SetTextureColorMod(sdl_game->player_texture, 255, 255, 255);
+	}
 
 	rect current_player_collision_rect = get_rect_from_center(
 		screen_half_size + (player->type->collision_rect_offset * TILE_SIDE_IN_PIXELS),
@@ -1459,7 +1525,7 @@ int main(int argc, char* args[])
 		game->entities_max_count = 1000;
 		game->entities = push_array(&arena, game->entities_max_count, entity);
 
-		game->default_player_invincibility_cooldown = 5.0f;
+		game->default_player_invincibility_cooldown = 2.0f;
 		game->player_invincibility_cooldown = 0.0f;
 
 		entity_type* player_entity_type = &game->entity_types[0];
@@ -1511,6 +1577,12 @@ int main(int argc, char* args[])
 
 		player_entity_type->fired_bullet_type = player_bullet_type;
 		default_entity_type->fired_bullet_type = enemy_bullet_type;
+
+		game->visual_effects_count = 5;
+		game->visual_effects = push_array(&arena, game->visual_effects_count, sprite_effect);
+		sprite_effect* damage_tint = &game->visual_effects[0];
+		damage_tint->duration = 2.0f;
+		damage_tint->tint = { 255, 0, 0, 0 };
 
 		u32 frame_counter = 0;
 
