@@ -77,6 +77,19 @@ struct sprite_effect
 	r32 duration;
 };
 
+struct entity_graphics_part
+{
+	SDL_Texture* texture;
+	SDL_Rect texture_rect;
+	v2 offset;
+};
+
+struct entity_graphics
+{
+	entity_graphics_part* parts;
+	u32 parts_count;
+};
+
 enum entity_flags
 {
 	PLAYER =         (1 << 0),
@@ -100,7 +113,7 @@ struct entity_type
 	i32 max_health;
 	r32 default_attack_cooldown;
 	
-	SDL_Rect graphics;
+	entity_graphics graphics;
 	entity_flags flags;
 
 	entity_type* fired_bullet_type;

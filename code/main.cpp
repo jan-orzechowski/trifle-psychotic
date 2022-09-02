@@ -346,13 +346,69 @@ b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
 	return collides;
 }
 
-SDL_Rect get_bullet_graphic(sdl_game_data* sdl_game, u32 x, u32 y)
+entity_graphics get_tile_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 tile_value)
 {
-	SDL_Rect result = {};
-	result.w = 10;
-	result.h = 10;
-	result.x = y * 10;
-	result.y = x * 10;
+	entity_graphics result = {};
+
+	SDL_Rect texture_rect = get_tile_rect(tile_value);
+
+	result.parts_count = 1;
+	result.parts = push_array(arena, result.parts_count, entity_graphics_part);
+	result.parts[0].texture = sdl_game->tileset_texture;
+	result.parts[0].texture_rect = texture_rect;
+	result.parts[0].offset = get_zero_v2();
+
+	return result;
+}
+
+entity_graphics get_player_graphics(sdl_game_data* sdl_game, memory_arena* arena)
+{
+	entity_graphics result = {};
+
+	SDL_Rect player_head_rect = {};
+	player_head_rect.x = 0;
+	player_head_rect.y = 0;
+	player_head_rect.w = 24;
+	player_head_rect.h = 24;
+
+	SDL_Rect player_legs_rect = {};
+	player_legs_rect.x = 0;
+	player_legs_rect.y = 24;
+	player_legs_rect.w = 24;
+	player_legs_rect.h = 24;
+
+	v2 legs_offset = get_v2(0.0f, -4.0f);
+	v2 head_offset = get_v2(5.0f, -20.0f);
+
+	result.parts_count = 2;
+	result.parts = push_array(arena, result.parts_count, entity_graphics_part);
+	result.parts[0].texture = sdl_game->player_texture;
+	result.parts[0].texture_rect = player_head_rect;
+	result.parts[0].offset = head_offset;
+
+	result.parts[1].texture = sdl_game->player_texture;
+	result.parts[1].texture_rect = player_legs_rect;
+	result.parts[1].offset = legs_offset;
+
+	return result;
+}
+
+entity_graphics get_bullet_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 x, u32 y)
+{
+	entity_graphics result = {};
+
+	SDL_Rect texture_rect = {};
+	texture_rect.w = 10;
+	texture_rect.h = 10;
+	texture_rect.x = y * 10;
+	texture_rect.y = x * 10;
+
+	result.parts_count = 1;
+	result.parts = push_array(arena, result.parts_count, entity_graphics_part);
+	result.parts[0].texture = sdl_game->bullets_texture;
+	result.parts[0].texture_rect = texture_rect;
+	result.parts[0].offset = get_zero_v2();
+
 	return result;
 }
 
@@ -954,29 +1010,6 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 	return was_collision;
 }
 
-// kształt każdego obiektu w grze ma środek w pozycji w świecie tego obiektu
-SDL_Rect get_render_rect(v2 position, rect entity_rect)
-{
-	v2 entity_rect_dim = get_rect_dimensions(entity_rect);
-	SDL_Rect result = {};
-	result.w = entity_rect_dim.x;
-	result.h = entity_rect_dim.y;	
-	result.x = (position.x * entity_rect_dim.x) - (entity_rect_dim.x / 2);
-	result.y = (position.y * entity_rect_dim.y) - (entity_rect_dim.y / 2);
-	return result;
-}
-
-// każde pole ma środek w miejscu o pełnych współrzędnych, np. (1, 1)
-SDL_Rect get_tile_render_rect(v2 position)
-{
-	SDL_Rect result = {};
-	result.w = TILE_SIDE_IN_PIXELS;
-	result.h = TILE_SIDE_IN_PIXELS;
-	result.x = (position.x * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
-	result.y = (position.y * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
-	return result;
-}
-
 void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 {
 	entity* player = get_player(game);
@@ -1252,125 +1285,108 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 	return target_pos;
 }
 
+void render_entity_graphics(SDL_Renderer* renderer, v2 screen_center, 
+	v2 player_position, v2 entity_position, 
+	sprite_effect* visual_effect, entity_graphics graphics)
+{
+	b32 tint_modified = false;
+	SDL_Color tint = { 255,255,255,255 };
+
+	if (visual_effect)
+	{
+		tint_modified = true;
+		tint = visual_effect->tint;
+	}
+
+	for (u32 part_index = 0; part_index < graphics.parts_count; part_index++)
+	{
+		entity_graphics_part* part = &graphics.parts[part_index];
+
+		if (tint_modified)
+		{
+			SDL_SetTextureColorMod(part->texture, tint.r, tint.g, tint.b);
+		}
+
+		v2 position = screen_center + (entity_position - player_position);
+		SDL_Rect screen_rect = {};
+		screen_rect.w = part->texture_rect.w;
+		screen_rect.h = part->texture_rect.h;
+		screen_rect.x = (position.x * TILE_SIDE_IN_PIXELS) - (part->texture_rect.w / 2) + part->offset.x;
+		screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) - (part->texture_rect.h / 2) + part->offset.y;
+
+		SDL_RenderCopy(renderer, part->texture, &part->texture_rect, &screen_rect);
+
+		if (tint_modified)
+		{
+			// przywracamy domyślne ustawienia
+			SDL_SetTextureColorMod(part->texture, 255, 255, 255);
+		}
+	}
+}
+
 void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 {	
 	entity* player = get_player(game);
 
-	if (game->player_invincibility_cooldown > 0.0f)
+	// update player
 	{
-		game->player_invincibility_cooldown -= delta_time;
-		//printf("niezniszczalnosc jeszcze przez %.02f\n", game->player_invincibility_cooldown);
-	}
-
-	v2 target_pos = process_input(game, player, delta_time);
-	
-	collision_with_effect collision = move(sdl_game, game, player, target_pos);
-	if (collision.collided_entity)
-	{		
-		if (damage_player(game, collision.collided_entity->type->damage_on_contact))
+		if (game->player_invincibility_cooldown > 0.0f)
 		{
-			// odrzut
-			v2 direction = player->position - collision.collided_entity->position;
-			r32 acceleration = collision.collided_entity->type->player_acceleration_on_collision;
-
-			game->player_movement.recoil_timer = 2.0f;
-			game->player_movement.recoil_acceleration_timer = 1.0f;
-			game->player_movement.recoil_acceleration = (direction * acceleration);
-
-			printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n", 
-				game->player_movement.recoil_acceleration.x, 
-				game->player_movement.recoil_acceleration.y);
-
-			change_movement_mode(&game->player_movement, movement_mode::RECOIL);
+			game->player_invincibility_cooldown -= delta_time;
+			//printf("niezniszczalnosc jeszcze przez %.02f\n", game->player_invincibility_cooldown);
 		}
-	}
 
-	// updating bullets
-	for (u32 bullet_index = 0; bullet_index < game->bullets_count; bullet_index++)
-	{
-		bullet* bullet = game->bullets + bullet_index;
-		if (bullet->type)
-		{			
-			v2 bullet_target_pos = bullet->position + (bullet->velocity * delta_time);
-			b32 hit = move_bullet(game, bullet, bullet_index, bullet_target_pos);
-			if (hit)
+		if (player->visual_effect)
+		{
+			if (player->visual_effect_timer > 0.0f)
 			{
-				bullet_index--; // ze względu na compact array - został usunięty bullet, ale nowy został wstawiony na jego miejsce
+				player->visual_effect_timer -= delta_time;
+			}
+			else
+			{
+				player->visual_effect = NULL;
+			}
+		}
+
+		v2 target_pos = process_input(game, player, delta_time);
+
+		collision_with_effect collision = move(sdl_game, game, player, target_pos);
+		if (collision.collided_entity)
+		{
+			if (damage_player(game, collision.collided_entity->type->damage_on_contact))
+			{
+				// odrzut
+				v2 direction = player->position - collision.collided_entity->position;
+				r32 acceleration = collision.collided_entity->type->player_acceleration_on_collision;
+
+				game->player_movement.recoil_timer = 2.0f;
+				game->player_movement.recoil_acceleration_timer = 1.0f;
+				game->player_movement.recoil_acceleration = (direction * acceleration);
+
+				printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
+					game->player_movement.recoil_acceleration.x,
+					game->player_movement.recoil_acceleration.y);
+
+				change_movement_mode(&game->player_movement, movement_mode::RECOIL);
 			}
 		}
 	}
 
-	SDL_SetRenderDrawColor(sdl_game->renderer, 0, 255, 0, 0);
-	SDL_RenderClear(sdl_game->renderer);
-
-	tile_position player_tile_pos = get_tile_position(player->position);
-	v2 player_offset_in_tile = get_v2(
-		player->position.x - (r32)player_tile_pos.x,
-		player->position.y - (r32)player_tile_pos.y);
-
-	i32 center_screen_x = player_tile_pos.x;
-	i32 center_screen_y = player_tile_pos.y;
-	i32 screen_half_width = SDL_ceil(HALF_SCREEN_WIDTH_IN_TILES) + 1;
-	i32 screen_half_height = SDL_ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 1;
-
-	for (i32 y_coord_relative = -screen_half_height;
-		y_coord_relative < screen_half_height;
-		y_coord_relative++)
-	{
-		i32 y_coord_on_screen = y_coord_relative + screen_half_height;
-		i32 y_coord_in_world = player_tile_pos.y + y_coord_relative;
-		for (i32 x_coord_relative = -screen_half_width;
-			x_coord_relative < screen_half_width;
-			x_coord_relative++)
-		{
-			i32 x_coord_on_screen = x_coord_relative + screen_half_width;
-			i32 x_coord_in_world = player_tile_pos.x + x_coord_relative;
-
-			u32 tile_value = get_tile_value(game->current_level, x_coord_in_world, y_coord_in_world);
-			SDL_Rect tile_bitmap = get_tile_rect(tile_value);
-
-			SDL_Rect screen_rect = get_tile_render_rect(
-				get_v2(x_coord_on_screen, y_coord_on_screen) - player_offset_in_tile);
-			SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &tile_bitmap, &screen_rect);
-		}
-	}
-
-	v2 center_screen = get_v2(HALF_SCREEN_WIDTH_IN_TILES + 1, HALF_SCREEN_HEIGHT_IN_TILES + 1);
+	// update entities
 	for (u32 entity_index = 1; entity_index < game->entities_count; entity_index++)
 	{
 		entity* entity = game->entities + entity_index;
-			
-		b32 tint_modified = false;
-		SDL_Color tint = { 255,255,255,255 };
 
 		if (entity->visual_effect)
 		{
 			if (entity->visual_effect_timer > 0.0f)
 			{
 				entity->visual_effect_timer -= delta_time;
-				tint = entity->visual_effect->tint;
-				tint_modified = true;
 			}
 			else
 			{
 				entity->visual_effect = NULL;
 			}
-		}
-
-		if (tint_modified)
-		{
-			SDL_SetTextureColorMod(sdl_game->tileset_texture, tint.r, tint.g, tint.b);
-		}
-
-		SDL_Rect entity_bitmap = entity->type->graphics;
-		v2 relative_position = center_screen + (entity->position - player->position);
-		SDL_Rect screen_rect = get_tile_render_rect(relative_position);
-		SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &entity_bitmap, &screen_rect);
-
-		if (tint_modified)
-		{
-			// przywracamy domyślne ustawienia
-			SDL_SetTextureColorMod(sdl_game->tileset_texture, 255, 255, 255);
 		}
 
 		if (entity->health <= 0)
@@ -1384,7 +1400,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			entity->attack_cooldown -= delta_time;
 		}
 
-		if (are_entity_flags_set(entity, entity_flags::ENEMY) 
+		if (are_entity_flags_set(entity, entity_flags::ENEMY)
 			&& entity->type->fired_bullet_type)
 		{
 			if (entity->attack_cooldown <= 0)
@@ -1404,87 +1420,103 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		}
 	}
 
+	// update bullets
 	for (u32 bullet_index = 0; bullet_index < game->bullets_count; bullet_index++)
 	{
 		bullet* bullet = game->bullets + bullet_index;
 		if (bullet->type)
 		{
-			SDL_Rect bullet_bitmap = bullet->type->graphics;
-			v2 relative_position = center_screen + (bullet->position - player->position);
-			SDL_Rect screen_rect = get_tile_render_rect(relative_position);
-			SDL_RenderCopy(sdl_game->renderer, sdl_game->bullets_texture, &bullet_bitmap, &screen_rect);
-
-			if (is_zero(bullet->velocity))
+			v2 bullet_target_pos = bullet->position + (bullet->velocity * delta_time);
+			b32 hit = move_bullet(game, bullet, bullet_index, bullet_target_pos);
+			if (hit)
 			{
-				remove_bullet(game, bullet_index);
-				bullet_index--;
+				bullet_index--; // ze względu na compact array - został usunięty bullet, ale nowy został wstawiony na jego miejsce
 			}
 		}
-	}
 
-	SDL_Rect player_head_bitmap = {};
-	player_head_bitmap.x = 0;
-	player_head_bitmap.y = 0;
-	player_head_bitmap.w = 24;
-	player_head_bitmap.h = 24;
-
-	SDL_Rect player_legs_bitmap = {};
-	player_legs_bitmap.x = 0;
-	player_legs_bitmap.y = 24;
-	player_legs_bitmap.w = 24;
-	player_legs_bitmap.h = 24;
-
-	SDL_Rect player_legs_render_rect = {};
-	player_legs_render_rect.w = 24;
-	player_legs_render_rect.h = 24;
-	player_legs_render_rect.x = (screen_half_width * TILE_SIDE_IN_PIXELS) - 24/2;
-	player_legs_render_rect.y = (screen_half_height * TILE_SIDE_IN_PIXELS) - 24/2 - 4;
-
-	v2 screen_half_size = get_v2(screen_half_width, screen_half_height) * TILE_SIDE_IN_PIXELS;
-
-	SDL_Rect player_head_render_rect = player_legs_render_rect;
-	player_head_render_rect.x += 4;
-	player_head_render_rect.y += -16;
-
-	b32 tint_modified = false;
-	SDL_Color tint = { 255,255,255,255 };
-
-	if (player->visual_effect)
-	{
-		if (player->visual_effect_timer > 0.0f)
+		if (is_zero(bullet->velocity))
 		{
-			player->visual_effect_timer -= delta_time;
-			tint = player->visual_effect->tint;
-			tint_modified = true;
-		}
-		else
-		{
-			player->visual_effect = NULL;
+			remove_bullet(game, bullet_index);
+			bullet_index--;
 		}
 	}
 
-	if (tint_modified)
+	// rendering
 	{
-		SDL_SetTextureColorMod(sdl_game->player_texture, tint.r, tint.g, tint.b);
+		SDL_SetRenderDrawColor(sdl_game->renderer, 0, 255, 0, 0);
+		SDL_RenderClear(sdl_game->renderer);
+
+		tile_position player_tile_pos = get_tile_position(player->position);
+		v2 player_offset_in_tile = get_v2(
+			player->position.x - (r32)player_tile_pos.x,
+			player->position.y - (r32)player_tile_pos.y);
+
+		i32 screen_half_width = SDL_ceil(HALF_SCREEN_WIDTH_IN_TILES) + 1;
+		i32 screen_half_height = SDL_ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 1;
+
+		// draw tiles
+		for (i32 y_coord_relative = -screen_half_height;
+			y_coord_relative < screen_half_height;
+			y_coord_relative++)
+		{
+			i32 y_coord_on_screen = y_coord_relative + screen_half_height;
+			i32 y_coord_in_world = player_tile_pos.y + y_coord_relative;
+			for (i32 x_coord_relative = -screen_half_width;
+				x_coord_relative < screen_half_width;
+				x_coord_relative++)
+			{
+				i32 x_coord_on_screen = x_coord_relative + screen_half_width;
+				i32 x_coord_in_world = player_tile_pos.x + x_coord_relative;
+
+				u32 tile_value = get_tile_value(game->current_level, x_coord_in_world, y_coord_in_world);
+				SDL_Rect tile_bitmap = get_tile_rect(tile_value);
+
+				v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - player_offset_in_tile;
+				SDL_Rect screen_rect = {};
+				screen_rect.w = TILE_SIDE_IN_PIXELS;
+				screen_rect.h = TILE_SIDE_IN_PIXELS;
+				screen_rect.x = (position.x * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
+				screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
+					
+				SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &tile_bitmap, &screen_rect);
+			}
+		}
+
+		v2 screen_center = get_v2(HALF_SCREEN_WIDTH_IN_TILES + 1, HALF_SCREEN_HEIGHT_IN_TILES + 1);
+
+		// draw entities
+		for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
+		{
+			entity* entity = game->entities + entity_index;
+			render_entity_graphics(sdl_game->renderer, screen_center,
+				player->position, entity->position,
+				entity->visual_effect, entity->type->graphics);
+		}
+
+		// draw bullets
+		for (u32 bullet_index = 0; bullet_index < game->bullets_count; bullet_index++)
+		{
+			bullet* bullet = game->bullets + bullet_index;
+			render_entity_graphics(sdl_game->renderer, screen_center,
+				player->position, bullet->position,
+				NULL, bullet->type->graphics);
+		}
+
+		// draw debug info
+		{
+#if 0
+			v2 screen_half_size = get_v2(screen_half_width, screen_half_height) * TILE_SIDE_IN_PIXELS;
+			rect current_player_collision_rect = get_rect_from_center(
+				screen_half_size + (player->type->collision_rect_offset * TILE_SIDE_IN_PIXELS),
+				player->type->collision_rect_dim * TILE_SIDE_IN_PIXELS);
+			render_rect(sdl_game, current_player_collision_rect);
+
+			render_debug_information(sdl_game, game);
+#endif
+		}
+
+		SDL_RenderPresent(sdl_game->renderer);
 	}
-
-	SDL_RenderCopy(sdl_game->renderer, sdl_game->player_texture, &player_legs_bitmap, &player_legs_render_rect);
-	SDL_RenderCopy(sdl_game->renderer, sdl_game->player_texture, &player_head_bitmap, &player_head_render_rect);
-
-	if (tint_modified)
-	{
-		// przywracamy domyślne ustawienia
-		SDL_SetTextureColorMod(sdl_game->player_texture, 255, 255, 255);
-	}
-
-	rect current_player_collision_rect = get_rect_from_center(
-		screen_half_size + (player->type->collision_rect_offset * TILE_SIDE_IN_PIXELS),
-		player->type->collision_rect_dim * TILE_SIDE_IN_PIXELS);
-	render_rect(sdl_game, current_player_collision_rect);
-
-	render_debug_information(sdl_game, game);
-
-	SDL_RenderPresent(sdl_game->renderer);
 }
 
 r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
@@ -1529,7 +1561,7 @@ int main(int argc, char* args[])
 		game->player_invincibility_cooldown = 0.0f;
 
 		entity_type* player_entity_type = &game->entity_types[0];
-		player_entity_type->graphics = {};
+		player_entity_type->graphics = get_player_graphics(&sdl_game, &arena);
 		player_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::PLAYER);
 		player_entity_type->max_health = 100;
 		player_entity_type->velocity_multiplier = 40.0f;
@@ -1544,7 +1576,7 @@ int main(int argc, char* args[])
 		game->player_movement.current_mode = movement_mode::WALK;
 		
 		entity_type* default_entity_type = &game->entity_types[1];
-		default_entity_type->graphics = get_tile_rect(837);
+		default_entity_type->graphics = get_tile_graphics(&sdl_game, &arena, 837);
 		default_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::ENEMY);
 		default_entity_type->max_health = 10;
 		default_entity_type->damage_on_contact = 10;
@@ -1567,14 +1599,14 @@ int main(int argc, char* args[])
 		entity_type* player_bullet_type = &game->bullet_types[0];
 		player_bullet_type->damage_on_contact = 5;
 		player_bullet_type->constant_velocity = 12.0f;
-		player_bullet_type->graphics = get_bullet_graphic(&sdl_game, 1, 1);
+		player_bullet_type->graphics = get_bullet_graphics(&sdl_game, &arena, 1, 1);
 
 		entity_type* enemy_bullet_type = &game->bullet_types[1];
 		enemy_bullet_type->damage_on_contact = 5;
 		enemy_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
 		enemy_bullet_type->constant_velocity = 12.0f;
-		enemy_bullet_type->graphics = get_bullet_graphic(&sdl_game, 1, 1);
-
+		enemy_bullet_type->graphics = get_bullet_graphics(&sdl_game, &arena, 1, 1);
+			
 		player_entity_type->fired_bullet_type = player_bullet_type;
 		default_entity_type->fired_bullet_type = enemy_bullet_type;
 
