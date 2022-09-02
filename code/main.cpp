@@ -526,6 +526,27 @@ entity* get_player(game_data* game)
 	return result;
 }
 
+b32 damage_player(game_data* game, i32 damage_amount)
+{
+	b32 damaged = false;
+	if (game->player_invincibility_cooldown <= 0)
+	{
+		damaged = true;
+		game->entities[0].health -= damage_amount;
+		printf("gracz dostaje %d obrazen, zostalo %d zdrowia\n", damage_amount, game->entities[0].health);
+		if (game->entities[0].health < 0.0f)
+		{
+			// przegrywamy
+			debug_breakpoint;
+		}
+		else
+		{
+			game->player_invincibility_cooldown = game->default_player_invincibility_cooldown;		
+		}
+	}
+	return damaged;
+}
+
 entity_collision_data get_entity_collision_data(entity* entity)
 {
 	entity_collision_data result = {};
@@ -643,15 +664,17 @@ rect get_tiles_area_to_check_for_collision(bullet* bullet, v2 target_pos)
 	return result;
 }
 
-collision get_closer_collision(collision a, collision b)
+struct collision_with_effect
 {
-	collision result = (a.possible_movement_perc < b.possible_movement_perc) ? a : b;
-	return result;
-}
+	collision data;
+	entity* collided_entity;
+};
 
-void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 target_pos)
+collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 target_pos)
 {	
 	v2 movement_delta = target_pos - moving_entity->position;
+	collision_with_effect result = {};
+
 	if (false == is_zero(movement_delta))
 	{
 		r32 movement_apron = 0.001f;
@@ -705,13 +728,21 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 									}
 								}
 
-								closest_collision = get_closer_collision(closest_collision, new_collision);
+								if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
+								{
+									closest_collision = new_collision;
+								}
 							}							
 						}
 					}
 				}
 			}
 		
+			collision closest_effect_entity_collision = {};
+			closest_effect_entity_collision.collided_wall = direction::NONE;
+			closest_effect_entity_collision.possible_movement_perc = 1.0f;
+			entity* collided_effect_entity = NULL;
+
 			// collision with entities
 			{
 				for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
@@ -723,11 +754,20 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 						collision new_collision = check_minkowski_collision(
 							get_entity_collision_data(moving_entity), 
 							get_entity_collision_data(entity_to_check), 
-							movement_delta, closest_collision.possible_movement_perc);
+							movement_delta, closest_effect_entity_collision.possible_movement_perc);
 
 						if (new_collision.collided_wall != direction::NONE)
 						{
-							closest_collision = get_closer_collision(closest_collision, new_collision);
+							if (new_collision.possible_movement_perc < closest_effect_entity_collision.possible_movement_perc)
+							{
+								closest_effect_entity_collision = new_collision;
+
+								if (are_entity_flags_set(moving_entity, entity_flags::PLAYER)
+									&& are_entity_flags_set(entity_to_check, entity_flags::ENEMY))
+								{
+									collided_effect_entity = entity_to_check;
+								}
+							}
 						}
 					}
 				}
@@ -743,6 +783,16 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 				//printf("przesuniecie o (%.04f, %.04f)\n", possible_movement.x, possible_movement.y);
 			}
 
+			// jeśli z entity mieliśmy kolizję wcześniej niż z tile
+			if (closest_effect_entity_collision.possible_movement_perc < closest_collision.possible_movement_perc)
+			{
+				if (collided_effect_entity)
+				{
+					result.data = closest_effect_entity_collision;
+					result.collided_entity = collided_effect_entity;
+				}
+			}
+			
 			if (false == is_zero(closest_collision.collided_wall_normal))
 			{
 				v2 wall_normal = closest_collision.collided_wall_normal;
@@ -753,25 +803,31 @@ void move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 ta
 				v2 bounced = wall_normal * inner(wall_normal, moving_entity->velocity);
 				moving_entity->velocity -= how_many_times_subtract * bounced;
 
-				movement_delta -= how_many_times_subtract * (wall_normal * inner(movement_delta, wall_normal));				
+				movement_delta -= how_many_times_subtract * (wall_normal * inner(movement_delta, wall_normal));
 
 				if (movement_delta.x == movement_delta_orig.x && movement_delta.y == movement_delta_orig.y)
 				{
 					debug_breakpoint;
 				}
 
-				printf("collision fr: %d, iter: %d, before: (%.04f, %.04f) after: (%.04f, %.04f) \n",
-					sdl_game->debug_frame_counter, iteration, movement_delta_orig.x, movement_delta_orig.y, movement_delta.x, movement_delta.y);				
-			}	
+				//printf("collision fr: %d, iter: %d, before: (%.04f, %.04f) after: (%.04f, %.04f) \n",
+				//	sdl_game->debug_frame_counter, iteration, movement_delta_orig.x, movement_delta_orig.y, movement_delta.x, movement_delta.y);
+			}
+			else
+			{
+				// jeśli nie było kolizji, nie ma potrzeby kolejnych iteracji
+				break;
+			}
 		}
 	}
+
+	return result;
 }
 
 b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 target_pos)
 {
 	v2 movement_delta = target_pos - moving_bullet->position;
-	b32 was_intersection_with_tile = false;
-	b32 was_intersection_with_entity = false;
+	b32 was_collision = false;
 	if (false == is_zero(movement_delta))
 	{
 		r32 movement_apron = 0.001f;
@@ -779,6 +835,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 		collision closest_collision = {};
 		closest_collision.collided_wall = direction::NONE;
 		closest_collision.possible_movement_perc = 1.0f;
+		entity* collided_entity = NULL;
 
 		// collision with tiles
 		{
@@ -801,14 +858,15 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 
 						if (new_collision.collided_wall != direction::NONE)
 						{
-							closest_collision = get_closer_collision(closest_collision, new_collision);
+							if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
+							{
+								closest_collision = new_collision;
+							}
 						}
 					}
 				}
 			}
 		}
-
-		entity* collided_entity = NULL;
 
 		// collision with entities
 		{
@@ -823,35 +881,37 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 						movement_delta, closest_collision.possible_movement_perc);
 
 					if (new_collision.collided_wall != direction::NONE)
-					{						
-						if (entity_index == 0)
+					{		
+						if (are_flags_set((u32*)&moving_bullet->type->flags, entity_flags::DAMAGES_PLAYER))
 						{
-							if (are_flags_set((u32*)&moving_bullet->type->flags, entity_flags::DAMAGES_PLAYER))
+							if (entity_index == 0)
 							{
-								collided_entity = entity_to_check;
-								closest_collision = get_closer_collision(closest_collision, new_collision);
-							}
-							else
-							{
-								was_intersection_with_entity = false;
+								// mamy gracza							
+								if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
+								{
+									closest_collision = new_collision;
+									collided_entity = entity_to_check;
+								}
 							}
 						}
 						else
 						{
-							if (false == are_flags_set((u32*)&moving_bullet->type->flags, entity_flags::DAMAGES_PLAYER))
+							if (entity_index != 0)
 							{
-								collided_entity = entity_to_check;
-								closest_collision = get_closer_collision(closest_collision, new_collision);
+								// mamy przeciwnika
+								if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
+								{
+									closest_collision = new_collision;
+									collided_entity = entity_to_check;
+								}
 							}
-							else
-							{
-								was_intersection_with_entity = false;
-							}
-						}						
+						}
 					}					
 				}
 			}
 		}
+
+		was_collision = (closest_collision.collided_wall != direction::NONE);
 
 		if ((closest_collision.possible_movement_perc - movement_apron) > 0.0f)
 		{
@@ -860,20 +920,27 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 			movement_delta -= possible_movement;
 		}
 
-		if (was_intersection_with_entity)
+		if (collided_entity)
 		{
-			collided_entity->health -= moving_bullet->type->damage;
-			printf("pocisk trafil w entity, %i obrazen, zostalo %i\n", moving_bullet->type->damage, collided_entity->health);
+			// trzeba wymyślić lepszy sposób na sprawdzenie, czy to gracz
+			if (collided_entity == &game->entities[0])
+			{
+				damage_player(game, moving_bullet->type->damage_on_contact);
+			}
+			else
+			{
+				printf("pocisk trafil w entity, %i obrazen, zostalo %i\n", moving_bullet->type->damage_on_contact, collided_entity->health);
+			}
 		}
 
-		if (was_intersection_with_entity || was_intersection_with_tile)
-		{			
+		if (was_collision)
+		{
+			//printf("pocisk usuniety\n");
 			remove_bullet(game, bullet_index);
-			debug_breakpoint;
 		}
 	}
 
-	return (was_intersection_with_entity || was_intersection_with_tile);
+	return was_collision;
 }
 
 // kształt każdego obiektu w grze ma środek w pozycji w świecie tego obiektu
@@ -1005,8 +1072,8 @@ void change_movement_mode(player_movement* movement, movement_mode mode)
 		case movement_mode::JUMP:
 			printf("switch to JUMP after %d frames\n", movement->previous_mode_frame_duration);
 		break;
-		case movement_mode::FALL: 
-			printf("switch to FALL after %d frames\n", movement->previous_mode_frame_duration);
+		case movement_mode::RECOIL: 
+			printf("switch to RECOIL after %d frames\n", movement->previous_mode_frame_duration);
 		break;
 	}
 }
@@ -1039,11 +1106,25 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 			}
 		}
 		break;
-		case movement_mode::FALL:
+		case movement_mode::RECOIL:
 		{
+			// czy odzyskujemy kontrolę?
 			if (is_standing_at_frame_beginning)
 			{
-				change_movement_mode(&game->player_movement, movement_mode::WALK);
+				if (game->player_movement.recoil_timer > 0.0f)
+				{
+					// nie
+					game->player_movement.recoil_timer -= delta_time;
+				}
+				else
+				{
+					// tak
+					change_movement_mode(&game->player_movement, movement_mode::WALK);
+				}
+			}
+			else
+			{
+				// w tym wypadku po prostu lecimy dalej
 			}
 		}
 		break;
@@ -1055,7 +1136,7 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 	{
 		player->attack_cooldown -= delta_time;
 	}
-
+	
 	// przetwarzanie inputu
 	player->acceleration = get_zero_v2();
 	switch (game->player_movement.current_mode)
@@ -1135,11 +1216,18 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 			}
 		}
 		break;
-		case movement_mode::FALL:
+		case movement_mode::RECOIL:
 		{
-			// ignorujemy input
-			// tutaj trzeba będzie też uwzględnić siłę odrzutu
-			player->acceleration = gravity;
+			if (false == is_standing_at_frame_beginning)
+			{
+				player->acceleration = gravity;
+			}
+
+			if (game->player_movement.recoil_acceleration_timer > 0.0f)
+			{
+				game->player_movement.recoil_acceleration_timer -= delta_time;
+				player->acceleration +=game->player_movement.recoil_acceleration;
+			}			
 		}
 		break;
 	}
@@ -1157,9 +1245,35 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 {	
 	entity* player = get_player(game);
 
+	if (game->player_invincibility_cooldown > 0.0f)
+	{
+		game->player_invincibility_cooldown -= delta_time;
+		//printf("niezniszczalnosc jeszcze przez %.02f\n", game->player_invincibility_cooldown);
+	}
+
 	v2 target_pos = process_input(game, player, delta_time);
 	
-	move(sdl_game, game, player, target_pos);
+	collision_with_effect collision = move(sdl_game, game, player, target_pos);
+	if (collision.collided_entity)
+	{		
+		if (damage_player(game, collision.collided_entity->type->damage_on_contact))
+		{
+			// odrzut
+
+			v2 direction = player->position - collision.collided_entity->position;
+			r32 acceleration = collision.collided_entity->type->player_acceleration_on_collision;
+
+			game->player_movement.recoil_timer = 2.0f;
+			game->player_movement.recoil_acceleration_timer = 1.0f;
+			game->player_movement.recoil_acceleration = (direction * acceleration);
+
+			printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n", 
+				game->player_movement.recoil_acceleration.x, 
+				game->player_movement.recoil_acceleration.y);
+
+			change_movement_mode(&game->player_movement, movement_mode::RECOIL);
+		}
+	}
 
 	// updating bullets
 	for (u32 bullet_index = 0; bullet_index < game->bullets_count; bullet_index++)
@@ -1242,9 +1356,9 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 				if (distance_to_player < 5.0f)
 				{
 					v2 direction_to_player = get_unit_vector(player_relative_pos);
-					add_bullet(game, entity->type->fired_bullet_type, entity->position + get_v2(1.0f, 1.0f),
+					add_bullet(game, entity->type->fired_bullet_type, entity->position/* + get_v2(1.0f, 1.0f)*/,
 						player->type->fired_bullet_type->constant_velocity * direction_to_player);
-					printf("wrog strzela!\n");
+					//printf("wrog strzela!\n");
 
 					entity->attack_cooldown = entity->type->default_attack_cooldown;
 				}
@@ -1345,9 +1459,13 @@ int main(int argc, char* args[])
 		game->entities_max_count = 1000;
 		game->entities = push_array(&arena, game->entities_max_count, entity);
 
+		game->default_player_invincibility_cooldown = 5.0f;
+		game->player_invincibility_cooldown = 0.0f;
+
 		entity_type* player_entity_type = &game->entity_types[0];
 		player_entity_type->graphics = {};
 		player_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::PLAYER);
+		player_entity_type->max_health = 100;
 		player_entity_type->velocity_multiplier = 40.0f;
 		player_entity_type->slowdown_multiplier = 0.80f;
 		player_entity_type->default_attack_cooldown = 0.1f;
@@ -1363,13 +1481,16 @@ int main(int argc, char* args[])
 		default_entity_type->graphics = get_tile_rect(837);
 		default_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::ENEMY);
 		default_entity_type->max_health = 10;
+		default_entity_type->damage_on_contact = 10;
 		default_entity_type->default_attack_cooldown = 0.5f;
+		default_entity_type->player_acceleration_on_collision = 5.0f;
 		default_entity_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 		default_entity_type->collision_rect_offset = 
 			get_standing_collision_rect_offset(default_entity_type->collision_rect_dim);
 
-		add_entity(game, get_v2(2.0f, 2.0f), default_entity_type);
 		add_entity(game, get_v2(16.0f, 6.0f), default_entity_type);
+		add_entity(game, get_v2(18.0f, 6.0f), default_entity_type);
+		add_entity(game, get_v2(20.0f, 6.0f), default_entity_type);
 
 		game->bullet_types_count = 5;
 		game->bullet_types = push_array(&arena, game->bullet_types_count, entity_type);
@@ -1378,12 +1499,12 @@ int main(int argc, char* args[])
 		game->bullets = push_array(&arena, game->bullets_max_count, bullet);
 
 		entity_type* player_bullet_type = &game->bullet_types[0];
-		player_bullet_type->damage = 5;
+		player_bullet_type->damage_on_contact = 5;
 		player_bullet_type->constant_velocity = 12.0f;
 		player_bullet_type->graphics = get_bullet_graphic(&sdl_game, 1, 1);
 
 		entity_type* enemy_bullet_type = &game->bullet_types[1];
-		enemy_bullet_type->damage = 5;
+		enemy_bullet_type->damage_on_contact = 5;
 		enemy_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
 		enemy_bullet_type->constant_velocity = 12.0f;
 		enemy_bullet_type->graphics = get_bullet_graphic(&sdl_game, 1, 1);

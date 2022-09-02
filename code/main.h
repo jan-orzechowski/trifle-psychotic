@@ -86,10 +86,11 @@ struct entity_type
 	v2 collision_rect_offset;
 
 	r32 constant_velocity;
+	r32 player_acceleration_on_collision;
 	r32 velocity_multiplier;
 	r32 slowdown_multiplier;
 
-	i32 damage;
+	i32 damage_on_contact;
 	i32 max_health;
 	r32 default_attack_cooldown;
 	
@@ -150,7 +151,7 @@ enum movement_mode
 {
 	JUMP,
 	WALK,
-	FALL
+	RECOIL
 };
 
 struct player_movement
@@ -159,12 +160,18 @@ struct player_movement
 	u32 frame_duration; // 0 oznacza bieżącą klatkę
 	movement_mode previous_mode;
 	u32 previous_mode_frame_duration;
+
+	r32 recoil_timer;
+	r32 recoil_acceleration_timer;
+	v2 recoil_acceleration;
 };
 
 struct game_data
 {	
 	input_buffer input;
 	player_movement player_movement;
+	r32 player_invincibility_cooldown;
+	r32 default_player_invincibility_cooldown;
 
 	level current_level;
 	level collision_reference;
