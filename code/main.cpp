@@ -385,10 +385,12 @@ entity_graphics get_player_graphics(sdl_game_data* sdl_game, memory_arena* arena
 	result.parts[0].texture = sdl_game->player_texture;
 	result.parts[0].texture_rect = player_head_rect;
 	result.parts[0].offset = head_offset;
+	result.parts[0].default_direction = direction::E;
 
 	result.parts[1].texture = sdl_game->player_texture;
 	result.parts[1].texture_rect = player_legs_rect;
 	result.parts[1].offset = legs_offset;
+	result.parts[1].default_direction = direction::E;
 
 	return result;
 }
@@ -1021,9 +1023,9 @@ void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 	/*int error = SDL_snprintf(buffer, 200, "Frame: %d Elapsed: %0.2f ms, Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d ",
 		sdl_game->debug_frame_counter, sdl_game->debug_elapsed_work_ms, player->position.x, player->position.y,
 		player->acceleration.x, player->acceleration.y, is_standing);*/
-	int error = SDL_snprintf(buffer, 200, "Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d ",
+	int error = SDL_snprintf(buffer, 200, "Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d, Direction: %s",
 		player->position.x, player->position.y,
-		player->acceleration.x, player->acceleration.y, is_standing);
+		player->acceleration.x, player->acceleration.y, is_standing, (player->direction == direction::W? "W" : "E"));
 	render_text(sdl_game, buffer, 10, 100, text_color);
 }
 
@@ -1180,7 +1182,10 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 	{
 		player->attack_cooldown -= delta_time;
 	}
-	
+
+	v2 bullet_direction = (player->direction == direction::W ? get_v2(-1.0f, 0.0f) : get_v2(1.0f, 0.0f));
+	v2 bullet_offset = (player->direction == direction::W ? get_v2(-0.75f, -0.85f) : get_v2(0.75f, -0.85f));
+
 	// przetwarzanie inputu
 	player->acceleration = get_zero_v2();
 	switch (game->player_movement.current_mode)
@@ -1207,9 +1212,10 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 			{
 				if (player->attack_cooldown <= 0)
 				{
-					add_bullet(game, player->type->fired_bullet_type, player->position + get_v2(0.5f, -0.85f),
-						get_v2(1, 0) * player->type->fired_bullet_type->constant_velocity);
-					printf("strzal w skoku!\n");
+					
+					add_bullet(game, player->type->fired_bullet_type, player->position + bullet_offset,
+						bullet_direction * player->type->fired_bullet_type->constant_velocity);
+					printf("strzal\n");
 					player->attack_cooldown = player->type->default_attack_cooldown;
 				}							
 			}
@@ -1243,9 +1249,9 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 			{
 				if (player->attack_cooldown <= 0)
 				{
-					add_bullet(game, player->type->fired_bullet_type, player->position + get_v2(0.5f, -0.85f),
-						get_v2(1, 0) * player->type->fired_bullet_type->constant_velocity);
-					printf("strzal!\n");
+					add_bullet(game, player->type->fired_bullet_type, player->position + bullet_offset,
+						bullet_direction * player->type->fired_bullet_type->constant_velocity);
+					printf("strzal w skoku!\n");;
 				}
 			}
 
@@ -1286,7 +1292,7 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 }
 
 void render_entity_graphics(SDL_Renderer* renderer, v2 screen_center, 
-	v2 player_position, v2 entity_position, 
+	v2 player_position, v2 entity_position, direction entity_direction,
 	sprite_effect* visual_effect, entity_graphics graphics)
 {
 	b32 tint_modified = false;
@@ -1307,14 +1313,22 @@ void render_entity_graphics(SDL_Renderer* renderer, v2 screen_center,
 			SDL_SetTextureColorMod(part->texture, tint.r, tint.g, tint.b);
 		}
 
+		v2 flipped_offset = part->offset;
+		SDL_RendererFlip flip = SDL_FLIP_NONE;
+		if (entity_direction != part->default_direction)
+		{
+			flip = SDL_FLIP_HORIZONTAL; // SDL_FLIP_VERTICAL
+			flipped_offset = get_v2(-part->offset.x, part->offset.y);
+		}
+
 		v2 position = screen_center + (entity_position - player_position);
 		SDL_Rect screen_rect = {};
 		screen_rect.w = part->texture_rect.w;
 		screen_rect.h = part->texture_rect.h;
-		screen_rect.x = (position.x * TILE_SIDE_IN_PIXELS) - (part->texture_rect.w / 2) + part->offset.x;
-		screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) - (part->texture_rect.h / 2) + part->offset.y;
-
-		SDL_RenderCopy(renderer, part->texture, &part->texture_rect, &screen_rect);
+		screen_rect.x = (position.x * TILE_SIDE_IN_PIXELS) - (part->texture_rect.w / 2) + flipped_offset.x;
+		screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) - (part->texture_rect.h / 2) + flipped_offset.y;
+		
+		SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
 
 		if (tint_modified)
 		{
@@ -1370,6 +1384,16 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 				change_movement_mode(&game->player_movement, movement_mode::RECOIL);
 			}
 		}
+
+		v2 player_direction_v2 = get_unit_vector(player->velocity);
+		if (false == is_zero(player->velocity))
+		{
+			player->direction = player->velocity.x < 0 ? direction::W : direction::E;
+		}
+		else
+		{
+			// zostawiamy stary
+		}
 	}
 
 	// update entities
@@ -1410,6 +1434,9 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 				if (distance_to_player < 5.0f)
 				{
 					v2 direction_to_player = get_unit_vector(player_relative_pos);
+
+					entity->direction = direction_to_player.x < 0 ? direction::W : direction::E;
+
 					add_bullet(game, entity->type->fired_bullet_type, entity->position/* + get_v2(1.0f, 1.0f)*/,
 						player->type->fired_bullet_type->constant_velocity * direction_to_player);
 					//printf("wrog strzela!\n");
@@ -1489,7 +1516,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		{
 			entity* entity = game->entities + entity_index;
 			render_entity_graphics(sdl_game->renderer, screen_center,
-				player->position, entity->position,
+				player->position, entity->position, entity->direction,
 				entity->visual_effect, entity->type->graphics);
 		}
 
@@ -1498,13 +1525,13 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		{
 			bullet* bullet = game->bullets + bullet_index;
 			render_entity_graphics(sdl_game->renderer, screen_center,
-				player->position, bullet->position,
+				player->position, bullet->position, direction::NONE,
 				NULL, bullet->type->graphics);
 		}
 
 		// draw debug info
 		{
-#if 0
+#if 1
 			v2 screen_half_size = get_v2(screen_half_width, screen_half_height) * TILE_SIDE_IN_PIXELS;
 			rect current_player_collision_rect = get_rect_from_center(
 				screen_half_size + (player->type->collision_rect_offset * TILE_SIDE_IN_PIXELS),

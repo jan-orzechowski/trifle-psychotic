@@ -62,6 +62,15 @@ struct game_input
 	key_press fire;
 };
 
+enum direction
+{
+	NONE = 0,
+	N = (1 << 0),
+	E = (1 << 1),
+	W = (1 << 3),
+	S = (1 << 4)
+};
+
 struct level
 {
 	//string_ref tilemap_source;
@@ -82,6 +91,7 @@ struct entity_graphics_part
 	SDL_Texture* texture;
 	SDL_Rect texture_rect;
 	v2 offset;
+	direction default_direction;
 };
 
 struct entity_graphics
@@ -129,6 +139,7 @@ struct entity
 	r32 attack_cooldown;
 	sprite_effect* visual_effect;
 	r32 visual_effect_timer;
+	direction direction;
 };
 
 struct bullet
@@ -136,15 +147,6 @@ struct bullet
 	v2 position;
 	v2 velocity;
 	entity_type* type;
-};
-
-enum direction
-{
-	NONE = 0,
-	N = (1 << 0),
-	E = (1 << 1),
-	W = (1 << 3),
-	S = (1 << 4)
 };
 
 struct collision
