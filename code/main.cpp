@@ -246,6 +246,110 @@ read_file_result read_file(std::string path)
 	return result;
 }
 
+sprite_effect_stage* add_sprite_effect_stage(sprite_effect* effect, 
+	r32 amplitude, r32 phase_shift, r32 vertical_shift, r32 period, r32 stage_duration)
+{
+	assert(stage_duration != 0);
+
+	sprite_effect_stage* new_stage = &effect->stages[effect->stages_count++];
+	effect->total_duration += stage_duration;
+
+	new_stage->amplitude = amplitude;
+	new_stage->phase_shift = phase_shift;
+	new_stage->period = period;
+	new_stage->stage_duration = stage_duration;
+	
+	return new_stage;
+}
+
+sprite_effect_stage* add_constant_tint_sprite_effect_stage(sprite_effect* effect, 
+	r32 tint_perc, r32 stage_duration)
+{
+	sprite_effect_stage* new_stage = add_sprite_effect_stage(effect, tint_perc, 0.0f, 0.0f, 0.0f, stage_duration);
+	return new_stage;
+}
+
+r32 get_stage_tint(sprite_effect_stage* stage, r32 total_time)
+{
+	r32 result = 1.0f;
+	if (total_time < stage->stage_duration)
+	{
+		if (stage->period == 0)
+		{
+			// stała wartość 
+			result = stage->amplitude;
+		}
+		else
+		{
+			// czy tutaj powinniśmy podzielić period przez 2PI?
+			result = (stage->amplitude *
+				SDL_sinf((total_time / stage->period) + stage->phase_shift))
+				+ stage->vertical_shift;
+
+			debug_breakpoint;
+		}
+
+		if (result < 0)
+		{
+			if (stage->ignore_negatives)
+			{
+				result = 0;
+			}
+			else 
+			{
+				result = -result;
+			}
+		}		
+	}
+
+	return result;
+}
+
+SDL_Color get_tint(sprite_effect* effect, r32 time)
+{
+	SDL_Color result = effect->color;
+	if (time >= 0.0f && time <= effect->total_duration)
+	{
+		b32 found = false;
+		r32 tint_value = 1.0f;
+		for (u32 stage_index = 0; stage_index < effect->stages_count; stage_index++)
+		{
+			sprite_effect_stage* stage = effect->stages + stage_index;
+			if (time < stage->stage_duration)
+			{
+				tint_value = get_stage_tint(stage, time);
+				found = true;
+				break;
+			}
+			else
+			{
+				time -= stage->stage_duration;
+			}
+		}
+
+		if (found)
+		{
+			result.r = effect->color.r * tint_value;
+			result.g = effect->color.g * tint_value;
+			result.b = effect->color.b * tint_value;
+			result.a = effect->color.a * tint_value;
+		}
+	}
+
+	return result;
+}
+
+void start_visual_effect(game_data* game, entity* entity, u32 sprite_effect_index, b32 override_current)
+{
+	assert(sprite_effect_index < game->visual_effects_count);
+	if (entity->visual_effect == NULL || override_current)
+	{
+		sprite_effect* effect = &game->visual_effects[sprite_effect_index];
+		entity->visual_effect = effect;
+		entity->visual_effect_duration = 0;
+	}
+}
+
 SDL_Rect get_tile_rect(u32 tile_id)
 {
 	SDL_Rect tile_rect = {};
@@ -584,14 +688,6 @@ entity* get_player(game_data* game)
 	return result;
 }
 
-void start_visual_effect(game_data* game, entity* entity, u32 sprite_effect_index)
-{
-	assert(sprite_effect_index < game->visual_effects_count);
-	sprite_effect* effect = &game->visual_effects[sprite_effect_index];
-	entity->visual_effect = effect;
-	entity->visual_effect_timer = effect->duration;
-}
-
 b32 damage_player(game_data* game, i32 damage_amount)
 {
 	b32 damaged = false;
@@ -599,7 +695,7 @@ b32 damage_player(game_data* game, i32 damage_amount)
 	{
 		damaged = true;
 		game->entities[0].health -= damage_amount;
-		start_visual_effect(game, &game->entities[0], 0);
+		start_visual_effect(game, &game->entities[0], 0, false);
 		printf("gracz dostaje %d obrazen, zostalo %d zdrowia\n", damage_amount, game->entities[0].health);
 		if (game->entities[0].health < 0.0f)
 		{
@@ -996,7 +1092,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 			}
 			else
 			{
-				start_visual_effect(game, collided_entity, 0);
+				start_visual_effect(game, collided_entity, 0, false);
 				collided_entity->health -= moving_bullet->type->damage_on_contact;
 				printf("pocisk trafil w entity, %i obrazen, zostalo %i\n", moving_bullet->type->damage_on_contact, collided_entity->health);
 			}
@@ -1293,7 +1389,7 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 
 void render_entity_graphics(SDL_Renderer* renderer, v2 screen_center, 
 	v2 player_position, v2 entity_position, direction entity_direction,
-	sprite_effect* visual_effect, entity_graphics graphics)
+	sprite_effect* visual_effect, r32 visual_effect_duration, entity_graphics graphics)
 {
 	b32 tint_modified = false;
 	SDL_Color tint = { 255,255,255,255 };
@@ -1301,7 +1397,7 @@ void render_entity_graphics(SDL_Renderer* renderer, v2 screen_center,
 	if (visual_effect)
 	{
 		tint_modified = true;
-		tint = visual_effect->tint;
+		tint = get_tint(visual_effect, visual_effect_duration);
 	}
 
 	for (u32 part_index = 0; part_index < graphics.parts_count; part_index++)
@@ -1352,9 +1448,9 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 
 		if (player->visual_effect)
 		{
-			if (player->visual_effect_timer > 0.0f)
+			if (player->visual_effect_duration < player->visual_effect->total_duration)
 			{
-				player->visual_effect_timer -= delta_time;
+				player->visual_effect_duration += delta_time;
 			}
 			else
 			{
@@ -1403,9 +1499,9 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 
 		if (entity->visual_effect)
 		{
-			if (entity->visual_effect_timer > 0.0f)
+			if (entity->visual_effect_duration < entity->visual_effect->total_duration)
 			{
-				entity->visual_effect_timer -= delta_time;
+				entity->visual_effect_duration += delta_time;
 			}
 			else
 			{
@@ -1517,7 +1613,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			entity* entity = game->entities + entity_index;
 			render_entity_graphics(sdl_game->renderer, screen_center,
 				player->position, entity->position, entity->direction,
-				entity->visual_effect, entity->type->graphics);
+				entity->visual_effect, entity->visual_effect_duration, entity->type->graphics);
 		}
 
 		// draw bullets
@@ -1526,7 +1622,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			bullet* bullet = game->bullets + bullet_index;
 			render_entity_graphics(sdl_game->renderer, screen_center,
 				player->position, bullet->position, direction::NONE,
-				NULL, bullet->type->graphics);
+				NULL, 0, bullet->type->graphics);
 		}
 
 		// draw debug info
@@ -1594,7 +1690,7 @@ int main(int argc, char* args[])
 		player_entity_type->velocity_multiplier = 40.0f;
 		player_entity_type->slowdown_multiplier = 0.80f;
 		player_entity_type->default_attack_cooldown = 0.1f;
-		player_entity_type->collision_rect_dim = get_v2(0.5f, 1.9f);
+		player_entity_type->collision_rect_dim = get_v2(0.35f, 1.6f);
 		player_entity_type->collision_rect_offset = 
 			get_standing_collision_rect_offset(player_entity_type->collision_rect_dim);
 
@@ -1639,9 +1735,14 @@ int main(int argc, char* args[])
 
 		game->visual_effects_count = 5;
 		game->visual_effects = push_array(&arena, game->visual_effects_count, sprite_effect);
-		sprite_effect* damage_tint = &game->visual_effects[0];
-		damage_tint->duration = 2.0f;
-		damage_tint->tint = { 255, 0, 0, 0 };
+
+		sprite_effect* damage_tint_effect = &game->visual_effects[0];
+		damage_tint_effect->stages_count = 1;
+		damage_tint_effect->stages = push_array(&arena, damage_tint_effect->stages_count, sprite_effect_stage);
+		damage_tint_effect->color = { 255, 0, 0, 0 };
+
+		add_sprite_effect_stage(damage_tint_effect, 1.0f, 0.0f, 0.0f, 5.0f, 5.0f);
+		add_constant_tint_sprite_effect_stage(damage_tint_effect, 0.5f, 5.0f);
 
 		u32 frame_counter = 0;
 

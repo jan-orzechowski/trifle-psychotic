@@ -80,10 +80,22 @@ struct level
 	u32 tiles_count;
 };
 
+struct sprite_effect_stage
+{
+	r32 amplitude;
+	r32 phase_shift;
+	r32 vertical_shift;
+	r32 period; // jeśli 0, to mamy stałą funkcję
+	r32 stage_duration;
+	b32 ignore_negatives;
+};
+
 struct sprite_effect
 {
-	SDL_Color tint;
-	r32 duration;
+	SDL_Color color;
+	sprite_effect_stage* stages;
+	u32 stages_count;
+	r32 total_duration;
 };
 
 struct entity_graphics_part
@@ -138,7 +150,7 @@ struct entity
 	entity_type* type;
 	r32 attack_cooldown;
 	sprite_effect* visual_effect;
-	r32 visual_effect_timer;
+	r32 visual_effect_duration;
 	direction direction;
 };
 
