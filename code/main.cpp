@@ -375,6 +375,104 @@ SDL_Rect get_tile_rect(u32 tile_id)
 	return tile_rect;
 }
 
+sprite* get_sprite_from_animation(animation* animation, r32* elapsed_time)
+{
+	sprite* result = NULL;
+
+	while (*elapsed_time > animation->total_duration)
+	{
+		*elapsed_time -= animation->total_duration;
+	}
+
+	r32 time_within_frame = *elapsed_time;
+	for (u32 frame_index = 0; frame_index < animation->frames_count; frame_index++)
+	{
+		animation_frame* frame = animation->frames + frame_index;
+		if (time_within_frame > frame->duration)
+		{
+			time_within_frame -= frame->duration;
+			continue;
+		}
+		else
+		{
+			result = &frame->sprite;
+			break;
+		}
+	}
+
+	return result;
+}
+
+sprite_part get_sprite_part(SDL_Texture* texture, SDL_Rect texture_rect, v2 offset = get_zero_v2(), 
+	direction default_direction = direction::E)
+{
+	sprite_part result = {};
+	result.texture = texture;
+	result.texture_rect = texture_rect;
+	result.offset = offset;
+	result.default_direction = default_direction;
+	return result;
+}
+
+void fill_animation_frame(animation* animation, u32 frame_index, u32 part_index, sprite_part part, r32 duration)
+{
+	animation->frames[frame_index].sprite.parts[part_index] = part;	
+	animation->frames[frame_index].duration = duration;	
+	animation->total_duration += duration;
+}
+
+animation* get_player_walk_animation(sdl_game_data* sdl_game, memory_arena* arena)
+{
+	animation* new_animation = push_struct(arena, animation);
+	new_animation->frames_count = 4;
+	new_animation->frames = push_array(arena, new_animation->frames_count, animation_frame);
+
+	SDL_Rect legs_rect = {};
+	legs_rect.x = 0;
+	legs_rect.y = 24;
+	legs_rect.w = 24;
+	legs_rect.h = 24;
+
+	SDL_Rect head_rect = {};
+	head_rect.x = 0;
+	head_rect.y = 0;
+	head_rect.w = 24;
+	head_rect.h = 24;
+
+	v2 legs_offset = get_v2(0.0f, -4.0f);
+	v2 head_offset = get_v2(5.0f, -20.0f);
+	
+	r32 frame_duration = 0.2f;
+	SDL_Texture* texture = sdl_game->player_texture;
+
+	new_animation->frames[0].sprite.parts = push_array(arena, 2, sprite_part);
+	new_animation->frames[1].sprite.parts = push_array(arena, 2, sprite_part);
+	new_animation->frames[2].sprite.parts = push_array(arena, 2, sprite_part);
+	new_animation->frames[3].sprite.parts = push_array(arena, 2, sprite_part);
+
+	new_animation->frames[0].sprite.parts_count = 2;
+	new_animation->frames[1].sprite.parts_count = 2;
+	new_animation->frames[2].sprite.parts_count = 2;
+	new_animation->frames[3].sprite.parts_count = 2;
+
+	legs_rect.x = 24;
+	fill_animation_frame(new_animation, 0, 0, get_sprite_part(texture, legs_rect, legs_offset), frame_duration);
+	fill_animation_frame(new_animation, 0, 1, get_sprite_part(texture, head_rect, head_offset), frame_duration);
+	head_offset.x += 1;
+	fill_animation_frame(new_animation, 1, 0, get_sprite_part(texture, legs_rect, legs_offset), frame_duration);
+	fill_animation_frame(new_animation, 1, 1, get_sprite_part(texture, head_rect, head_offset), frame_duration);
+	legs_rect.x = 48;
+	fill_animation_frame(new_animation, 2, 0, get_sprite_part(texture, legs_rect, legs_offset), frame_duration);
+	fill_animation_frame(new_animation, 2, 1, get_sprite_part(texture, head_rect, head_offset), frame_duration);
+	head_offset.x -= 1;
+	//legs_rect.x = 0;
+	fill_animation_frame(new_animation, 3, 0, get_sprite_part(texture, legs_rect, legs_offset), frame_duration);
+	fill_animation_frame(new_animation, 3, 1, get_sprite_part(texture, head_rect, head_offset), frame_duration);
+	//head_offset.x -= 1;
+	
+	return new_animation;
+}
+
 tile_position get_tile_position(u32 tile_x, u32 tile_y)
 {
 	tile_position result = {};
@@ -450,14 +548,14 @@ b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
 	return collides;
 }
 
-entity_graphics get_tile_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 tile_value)
+sprite get_tile_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 tile_value)
 {
-	entity_graphics result = {};
+	sprite result = {};
 
 	SDL_Rect texture_rect = get_tile_rect(tile_value);
 
 	result.parts_count = 1;
-	result.parts = push_array(arena, result.parts_count, entity_graphics_part);
+	result.parts = push_array(arena, result.parts_count, sprite_part);
 	result.parts[0].texture = sdl_game->tileset_texture;
 	result.parts[0].texture_rect = texture_rect;
 	result.parts[0].offset = get_zero_v2();
@@ -465,9 +563,9 @@ entity_graphics get_tile_graphics(sdl_game_data* sdl_game, memory_arena* arena, 
 	return result;
 }
 
-entity_graphics get_player_graphics(sdl_game_data* sdl_game, memory_arena* arena)
+sprite get_player_idle_pose(sdl_game_data* sdl_game, memory_arena* arena)
 {
-	entity_graphics result = {};
+	sprite result = {};
 
 	SDL_Rect player_head_rect = {};
 	player_head_rect.x = 0;
@@ -485,7 +583,7 @@ entity_graphics get_player_graphics(sdl_game_data* sdl_game, memory_arena* arena
 	v2 head_offset = get_v2(5.0f, -20.0f);
 
 	result.parts_count = 2;
-	result.parts = push_array(arena, result.parts_count, entity_graphics_part);
+	result.parts = push_array(arena, result.parts_count, sprite_part);
 	result.parts[0].texture = sdl_game->player_texture;
 	result.parts[0].texture_rect = player_head_rect;
 	result.parts[0].offset = head_offset;
@@ -499,9 +597,9 @@ entity_graphics get_player_graphics(sdl_game_data* sdl_game, memory_arena* arena
 	return result;
 }
 
-entity_graphics get_bullet_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 x, u32 y)
+sprite get_bullet_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 x, u32 y)
 {
-	entity_graphics result = {};
+	sprite result = {};
 
 	SDL_Rect texture_rect = {};
 	texture_rect.w = 10;
@@ -510,7 +608,7 @@ entity_graphics get_bullet_graphics(sdl_game_data* sdl_game, memory_arena* arena
 	texture_rect.y = x * 10;
 
 	result.parts_count = 1;
-	result.parts = push_array(arena, result.parts_count, entity_graphics_part);
+	result.parts = push_array(arena, result.parts_count, sprite_part);
 	result.parts[0].texture = sdl_game->bullets_texture;
 	result.parts[0].texture_rect = texture_rect;
 	result.parts[0].offset = get_zero_v2();
@@ -1307,8 +1405,7 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 			if (input->fire.number_of_presses > 0)
 			{
 				if (player->attack_cooldown <= 0)
-				{
-					
+				{					
 					add_bullet(game, player->type->fired_bullet_type, player->position + bullet_offset,
 						bullet_direction * player->type->fired_bullet_type->constant_velocity);
 					printf("strzal\n");
@@ -1387,9 +1484,69 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 	return target_pos;
 }
 
-void render_entity_graphics(SDL_Renderer* renderer, v2 screen_center, 
+void animate(player_movement* movement, entity* entity, r32 delta_time)
+{
+	if (entity->visual_effect)
+	{
+		if (entity->visual_effect_duration < entity->visual_effect->total_duration)
+		{
+			entity->visual_effect_duration += delta_time;
+		}
+		else
+		{
+			entity->visual_effect = NULL;
+		}
+	}
+
+	if (entity->current_animation)
+	{
+		entity->animation_duration += delta_time;
+		while (entity->animation_duration > entity->current_animation->total_duration)
+		{
+			entity->animation_duration -= entity->current_animation->total_duration;
+		}
+	}
+
+	if (movement)
+	{
+		switch (movement->current_mode)
+		{
+			case movement_mode::WALK:
+			{
+				if (length(entity->velocity) > 0.05f)
+				{
+					if (entity->current_animation != entity->type->walk_animation)
+					{
+						entity->current_animation = entity->type->walk_animation;
+						entity->animation_duration = 0.0f;
+					}
+				}
+				else
+				{
+					entity->current_animation = NULL;
+					entity->animation_duration = 0.0f;
+				}
+			}
+			break;
+			case movement_mode::JUMP:
+			{
+				entity->current_animation = NULL;
+				entity->animation_duration = 0.0f;
+			}
+			break;
+			case movement_mode::RECOIL:
+			{
+				entity->current_animation = NULL;
+				entity->animation_duration = 0.0f;
+			}
+			break;
+		}
+	}	
+}
+
+void render_entity_sprite(SDL_Renderer* renderer, v2 screen_center,
 	v2 player_position, v2 entity_position, direction entity_direction,
-	sprite_effect* visual_effect, r32 visual_effect_duration, entity_graphics graphics)
+	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite)
 {
 	b32 tint_modified = false;
 	SDL_Color tint = { 255,255,255,255 };
@@ -1400,9 +1557,9 @@ void render_entity_graphics(SDL_Renderer* renderer, v2 screen_center,
 		tint = get_tint(visual_effect, visual_effect_duration);
 	}
 
-	for (u32 part_index = 0; part_index < graphics.parts_count; part_index++)
+	for (u32 part_index = 0; part_index < sprite.parts_count; part_index++)
 	{
-		entity_graphics_part* part = &graphics.parts[part_index];
+		sprite_part* part = &sprite.parts[part_index];
 
 		if (tint_modified)
 		{
@@ -1434,6 +1591,27 @@ void render_entity_graphics(SDL_Renderer* renderer, v2 screen_center,
 	}
 }
 
+void render_entity_animation_frame(SDL_Renderer* renderer, v2 screen_center, v2 player_position, entity* entity)
+{
+	sprite* sprite_to_render = NULL;
+	if (entity->current_animation)
+	{
+		sprite_to_render = get_sprite_from_animation(entity->current_animation, &entity->animation_duration);
+		if (sprite_to_render == NULL || sprite_to_render->parts == NULL)
+		{
+			sprite_to_render = &entity->type->idle_pose;
+		}
+	}
+	else
+	{
+		sprite_to_render = &entity->type->idle_pose;
+	}
+
+	render_entity_sprite(renderer, screen_center,
+		player_position, entity->position, entity->direction,
+		entity->visual_effect, entity->visual_effect_duration, *sprite_to_render);
+}
+
 void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 {	
 	entity* player = get_player(game);
@@ -1446,39 +1624,27 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			//printf("niezniszczalnosc jeszcze przez %.02f\n", game->player_invincibility_cooldown);
 		}
 
-		if (player->visual_effect)
-		{
-			if (player->visual_effect_duration < player->visual_effect->total_duration)
-			{
-				player->visual_effect_duration += delta_time;
-			}
-			else
-			{
-				player->visual_effect = NULL;
-			}
-		}
+		animate(&game->player_movement, player, delta_time);
 
 		v2 target_pos = process_input(game, player, delta_time);
 
 		collision_with_effect collision = move(sdl_game, game, player, target_pos);
 		if (collision.collided_entity)
 		{
-			if (damage_player(game, collision.collided_entity->type->damage_on_contact))
-			{
-				// odrzut
-				v2 direction = player->position - collision.collided_entity->position;
-				r32 acceleration = collision.collided_entity->type->player_acceleration_on_collision;
+			damage_player(game, collision.collided_entity->type->damage_on_contact);
 
-				game->player_movement.recoil_timer = 2.0f;
-				game->player_movement.recoil_acceleration_timer = 1.0f;
-				game->player_movement.recoil_acceleration = (direction * acceleration);
+			v2 direction = player->position - collision.collided_entity->position;
+			r32 acceleration = collision.collided_entity->type->player_acceleration_on_collision;
 
-				printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
-					game->player_movement.recoil_acceleration.x,
-					game->player_movement.recoil_acceleration.y);
+			game->player_movement.recoil_timer = 2.0f;
+			game->player_movement.recoil_acceleration_timer = 1.0f;
+			game->player_movement.recoil_acceleration = (direction * acceleration);
 
-				change_movement_mode(&game->player_movement, movement_mode::RECOIL);
-			}
+			printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
+				game->player_movement.recoil_acceleration.x,
+				game->player_movement.recoil_acceleration.y);
+
+			change_movement_mode(&game->player_movement, movement_mode::RECOIL);			
 		}
 
 		v2 player_direction_v2 = get_unit_vector(player->velocity);
@@ -1497,17 +1663,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 	{
 		entity* entity = game->entities + entity_index;
 
-		if (entity->visual_effect)
-		{
-			if (entity->visual_effect_duration < entity->visual_effect->total_duration)
-			{
-				entity->visual_effect_duration += delta_time;
-			}
-			else
-			{
-				entity->visual_effect = NULL;
-			}
-		}
+		animate(NULL, entity, delta_time);
 
 		if (entity->health <= 0)
 		{
@@ -1611,18 +1767,17 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 		{
 			entity* entity = game->entities + entity_index;
-			render_entity_graphics(sdl_game->renderer, screen_center,
-				player->position, entity->position, entity->direction,
-				entity->visual_effect, entity->visual_effect_duration, entity->type->graphics);
+		
+			render_entity_animation_frame(sdl_game->renderer, screen_center, player->position, entity);
 		}
 
 		// draw bullets
 		for (u32 bullet_index = 0; bullet_index < game->bullets_count; bullet_index++)
 		{
 			bullet* bullet = game->bullets + bullet_index;
-			render_entity_graphics(sdl_game->renderer, screen_center,
+			render_entity_sprite(sdl_game->renderer, screen_center,
 				player->position, bullet->position, direction::NONE,
-				NULL, 0, bullet->type->graphics);
+				NULL, 0, bullet->type->idle_pose);
 		}
 
 		// draw debug info
@@ -1684,12 +1839,13 @@ int main(int argc, char* args[])
 		game->player_invincibility_cooldown = 0.0f;
 
 		entity_type* player_entity_type = &game->entity_types[0];
-		player_entity_type->graphics = get_player_graphics(&sdl_game, &arena);
+		player_entity_type->idle_pose = get_player_idle_pose(&sdl_game, &arena);
 		player_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::PLAYER);
 		player_entity_type->max_health = 100;
 		player_entity_type->velocity_multiplier = 40.0f;
 		player_entity_type->slowdown_multiplier = 0.80f;
 		player_entity_type->default_attack_cooldown = 0.1f;
+		player_entity_type->walk_animation = get_player_walk_animation(&sdl_game, &arena);
 		player_entity_type->collision_rect_dim = get_v2(0.35f, 1.6f);
 		player_entity_type->collision_rect_offset = 
 			get_standing_collision_rect_offset(player_entity_type->collision_rect_dim);
@@ -1699,7 +1855,7 @@ int main(int argc, char* args[])
 		game->player_movement.current_mode = movement_mode::WALK;
 		
 		entity_type* default_entity_type = &game->entity_types[1];
-		default_entity_type->graphics = get_tile_graphics(&sdl_game, &arena, 837);
+		default_entity_type->idle_pose = get_tile_graphics(&sdl_game, &arena, 837);
 		default_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::ENEMY);
 		default_entity_type->max_health = 10;
 		default_entity_type->damage_on_contact = 10;
@@ -1722,13 +1878,13 @@ int main(int argc, char* args[])
 		entity_type* player_bullet_type = &game->bullet_types[0];
 		player_bullet_type->damage_on_contact = 5;
 		player_bullet_type->constant_velocity = 12.0f;
-		player_bullet_type->graphics = get_bullet_graphics(&sdl_game, &arena, 1, 1);
+		player_bullet_type->idle_pose = get_bullet_graphics(&sdl_game, &arena, 1, 1);
 
 		entity_type* enemy_bullet_type = &game->bullet_types[1];
 		enemy_bullet_type->damage_on_contact = 5;
 		enemy_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
 		enemy_bullet_type->constant_velocity = 12.0f;
-		enemy_bullet_type->graphics = get_bullet_graphics(&sdl_game, &arena, 1, 1);
+		enemy_bullet_type->idle_pose = get_bullet_graphics(&sdl_game, &arena, 1, 1);
 			
 		player_entity_type->fired_bullet_type = player_bullet_type;
 		default_entity_type->fired_bullet_type = enemy_bullet_type;

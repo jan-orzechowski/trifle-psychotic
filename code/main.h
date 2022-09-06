@@ -98,7 +98,7 @@ struct sprite_effect
 	r32 total_duration;
 };
 
-struct entity_graphics_part
+struct sprite_part
 {
 	SDL_Texture* texture;
 	SDL_Rect texture_rect;
@@ -106,10 +106,23 @@ struct entity_graphics_part
 	direction default_direction;
 };
 
-struct entity_graphics
+struct sprite
 {
-	entity_graphics_part* parts;
+	sprite_part* parts;
 	u32 parts_count;
+};
+
+struct animation_frame
+{
+	sprite sprite;
+	r32 duration;
+};
+
+struct animation
+{
+	animation_frame* frames;
+	u32 frames_count;
+	r32 total_duration;
 };
 
 enum entity_flags
@@ -135,8 +148,10 @@ struct entity_type
 	i32 max_health;
 	r32 default_attack_cooldown;
 	
-	entity_graphics graphics;
+	sprite idle_pose;
 	entity_flags flags;
+
+	animation* walk_animation;
 
 	entity_type* fired_bullet_type;
 };
@@ -152,6 +167,8 @@ struct entity
 	sprite_effect* visual_effect;
 	r32 visual_effect_duration;
 	direction direction;
+	animation* current_animation;
+	r32 animation_duration;
 };
 
 struct bullet
