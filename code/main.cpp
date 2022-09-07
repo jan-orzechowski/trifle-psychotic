@@ -428,12 +428,6 @@ b32 is_good_for_walk_path(level map, level collision_ref, u32 tile_x, u32 tile_y
 	return result;
 }
 
-struct walking_path
-{
-	tile_position left_end;
-	tile_position right_end;
-};
-
 walking_path find_walking_path_for_enemy(level map, level collision_ref, tile_position start_tile)
 {
 	b32 found_good_start_pos = false;
@@ -1349,7 +1343,7 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 			if (game->player_movement.recoil_acceleration_timer > 0.0f)
 			{
 				game->player_movement.recoil_acceleration_timer -= delta_time;
-				player->acceleration +=game->player_movement.recoil_acceleration;
+				player->acceleration += game->player_movement.recoil_acceleration;
 			}			
 		}
 		break;
@@ -1437,6 +1431,15 @@ void debug_render_tile(SDL_Renderer* renderer, tile_position tile_pos, SDL_Color
 	SDL_RenderFillRect(renderer, &screen_rect);
 }
 
+void render_debug_path_ends(sdl_game_data* sdl_game, entity* entity, v2 player_pos)
+{
+	if (entity->has_walking_path)
+	{
+		debug_render_tile(sdl_game->renderer, entity->path.left_end, { 255,255,0,255 }, player_pos);
+		debug_render_tile(sdl_game->renderer, entity->path.right_end, { 0,0,255,255 }, player_pos);
+	}
+}
+
 void render_entity_sprite(SDL_Renderer* renderer,
 	v2 player_position, v2 entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite)
@@ -1509,6 +1512,8 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 {	
 	entity* player = get_player(game);
 
+	entity* debug_entity_to_render_path = 0;
+
 	// update player
 	{
 		if (game->player_invincibility_cooldown > 0.0f)
@@ -1567,6 +1572,81 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		if (entity->attack_cooldown > 0)
 		{
 			entity->attack_cooldown -= delta_time;
+		}
+
+		if (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY))
+		{
+			if (entity->has_walking_path)
+			{
+				tile_position current_goal;
+				tile_position current_start;
+				
+				if (entity->goal_path_point == 0)
+				{				
+					current_goal = entity->path.left_end;
+					current_start = entity->path.right_end;
+				}
+				else if (entity->goal_path_point == 1)
+				{
+					current_goal = entity->path.right_end;
+					current_start = entity->path.left_end;
+				}
+				else
+				{
+					// wracamy na początek
+					entity->goal_path_point = 0;
+					current_goal = entity->path.left_end;
+					current_start = entity->path.right_end;
+				}
+
+				v2 goal_pos = get_tile_v2_position(current_goal);
+
+				v2 distance = goal_pos - entity->position;
+				r32 distance_length = length(distance);
+				r32 distance_to_start_length = length(get_tile_v2_position(current_start) - entity->position);
+				v2 direction = get_unit_vector(distance);
+				
+				r32 velocity = entity->type->velocity_multiplier;
+
+				r32 slowdown_threshold = 2.0f;
+				r32 fudge = 0.1f;
+				if (distance_length < slowdown_threshold)
+				{
+					velocity *= ((distance_length + fudge) / slowdown_threshold);
+				}
+				else if (distance_to_start_length < slowdown_threshold)
+				{
+					velocity *= ((distance_to_start_length + fudge) / slowdown_threshold);
+				}
+
+				v2 new_position = entity->position + (direction * velocity * delta_time);
+				entity->position = new_position;
+			
+				if (length(entity->position - goal_pos) < 0.01f)
+				{
+					//entity->position = goal_pos;
+
+					if (entity->goal_path_point == 0)
+					{
+						printf("dotarliśmy do 0\n");
+						entity->goal_path_point = 1;
+					}
+					else if (entity->goal_path_point == 1)
+					{
+						printf("dotarliśmy do 1\n");
+						entity->goal_path_point = 0;
+					}
+				}
+
+				debug_entity_to_render_path = entity;
+			}
+			else
+			{
+				walking_path new_path = find_walking_path_for_enemy(
+					game->current_level, game->collision_reference, get_tile_position(entity->position));
+				entity->path = new_path;
+				entity->has_walking_path = true;
+			}
 		}
 
 		if (are_entity_flags_set(entity, entity_flags::ENEMY)
@@ -1654,6 +1734,11 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			}
 		}
 
+		if (debug_entity_to_render_path)
+		{
+			render_debug_path_ends(sdl_game, debug_entity_to_render_path, player->position);
+		}
+
 		// draw entities
 		for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 		{
@@ -1670,13 +1755,6 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 				player->position, bullet->position, direction::NONE,
 				NULL, 0, bullet->type->idle_pose);
 		}
-
-		player_tile_pos = get_tile_position(player->position);
-		walking_path test_path = find_walking_path_for_enemy(
-			game->current_level, game->collision_reference, player_tile_pos);
-
-		debug_render_tile(sdl_game->renderer, test_path.left_end, { 255,255,0,255 }, player->position);
-		debug_render_tile(sdl_game->renderer, test_path.right_end, { 0,0,255,255 }, player->position);
 
 		// draw debug info
 		{

@@ -44,6 +44,12 @@ void print_sdl_error();
 void print_sdl_image_error();
 void print_sdl_ttf_error();
 
+struct tile_position
+{
+	u32 x;
+	u32 y;
+};
+
 struct read_file_result
 {
 	void* contents;
@@ -71,6 +77,12 @@ enum direction
 	E = (1 << 1),
 	W = (1 << 3),
 	S = (1 << 4)
+};
+
+struct walking_path
+{
+	tile_position left_end;
+	tile_position right_end;
 };
 
 struct level
@@ -129,11 +141,12 @@ struct animation
 
 enum entity_flags
 {
-	PLAYER =         (1 << 0),
-	COLLIDES =       (1 << 1),
-	ENEMY =		     (1 << 2),
-	TAKES_DAMAGE =   (1 << 3),
-	DAMAGES_PLAYER = (1 << 4)
+	PLAYER =			 (1 << 0),
+	COLLIDES =			 (1 << 1),
+	ENEMY =				 (1 << 2),
+	TAKES_DAMAGE =		 (1 << 3),
+	DAMAGES_PLAYER =	 (1 << 4),
+	WALKS_HORIZONTALLY = (1 << 5)
 };
 
 struct entity_type
@@ -171,6 +184,10 @@ struct entity
 	direction direction;
 	animation* current_animation;
 	r32 animation_duration;
+
+	b32 has_walking_path;
+	walking_path path;
+	u32 goal_path_point;
 };
 
 struct bullet
@@ -244,12 +261,6 @@ struct game_data
 
 	sprite_effect* visual_effects;
 	u32 visual_effects_count;
-};
-
-struct tile_position
-{
-	u32 x;
-	u32 y;
 };
 
 SDL_Rect get_tile_rect(u32 tile_id);

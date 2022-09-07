@@ -253,11 +253,17 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	default_entity_type->collision_rect_offset =
 		get_standing_collision_rect_offset(default_entity_type->collision_rect_dim);
 
-	entity* player = add_entity(game, get_v2(0, 0), player_entity_type);
-
-	add_entity(game, get_v2(16.0f, 6.0f), default_entity_type);
-	add_entity(game, get_v2(18.0f, 6.0f), default_entity_type);
-	add_entity(game, get_v2(20.0f, 6.0f), default_entity_type);
+	entity_type* moving_enemy_type = &game->entity_types[2];
+	moving_enemy_type->idle_pose = get_tile_graphics(sdl_game, arena, 1992);
+	moving_enemy_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::WALKS_HORIZONTALLY | entity_flags::ENEMY);
+	moving_enemy_type->max_health = 10;
+	moving_enemy_type->damage_on_contact = 10;
+	moving_enemy_type->default_attack_cooldown = 0.2f;
+	moving_enemy_type->velocity_multiplier = 5.0f;
+	moving_enemy_type->player_acceleration_on_collision = 5.0f;
+	moving_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+	moving_enemy_type->collision_rect_offset =
+		get_standing_collision_rect_offset(moving_enemy_type->collision_rect_dim);
 
 	game->bullet_types_count = 5;
 	game->bullet_types = push_array(arena, game->bullet_types_count, entity_type);
@@ -289,4 +295,14 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 
 	add_sprite_effect_stage(damage_tint_effect, 1.0f, 0.0f, 0.0f, 5.0f, 5.0f);
 	add_constant_tint_sprite_effect_stage(damage_tint_effect, 0.5f, 5.0f);
+
+	// debug entities
+
+	add_entity(game, get_v2(0, 0), player_entity_type);
+
+	add_entity(game, get_v2(16.0f, 6.0f), default_entity_type);
+	add_entity(game, get_v2(18.0f, 6.0f), default_entity_type);
+	add_entity(game, get_v2(20.0f, 6.0f), default_entity_type);
+
+	add_entity(game, get_v2(14.0f, 6.999f), moving_enemy_type);
 }
