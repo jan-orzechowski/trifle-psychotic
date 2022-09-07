@@ -251,3 +251,6 @@ struct tile_position
 	u32 x;
 	u32 y;
 };
+
+SDL_Rect get_tile_rect(u32 tile_id);
+entity* add_entity(game_data* game, v2 position, entity_type* type);

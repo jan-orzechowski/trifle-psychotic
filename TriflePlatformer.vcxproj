@@ -160,6 +160,7 @@
     <ClCompile Include="code\jorstring.cpp" />
     <ClCompile Include="code\main.cpp" />
     <ClCompile Include="code\tmx_parsing.cpp" />
+    <ClCompile Include="code\game_data.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\jormath.h" />
@@ -167,6 +168,7 @@
     <ClInclude Include="code\main.h" />
     <ClInclude Include="code\tmx_parsing.h" />
     <ClInclude Include="code\jorstring.h" />
+    <ClInclude Include="code\game_data.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
