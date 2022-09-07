@@ -548,6 +548,91 @@ b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
 	return collides;
 }
 
+b32 is_good_for_walk_path(level map, level collision_ref, u32 tile_x, u32 tile_y)
+{
+	u32 tile_value = get_tile_value(map, tile_x, tile_y);
+	u32 tile_under_value = get_tile_value(map, tile_x, tile_y + 1);
+	b32 result = (false == is_tile_colliding(collision_ref, tile_value)
+		&& is_tile_colliding(collision_ref, tile_under_value));
+	return result;
+}
+
+struct walking_path
+{
+	tile_position left_end;
+	tile_position right_end;
+};
+
+walking_path find_walking_path_for_enemy(level map, level collision_ref, tile_position start_tile)
+{
+	b32 found_good_start_pos = false;
+	tile_position good_start_tile = {};
+	
+	tile_position test_tile = start_tile;
+	u32 distance_checking_limit = 10;
+	for (u32 distance = 0; distance < distance_checking_limit; distance++)
+	{
+		test_tile.y = start_tile.y + distance;
+		if (is_good_for_walk_path(map, collision_ref, test_tile.x, test_tile.y))
+		{
+			good_start_tile = test_tile;
+			found_good_start_pos = true;
+			break;
+		}
+	}
+
+	if (good_start_tile.x == 0 && good_start_tile.y == 0)
+	{
+		return {};
+	}
+
+	tile_position left_end = good_start_tile;
+	tile_position right_end = good_start_tile;
+
+	test_tile = good_start_tile;
+	for (u32 distance = 0; distance <= distance_checking_limit; distance++)
+	{
+		if (good_start_tile.x < distance)
+		{
+			break;
+		}
+		test_tile.x = good_start_tile.x - distance;
+
+		if (is_good_for_walk_path(map, collision_ref, test_tile.x, test_tile.y))
+		{
+			left_end = test_tile;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	test_tile = good_start_tile;
+	for (u32 distance = 0; distance <= distance_checking_limit; distance++)
+	{
+		test_tile.x = good_start_tile.x + distance;
+		
+		if (is_good_for_walk_path(map, collision_ref, test_tile.x, test_tile.y))
+		{
+			right_end = test_tile;
+		} 
+		else
+		{
+			break;
+		}
+	}
+
+	walking_path result = {};
+	result.left_end = left_end;
+	result.right_end = right_end;
+
+	//u32 path_length = right_end.x - left_end.x;
+	//printf("znaleziono sciezke, od (%d,%d) do (%d,%d)\n", left_end.x, left_end.y, right_end.x, right_end.y);
+	
+	return result;
+}
+
 sprite get_tile_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 tile_value)
 {
 	sprite result = {};
@@ -1544,7 +1629,20 @@ void animate(player_movement* movement, entity* entity, r32 delta_time)
 	}	
 }
 
-void render_entity_sprite(SDL_Renderer* renderer, v2 screen_center,
+void debug_render_tile(SDL_Renderer* renderer, tile_position tile_pos, SDL_Color color, v2 player_pos)
+{
+	v2 position = SCREEN_CENTER + get_tile_v2_position(tile_pos) - player_pos;
+
+	SDL_Rect screen_rect = {};
+	screen_rect.w = TILE_SIDE_IN_PIXELS;
+	screen_rect.h = TILE_SIDE_IN_PIXELS;
+	screen_rect.x = (position.x * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
+	screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
+
+	SDL_RenderFillRect(renderer, &screen_rect);
+}
+
+void render_entity_sprite(SDL_Renderer* renderer,
 	v2 player_position, v2 entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite)
 {
@@ -1574,7 +1672,7 @@ void render_entity_sprite(SDL_Renderer* renderer, v2 screen_center,
 			flipped_offset = get_v2(-part->offset.x, part->offset.y);
 		}
 
-		v2 position = screen_center + (entity_position - player_position);
+		v2 position = SCREEN_CENTER + (entity_position - player_position);
 		SDL_Rect screen_rect = {};
 		screen_rect.w = part->texture_rect.w;
 		screen_rect.h = part->texture_rect.h;
@@ -1591,7 +1689,7 @@ void render_entity_sprite(SDL_Renderer* renderer, v2 screen_center,
 	}
 }
 
-void render_entity_animation_frame(SDL_Renderer* renderer, v2 screen_center, v2 player_position, entity* entity)
+void render_entity_animation_frame(SDL_Renderer* renderer, v2 player_position, entity* entity)
 {
 	sprite* sprite_to_render = NULL;
 	if (entity->current_animation)
@@ -1607,7 +1705,7 @@ void render_entity_animation_frame(SDL_Renderer* renderer, v2 screen_center, v2 
 		sprite_to_render = &entity->type->idle_pose;
 	}
 
-	render_entity_sprite(renderer, screen_center,
+	render_entity_sprite(renderer,
 		player_position, entity->position, entity->direction,
 		entity->visual_effect, entity->visual_effect_duration, *sprite_to_render);
 }
@@ -1761,24 +1859,29 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			}
 		}
 
-		v2 screen_center = get_v2(HALF_SCREEN_WIDTH_IN_TILES + 1, HALF_SCREEN_HEIGHT_IN_TILES + 1);
-
 		// draw entities
 		for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 		{
 			entity* entity = game->entities + entity_index;
 		
-			render_entity_animation_frame(sdl_game->renderer, screen_center, player->position, entity);
+			render_entity_animation_frame(sdl_game->renderer, player->position, entity);
 		}
 
 		// draw bullets
 		for (u32 bullet_index = 0; bullet_index < game->bullets_count; bullet_index++)
 		{
 			bullet* bullet = game->bullets + bullet_index;
-			render_entity_sprite(sdl_game->renderer, screen_center,
+			render_entity_sprite(sdl_game->renderer,
 				player->position, bullet->position, direction::NONE,
 				NULL, 0, bullet->type->idle_pose);
 		}
+
+		player_tile_pos = get_tile_position(player->position);
+		walking_path test_path = find_walking_path_for_enemy(
+			game->current_level, game->collision_reference, player_tile_pos);
+
+		debug_render_tile(sdl_game->renderer, test_path.left_end, { 255,255,0,255 }, player->position);
+		debug_render_tile(sdl_game->renderer, test_path.right_end, { 0,0,255,255 }, player->position);
 
 		// draw debug info
 		{
