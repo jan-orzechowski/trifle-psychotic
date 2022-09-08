@@ -298,11 +298,11 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 
 	// debug entities
 
-	add_entity(game, get_v2(0, 0), player_entity_type);
+	add_entity(game, 0, 0, player_entity_type);
 
-	add_entity(game, get_v2(16.0f, 6.0f), default_entity_type);
-	add_entity(game, get_v2(18.0f, 6.0f), default_entity_type);
-	add_entity(game, get_v2(20.0f, 6.0f), default_entity_type);
+	add_entity(game, 16, 6, default_entity_type);
+	add_entity(game, 18, 6, default_entity_type);
+	add_entity(game, 20, 6, default_entity_type);
 
-	add_entity(game, get_v2(14.0f, 6.999f), moving_enemy_type);
+	add_entity(game, 14, 6, moving_enemy_type);
 }

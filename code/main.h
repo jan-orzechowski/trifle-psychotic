@@ -26,6 +26,8 @@
 
 #define SCREEN_CENTER get_v2(HALF_SCREEN_WIDTH_IN_TILES + 1, HALF_SCREEN_HEIGHT_IN_TILES + 1)
 
+#define CHUNK_SIDE_IN_TILES 16
+
 struct sdl_game_data
 {
 	bool initialized;
@@ -45,6 +47,12 @@ void print_sdl_image_error();
 void print_sdl_ttf_error();
 
 struct tile_position
+{
+	i32 x;
+	i32 y;
+};
+
+struct chunk_position
 {
 	i32 x;
 	i32 y;
@@ -171,9 +179,15 @@ struct entity_type
 	entity_type* fired_bullet_type;
 };
 
+struct world_position
+{
+	chunk_position chunk_pos;
+	v2 pos_in_chunk;
+};
+
 struct entity
 {
-	v2 position;
+	world_position position;
 	v2 velocity;
 	v2 acceleration;
 	i32 health;
@@ -192,7 +206,7 @@ struct entity
 
 struct bullet
 {
-	v2 position;
+	world_position position;
 	v2 velocity;
 	entity_type* type;
 };
@@ -264,4 +278,4 @@ struct game_data
 };
 
 SDL_Rect get_tile_rect(u32 tile_id);
-entity* add_entity(game_data* game, v2 position, entity_type* type);
+entity* add_entity(game_data* game, i32 tile_x, i32 tile_y, entity_type* type);

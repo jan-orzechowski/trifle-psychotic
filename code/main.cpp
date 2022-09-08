@@ -27,10 +27,10 @@ SDL_Renderer* get_renderer(SDL_Window* window)
 	SDL_Renderer* renderer = NULL;
 	for (int driver_index = 0; driver_index < SDL_GetNumRenderDrivers(); ++driver_index)
 	{
-		SDL_RendererInfo rendererInfo = {};
-		SDL_GetRenderDriverInfo(driver_index, &rendererInfo);
+		SDL_RendererInfo renderer_info = {};
+		SDL_GetRenderDriverInfo(driver_index, &renderer_info);
 		// direct3d11 i direct3d powoduje freeze
-		if (rendererInfo.name != std::string("direct3d11"))
+		if (renderer_info.name == 0 || renderer_info.name != std::string("direct3d11"))
 		{
 			continue;
 		}
@@ -352,25 +352,120 @@ tile_position get_tile_position(i32 tile_x, i32 tile_y)
 	return result;
 }
 
-tile_position get_tile_position(v2 world_position)
+tile_position get_tile_position(chunk_position chunk_pos, v2 position_in_chunk)
 {
 	tile_position result = {};
 	// każde pole ma środek w pełnych współrzędnych, np. (1, 1) i ma szerokość boku 1
 	// tak więc zamieniamy np. (0.6, 0.6) -> (1, 1), (1.6, 1.6) -> (2, 2)
-	result.x = (u32)(world_position.x + 0.5f);
-	result.y = (u32)(world_position.y + 0.5f);
+	i32 tile_in_chunk_x = (i32)(position_in_chunk.x + 0.5f);
+	i32 tile_in_chunk_y = (i32)(position_in_chunk.y + 0.5f);
+	result.x = (chunk_pos.x * CHUNK_SIDE_IN_TILES) + tile_in_chunk_x;
+	result.y = (chunk_pos.y * CHUNK_SIDE_IN_TILES) + tile_in_chunk_y;
 	return result;
 }
 
-v2 get_tile_v2_position(u32 tile_x, u32 tile_y)
+tile_position get_tile_position(world_position world_pos)
 {
-	v2 result = get_v2(tile_x, tile_y);
+	tile_position result = get_tile_position(world_pos.chunk_pos, world_pos.pos_in_chunk);
 	return result;
 }
 
-v2 get_tile_v2_position(tile_position tile)
+v2 get_tile_position_difference(tile_position a, tile_position b)
 {
-	v2 result = get_tile_v2_position(tile.x, tile.y);
+	v2 result = get_v2((r32)(a.x - b.x), (r32)(a.y - b.y));
+	return result;
+}
+
+world_position renormalize_world_position(world_position world_pos)
+{
+	while (world_pos.pos_in_chunk.x > (r32)CHUNK_SIDE_IN_TILES)
+	{
+		world_pos.pos_in_chunk.x -= (r32)CHUNK_SIDE_IN_TILES;
+		world_pos.chunk_pos.x++;
+	}
+
+	while (world_pos.pos_in_chunk.y > (r32)CHUNK_SIDE_IN_TILES)
+	{
+		world_pos.pos_in_chunk.y -= (r32)CHUNK_SIDE_IN_TILES;
+		world_pos.chunk_pos.y++;
+	}
+
+	while (world_pos.pos_in_chunk.x < 0)
+	{
+		world_pos.pos_in_chunk.x = (r32)CHUNK_SIDE_IN_TILES + world_pos.pos_in_chunk.x;
+		world_pos.chunk_pos.x--;
+	}
+
+	while (world_pos.pos_in_chunk.y < 0)
+	{
+		world_pos.pos_in_chunk.y = (r32)CHUNK_SIDE_IN_TILES + world_pos.pos_in_chunk.y;
+		world_pos.chunk_pos.y--;
+	}
+
+	return world_pos;
+}
+
+chunk_position get_tile_chunk_position(tile_position tile_pos)
+{
+	chunk_position result = {};
+	result.x = SDL_floor(tile_pos.x / CHUNK_SIDE_IN_TILES);
+	result.y = SDL_floor(tile_pos.y / CHUNK_SIDE_IN_TILES);
+	return result;
+}
+
+v2 get_relative_position(world_position a, world_position b)
+{
+	v2 result = a.pos_in_chunk
+		+ get_v2((a.chunk_pos.x - b.chunk_pos.x) * CHUNK_SIDE_IN_TILES,
+			(a.chunk_pos.y - b.chunk_pos.y) * CHUNK_SIDE_IN_TILES)
+		- b.pos_in_chunk;
+	return result;
+}
+
+v2 get_relative_position(chunk_position a, world_position b)
+{
+	v2 result = get_v2((a.x - b.chunk_pos.x) * CHUNK_SIDE_IN_TILES,
+		(a.y - b.chunk_pos.y) * CHUNK_SIDE_IN_TILES)
+		- b.pos_in_chunk;
+	return result;
+}
+
+v2 get_relative_position(tile_position a, world_position b)
+{
+	tile_position tile_b = get_tile_position(b);
+	v2 result = get_tile_position_difference(a, tile_b);
+	return result;
+}
+
+tile_position renormalize_and_get_tile_position(chunk_position chunk_pos, v2 position_to_renormalize)
+{
+	world_position world_pos = {};
+	world_pos.chunk_pos = chunk_pos;
+	world_pos.pos_in_chunk = position_to_renormalize;
+	world_pos = renormalize_world_position(world_pos);
+	tile_position result = get_tile_position(world_pos.chunk_pos, world_pos.pos_in_chunk);
+	return result;
+}
+
+v2 get_tile_v2_position_relative_to_chunk(chunk_position chunk_pos, i32 tile_x, i32 tile_y)
+{
+	tile_position chunk_origin_tile = get_tile_position(chunk_pos.x * CHUNK_SIDE_IN_TILES, chunk_pos.y * CHUNK_SIDE_IN_TILES);
+	v2 position_difference = get_tile_position_difference(chunk_origin_tile, get_tile_position(tile_x, tile_y));
+	return position_difference;
+}
+
+v2 get_tile_v2_position_relative_to_chunk(chunk_position chunk_pos, tile_position tile)
+{
+	v2 result = get_tile_v2_position_relative_to_chunk(chunk_pos, tile.x, tile.y);
+	return result;
+}
+
+world_position get_world_position(i32 tile_x, i32 tile_y)
+{
+	world_position result = {};
+	tile_position tile_pos = get_tile_position(tile_x, tile_y);
+	result.chunk_pos = get_tile_chunk_position(tile_pos);
+	result.pos_in_chunk = get_tile_v2_position_relative_to_chunk(result.chunk_pos, tile_pos);
 	return result;
 }
 
@@ -492,13 +587,14 @@ walking_path find_walking_path_for_enemy(level map, level collision_ref, tile_po
 	return result;
 }
 
-void add_bullet(game_data* game, entity_type* type, v2 position, v2 velocity)
+void add_bullet(game_data* game, entity_type* type, world_position position, v2 offset_from_position, v2 velocity)
 {
 	if (game->bullets_count < game->bullets_max_count)
 	{
 		bullet* bul = &game->bullets[game->bullets_count];
 		bul->type = type;
-		bul->position = position;
+		position.pos_in_chunk += offset_from_position;
+		bul->position = renormalize_world_position(position);
 		bul->velocity = velocity;
 		game->bullets_count++;		
 	}
@@ -517,7 +613,7 @@ void remove_bullet(game_data* game, u32 bullet_index)
 
 b32 is_standing_on_ground(level map, level collision_ref, entity* entity_to_check)
 {
-	v2 position = entity_to_check->position;
+	world_position position = entity_to_check->position;
 	v2 collision_rect_dim = entity_to_check->type->collision_rect_dim;
 
 	b32 result = false;
@@ -525,22 +621,23 @@ b32 is_standing_on_ground(level map, level collision_ref, entity* entity_to_chec
 	r32 max_distance_to_tile = 0.05f;
 
 	v2 left_corner_position = get_v2(
-		position.x - collision_rect_dim.x / 2, 
-		position.y + 0.5f - corner_distance_apron);
+		position.pos_in_chunk.x - collision_rect_dim.x / 2, 
+		position.pos_in_chunk.y + 0.5f - corner_distance_apron);
 	v2 right_corner_position = get_v2(
-		position.x + collision_rect_dim.x / 2,
-		position.y + 0.5f - corner_distance_apron);
+		position.pos_in_chunk.x + collision_rect_dim.x / 2,
+		position.pos_in_chunk.y + 0.5f - corner_distance_apron);
 
-	tile_position left_tile_pos = get_tile_position(left_corner_position);
-	tile_position right_tile_pos = get_tile_position(right_corner_position);
+	tile_position left_tile_pos = renormalize_and_get_tile_position(position.chunk_pos, left_corner_position);
+	tile_position right_tile_pos = renormalize_and_get_tile_position(position.chunk_pos, right_corner_position);
 
 	u32 tile_under_left_corner = get_tile_value(map, left_tile_pos.x, left_tile_pos.y + 1);
 	u32 tile_under_right_corner = get_tile_value(map, right_tile_pos.x, right_tile_pos.y + 1);
 	
 	if (is_tile_colliding(collision_ref, tile_under_left_corner))
 	{
-		r32 distance_to_tile = get_tile_v2_position(left_tile_pos.x, left_tile_pos.y + 1).y
-			- left_corner_position.y - corner_distance_apron - 0.5f;
+		r32 distance_to_tile = get_tile_v2_position_relative_to_chunk(
+				entity_to_check->position.chunk_pos, get_tile_position(left_tile_pos.x, left_tile_pos.y + 1)
+			).y - left_corner_position.y - corner_distance_apron - 0.5f;
 		if (distance_to_tile < max_distance_to_tile)
 		{
 			result = true;
@@ -549,8 +646,9 @@ b32 is_standing_on_ground(level map, level collision_ref, entity* entity_to_chec
 
 	if (is_tile_colliding(collision_ref, tile_under_right_corner))
 	{
-		r32 distance_to_tile = get_tile_v2_position(right_tile_pos.x, right_tile_pos.y + 1).y
-			- right_corner_position.y - corner_distance_apron - 0.5f;
+		r32 distance_to_tile = get_tile_v2_position_relative_to_chunk(
+				entity_to_check->position.chunk_pos, get_tile_position(right_tile_pos.x, right_tile_pos.y + 1)
+			).y - right_corner_position.y - corner_distance_apron - 0.5f;
 		if (distance_to_tile < max_distance_to_tile)
 		{
 			result = true;
@@ -618,7 +716,7 @@ b32 check_segment_intersection (r32 movement_start_x, r32 movement_start_y,
 	return result;
 }
 
-entity* add_entity(game_data* game, v2 position, entity_type* type)
+entity* add_entity(game_data* game, world_position position, entity_type* type)
 {
 	assert(game->entities_count + 1 < game->entities_max_count);
 
@@ -628,6 +726,13 @@ entity* add_entity(game_data* game, v2 position, entity_type* type)
 	new_entity->type = type;
 	new_entity->health = type->max_health;
 	return new_entity;
+}
+
+entity* add_entity(game_data* game, i32 tile_x, i32 tile_y, entity_type* type)
+{
+	world_position world_pos = get_world_position(tile_x, tile_y);
+	entity* result = add_entity(game, world_pos, type);
+	return result;
 }
 
 void remove_entity(game_data* game, u32 entity_index)
@@ -676,28 +781,28 @@ b32 damage_player(game_data* game, i32 damage_amount)
 	return damaged;
 }
 
-entity_collision_data get_entity_collision_data(entity* entity)
+entity_collision_data get_entity_collision_data(chunk_position relative_chunk_pos, entity* entity)
 {
 	entity_collision_data result = {};
-	result.position = entity->position;
+	result.position = get_relative_position(relative_chunk_pos, entity->position);
 	result.collision_rect_dim = entity->type->collision_rect_dim;
 	result.collision_rect_offset = entity->type->collision_rect_offset;
 	return result;
 }
 
-entity_collision_data get_bullet_collision_data(bullet* bullet)
+entity_collision_data get_bullet_collision_data(chunk_position relative_chunk_pos, bullet* bullet)
 {
 	entity_collision_data result = {};
-	result.position = bullet->position;
+	result.position = get_relative_position(relative_chunk_pos, bullet->position);
 	result.collision_rect_dim = bullet->type->collision_rect_dim;
 	result.collision_rect_offset = bullet->type->collision_rect_offset;
 	return result;
 }
 
-entity_collision_data get_tile_collision_data(u32 tile_x, u32 tile_y)
+entity_collision_data get_tile_collision_data(chunk_position relative_chunk_pos, i32 tile_x, i32 tile_y)
 {
 	entity_collision_data result = {};
-	result.position = get_tile_v2_position(get_tile_position(tile_x, tile_y));
+	result.position = get_tile_v2_position_relative_to_chunk(relative_chunk_pos, tile_x, tile_y);
 	result.collision_rect_dim = get_v2(1.0f, 1.0f);
 	result.collision_rect_offset = get_zero_v2();
 	return result;
@@ -763,9 +868,12 @@ collision check_minkowski_collision(
 	return result;
 }
 
-rect get_tiles_area_to_check_for_collision(v2 entity_position, v2 collision_rect_offset, v2 collision_rect_dim, v2 target_pos)
+rect get_tiles_area_to_check_for_collision(world_position entity_position, v2 collision_rect_offset, v2 collision_rect_dim, 
+	world_position target_pos)
 {
-	tile_position entity_tile = get_tile_position(entity_position + collision_rect_offset);
+	entity_position.pos_in_chunk += collision_rect_offset;
+	entity_position = renormalize_world_position(entity_position);
+	tile_position entity_tile = get_tile_position(entity_position);
 	tile_position target_tile = get_tile_position(target_pos);
 
 	i32 x_margin = (i32)SDL_ceil(collision_rect_dim.x);
@@ -779,14 +887,14 @@ rect get_tiles_area_to_check_for_collision(v2 entity_position, v2 collision_rect
 	return result;
 }
 
-rect get_tiles_area_to_check_for_collision(entity* entity, v2 target_pos)
+rect get_tiles_area_to_check_for_collision(entity* entity, world_position target_pos)
 {
 	rect result = get_tiles_area_to_check_for_collision(
 		entity->position, entity->type->collision_rect_offset, entity->type->collision_rect_dim, target_pos);
 	return result;
 }
 
-rect get_tiles_area_to_check_for_collision(bullet* bullet, v2 target_pos)
+rect get_tiles_area_to_check_for_collision(bullet* bullet, world_position target_pos)
 {
 	rect result = get_tiles_area_to_check_for_collision(
 		bullet->position, bullet->type->collision_rect_offset, bullet->type->collision_rect_dim, target_pos);
@@ -799,10 +907,12 @@ struct collision_with_effect
 	entity* collided_entity;
 };
 
-collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, v2 target_pos)
+collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, world_position target_pos)
 {	
-	v2 movement_delta = target_pos - moving_entity->position;
+	v2 movement_delta = get_relative_position(target_pos, moving_entity->position);
 	collision_with_effect result = {};
+
+	chunk_position reference_chunk_pos = moving_entity->position.chunk_pos;
 
 	if (false == is_zero(movement_delta))
 	{
@@ -834,8 +944,8 @@ collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* mov
 						if (is_tile_colliding(game->collision_reference, tile_value))
 						{							
 							collision new_collision = check_minkowski_collision(
-								get_entity_collision_data(moving_entity),
-								get_tile_collision_data(tile_x_to_check, tile_y_to_check),
+								get_entity_collision_data(reference_chunk_pos, moving_entity),
+								get_tile_collision_data(reference_chunk_pos, tile_x_to_check, tile_y_to_check),
 								movement_delta, closest_collision.possible_movement_perc);
 							
 							if (new_collision.collided_wall != direction::NONE)
@@ -846,7 +956,9 @@ collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* mov
 									u32 upper_tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check - 1);
 									if (is_tile_colliding(game->collision_reference, upper_tile_value))
 									{
-										if ((moving_entity->position - get_tile_v2_position(tile_x_to_check, tile_y_to_check)).x > 0)
+										r32 x_diff = get_entity_collision_data(reference_chunk_pos, moving_entity).position.x 
+											- get_tile_collision_data(reference_chunk_pos, tile_x_to_check, tile_y_to_check).position.x;
+										if (x_diff > 0)
 										{
 											new_collision.collided_wall_normal = get_v2(-1, 0);
 										}
@@ -881,8 +993,8 @@ collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* mov
 						&& are_entity_flags_set(entity_to_check, entity_flags::COLLIDES))
 					{
 						collision new_collision = check_minkowski_collision(
-							get_entity_collision_data(moving_entity), 
-							get_entity_collision_data(entity_to_check), 
+							get_entity_collision_data(reference_chunk_pos, moving_entity),
+							get_entity_collision_data(reference_chunk_pos, entity_to_check),
 							movement_delta, closest_effect_entity_collision.possible_movement_perc);
 
 						if (new_collision.collided_wall != direction::NONE)
@@ -906,7 +1018,8 @@ collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* mov
 			if ((closest_collision.possible_movement_perc - movement_apron) > 0.0f)
 			{
 				v2 possible_movement = movement_delta * (closest_collision.possible_movement_perc - movement_apron);
-				moving_entity->position += possible_movement;
+				moving_entity->position.pos_in_chunk += possible_movement;
+				moving_entity->position = renormalize_world_position(moving_entity->position);
 				// pozostałą deltę zmniejszamy o tyle, o ile się poruszyliśmy
 				movement_delta -= possible_movement;
 				//printf("przesuniecie o (%.04f, %.04f)\n", possible_movement.x, possible_movement.y);
@@ -953,10 +1066,13 @@ collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* mov
 	return result;
 }
 
-b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 target_pos)
+b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_position target_pos)
 {
-	v2 movement_delta = target_pos - moving_bullet->position;
+	v2 movement_delta = get_relative_position(target_pos, moving_bullet->position);
 	b32 was_collision = false;
+
+	chunk_position reference_chunk_pos = moving_bullet->position.chunk_pos;
+
 	if (false == is_zero(movement_delta))
 	{
 		r32 movement_apron = 0.001f;
@@ -981,8 +1097,8 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 					if (is_tile_colliding(game->collision_reference, tile_value))
 					{
 						collision new_collision = check_minkowski_collision(
-							get_bullet_collision_data(moving_bullet),
-							get_tile_collision_data(tile_x_to_check, tile_y_to_check),
+							get_bullet_collision_data(reference_chunk_pos, moving_bullet),
+							get_tile_collision_data(reference_chunk_pos, tile_x_to_check, tile_y_to_check),
 							movement_delta, closest_collision.possible_movement_perc);
 
 						if (new_collision.collided_wall != direction::NONE)
@@ -1005,8 +1121,8 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 				if (are_entity_flags_set(entity_to_check, entity_flags::COLLIDES))
 				{
 					collision new_collision = check_minkowski_collision(
-						get_bullet_collision_data(moving_bullet),
-						get_entity_collision_data(entity_to_check),
+						get_bullet_collision_data(reference_chunk_pos, moving_bullet),
+						get_entity_collision_data(reference_chunk_pos, entity_to_check),
 						movement_delta, closest_collision.possible_movement_perc);
 
 					if (new_collision.collided_wall != direction::NONE)
@@ -1045,7 +1161,8 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, v2 tar
 		if ((closest_collision.possible_movement_perc - movement_apron) > 0.0f)
 		{
 			v2 possible_movement = movement_delta * (closest_collision.possible_movement_perc - movement_apron);
-			moving_bullet->position += possible_movement;
+			moving_bullet->position.pos_in_chunk = moving_bullet->position.pos_in_chunk + possible_movement;
+			moving_bullet->position = renormalize_world_position(moving_bullet->position);
 			movement_delta -= possible_movement;
 		}
 
@@ -1085,8 +1202,8 @@ void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 	/*int error = SDL_snprintf(buffer, 200, "Frame: %d Elapsed: %0.2f ms, Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d ",
 		sdl_game->debug_frame_counter, sdl_game->debug_elapsed_work_ms, player->position.x, player->position.y,
 		player->acceleration.x, player->acceleration.y, is_standing);*/
-	int error = SDL_snprintf(buffer, 200, "Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d, Direction: %s",
-		player->position.x, player->position.y,
+	int error = SDL_snprintf(buffer, 200, "Chunk:(%d, %d), pos:(%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d, Direction: %s",
+		player->position.chunk_pos.x, player->position.chunk_pos.y, player->position.pos_in_chunk.x, player->position.pos_in_chunk.y,
 		player->acceleration.x, player->acceleration.y, is_standing, (player->direction == direction::W? "W" : "E"));
 	render_text(sdl_game, buffer, 10, 100, text_color);
 }
@@ -1186,7 +1303,7 @@ void change_movement_mode(player_movement* movement, movement_mode mode)
 	}
 }
 
-v2 process_input(game_data* game, entity* player, r32 delta_time)
+world_position process_input(game_data* game, entity* player, r32 delta_time)
 {	
 	game_input* input = get_last_frame_input(&game->input);
 
@@ -1274,7 +1391,7 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 			{
 				if (player->attack_cooldown <= 0)
 				{					
-					add_bullet(game, player->type->fired_bullet_type, player->position + bullet_offset,
+					add_bullet(game, player->type->fired_bullet_type, player->position, bullet_offset,
 						bullet_direction * player->type->fired_bullet_type->constant_velocity);
 					printf("strzal\n");
 					player->attack_cooldown = player->type->default_attack_cooldown;
@@ -1310,9 +1427,9 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 			{
 				if (player->attack_cooldown <= 0)
 				{
-					add_bullet(game, player->type->fired_bullet_type, player->position + bullet_offset,
+					add_bullet(game, player->type->fired_bullet_type, player->position, bullet_offset,
 						bullet_direction * player->type->fired_bullet_type->constant_velocity);
-					printf("strzal w skoku!\n");;
+					printf("strzal w skoku!\n");
 				}
 			}
 
@@ -1346,8 +1463,12 @@ v2 process_input(game_data* game, entity* player, r32 delta_time)
 	player->velocity = player->type->slowdown_multiplier *
 		(player->velocity + (player->acceleration * delta_time));
 
-	v2 target_pos = player->position +
+	v2 new_position_in_chunk = player->position.pos_in_chunk +
 		(player->velocity * player->type->velocity_multiplier * delta_time);
+
+	world_position target_pos = player->position;
+	target_pos.pos_in_chunk = new_position_in_chunk;
+	renormalize_world_position(target_pos);
 
 	return target_pos;
 }
@@ -1412,9 +1533,9 @@ void animate(player_movement* movement, entity* entity, r32 delta_time)
 	}	
 }
 
-void debug_render_tile(SDL_Renderer* renderer, tile_position tile_pos, SDL_Color color, v2 player_pos)
+void debug_render_tile(SDL_Renderer* renderer, tile_position tile_pos, SDL_Color color, world_position player_pos)
 {
-	v2 position = SCREEN_CENTER + get_tile_v2_position(tile_pos) - player_pos;
+	v2 position = SCREEN_CENTER + get_relative_position(tile_pos, player_pos);
 
 	SDL_Rect screen_rect = {};
 	screen_rect.w = TILE_SIDE_IN_PIXELS;
@@ -1425,7 +1546,7 @@ void debug_render_tile(SDL_Renderer* renderer, tile_position tile_pos, SDL_Color
 	SDL_RenderFillRect(renderer, &screen_rect);
 }
 
-void render_debug_path_ends(sdl_game_data* sdl_game, entity* entity, v2 player_pos)
+void render_debug_path_ends(sdl_game_data* sdl_game, entity* entity, world_position player_pos)
 {
 	if (entity->has_walking_path)
 	{
@@ -1435,7 +1556,7 @@ void render_debug_path_ends(sdl_game_data* sdl_game, entity* entity, v2 player_p
 }
 
 void render_entity_sprite(SDL_Renderer* renderer,
-	v2 player_position, v2 entity_position, direction entity_direction,
+	world_position player_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite)
 {
 	b32 tint_modified = false;
@@ -1464,7 +1585,7 @@ void render_entity_sprite(SDL_Renderer* renderer,
 			flipped_offset = get_v2(-part->offset.x, part->offset.y);
 		}
 
-		v2 position = SCREEN_CENTER + (entity_position - player_position);
+		v2 position = SCREEN_CENTER + get_relative_position(entity_position, player_position);
 		SDL_Rect screen_rect = {};
 		screen_rect.w = part->texture_rect.w;
 		screen_rect.h = part->texture_rect.h;
@@ -1481,7 +1602,7 @@ void render_entity_sprite(SDL_Renderer* renderer,
 	}
 }
 
-void render_entity_animation_frame(SDL_Renderer* renderer, v2 player_position, entity* entity)
+void render_entity_animation_frame(SDL_Renderer* renderer, world_position player_position, entity* entity)
 {
 	sprite* sprite_to_render = NULL;
 	if (entity->current_animation)
@@ -1518,14 +1639,14 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 
 		animate(&game->player_movement, player, delta_time);
 
-		v2 target_pos = process_input(game, player, delta_time);
+		world_position target_pos = process_input(game, player, delta_time);
 
 		collision_with_effect collision = move(sdl_game, game, player, target_pos);
 		if (collision.collided_entity)
 		{
 			damage_player(game, collision.collided_entity->type->damage_on_contact);
 
-			v2 direction = player->position - collision.collided_entity->position;
+			v2 direction = get_relative_position(player->position, collision.collided_entity->position);
 			r32 acceleration = collision.collided_entity->type->player_acceleration_on_collision;
 
 			game->player_movement.recoil_timer = 2.0f;
@@ -1593,41 +1714,39 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 					current_start = entity->path.right_end;
 				}
 
-				v2 goal_pos = get_tile_v2_position(current_goal);
-
-				v2 distance = goal_pos - entity->position;
-				r32 distance_length = length(distance);
-				r32 distance_to_start_length = length(get_tile_v2_position(current_start) - entity->position);
-				v2 direction = get_unit_vector(distance);
-				
+				v2 distance_to_goal = get_tile_position_difference(get_tile_position(entity->position), current_goal);
+				v2 distance_to_start = get_tile_position_difference(get_tile_position(entity->position), current_start);
+									
+				r32 distance_to_goal_length	= length(distance_to_goal);
+				r32 distance_to_start_length = length(distance_to_start);
+								
 				r32 velocity = entity->type->velocity_multiplier;
 
 				r32 slowdown_threshold = 2.0f;
 				r32 fudge = 0.1f;
-				if (distance_length < slowdown_threshold)
+				if (distance_to_goal_length < slowdown_threshold)
 				{
-					velocity *= ((distance_length + fudge) / slowdown_threshold);
+					velocity *= ((distance_to_goal_length + fudge) / slowdown_threshold);
 				}
 				else if (distance_to_start_length < slowdown_threshold)
 				{
 					velocity *= ((distance_to_start_length + fudge) / slowdown_threshold);
 				}
 
-				v2 new_position = entity->position + (direction * velocity * delta_time);
-				entity->position = new_position;
+				v2 direction = get_unit_vector(distance_to_goal);
+				entity->position.pos_in_chunk = entity->position.pos_in_chunk + (direction * velocity * delta_time);
+				entity->position = renormalize_world_position(entity->position);
 			
-				if (length(entity->position - goal_pos) < 0.01f)
+				if (distance_to_goal_length < 0.01f)
 				{
-					//entity->position = goal_pos;
-
 					if (entity->goal_path_point == 0)
 					{
-						printf("dotarliśmy do 0\n");
+						printf("dotarlismy do 0\n");
 						entity->goal_path_point = 1;
 					}
 					else if (entity->goal_path_point == 1)
 					{
-						printf("dotarliśmy do 1\n");
+						printf("dotarlismy do 1\n");
 						entity->goal_path_point = 0;
 					}
 				}
@@ -1648,7 +1767,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		{
 			if (entity->attack_cooldown <= 0)
 			{
-				v2 player_relative_pos = player->position - entity->position;
+				v2 player_relative_pos = get_relative_position(player->position, entity->position);
 				r32 distance_to_player = length(player_relative_pos);
 				if (distance_to_player < 5.0f)
 				{
@@ -1656,7 +1775,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 
 					entity->direction = direction_to_player.x < 0 ? direction::W : direction::E;
 
-					add_bullet(game, entity->type->fired_bullet_type, entity->position/* + get_v2(1.0f, 1.0f)*/,
+					add_bullet(game, entity->type->fired_bullet_type, entity->position, get_zero_v2(),
 						player->type->fired_bullet_type->constant_velocity * direction_to_player);
 					//printf("wrog strzela!\n");
 
@@ -1672,8 +1791,9 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		bullet* bullet = game->bullets + bullet_index;
 		if (bullet->type)
 		{
-			v2 bullet_target_pos = bullet->position + (bullet->velocity * delta_time);
-			b32 hit = move_bullet(game, bullet, bullet_index, bullet_target_pos);
+			bullet->position.pos_in_chunk = bullet->position.pos_in_chunk + (bullet->velocity * delta_time);
+			bullet->position = renormalize_world_position(bullet->position);
+			b32 hit = move_bullet(game, bullet, bullet_index, bullet->position);
 			if (hit)
 			{
 				bullet_index--; // ze względu na compact array - został usunięty bullet, ale nowy został wstawiony na jego miejsce
@@ -1693,9 +1813,13 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		SDL_RenderClear(sdl_game->renderer);
 
 		tile_position player_tile_pos = get_tile_position(player->position);
+
+		v2 tile_pos_in_chunk = get_tile_v2_position_relative_to_chunk(player->position.chunk_pos, player_tile_pos);
+		v2 player_pos_in_chunk = get_relative_position(player->position.chunk_pos, player->position);
+
 		v2 player_offset_in_tile = get_v2(
-			player->position.x - (r32)player_tile_pos.x,
-			player->position.y - (r32)player_tile_pos.y);
+			tile_pos_in_chunk.x - (r32)player_pos_in_chunk.x,
+			tile_pos_in_chunk.y - (r32)player_pos_in_chunk.y);
 
 		i32 screen_half_width = SDL_ceil(HALF_SCREEN_WIDTH_IN_TILES) + 1;
 		i32 screen_half_height = SDL_ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 1;
