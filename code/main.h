@@ -46,8 +46,8 @@ void print_sdl_ttf_error();
 
 struct tile_position
 {
-	u32 x;
-	u32 y;
+	i32 x;
+	i32 y;
 };
 
 struct read_file_result

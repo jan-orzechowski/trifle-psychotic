@@ -344,7 +344,7 @@ sprite* get_sprite_from_animation(animation* animation, r32* elapsed_time)
 	return result;
 }
 
-tile_position get_tile_position(u32 tile_x, u32 tile_y)
+tile_position get_tile_position(i32 tile_x, i32 tile_y)
 {
 	tile_position result = {};
 	result.x = tile_x;
@@ -379,8 +379,8 @@ u32 get_tile_value(level map, i32 x_coord, i32 y_coord)
 	u32 result = 0;
 	if (x_coord >= 0
 		&& y_coord >= 0
-		&& x_coord < map.width 
-		&& y_coord < map.height)
+		&& x_coord < (i32)map.width 
+		&& y_coord < (i32)map.height)
 	{
 		u32 tile_index = x_coord + (map.width * y_coord);
 		result = map.tiles[tile_index];
@@ -434,8 +434,8 @@ walking_path find_walking_path_for_enemy(level map, level collision_ref, tile_po
 	tile_position good_start_tile = {};
 	
 	tile_position test_tile = start_tile;
-	u32 distance_checking_limit = 10;
-	for (u32 distance = 0; distance < distance_checking_limit; distance++)
+	i32 distance_checking_limit = 10;
+	for (i32 distance = 0; distance < distance_checking_limit; distance++)
 	{
 		test_tile.y = start_tile.y + distance;
 		if (is_good_for_walk_path(map, collision_ref, test_tile.x, test_tile.y))
@@ -455,14 +455,9 @@ walking_path find_walking_path_for_enemy(level map, level collision_ref, tile_po
 	tile_position right_end = good_start_tile;
 
 	test_tile = good_start_tile;
-	for (u32 distance = 0; distance <= distance_checking_limit; distance++)
+	for (i32 distance = 0; distance <= distance_checking_limit; distance++)
 	{
-		if (good_start_tile.x < distance)
-		{
-			break;
-		}
 		test_tile.x = good_start_tile.x - distance;
-
 		if (is_good_for_walk_path(map, collision_ref, test_tile.x, test_tile.y))
 		{
 			left_end = test_tile;
@@ -474,10 +469,9 @@ walking_path find_walking_path_for_enemy(level map, level collision_ref, tile_po
 	}
 
 	test_tile = good_start_tile;
-	for (u32 distance = 0; distance <= distance_checking_limit; distance++)
+	for (i32 distance = 0; distance <= distance_checking_limit; distance++)
 	{
-		test_tile.x = good_start_tile.x + distance;
-		
+		test_tile.x = good_start_tile.x + distance;	
 		if (is_good_for_walk_path(map, collision_ref, test_tile.x, test_tile.y))
 		{
 			right_end = test_tile;
@@ -778,10 +772,10 @@ rect get_tiles_area_to_check_for_collision(v2 entity_position, v2 collision_rect
 	i32 y_margin = (i32)SDL_ceil(collision_rect_dim.y);
 
 	rect result = {};
-	result.min_corner.x = min((i32)entity_tile.x - x_margin, (i32)target_tile.x - x_margin);
-	result.min_corner.y = min((i32)entity_tile.y - y_margin, (i32)target_tile.y - y_margin);
-	result.max_corner.x = max((i32)entity_tile.x + x_margin, (i32)target_tile.x + x_margin);
-	result.max_corner.y = max((i32)entity_tile.y + y_margin, (i32)target_tile.y + y_margin);
+	result.min_corner.x = (r32)min((i32)entity_tile.x - x_margin, (i32)target_tile.x - x_margin);
+	result.min_corner.y = (r32)min((i32)entity_tile.y - y_margin, (i32)target_tile.y - y_margin);
+	result.max_corner.x = (r32)max((i32)entity_tile.x + x_margin, (i32)target_tile.x + x_margin);
+	result.max_corner.y = (r32)max((i32)entity_tile.y + y_margin, (i32)target_tile.y + y_margin);
 	return result;
 }
 
