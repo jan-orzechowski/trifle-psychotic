@@ -278,4 +278,4 @@ struct game_data
 };
 
 SDL_Rect get_tile_rect(u32 tile_id);
-entity* add_entity(game_data* game, i32 tile_x, i32 tile_y, entity_type* type);
+entity* add_entity(game_data* game, tile_position tile, entity_type* type);

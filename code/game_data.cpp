@@ -57,7 +57,7 @@ v2 get_standing_collision_rect_offset(v2 collision_rect_dim)
 {
 	// zakładamy że wszystkie obiekty mają pozycję na środku pola, czyli 0.5f nad górną krawędzią pola pod nimi
 	v2 offset = get_zero_v2();
-	offset.y = -((collision_rect_dim.y / 2) - 0.5f);
+	offset.y = -((collision_rect_dim.y / 2) + 0.5f);
 	return offset;
 }
 
@@ -250,8 +250,8 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	default_entity_type->default_attack_cooldown = 0.5f;
 	default_entity_type->player_acceleration_on_collision = 5.0f;
 	default_entity_type->collision_rect_dim = get_v2(1.0f, 1.0f);
-	default_entity_type->collision_rect_offset =
-		get_standing_collision_rect_offset(default_entity_type->collision_rect_dim);
+	//default_entity_type->collision_rect_offset =
+	//	get_standing_collision_rect_offset(default_entity_type->collision_rect_dim);
 
 	entity_type* moving_enemy_type = &game->entity_types[2];
 	moving_enemy_type->idle_pose = get_tile_graphics(sdl_game, arena, 1992);
@@ -262,8 +262,8 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	moving_enemy_type->velocity_multiplier = 5.0f;
 	moving_enemy_type->player_acceleration_on_collision = 5.0f;
 	moving_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
-	moving_enemy_type->collision_rect_offset =
-		get_standing_collision_rect_offset(moving_enemy_type->collision_rect_dim);
+	//moving_enemy_type->collision_rect_offset = 
+	//	get_standing_collision_rect_offset(moving_enemy_type->collision_rect_dim);
 
 	game->bullet_types_count = 5;
 	game->bullet_types = push_array(arena, game->bullet_types_count, entity_type);
@@ -298,11 +298,11 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 
 	// debug entities
 
-	add_entity(game, 0, 0, player_entity_type);
+	add_entity(game, { 0, 0 }, player_entity_type);
 
-	add_entity(game, 16, 6, default_entity_type);
-	add_entity(game, 18, 6, default_entity_type);
-	add_entity(game, 20, 6, default_entity_type);
-
-	add_entity(game, 14, 6, moving_enemy_type);
+	add_entity(game, { 16, 6 }, default_entity_type);
+	add_entity(game, { 18, 6 }, default_entity_type);
+	add_entity(game, { 20, 6 }, default_entity_type);
+				
+	add_entity(game, { 14, 6 }, moving_enemy_type);
 }
