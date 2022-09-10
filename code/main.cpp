@@ -1383,7 +1383,7 @@ world_position process_input(sdl_game_data* sdl_game, game_data* game, entity* p
 				}
 			}
 
-			if (input->fire.number_of_presses > 0)
+			if (input->is_left_mouse_key_held)
 			{
 				if (player->attack_cooldown <= 0)
 				{
@@ -1431,13 +1431,14 @@ world_position process_input(sdl_game_data* sdl_game, game_data* game, entity* p
 		{
 			player->acceleration = gravity;
 
-			if (input->fire.number_of_presses > 0)
+			if (input->is_left_mouse_key_held)
 			{
 				if (player->attack_cooldown <= 0)
 				{
 					add_bullet(game, player->type->fired_bullet_type, player->position, bullet_offset,
 						bullet_direction * player->type->fired_bullet_type->constant_velocity);
-					printf("strzal w skoku!\n");;
+					printf("strzal w skoku!\n");
+					player->attack_cooldown = player->type->default_attack_cooldown;
 				}
 			}
 
@@ -1971,6 +1972,14 @@ int main(int argc, char* args[])
 				if (state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A]) input.left.number_of_presses++;
 				if (state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D]) input.right.number_of_presses++;
 
+				int mouse_x = -1;
+				int mouse_y = -1;
+				Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+				if (mouse_buttons & SDL_BUTTON_LMASK)
+				{
+					input.is_left_mouse_key_held = true;
+				}
+
 				write_to_input_buffer(&game->input, &input);
 
 				update_and_render(&sdl_game, game, delta_time);
@@ -1998,8 +2007,6 @@ int main(int argc, char* args[])
 
 			debug_breakpoint;
 		}
-
-
 	}
 	else
 	{

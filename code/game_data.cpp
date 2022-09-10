@@ -234,7 +234,7 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	player_entity_type->max_health = 100;
 	player_entity_type->velocity_multiplier = 40.0f;
 	player_entity_type->slowdown_multiplier = 0.80f;
-	player_entity_type->default_attack_cooldown = 0.1f;
+	player_entity_type->default_attack_cooldown = 0.2f;
 	player_entity_type->walk_animation = get_player_walk_animation(sdl_game, arena);
 	player_entity_type->collision_rect_dim = get_v2(0.35f, 1.6f);
 	player_entity_type->collision_rect_offset =

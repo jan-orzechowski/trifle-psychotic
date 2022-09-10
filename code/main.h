@@ -71,6 +71,7 @@ struct key_press
 
 struct game_input
 {
+	b32 is_left_mouse_key_held;
 	key_press up;
 	key_press down;
 	key_press left;
