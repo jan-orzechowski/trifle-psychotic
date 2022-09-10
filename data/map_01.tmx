@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.9" tiledversion="1.9.1" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="3" nextobjectid="4">
+<map version="1.9" tiledversion="1.9.1" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="3" nextobjectid="45">
  <tileset firstgid="1" source="../_dev_files/tileset.tsx"/>
  <layer id="1" name="map" width="50" height="50">
   <data encoding="csv">
@@ -55,10 +55,19 @@
 797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,797,2377,2377,2377,2377,2377,2377,2377,983,986,2377,2377,2377,2377,2377,797,797,797,797,797,797,2377,2377,2377,2377
 </data>
  </layer>
- <objectgroup id="2" name="Object Layer 1" tintcolor="#0055ff">
-  <object id="1" name="some ellipse" x="28" y="-3" width="60.5" height="63">
-   <ellipse/>
-  </object>
-  <object id="3" name="obiekt" class="wrog" x="3.25" y="67.25" width="7.5" height="9.75"/>
+ <objectgroup id="2" name="entities" tintcolor="#0055ff">
+  <object id="16" gid="132" x="1" y="94.3333" width="16" height="16"/>
+  <object id="21" gid="131" x="240" y="288" width="16" height="16"/>
+  <object id="34" gid="66" x="17.4205" y="31.9091" width="16" height="16"/>
+  <object id="35" gid="131" x="286.5" y="159.75" width="16" height="16"/>
+  <object id="36" gid="131" x="240" y="224" width="16" height="16"/>
+  <object id="37" gid="131" x="304" y="240" width="16" height="16"/>
+  <object id="38" gid="131" x="270.5" y="191.75" width="16" height="16"/>
+  <object id="39" gid="131" x="304" y="288" width="16" height="16"/>
+  <object id="40" gid="66" x="192" y="32" width="16" height="16"/>
+  <object id="41" gid="66" x="225.421" y="31.9091" width="16" height="16"/>
+  <object id="42" gid="66" x="256" y="48" width="16" height="16"/>
+  <object id="43" gid="66" x="288" y="48" width="16" height="16"/>
+  <object id="44" gid="66" x="448" y="80" width="16" height="16"/>
  </objectgroup>
 </map>
