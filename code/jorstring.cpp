@@ -385,6 +385,13 @@ r32 parse_r32(string_ref str, char delimiter)
 
 	}
 
+	if (delimiter_ptr == 0)
+	{
+		string_ref integer_part = str;
+		i32 integer = parse_i32(integer_part);
+		result = integer;
+	}
+
 	if (negative)
 	{
 		result = -result;

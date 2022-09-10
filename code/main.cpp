@@ -726,9 +726,9 @@ void remove_entity(game_data* game, u32 entity_index)
 	game->entities_count--;
 }
 
-b32 are_entity_flags_set(entity* entity, u32 flag_values)
+b32 are_entity_flags_set(entity* entity, entity_flags flag_values)
 {
-	b32 result = are_flags_set((u32*)&entity->type->flags, flag_values);
+	b32 result = are_flags_set((u32*)&entity->type->flags, (u32)flag_values);
 	return result;
 }
 
@@ -1109,7 +1109,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 
 					if (new_collision.collided_wall != direction::NONE)
 					{
-						if (are_flags_set((u32*)&moving_bullet->type->flags, entity_flags::DAMAGES_PLAYER))
+						if (are_flags_set((u32*)&moving_bullet->type->flags, (u32)entity_flags::DAMAGES_PLAYER))
 						{
 							if (entity_index == 0)
 							{
@@ -1549,7 +1549,7 @@ void debug_render_tile(SDL_Renderer* renderer, tile_position tile_pos, SDL_Color
 	screen_rect.w = TILE_SIDE_IN_PIXELS;
 	screen_rect.h = TILE_SIDE_IN_PIXELS;
 	screen_rect.x = (position.x * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
-	screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
+	screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) + (TILE_SIDE_IN_PIXELS / 2);
 	
 	SDL_RenderFillRect(renderer, &screen_rect);
 }
@@ -1585,20 +1585,20 @@ void render_entity_sprite(SDL_Renderer* renderer,
 			SDL_SetTextureColorMod(part->texture, tint.r, tint.g, tint.b);
 		}
 
-		v2 flipped_offset = part->offset;
+		v2 offset = part->offset;
 		SDL_RendererFlip flip = SDL_FLIP_NONE;
 		if (entity_direction != part->default_direction)
 		{
 			flip = SDL_FLIP_HORIZONTAL; // SDL_FLIP_VERTICAL
-			flipped_offset = get_v2(-part->offset.x, part->offset.y);
+			offset = get_v2(-part->offset.x, part->offset.y);
 		}
 
 		v2 position = SCREEN_CENTER + get_position_difference(entity_position, camera_position);
 		SDL_Rect screen_rect = {};
 		screen_rect.w = part->texture_rect.w;
 		screen_rect.h = part->texture_rect.h;
-		screen_rect.x = (position.x * TILE_SIDE_IN_PIXELS) - (part->texture_rect.w / 2) + flipped_offset.x;
-		screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) - (part->texture_rect.h / 2) + flipped_offset.y;
+		screen_rect.x = (position.x * TILE_SIDE_IN_PIXELS) - (part->texture_rect.w / 2) + offset.x;
+		screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) - (part->texture_rect.h / 2) + offset.y;
 
 		SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
 
@@ -1634,6 +1634,25 @@ void render_entity_animation_frame(SDL_Renderer* renderer,
 
 void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 {
+	if (false == game->current_level_initialized)
+	{
+		add_entity(game, game->current_level.starting_tile, get_entity_type_ptr(game->entity_types_dict, entity_type_enum::PLAYER));
+
+		for (u32 entity_index = 0; 
+			entity_index < game->current_level.entities_to_spawn.entities_count; 
+			entity_index++)
+		{
+			entity_to_spawn* entity = game->current_level.entities_to_spawn.entities + entity_index;						
+			if (entity->type != entity_type_enum::UNKNOWN)
+			{
+				add_entity(game, get_world_position(entity->position),
+					get_entity_type_ptr(game->entity_types_dict, entity->type));
+			}
+		}
+
+		game->current_level_initialized = true;
+	}
+
 	entity* player = get_player(game);
 
 	entity* debug_entity_to_render_path = 0;

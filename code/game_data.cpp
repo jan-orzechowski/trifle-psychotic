@@ -207,6 +207,40 @@ sprite get_bullet_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 x, 
 	return result;
 }
 
+entity_type_dictionary create_entity_types_dictionary(memory_arena* arena)
+{
+	entity_type_dictionary result = {};
+	result.type_ptrs_count = (i32)entity_type_enum::_LAST + 1;
+	result.type_ptrs = push_array(arena, result.type_ptrs_count, entity_type*);
+	return result;
+}
+
+void set_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum type, entity_type* enity_type_ptr)
+{
+	assert((i32)type < dictionary.type_ptrs_count);
+	assert(dictionary.type_ptrs[(i32)type] == NULL);
+	dictionary.type_ptrs[(i32)type] = enity_type_ptr;
+}
+
+entity_type* get_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum type)
+{
+	assert((i32)type < dictionary.type_ptrs_count);
+	entity_type* result = dictionary.type_ptrs[(i32)type];
+	return result;
+}
+
+void test_if_all_types_loaded(entity_type_dictionary dictionary)
+{
+	for (i32 enum_value = (i32)entity_type_enum::UNKNOWN + 1;
+		enum_value < (i32)entity_type_enum::_LAST;
+		enum_value++)
+	{
+		assert(enum_value < dictionary.type_ptrs_count);
+		entity_type* type = dictionary.type_ptrs[enum_value];
+		assert(type != NULL);
+	}
+}
+
 void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* arena)
 {
 	std::string collision_file_path = "data/collision_map.tmx";
@@ -230,7 +264,7 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 
 	entity_type* player_entity_type = &game->entity_types[0];
 	player_entity_type->idle_pose = get_player_idle_pose(sdl_game, arena);
-	player_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::PLAYER);
+	player_entity_type->flags = (entity_flags)((u32)entity_flags::COLLIDES | (u32)entity_flags::PLAYER);
 	player_entity_type->max_health = 100;
 	player_entity_type->velocity_multiplier = 40.0f;
 	player_entity_type->slowdown_multiplier = 0.80f;
@@ -242,20 +276,22 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 
 	game->player_movement.current_mode = movement_mode::WALK;
 
-	entity_type* default_entity_type = &game->entity_types[1];
-	default_entity_type->idle_pose = get_tile_graphics(sdl_game, arena, 837);
-	default_entity_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::ENEMY);
-	default_entity_type->max_health = 10;
-	default_entity_type->damage_on_contact = 10;
-	default_entity_type->default_attack_cooldown = 0.5f;
-	default_entity_type->player_acceleration_on_collision = 5.0f;
-	default_entity_type->collision_rect_dim = get_v2(1.0f, 1.0f);
-	//default_entity_type->collision_rect_offset =
-	//	get_standing_collision_rect_offset(default_entity_type->collision_rect_dim);
+	entity_type* static_enemy_type = &game->entity_types[1];
+	static_enemy_type->idle_pose = get_tile_graphics(sdl_game, arena, 837);
+	static_enemy_type->flags = (entity_flags)((u32)entity_flags::COLLIDES | (u32)entity_flags::ENEMY);
+	static_enemy_type->max_health = 10;
+	static_enemy_type->damage_on_contact = 10;
+	static_enemy_type->default_attack_cooldown = 0.5f;
+	static_enemy_type->player_acceleration_on_collision = 5.0f;
+	static_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+	//static_enemy_type->collision_rect_offset =
+	//	get_standing_collision_rect_offset(static_enemy_type->collision_rect_dim);
 
 	entity_type* moving_enemy_type = &game->entity_types[2];
 	moving_enemy_type->idle_pose = get_tile_graphics(sdl_game, arena, 1992);
-	moving_enemy_type->flags = (entity_flags)(entity_flags::COLLIDES | entity_flags::WALKS_HORIZONTALLY | entity_flags::ENEMY);
+	moving_enemy_type->flags = (entity_flags)((u32)entity_flags::COLLIDES 
+		| (u32)entity_flags::WALKS_HORIZONTALLY 
+		| (u32)entity_flags::ENEMY);
 	moving_enemy_type->max_health = 10;
 	moving_enemy_type->damage_on_contact = 10;
 	moving_enemy_type->default_attack_cooldown = 0.2f;
@@ -264,6 +300,12 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	moving_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 	//moving_enemy_type->collision_rect_offset = 
 	//	get_standing_collision_rect_offset(moving_enemy_type->collision_rect_dim);
+
+	game->entity_types_dict = create_entity_types_dictionary(arena);
+	set_entity_type_ptr(game->entity_types_dict, entity_type_enum::PLAYER, player_entity_type);
+	set_entity_type_ptr(game->entity_types_dict, entity_type_enum::STATIC_ENEMY, static_enemy_type);
+	set_entity_type_ptr(game->entity_types_dict, entity_type_enum::MOVING_ENEMY, moving_enemy_type);
+	test_if_all_types_loaded(game->entity_types_dict);
 
 	game->bullet_types_count = 5;
 	game->bullet_types = push_array(arena, game->bullet_types_count, entity_type);
@@ -283,7 +325,7 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	enemy_bullet_type->idle_pose = get_bullet_graphics(sdl_game, arena, 1, 1);
 
 	player_entity_type->fired_bullet_type = player_bullet_type;
-	default_entity_type->fired_bullet_type = enemy_bullet_type;
+	static_enemy_type->fired_bullet_type = enemy_bullet_type;
 
 	game->visual_effects_count = 5;
 	game->visual_effects = push_array(arena, game->visual_effects_count, sprite_effect);
@@ -295,14 +337,4 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 
 	add_sprite_effect_stage(damage_tint_effect, 1.0f, 0.0f, 0.0f, 5.0f, 5.0f);
 	add_constant_tint_sprite_effect_stage(damage_tint_effect, 0.5f, 5.0f);
-
-	// debug entities
-
-	add_entity(game, { 0, 0 }, player_entity_type);
-
-	add_entity(game, { 16, 6 }, default_entity_type);
-	add_entity(game, { 18, 6 }, default_entity_type);
-	add_entity(game, { 20, 6 }, default_entity_type);
-				
-	add_entity(game, { 14, 6 }, moving_enemy_type);
 }

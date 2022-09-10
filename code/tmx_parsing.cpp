@@ -708,6 +708,47 @@ string_ref get_attribute_value(xml_node* node, const char* attribute_name)
 	return result;
 }
 
+struct xml_node_search_result
+{
+	xml_node** found_nodes;
+	u32 found_nodes_count;
+};
+
+void push_next_found_node(memory_arena* arena, xml_node_search_result* search_results, xml_node* new_found_node)
+{
+	// zakładamy, ze dalsza część pamięci jest wolna, i możemy w ten sposób zrobić pseudo "dynamiczną" tablicę
+	xml_node** new_pointer = push_struct(arena, xml_node*);
+	*new_pointer = new_found_node;
+	search_results->found_nodes_count++;
+}
+
+xml_node_search_result* find_all_nodes_with_tag(memory_arena* arena, xml_node* root_node, const char* tag)
+{
+	xml_node_search_result* result = push_struct(arena, xml_node_search_result);
+	result->found_nodes_count = 0;
+	result->found_nodes = NULL;
+	if (root_node && root_node->first_child)
+	{	
+		xml_node* child = root_node->first_child;
+		while (child)
+		{
+			if (compare_to_c_string(child->tag, tag))
+			{
+				xml_node** new_pointer = push_struct(arena, xml_node*);
+				*new_pointer = child;
+				result->found_nodes_count++;
+				child = child->next;
+
+				if (result->found_nodes == NULL)
+				{
+					result->found_nodes = new_pointer;
+				}
+			}	
+		}
+	}
+	return result;
+}
+
 level read_level_from_tmx_file(memory_arena* permanent_arena, read_file_result file, const char* layer_name)
 {
 	level map = {};
@@ -806,6 +847,86 @@ level read_level_from_tmx_file(memory_arena* permanent_arena, read_file_result f
 			else
 			{
 				// błąd
+			}
+
+			xml_node* objectgroup_node = find_tag_in_children(root, "objectgroup");
+			if (objectgroup_node)
+			{
+				xml_node_search_result* objects = find_all_nodes_with_tag(&parsing_arena, objectgroup_node, "object");
+				if (objects->found_nodes_count > 0)
+				{
+					map.entities_to_spawn.entities_count = 0;
+					map.entities_to_spawn.entities = NULL;
+					for (u32 xml_node_index = 0; xml_node_index < objects->found_nodes_count; xml_node_index++)
+					{
+						xml_node* node = *(objects->found_nodes + xml_node_index);
+						if (node)
+						{
+							string_ref gid_str = get_attribute_value(node, "gid");
+							string_ref class_str = get_attribute_value(node, "class");
+							string_ref x_str = get_attribute_value(node, "x");
+							string_ref y_str = get_attribute_value(node, "y");
+
+							b32 starting_point_is_set = false;
+
+							entity_type_enum type = entity_type_enum::UNKNOWN;
+							if (gid_str.string_size)
+							{
+								i32 gid = parse_i32(gid_str);
+								switch (gid)
+								{
+									case 66: type = entity_type_enum::STATIC_ENEMY; break;
+									case 131: type = entity_type_enum::MOVING_ENEMY; break;
+									case 132:
+									{ 
+										type = entity_type_enum::PLAYER; 
+										if (starting_point_is_set)
+										{
+											// ktoś ustawił pozycję gracza dwa razy!
+											invalid_code_path;
+										}
+										starting_point_is_set = true;
+									}
+									break;
+								}
+							}
+
+							tile_position position = get_tile_position(-1, -1);
+							if (x_str.string_size && y_str.string_size)
+							{								
+								r32 x = parse_r32(x_str, '.');
+								r32 y = parse_r32(y_str, '.');
+								// przesunięcie dodane, ponieważ Tiled trakuje lewy dolny róg jako origin pola
+								// znacznie bardziej intuicyjne jest w edytorze traktowanie tak środka
+								i32 tile_x = (i32)((x / TILE_SIDE_IN_PIXELS) + 0.5f);
+								i32 tile_y = (i32)((y / TILE_SIDE_IN_PIXELS) - 0.5f);
+								position = get_tile_position(tile_x, tile_y);
+							}
+
+							if (type == entity_type_enum::PLAYER)
+							{
+								map.starting_tile = position;
+							}
+							else
+							{
+								if (class_str.string_size)
+								{
+									debug_breakpoint;
+								}
+
+								entity_to_spawn* new_entity = push_struct(permanent_arena, entity_to_spawn);
+								new_entity->type = type;
+								new_entity->position = position;
+
+								map.entities_to_spawn.entities_count++;
+								if (map.entities_to_spawn.entities == NULL)
+								{
+									map.entities_to_spawn.entities = new_entity;
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}

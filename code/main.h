@@ -79,7 +79,7 @@ struct game_input
 	key_press fire;
 };
 
-enum direction
+enum class direction
 {
 	NONE = 0,
 	N = (1 << 0),
@@ -94,13 +94,48 @@ struct walking_path
 	tile_position right_end;
 };
 
+// istotne - _LAST musi być ostatnie, a UNKNOWN pierwsze! 
+// to pozwala na iterację po wszystkich enumach w pętli for
+// w tym enumie nie możemy przypisywać konkretnych wartości liczbowych
+enum class entity_type_enum
+{
+	UNKNOWN,
+	PLAYER,
+	STATIC_ENEMY,
+	MOVING_ENEMY,
+
+	//GATE_RED,
+	//GATE_WHITE,
+	//GATE_BLUE,
+	//GATE_GREEN,
+	//SWITCH_RED,
+	//SWITCH_WHITE,
+	//SWITCH_BLUE,
+	//SWITCH_GREEN,
+
+	_LAST
+};
+
+struct entity_to_spawn
+{
+	tile_position position;
+	entity_type_enum type;
+};
+
+struct level_entities
+{
+	entity_to_spawn* entities;
+	u32 entities_count;
+};
+
 struct level
 {
-	//string_ref tilemap_source;
 	u32 width;
 	u32 height;
 	i32* tiles;
 	u32 tiles_count;
+	level_entities entities_to_spawn;
+	tile_position starting_tile;
 };
 
 struct sprite_effect_stage
@@ -148,7 +183,7 @@ struct animation
 	r32 total_duration;
 };
 
-enum entity_flags
+enum class entity_flags
 {
 	PLAYER =			 (1 << 0),
 	COLLIDES =			 (1 << 1),
@@ -178,6 +213,12 @@ struct entity_type
 	animation* walk_animation;
 
 	entity_type* fired_bullet_type;
+};
+
+struct entity_type_dictionary
+{
+	entity_type** type_ptrs;
+	u32 type_ptrs_count;
 };
 
 struct world_position
@@ -233,7 +274,7 @@ struct input_buffer
 	u32 current_index;
 };
 
-enum movement_mode
+enum class movement_mode
 {
 	JUMP,
 	WALK,
@@ -259,9 +300,11 @@ struct game_data
 	r32 player_invincibility_cooldown;
 	r32 default_player_invincibility_cooldown;
 
+	b32 current_level_initialized;
 	level current_level;
 	level collision_reference;
 
+	entity_type_dictionary entity_types_dict;
 	entity_type* entity_types;
 	u32 entity_types_count;
 	entity* entities; // compact array
@@ -279,4 +322,5 @@ struct game_data
 };
 
 SDL_Rect get_tile_rect(u32 tile_id);
+tile_position get_tile_position(i32 tile_x, i32 tile_y);
 entity* add_entity(game_data* game, tile_position tile, entity_type* type);
