@@ -363,6 +363,18 @@ tile_position get_tile_position(world_position world_pos)
 	return result;
 }
 
+b32 operator ==(tile_position a, tile_position b)
+{
+	b32 result = (a.x == b.x && a.y == b.y);
+	return result;
+}
+
+b32 operator !=(tile_position a, tile_position b)
+{
+	b32 result = !(a.x == b.x && a.y == b.y);
+	return result;
+}
+
 chunk_position get_tile_chunk_position(tile_position tile_pos)
 {
 	chunk_position result = {};
@@ -985,7 +997,7 @@ collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* mov
 									&& are_entity_flags_set(entity_to_check, entity_flags::ENEMY))
 								{
 									collided_effect_entity = entity_to_check;
-									//printf("collided entity\n");
+									printf("collided entity\n");
 								}
 							}
 						}
@@ -1006,7 +1018,7 @@ collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* mov
 			result.data = closest_collision;
 
 			// jeśli z entity mieliśmy kolizję wcześniej niż z tile
-			if (closest_effect_entity_collision.possible_movement_perc < closest_collision.possible_movement_perc)
+			if (closest_effect_entity_collision.possible_movement_perc <= closest_collision.possible_movement_perc)
 			{
 				if (collided_effect_entity)
 				{
@@ -1087,7 +1099,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 							if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
 							{
 								closest_collision = new_collision;
-								printf("kolizja!!\n");
+								//printf("kolizja!!\n");
 							}
 						}
 					}
@@ -1130,6 +1142,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 								{
 									closest_collision = new_collision;
 									collided_entity = entity_to_check;
+									printf("kolizja!!\n");
 								}
 							}
 						}
@@ -1389,7 +1402,7 @@ world_position process_input(sdl_game_data* sdl_game, game_data* game, entity* p
 				{
 					add_bullet(game, player->type->fired_bullet_type, player->position, bullet_offset,
 						bullet_direction * player->type->fired_bullet_type->constant_velocity);
-					printf("strzal\n");
+					//printf("strzal\n");
 					player->attack_cooldown = player->type->default_attack_cooldown;
 				}
 			}
@@ -1437,7 +1450,7 @@ world_position process_input(sdl_game_data* sdl_game, game_data* game, entity* p
 				{
 					add_bullet(game, player->type->fired_bullet_type, player->position, bullet_offset,
 						bullet_direction * player->type->fired_bullet_type->constant_velocity);
-					printf("strzal w skoku!\n");
+					//printf("strzal w skoku!\n");
 					player->attack_cooldown = player->type->default_attack_cooldown;
 				}
 			}
@@ -1674,7 +1687,9 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		{
 			damage_player(game, collision.collided_entity->type->damage_on_contact);
 
-			v2 direction = get_position_difference(player->position, collision.collided_entity->position);
+			v2 direction = get_unit_vector(
+				get_position_difference(player->position, collision.collided_entity->position));
+			
 			r32 acceleration = collision.collided_entity->type->player_acceleration_on_collision;
 
 			game->player_movement.recoil_timer = 2.0f;
@@ -1747,44 +1762,51 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 					current_start = entity->path.right_end;
 				}
 
-				v2 distance = get_position_difference(current_goal, entity->position);
-				r32 distance_length = length(distance);
-				v2 distance_to_start = get_position_difference(current_start, entity->position);
-				r32 distance_to_start_length = length(distance_to_start);
-				v2 direction = get_unit_vector(distance);
-
-				r32 velocity = entity->type->velocity_multiplier;
-
-				r32 slowdown_threshold = 2.0f;
-				r32 fudge = 0.1f;
-				if (distance_length < slowdown_threshold)
+				if (current_goal != current_start)
 				{
-					velocity *= ((distance_length + fudge) / slowdown_threshold);
-				}
-				else if (distance_to_start_length < slowdown_threshold)
-				{
-					velocity *= ((distance_to_start_length + fudge) / slowdown_threshold);
-				}
+					v2 distance = get_position_difference(current_goal, entity->position);
+					r32 distance_length = length(distance);
+					v2 distance_to_start = get_position_difference(current_start, entity->position);
+					r32 distance_to_start_length = length(distance_to_start);
 
-				world_position new_position = add_to_position(entity->position, (direction * velocity * delta_time));
-				entity->position = new_position;
-
-				if (length(get_position_difference(current_goal, entity->position)) < 0.01f)
-				{
-					//entity->position = goal_pos;
-
-					if (entity->goal_path_point == 0)
+					v2 direction = get_zero_v2();
+					if (distance_length != 0)
 					{
-						printf("dotarliśmy do 0\n");
-						entity->goal_path_point = 1;
+						direction = get_unit_vector(distance);
 					}
-					else if (entity->goal_path_point == 1)
+
+					r32 velocity = entity->type->velocity_multiplier;
+
+					r32 slowdown_threshold = 2.0f;
+					r32 fudge = 0.1f;
+					if (distance_length < slowdown_threshold)
 					{
-						printf("dotarliśmy do 1\n");
-						entity->goal_path_point = 0;
+						velocity *= ((distance_length + fudge) / slowdown_threshold);
+					}
+					else if (distance_to_start_length < slowdown_threshold)
+					{
+						velocity *= ((distance_to_start_length + fudge) / slowdown_threshold);
+					}
+
+					world_position new_position = add_to_position(entity->position, (direction * velocity * delta_time));
+					entity->position = new_position;
+
+					if (length(get_position_difference(current_goal, entity->position)) < 0.01f)
+					{
+						//entity->position = goal_pos;
+
+						if (entity->goal_path_point == 0)
+						{
+							//printf("dotarliśmy do 0\n");
+							entity->goal_path_point = 1;
+						}
+						else if (entity->goal_path_point == 1)
+						{
+							//printf("dotarliśmy do 1\n");
+							entity->goal_path_point = 0;
+						}
 					}
 				}
-
 				debug_entity_to_render_path = entity;
 			}
 			else
@@ -1793,6 +1815,14 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 					game->current_level, game->collision_reference, get_tile_position(entity->position));
 				entity->path = new_path;
 				entity->has_walking_path = true;
+
+				// zabezpieczenie na wypadek nierównego ustawienia entity w edytorze 
+				tile_position current_position = get_tile_position(entity->position);
+				if (current_position.y != entity->path.left_end.y)
+				{
+					tile_position new_position = get_tile_position(current_position.x, entity->path.left_end.y);
+					entity->position = get_world_position(new_position);
+				}
 			}
 		}
 

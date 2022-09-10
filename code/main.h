@@ -188,7 +188,7 @@ enum class entity_flags
 	PLAYER =			 (1 << 0),
 	COLLIDES =			 (1 << 1),
 	ENEMY =				 (1 << 2),
-	TAKES_DAMAGE =		 (1 << 3),
+	//TAKES_DAMAGE =       (1 << 3),
 	DAMAGES_PLAYER =	 (1 << 4),
 	WALKS_HORIZONTALLY = (1 << 5)
 };

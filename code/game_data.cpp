@@ -48,7 +48,7 @@ sprite get_tile_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 tile_
 	result.parts = push_array(arena, result.parts_count, sprite_part);
 	result.parts[0].texture = sdl_game->tileset_texture;
 	result.parts[0].texture_rect = texture_rect;
-	result.parts[0].offset = get_zero_v2();
+	result.parts[0].offset = get_v2(0, TILE_SIDE_IN_PIXELS);// get_zero_v2();
 
 	return result;
 }
@@ -282,10 +282,10 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	static_enemy_type->max_health = 10;
 	static_enemy_type->damage_on_contact = 10;
 	static_enemy_type->default_attack_cooldown = 0.5f;
-	static_enemy_type->player_acceleration_on_collision = 5.0f;
+	static_enemy_type->player_acceleration_on_collision = 3.0f;
 	static_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
-	//static_enemy_type->collision_rect_offset =
-	//	get_standing_collision_rect_offset(static_enemy_type->collision_rect_dim);
+	static_enemy_type->collision_rect_offset = get_v2(0.0f, 1.0f);
+		get_standing_collision_rect_offset(static_enemy_type->collision_rect_dim);
 
 	entity_type* moving_enemy_type = &game->entity_types[2];
 	moving_enemy_type->idle_pose = get_tile_graphics(sdl_game, arena, 1992);
@@ -296,10 +296,10 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	moving_enemy_type->damage_on_contact = 10;
 	moving_enemy_type->default_attack_cooldown = 0.2f;
 	moving_enemy_type->velocity_multiplier = 5.0f;
-	moving_enemy_type->player_acceleration_on_collision = 5.0f;
+	moving_enemy_type->player_acceleration_on_collision = 3.0f;
 	moving_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
-	//moving_enemy_type->collision_rect_offset = 
-	//	get_standing_collision_rect_offset(moving_enemy_type->collision_rect_dim);
+	moving_enemy_type->collision_rect_offset = get_v2(0.0f, 1.0f);
+		get_standing_collision_rect_offset(moving_enemy_type->collision_rect_dim);
 
 	game->entity_types_dict = create_entity_types_dictionary(arena);
 	set_entity_type_ptr(game->entity_types_dict, entity_type_enum::PLAYER, player_entity_type);
