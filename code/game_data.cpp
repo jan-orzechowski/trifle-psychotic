@@ -48,17 +48,8 @@ sprite get_tile_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 tile_
 	result.parts = push_array(arena, result.parts_count, sprite_part);
 	result.parts[0].texture = sdl_game->tileset_texture;
 	result.parts[0].texture_rect = texture_rect;
-	result.parts[0].offset = get_v2(0, TILE_SIDE_IN_PIXELS);// get_zero_v2();
 
 	return result;
-}
-
-v2 get_standing_collision_rect_offset(v2 collision_rect_dim)
-{
-	// zakładamy że wszystkie obiekty mają pozycję na środku pola, czyli 0.5f nad górną krawędzią pola pod nimi
-	v2 offset = get_zero_v2();
-	offset.y = -((collision_rect_dim.y / 2) + 0.5f);
-	return offset;
 }
 
 sprite_effect_stage* add_sprite_effect_stage(sprite_effect* effect,
@@ -97,7 +88,7 @@ sprite_part get_sprite_part(SDL_Texture* texture, SDL_Rect texture_rect, v2 offs
 	sprite_part result = {};
 	result.texture = texture;
 	result.texture_rect = texture_rect;
-	result.offset = offset;
+	result.offset_in_pixels = offset;
 	result.default_direction = default_direction;
 	return result;
 }
@@ -120,8 +111,8 @@ animation* get_player_walk_animation(sdl_game_data* sdl_game, memory_arena* aren
 	head_rect.w = 24;
 	head_rect.h = 24;
 
-	v2 legs_offset = get_v2(0.0f, -4.0f);
-	v2 head_offset = get_v2(5.0f, -20.0f);
+	v2 legs_offset = get_v2(0.0f, 0.0f);
+	v2 head_offset = get_v2(5.0f, -16.0f);
 
 	r32 frame_duration = 0.2f;
 	SDL_Texture* texture = sdl_game->player_texture;
@@ -170,20 +161,20 @@ sprite get_player_idle_pose(sdl_game_data* sdl_game, memory_arena* arena)
 	player_legs_rect.w = 24;
 	player_legs_rect.h = 24;
 
-	v2 legs_offset = get_v2(0.0f, -4.0f);
-	v2 head_offset = get_v2(5.0f, -20.0f);
+	v2 legs_offset = get_v2(0.0f, 0.0f);
+	v2 head_offset = get_v2(5.0f, -16.0f);
 
 	result.parts_count = 2;
 	result.parts = push_array(arena, result.parts_count, sprite_part);
 	result.parts[0].texture = sdl_game->player_texture;
 	result.parts[0].texture_rect = player_head_rect;
-	result.parts[0].offset = head_offset;
 	result.parts[0].default_direction = direction::E;
+	result.parts[0].offset_in_pixels = head_offset;
 
 	result.parts[1].texture = sdl_game->player_texture;
 	result.parts[1].texture_rect = player_legs_rect;
-	result.parts[1].offset = legs_offset;
 	result.parts[1].default_direction = direction::E;
+	result.parts[1].offset_in_pixels = legs_offset;
 
 	return result;
 }
@@ -202,7 +193,6 @@ sprite get_bullet_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 x, 
 	result.parts = push_array(arena, result.parts_count, sprite_part);
 	result.parts[0].texture = sdl_game->bullets_texture;
 	result.parts[0].texture_rect = texture_rect;
-	result.parts[0].offset = get_zero_v2();
 
 	return result;
 }
@@ -271,8 +261,6 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	player_entity_type->default_attack_cooldown = 0.2f;
 	player_entity_type->walk_animation = get_player_walk_animation(sdl_game, arena);
 	player_entity_type->collision_rect_dim = get_v2(0.35f, 1.6f);
-	player_entity_type->collision_rect_offset =
-		get_standing_collision_rect_offset(player_entity_type->collision_rect_dim);
 
 	game->player_movement.current_mode = movement_mode::WALK;
 
@@ -284,8 +272,6 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	static_enemy_type->default_attack_cooldown = 0.5f;
 	static_enemy_type->player_acceleration_on_collision = 3.0f;
 	static_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
-	static_enemy_type->collision_rect_offset = get_v2(0.0f, 1.0f);
-		get_standing_collision_rect_offset(static_enemy_type->collision_rect_dim);
 
 	entity_type* moving_enemy_type = &game->entity_types[2];
 	moving_enemy_type->idle_pose = get_tile_graphics(sdl_game, arena, 1992);
@@ -298,8 +284,6 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	moving_enemy_type->velocity_multiplier = 5.0f;
 	moving_enemy_type->player_acceleration_on_collision = 3.0f;
 	moving_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
-	moving_enemy_type->collision_rect_offset = get_v2(0.0f, 1.0f);
-		get_standing_collision_rect_offset(moving_enemy_type->collision_rect_dim);
 
 	game->entity_types_dict = create_entity_types_dictionary(arena);
 	set_entity_type_ptr(game->entity_types_dict, entity_type_enum::PLAYER, player_entity_type);

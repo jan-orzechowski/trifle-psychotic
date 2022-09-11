@@ -24,7 +24,8 @@
 #define HALF_SCREEN_WIDTH_IN_TILES (SCREEN_WIDTH_IN_TILES / 2)
 #define HALF_SCREEN_HEIGHT_IN_TILES (SCREEN_HEIGHT_IN_TILES / 2)
 
-#define SCREEN_CENTER get_v2(HALF_SCREEN_WIDTH_IN_TILES + 1, HALF_SCREEN_HEIGHT_IN_TILES + 1)
+#define SCREEN_CENTER_IN_TILES get_v2(HALF_SCREEN_WIDTH_IN_TILES, HALF_SCREEN_HEIGHT_IN_TILES)
+#define SCREEN_CENTER_IN_PIXELS get_v2((SCREEN_WIDTH / SCALING_FACTOR) / 2, (SCREEN_HEIGHT / SCALING_FACTOR) / 2)
 
 #define CHUNK_SIDE_IN_TILES 16
 
@@ -160,7 +161,7 @@ struct sprite_part
 {
 	SDL_Texture* texture;
 	SDL_Rect texture_rect;
-	v2 offset;
+	v2 offset_in_pixels;
 	direction default_direction;
 };
 

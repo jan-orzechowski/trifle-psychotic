@@ -795,7 +795,6 @@ entity_collision_data get_tile_collision_data(chunk_position reference_chunk, ti
 	entity_collision_data result = {};
 	result.position = get_position_difference(tile_pos, reference_chunk);
 	result.collision_rect_dim = get_v2(1.0f, 1.0f);
-	result.collision_rect_offset = get_zero_v2(); //get_v2(0.5f, 0.5f);
 	return result;
 }
 
@@ -832,8 +831,6 @@ collision check_minkowski_collision(
 	b32 south_wall = check_segment_intersection(
 		relative_pos.y, relative_pos.x, movement_delta.y, movement_delta.x,
 		min_corner.y, min_corner.x, max_corner.x, &result.possible_movement_perc);
-
-	//result.was_intersection = (was_intersection || west || east || north || south);
 
 	if (west_wall)
 	{
@@ -961,7 +958,6 @@ collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* mov
 								if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
 								{
 									closest_collision = new_collision;
-									//printf("collided tile\n");
 								}
 							}
 						}
@@ -997,7 +993,6 @@ collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* mov
 									&& are_entity_flags_set(entity_to_check, entity_flags::ENEMY))
 								{
 									collided_effect_entity = entity_to_check;
-									printf("collided entity\n");
 								}
 							}
 						}
@@ -1099,7 +1094,6 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 							if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
 							{
 								closest_collision = new_collision;
-								//printf("kolizja!!\n");
 							}
 						}
 					}
@@ -1142,7 +1136,6 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 								{
 									closest_collision = new_collision;
 									collided_entity = entity_to_check;
-									printf("kolizja!!\n");
 								}
 							}
 						}
@@ -1215,7 +1208,7 @@ void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 	int error = SDL_snprintf(buffer, 200, "Chunk:(%d,%d),Pos:(%0.2f,%0.2f),Acc: (%0.2f,%0.2f) Standing: %d, Direction: %s",
 		player->position.chunk_pos.x, player->position.chunk_pos.y, player->position.pos_in_chunk.x, player->position.pos_in_chunk.y,
 		player->acceleration.x, player->acceleration.y, is_standing, (player->direction == direction::W ? "W" : "E"));
-	render_text(sdl_game, buffer, 10, 100, text_color);
+	render_text(sdl_game, buffer, 10, 200, text_color);
 }
 
 void write_to_input_buffer(input_buffer* buffer, game_input* new_input)
@@ -1554,16 +1547,34 @@ void animate(player_movement* movement, entity* entity, r32 delta_time)
 	}
 }
 
+SDL_Rect get_render_rect(v2 position_relative_to_camera, v2 rect_size)
+{
+	SDL_Rect result = {};
+	result.w = rect_size.x;
+	result.h = rect_size.y;
+	result.x = SCREEN_CENTER_IN_PIXELS.x + (position_relative_to_camera.x * TILE_SIDE_IN_PIXELS)
+		- (rect_size.x / 2);
+	result.y = SCREEN_CENTER_IN_PIXELS.y + (position_relative_to_camera.y * TILE_SIDE_IN_PIXELS)
+		- (rect_size.y / 2);
+	return result;
+}
+
+SDL_Rect get_tile_render_rect(v2 position_relative_to_camera)
+{
+	SDL_Rect result = {};
+	result.w = TILE_SIDE_IN_PIXELS;
+	result.h = TILE_SIDE_IN_PIXELS;
+	result.x = SCREEN_CENTER_IN_PIXELS.x + (position_relative_to_camera.x * TILE_SIDE_IN_PIXELS) 
+		- (TILE_SIDE_IN_PIXELS / 2);
+	result.y = SCREEN_CENTER_IN_PIXELS.y + (position_relative_to_camera.y * TILE_SIDE_IN_PIXELS) 
+		- (TILE_SIDE_IN_PIXELS / 2);
+	return result;
+}
+
 void debug_render_tile(SDL_Renderer* renderer, tile_position tile_pos, SDL_Color color, world_position camera_pos)
 {
-	v2 position = SCREEN_CENTER + get_position_difference(tile_pos, camera_pos);
-	
-	SDL_Rect screen_rect = {};
-	screen_rect.w = TILE_SIDE_IN_PIXELS;
-	screen_rect.h = TILE_SIDE_IN_PIXELS;
-	screen_rect.x = (position.x * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
-	screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) + (TILE_SIDE_IN_PIXELS / 2);
-	
+	v2 position = get_position_difference(tile_pos, camera_pos);
+	SDL_Rect screen_rect = get_tile_render_rect(position);
 	SDL_RenderFillRect(renderer, &screen_rect);
 }
 
@@ -1571,6 +1582,7 @@ void render_debug_path_ends(sdl_game_data* sdl_game, entity* entity, world_posit
 {
 	if (entity->has_walking_path)
 	{
+		SDL_SetRenderDrawColor(sdl_game->renderer, 0, 0, 255, 0);
 		debug_render_tile(sdl_game->renderer, entity->path.left_end, { 255,255,0,255 }, camera_pos);
 		debug_render_tile(sdl_game->renderer, entity->path.right_end, { 0,0,255,255 }, camera_pos);
 	}
@@ -1598,21 +1610,18 @@ void render_entity_sprite(SDL_Renderer* renderer,
 			SDL_SetTextureColorMod(part->texture, tint.r, tint.g, tint.b);
 		}
 
-		v2 offset = part->offset;
+		v2 offset = part->offset_in_pixels;
 		SDL_RendererFlip flip = SDL_FLIP_NONE;
 		if (entity_direction != part->default_direction)
 		{
 			flip = SDL_FLIP_HORIZONTAL; // SDL_FLIP_VERTICAL
-			offset = get_v2(-part->offset.x, part->offset.y);
+			offset = get_v2(-part->offset_in_pixels.x, part->offset_in_pixels.y);
 		}
 
-		v2 position = SCREEN_CENTER + get_position_difference(entity_position, camera_position);
-		SDL_Rect screen_rect = {};
-		screen_rect.w = part->texture_rect.w;
-		screen_rect.h = part->texture_rect.h;
-		screen_rect.x = (position.x * TILE_SIDE_IN_PIXELS) - (part->texture_rect.w / 2) + offset.x;
-		screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) - (part->texture_rect.h / 2) + offset.y;
-
+		v2 position = get_position_difference(entity_position, camera_position);
+		SDL_Rect screen_rect = get_render_rect(position, get_v2(part->texture_rect.w, part->texture_rect.h));
+		screen_rect.x += offset.x;
+		screen_rect.y += offset.y;
 		SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
 
 		if (tint_modified)
@@ -1890,7 +1899,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		v2 player_offset_in_chunk = get_position_difference(player->position, reference_chunk);
 		v2 player_offset_in_tile = player_offset_in_chunk - player_tile_offset_in_chunk;
 	
-		i32 screen_half_width = SDL_ceil(HALF_SCREEN_WIDTH_IN_TILES) + 1;
+		i32 screen_half_width = SDL_ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
 		i32 screen_half_height = SDL_ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
 
 		// draw tiles
@@ -1898,27 +1907,37 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			y_coord_relative < screen_half_height;
 			y_coord_relative++)
 		{
-			i32 y_coord_on_screen = y_coord_relative + screen_half_height;
+			i32 y_coord_on_screen = y_coord_relative;;// +screen_half_height;
 			i32 y_coord_in_world = player_tile_pos.y + y_coord_relative;
 
 			for (i32 x_coord_relative = -screen_half_width;
 				x_coord_relative < screen_half_width;
 				x_coord_relative++)
 			{
-				i32 x_coord_on_screen = x_coord_relative + screen_half_width;
+				i32 x_coord_on_screen = x_coord_relative;//+ screen_half_width;
 				i32 x_coord_in_world = player_tile_pos.x + x_coord_relative;
 
 				u32 tile_value = get_tile_value(game->current_level, x_coord_in_world, y_coord_in_world);
 				SDL_Rect tile_bitmap = get_tile_rect(tile_value);
 
 				v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - player_offset_in_tile;
-				SDL_Rect screen_rect = {};
-				screen_rect.w = TILE_SIDE_IN_PIXELS;
-				screen_rect.h = TILE_SIDE_IN_PIXELS;
-				screen_rect.x = (position.x * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
-				screen_rect.y = (position.y * TILE_SIDE_IN_PIXELS) - (TILE_SIDE_IN_PIXELS / 2);
-
+				SDL_Rect screen_rect = get_tile_render_rect(position);
 				SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &tile_bitmap, &screen_rect);
+
+#if 1
+				if (is_tile_colliding(game->collision_reference, tile_value))
+				{
+					tile_position tile_pos = get_tile_position(x_coord_in_world, y_coord_in_world);
+					entity_collision_data tile_collision = get_tile_collision_data(player->position.chunk_pos, tile_pos);
+					v2 relative_position = get_position_difference(tile_pos, player->position);
+					v2 center = relative_position + tile_collision.collision_rect_offset;
+					v2 size = tile_collision.collision_rect_dim;
+					rect collision_rect = get_rect_from_center(
+						SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS),
+						(size * TILE_SIDE_IN_PIXELS));
+					render_rect(sdl_game, collision_rect);
+				}
+#endif
 			}
 		}
 
@@ -1931,28 +1950,47 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 		{
 			entity* entity = game->entities + entity_index;
-
-			render_entity_animation_frame(sdl_game->renderer, player->position, entity);
+			if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
+			{
+				render_entity_animation_frame(sdl_game->renderer, player->position, entity);
+			}
 		}
 
 		// draw bullets
 		for (u32 bullet_index = 0; bullet_index < game->bullets_count; bullet_index++)
 		{
 			bullet* bullet = game->bullets + bullet_index;
-			render_entity_sprite(sdl_game->renderer,
-				player->position, bullet->position, direction::NONE,
-				NULL, 0, bullet->type->idle_pose);
+			if (is_in_neighbouring_chunk(player->position.chunk_pos, bullet->position))
+			{
+				render_entity_sprite(sdl_game->renderer,
+					player->position, bullet->position, direction::NONE,
+					NULL, 0, bullet->type->idle_pose.sprite);
+			}
 		}
 
 		// draw debug info
 		{
 #if 1
-			v2 screen_half_size = get_v2(screen_half_width, screen_half_height) * TILE_SIDE_IN_PIXELS;
-			rect current_player_collision_rect = get_rect_from_center(
-				screen_half_size + (player->type->collision_rect_offset * TILE_SIDE_IN_PIXELS),
-				player->type->collision_rect_dim * TILE_SIDE_IN_PIXELS);
-			render_rect(sdl_game, current_player_collision_rect);
-			
+			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
+			{
+				entity* entity = game->entities + entity_index;
+				if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
+				{
+					// istotne - offset sprite'a nie ma tu znaczenia
+					v2 relative_position = get_position_difference(entity->position, player->position);
+					v2 center = relative_position + entity->type->collision_rect_offset;
+					v2 size = entity->type->collision_rect_dim;
+					rect collision_rect = get_rect_from_center(
+						SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS), 
+						size * TILE_SIDE_IN_PIXELS);
+					render_rect(sdl_game, collision_rect);
+
+					SDL_SetRenderDrawColor(sdl_game->renderer, 255, 0, 0, 0);
+					v2 entity_position = SCREEN_CENTER_IN_PIXELS + relative_position * TILE_SIDE_IN_PIXELS;
+					SDL_RenderDrawPoint(sdl_game->renderer, entity_position.x, entity_position.y);
+				}
+			}
+
 			render_debug_information(sdl_game, game);
 #endif
 		}
