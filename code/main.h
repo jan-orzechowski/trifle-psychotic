@@ -182,6 +182,7 @@ struct animation
 	animation_frame* frames;
 	u32 frames_count;
 	r32 total_duration;
+	u32 current_frame_index;
 };
 
 enum class entity_flags
@@ -204,11 +205,13 @@ struct entity_type
 	r32 velocity_multiplier;
 	r32 slowdown_multiplier;
 
+	r32 player_detecting_distance;
 	i32 damage_on_contact;
 	i32 max_health;
 	r32 default_attack_cooldown;
 	
-	sprite idle_pose;
+	v2 fired_bullet_offset;
+	animation_frame idle_pose;
 	entity_flags flags;
 
 	animation* walk_animation;

@@ -38,17 +38,13 @@ read_file_result read_file(std::string path)
 	return result;
 }
 
-sprite get_tile_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 tile_value)
+animation_frame get_tile_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 tile_value)
 {
-	sprite result = {};
-
-	SDL_Rect texture_rect = get_tile_rect(tile_value);
-
-	result.parts_count = 1;
-	result.parts = push_array(arena, result.parts_count, sprite_part);
-	result.parts[0].texture = sdl_game->tileset_texture;
-	result.parts[0].texture_rect = texture_rect;
-
+	animation_frame result = {};
+	result.sprite.parts_count = 1;
+	result.sprite.parts = push_array(arena, result.sprite.parts_count, sprite_part);
+	result.sprite.parts[0].texture = sdl_game->tileset_texture;
+	result.sprite.parts[0].texture_rect = get_tile_rect(tile_value);
 	return result;
 }
 
@@ -145,9 +141,9 @@ animation* get_player_walk_animation(sdl_game_data* sdl_game, memory_arena* aren
 	return new_animation;
 }
 
-sprite get_player_idle_pose(sdl_game_data* sdl_game, memory_arena* arena)
+animation_frame get_player_idle_pose(sdl_game_data* sdl_game, memory_arena* arena)
 {
-	sprite result = {};
+	animation_frame result = {};	
 
 	SDL_Rect player_head_rect = {};
 	player_head_rect.x = 0;
@@ -164,24 +160,24 @@ sprite get_player_idle_pose(sdl_game_data* sdl_game, memory_arena* arena)
 	v2 legs_offset = get_v2(0.0f, 0.0f);
 	v2 head_offset = get_v2(5.0f, -16.0f);
 
-	result.parts_count = 2;
-	result.parts = push_array(arena, result.parts_count, sprite_part);
-	result.parts[0].texture = sdl_game->player_texture;
-	result.parts[0].texture_rect = player_head_rect;
-	result.parts[0].default_direction = direction::E;
-	result.parts[0].offset_in_pixels = head_offset;
+	result.sprite.parts_count = 2;
+	result.sprite.parts = push_array(arena, result.sprite.parts_count, sprite_part);
+	result.sprite.parts[0].texture = sdl_game->player_texture;
+	result.sprite.parts[0].texture_rect = player_head_rect;
+	result.sprite.parts[0].offset_in_pixels = head_offset;
+	result.sprite.parts[0].default_direction = direction::E;
 
-	result.parts[1].texture = sdl_game->player_texture;
-	result.parts[1].texture_rect = player_legs_rect;
-	result.parts[1].default_direction = direction::E;
-	result.parts[1].offset_in_pixels = legs_offset;
+	result.sprite.parts[1].texture = sdl_game->player_texture;
+	result.sprite.parts[1].texture_rect = player_legs_rect;
+	result.sprite.parts[1].offset_in_pixels = legs_offset;
+	result.sprite.parts[1].default_direction = direction::E;
 
 	return result;
 }
 
-sprite get_bullet_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 x, u32 y)
+animation_frame get_bullet_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 x, u32 y)
 {
-	sprite result = {};
+	animation_frame result = {};
 
 	SDL_Rect texture_rect = {};
 	texture_rect.w = 10;
@@ -189,11 +185,10 @@ sprite get_bullet_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 x, 
 	texture_rect.x = y * 10;
 	texture_rect.y = x * 10;
 
-	result.parts_count = 1;
-	result.parts = push_array(arena, result.parts_count, sprite_part);
-	result.parts[0].texture = sdl_game->bullets_texture;
-	result.parts[0].texture_rect = texture_rect;
-
+	result.sprite.parts_count = 1;
+	result.sprite.parts = push_array(arena, result.sprite.parts_count, sprite_part);
+	result.sprite.parts[0].texture = sdl_game->bullets_texture;
+	result.sprite.parts[0].texture_rect = texture_rect;
 	return result;
 }
 
@@ -260,6 +255,7 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	player_entity_type->slowdown_multiplier = 0.80f;
 	player_entity_type->default_attack_cooldown = 0.2f;
 	player_entity_type->walk_animation = get_player_walk_animation(sdl_game, arena);
+	player_entity_type->fired_bullet_offset = get_v2(0.85f, -0.60f); // nie w pikselach!
 	player_entity_type->collision_rect_dim = get_v2(0.35f, 1.6f);
 
 	game->player_movement.current_mode = movement_mode::WALK;
@@ -270,6 +266,7 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	static_enemy_type->max_health = 10;
 	static_enemy_type->damage_on_contact = 10;
 	static_enemy_type->default_attack_cooldown = 0.5f;
+	static_enemy_type->player_detecting_distance = 10.0f;
 	static_enemy_type->player_acceleration_on_collision = 3.0f;
 	static_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 

@@ -316,16 +316,15 @@ SDL_Rect get_tile_rect(u32 tile_id)
 	return tile_rect;
 }
 
-sprite* get_sprite_from_animation(animation* animation, r32* elapsed_time)
+u32 get_current_animation_frame_index(animation* animation, r32 elapsed_time)
 {
-	sprite* result = NULL;
-
-	while (*elapsed_time > animation->total_duration)
+	b32 result = 0;
+	while (elapsed_time > animation->total_duration)
 	{
-		*elapsed_time -= animation->total_duration;
+		elapsed_time -= animation->total_duration;
 	}
 
-	r32 time_within_frame = *elapsed_time;
+	r32 time_within_frame = elapsed_time;
 	for (u32 frame_index = 0; frame_index < animation->frames_count; frame_index++)
 	{
 		animation_frame* frame = animation->frames + frame_index;
@@ -336,11 +335,22 @@ sprite* get_sprite_from_animation(animation* animation, r32* elapsed_time)
 		}
 		else
 		{
-			result = &frame->sprite;
+			result = frame_index;
 			break;
 		}
 	}
 
+	return result;
+}
+
+animation_frame* get_current_animation_frame(entity* entity)
+{
+	animation_frame* result = NULL; 
+	if (entity->current_animation 
+		&& entity->current_animation->current_frame_index < entity->current_animation->frames_count)
+	{
+		result = &entity->current_animation->frames[entity->current_animation->current_frame_index];
+	}
 	return result;
 }
 
@@ -626,16 +636,37 @@ walking_path find_walking_path_for_enemy(level map, level collision_ref, tile_po
 	return result;
 }
 
-void add_bullet(game_data* game, entity_type* type, world_position position, v2 offset, v2 velocity)
+void fire_bullet(game_data* game, entity_type* bullet_type, world_position bullet_starting_position, 
+	v2 bullet_offset, v2 velocity)
 {
 	if (game->bullets_count < game->bullets_max_count)
 	{
 		bullet* bul = &game->bullets[game->bullets_count];
-		bul->type = type;
-		position.pos_in_chunk += offset;
-		bul->position = renormalize_position(position);
+		bul->type = bullet_type;
+		bullet_starting_position.pos_in_chunk += bullet_offset;
+		bul->position = renormalize_position(bullet_starting_position);
 		bul->velocity = velocity;
 		game->bullets_count++;
+	}
+}
+
+void fire_bullet(game_data* game, entity* entity, b32 cooldown)
+{
+	assert(entity->type->fired_bullet_type);
+
+	v2 direction = (entity->direction == direction::E
+		? get_v2(1.0f, 0.0f) 
+		: get_v2(-1.0f, 0.0f));
+	v2 bullet_offset = (entity->direction == direction::E
+		? entity->type->fired_bullet_offset 
+		: get_v2(-entity->type->fired_bullet_offset.x, entity->type->fired_bullet_offset.y));
+
+	fire_bullet(game, entity->type->fired_bullet_type, entity->position, bullet_offset,
+		direction * entity->type->fired_bullet_type->constant_velocity);
+
+	if (cooldown)
+	{
+		entity->attack_cooldown = entity->type->default_attack_cooldown;
 	}
 }
 
@@ -1364,9 +1395,6 @@ world_position process_input(sdl_game_data* sdl_game, game_data* game, entity* p
 		player->attack_cooldown -= delta_time;
 	}
 
-	v2 bullet_direction = (player->direction == direction::W ? get_v2(-1.0f, 0.0f) : get_v2(1.0f, 0.0f));
-	v2 bullet_offset = (player->direction == direction::W ? get_v2(-0.75f, -0.85f) : get_v2(0.75f, -0.85f));
-
 	// przetwarzanie inputu
 	player->acceleration = get_zero_v2();
 	switch (game->player_movement.current_mode)
@@ -1393,10 +1421,7 @@ world_position process_input(sdl_game_data* sdl_game, game_data* game, entity* p
 			{
 				if (player->attack_cooldown <= 0)
 				{
-					add_bullet(game, player->type->fired_bullet_type, player->position, bullet_offset,
-						bullet_direction * player->type->fired_bullet_type->constant_velocity);
-					//printf("strzal\n");
-					player->attack_cooldown = player->type->default_attack_cooldown;
+					fire_bullet(game, player, true);
 				}
 			}
 
@@ -1441,10 +1466,7 @@ world_position process_input(sdl_game_data* sdl_game, game_data* game, entity* p
 			{
 				if (player->attack_cooldown <= 0)
 				{
-					add_bullet(game, player->type->fired_bullet_type, player->position, bullet_offset,
-						bullet_direction * player->type->fired_bullet_type->constant_velocity);
-					//printf("strzal w skoku!\n");
-					player->attack_cooldown = player->type->default_attack_cooldown;
+					fire_bullet(game, player, true);
 				}
 			}
 
@@ -1508,6 +1530,9 @@ void animate(player_movement* movement, entity* entity, r32 delta_time)
 		{
 			entity->animation_duration -= entity->current_animation->total_duration;
 		}
+
+		entity->current_animation->current_frame_index =
+			get_current_animation_frame_index(entity->current_animation, entity->animation_duration);
 	}
 
 	if (movement)
@@ -1636,21 +1661,19 @@ void render_entity_animation_frame(SDL_Renderer* renderer,
 	world_position camera_position, entity* entity)
 {
 	sprite* sprite_to_render = NULL;
-	if (entity->current_animation)
-	{
-		sprite_to_render = get_sprite_from_animation(entity->current_animation, &entity->animation_duration);
-		if (sprite_to_render == NULL || sprite_to_render->parts == NULL)
-		{
-			sprite_to_render = &entity->type->idle_pose;
-		}
+	if (entity->current_animation && entity->current_animation->frames)
+	{	
+		sprite_to_render = &entity->current_animation->frames[entity->current_animation->current_frame_index].sprite;
 	}
-	else
+	
+	if (sprite_to_render == NULL || sprite_to_render->parts == NULL)
 	{
-		sprite_to_render = &entity->type->idle_pose;
+		sprite_to_render = &entity->type->idle_pose.sprite;
 	}
 
-	render_entity_sprite(renderer,
-		camera_position, entity->position, entity->direction,
+	assert(sprite_to_render != NULL);
+
+	render_entity_sprite(renderer, camera_position, entity->position, entity->direction,
 		entity->visual_effect, entity->visual_effect_duration, *sprite_to_render);
 }
 
@@ -1842,16 +1865,12 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			{
 				v2 player_relative_pos = get_position_difference(player->position, entity->position);
 				r32 distance_to_player = length(player_relative_pos);
-				if (distance_to_player < 5.0f)
+				if (distance_to_player < entity->type->player_detecting_distance)
 				{
 					v2 direction_to_player = get_unit_vector(player_relative_pos);
-
 					entity->direction = direction_to_player.x < 0 ? direction::W : direction::E;
-
-					add_bullet(game, entity->type->fired_bullet_type, entity->position, get_zero_v2(), /* + get_v2(1.0f, 1.0f)*/
-						player->type->fired_bullet_type->constant_velocity * direction_to_player);
-					//printf("wrog strzela!\n");
-
+					fire_bullet(game, entity->type->fired_bullet_type, entity->position, get_zero_v2(),
+						direction_to_player * entity->type->fired_bullet_type->constant_velocity);
 					entity->attack_cooldown = entity->type->default_attack_cooldown;
 				}
 			}
