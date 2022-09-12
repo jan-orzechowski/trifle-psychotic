@@ -111,6 +111,13 @@ sdl_game_data init_sdl()
 						print_sdl_image_error();
 						success = false;
 					}
+
+					sdl_game.ui_texture = load_image(sdl_game.renderer, "gfx/interface.png");
+					if (sdl_game.ui_texture == NULL)
+					{
+						print_sdl_image_error();
+						success = false;
+					}
 				}
 				else
 				{
@@ -207,6 +214,57 @@ void render_text(sdl_game_data* sdl_game, std::string textureText, int x, int y,
 	else
 	{
 		print_sdl_ttf_error();
+	}
+}
+
+void render_hitpoint_bar(sdl_game_data* sdl_game, entity* player)
+{
+	u32 filled_health_bars = (u32)(player->health / 10);
+	u32 max_health_bars = (u32)(player->type->max_health / 10);
+
+	SDL_Rect texture_rect = {};
+	texture_rect.w = 8;
+	texture_rect.h = 8;
+	texture_rect.x = 0;
+	texture_rect.y = 0;
+
+	SDL_Rect icon_screen_rect = {};
+	icon_screen_rect.w = 8;
+	icon_screen_rect.h = 8;
+	icon_screen_rect.x = 10;
+	icon_screen_rect.y = 10;
+	SDL_RenderCopy(sdl_game->renderer, sdl_game->ui_texture, &texture_rect, &icon_screen_rect);
+
+	/*texture_rect.x += 8;
+	icon_screen_rect.y += 8;
+	SDL_RenderCopy(sdl_game->renderer, sdl_game->ui_texture, &texture_rect, &icon_screen_rect);*/
+
+	icon_screen_rect.w = 4;
+	icon_screen_rect.h = 8;
+	texture_rect.w = 4;
+	texture_rect.h = 8;
+	texture_rect.x = 4;
+	texture_rect.y = 16;
+
+	icon_screen_rect.x = 18;
+	icon_screen_rect.y = 10;
+	for (u32 health_bar_index = 0;
+		health_bar_index < filled_health_bars;
+		health_bar_index++)
+	{
+		icon_screen_rect.x += 4;
+		SDL_RenderCopy(sdl_game->renderer, sdl_game->ui_texture, &texture_rect, &icon_screen_rect);
+	}
+
+	texture_rect.x = 0;
+	texture_rect.y = 8;
+
+	for (u32 health_bar_index = filled_health_bars;
+		health_bar_index < max_health_bars;
+		health_bar_index++)
+	{
+		icon_screen_rect.x += 4;
+		SDL_RenderCopy(sdl_game->renderer, sdl_game->ui_texture, &texture_rect, &icon_screen_rect);
 	}
 }
 
@@ -2013,6 +2071,8 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			render_debug_information(sdl_game, game);
 #endif
 		}
+
+		render_hitpoint_bar(sdl_game, player);
 
 		SDL_RenderPresent(sdl_game->renderer);
 	}

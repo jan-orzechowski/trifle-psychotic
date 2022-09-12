@@ -36,6 +36,7 @@ struct sdl_game_data
 	SDL_Renderer* renderer;
 	SDL_Texture* tileset_texture;
 	SDL_Texture* bullets_texture;
+	SDL_Texture* ui_texture;
 	SDL_Texture* player_texture;
 	TTF_Font* font;
 
@@ -207,7 +208,7 @@ struct entity_type
 
 	r32 player_detecting_distance;
 	i32 damage_on_contact;
-	i32 max_health;
+	r32 max_health;
 	r32 default_attack_cooldown;
 	
 	v2 fired_bullet_offset;
@@ -236,7 +237,7 @@ struct entity
 	world_position position;
 	v2 velocity;
 	v2 acceleration;
-	i32 health;
+	r32 health;
 	entity_type* type;
 	r32 attack_cooldown;
 	sprite_effect* visual_effect;
