@@ -37,11 +37,15 @@ struct sdl_game_data
 	SDL_Texture* tileset_texture;
 	SDL_Texture* bullets_texture;
 	SDL_Texture* ui_texture;
+	SDL_Texture* font_texture;
 	SDL_Texture* player_texture;
 	TTF_Font* font;
 
 	u32 debug_frame_counter;
 	r32 debug_elapsed_work_ms;
+
+	string_ref test_str;
+	memory_arena* arena;
 };
 
 void print_sdl_error();

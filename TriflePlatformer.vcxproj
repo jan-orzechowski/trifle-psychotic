@@ -159,6 +159,7 @@
     <ClCompile Include="code\jormath.cpp" />
     <ClCompile Include="code\jorstring.cpp" />
     <ClCompile Include="code\main.cpp" />
+    <ClCompile Include="code\text_rendering.cpp" />
     <ClCompile Include="code\tmx_parsing.cpp" />
     <ClCompile Include="code\game_data.cpp" />
   </ItemGroup>
@@ -166,6 +167,7 @@
     <ClInclude Include="code\jormath.h" />
     <ClInclude Include="code\jorutils.h" />
     <ClInclude Include="code\main.h" />
+    <ClInclude Include="code\text_rendering.h" />
     <ClInclude Include="code\tmx_parsing.h" />
     <ClInclude Include="code\jorstring.h" />
     <ClInclude Include="code\game_data.h" />

@@ -115,7 +115,7 @@ string_ref copy_c_string_to_memory_arena(memory_arena* arena, const char* str, u
 	return result;
 }
 
-string_ref c_string_to_string_ref(memory_arena* arena, const char* str, u32 max_string_length = 10000)
+string_ref c_string_to_string_ref(memory_arena* arena, const char* str, u32 max_string_length)
 {
 	u32 length = 0;
 	const char* str_temp = str;

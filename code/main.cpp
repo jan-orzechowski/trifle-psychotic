@@ -1,5 +1,6 @@
 ﻿#include "main.h"
 #include "game_data.h"
+#include "text_rendering.h"
 
 void print_sdl_error()
 {
@@ -118,6 +119,13 @@ sdl_game_data init_sdl()
 						print_sdl_image_error();
 						success = false;
 					}
+
+					sdl_game.font_texture = load_image(sdl_game.renderer, "gfx/font.png");
+					if (sdl_game.font_texture == NULL)
+					{
+						print_sdl_image_error();
+						success = false;
+					}
 				}
 				else
 				{
@@ -172,6 +180,16 @@ sdl_game_data init_sdl()
 	{
 		return {};
 	}
+}
+
+SDL_Rect get_sdl_rect(rect rect)
+{
+	SDL_Rect result = {};
+	result.x = (int)rect.min_corner.x;
+	result.y = (int)rect.min_corner.y;
+	result.w = (int)(rect.max_corner.x - rect.min_corner.x);
+	result.h = (int)(rect.max_corner.y - rect.min_corner.y);
+	return result;
 }
 
 void render_rect(sdl_game_data* sdl_game, rect rectangle)
@@ -2074,6 +2092,20 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 
 		render_hitpoint_bar(sdl_game, player);
 
+		// testowy textbox
+		{
+			rect textbox_area = get_rect_from_center(
+				SCREEN_CENTER_IN_PIXELS + get_v2(0, 80),
+				get_v2(240, 60));
+			SDL_SetRenderDrawColor(sdl_game->renderer, 0, 0, 0, 0);
+			SDL_Rect sdl_textbox_rect = get_sdl_rect(textbox_area);
+			SDL_RenderFillRect(sdl_game->renderer, &sdl_textbox_rect);
+			font font = {};
+			font.pixel_height = 8;
+			font.pixel_width = 8;
+			write(sdl_game->arena, sdl_game, font, textbox_area, sdl_game->test_str);
+		}
+
 		SDL_RenderPresent(sdl_game->renderer);
 	}
 }
@@ -2096,8 +2128,13 @@ int main(int argc, char* args[])
 		void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);
 		initialize_memory_arena(&arena, memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
 
+		sdl_game.arena = &arena;
+
 		//circular_buffer_test(&arena);
 
+		const char* test_c_str = "calkiem dlugi napis ktory sam sie zawija i w ogole 2137";
+		sdl_game.test_str = c_string_to_string_ref(&arena, test_c_str);
+		
 		game_data* game = push_struct(&arena, game_data);
 		game->input.size = 60 * 2; // 2 sekundy
 		game->input.buffer = push_array(&arena, game->input.size, game_input);
