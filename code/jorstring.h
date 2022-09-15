@@ -1,6 +1,7 @@
 ﻿#if !defined(JORSTRING)
 
 #include "jorutils.h"
+#include "jormath.h"
 
 struct string_ref
 {
@@ -25,6 +26,7 @@ i32 parse_i32(char*, char*);
 u32 how_many_digits(u32);
 r32 parse_r32(string_ref, char);
 i32* parse_array_of_i32(memory_arena*, u32, string_ref, char);
+v4 parse_color_from_hexadecimal(string_ref);
 void string_function_test(memory_arena*);
 
 #define JORSTRING

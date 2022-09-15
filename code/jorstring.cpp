@@ -2,6 +2,7 @@
 
 #include "jorutils.h"
 #include "jorstring.h"
+#include "jormath.h"
 
 b32 is_empty_string(string_ref str)
 {
@@ -382,7 +383,6 @@ r32 parse_r32(string_ref str, char delimiter)
 			u32 fraction_digits_number = how_many_digits(fraction);
 			result = integer + (r32)fraction / (r32)power(10, fraction_digits_number);
 		}
-
 	}
 
 	if (delimiter_ptr == 0)
@@ -482,6 +482,70 @@ i32* parse_array_of_i32(memory_arena* arena, u32 array_length, string_ref str, c
 	return arr;
 }
 
+u32 parse_hexadecimal_digit(char digit)
+{
+	u32 result = 0;
+	switch (digit)
+	{
+		case '0': result = 0; break;
+		case '1': result = 1; break;
+		case '2': result = 2; break;
+		case '3': result = 3; break;
+		case '4': result = 4; break;
+		case '5': result = 5; break;
+		case '6': result = 6; break;
+		case '7': result = 7; break;
+		case '8': result = 8; break;
+		case '9': result = 9; break;
+		case 'a': case 'A': result = 10; break;
+		case 'b': case 'B': result = 11; break;
+		case 'c': case 'C': result = 12; break;
+		case 'd': case 'D': result = 13; break;
+		case 'e': case 'E': result = 14; break;
+		case 'f': case 'F': result = 15; break;
+	}
+	return result;
+}
+
+v4 parse_color_from_hexadecimal(string_ref str)
+{
+	v4 result = {};
+
+	str = omit_leading_whitespace(str);	
+	str = omit_trailing_whitespace(str);
+
+	if (str.string_size > 0)
+	{
+		if (*str.ptr == '#')
+		{
+			str.string_size--;
+			str.ptr++;
+		}
+
+		if (str.string_size == 6 || str.string_size == 8)
+		{
+			u32 char_index = 0;
+			u32 color_index = 0;
+			while (char_index < str.string_size)
+			{
+				char first_digit = *(str.ptr + char_index);
+				char second_digit = *(str.ptr + char_index + 1);
+
+				u32 first_digit_parsed = parse_hexadecimal_digit(first_digit);
+				u32 second_digit_parsed = parse_hexadecimal_digit(second_digit);
+
+				assert(color_index < 4);
+				result.e[color_index] = first_digit_parsed * 16 + second_digit_parsed;
+
+				char_index += 2;
+				color_index++;
+			}
+		}		
+	}
+
+	return result;
+}
+
 void string_function_test(memory_arena* test_arena)
 {
 	temporary_memory test = begin_temporary_memory(test_arena);
@@ -517,6 +581,14 @@ void string_function_test(memory_arena* test_arena)
 	string_ref fraction4 = c_string_to_string_ref(test_arena, "-192.19");
 	r32 fraction4_parsed = parse_r32(fraction4, '.');
 	assert(fraction4_parsed == -192.19f);
+
+	string_ref hex1 = c_string_to_string_ref(test_arena, "#b5d3ff");
+	v4 hex1_parsed = parse_color_from_hexadecimal(hex1);
+	assert(hex1_parsed == get_v4(181.0f, 211.0f, 255.0f, 0.0f));
+
+	string_ref hex2 = c_string_to_string_ref(test_arena, "   3cff6a6a   ");
+	v4 hex2_parsed = parse_color_from_hexadecimal(hex2);
+	assert(hex2_parsed == get_v4(60.0f, 255.0f, 106.0f, 106.0f));
 
 	end_temporary_memory(test);
 }
