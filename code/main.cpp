@@ -23,6 +23,21 @@ void print_sdl_ttf_error()
 	invalid_code_path;
 }
 
+void load_image(SDL_Renderer* renderer, SDL_Texture** place_to_load, const char* file_path, b32* success)
+{
+	SDL_Surface* loaded_surface = IMG_Load(file_path);
+	if (loaded_surface)
+	{
+		*place_to_load = SDL_CreateTextureFromSurface(renderer, loaded_surface);
+		SDL_FreeSurface(loaded_surface);
+	}
+	else 
+	{
+		print_sdl_image_error();
+		*success = false;
+	}
+}
+
 SDL_Renderer* get_renderer(SDL_Window* window)
 {
 	SDL_Renderer* renderer = NULL;
@@ -51,22 +66,10 @@ SDL_Renderer* get_renderer(SDL_Window* window)
 	return renderer;
 }
 
-SDL_Texture* load_image(SDL_Renderer* renderer, const char* path)
-{
-	SDL_Texture* result = NULL;
-	SDL_Surface* loaded_surface = IMG_Load(path);
-	if (loaded_surface)
-	{
-		result  = SDL_CreateTextureFromSurface(renderer, loaded_surface);		
-		SDL_FreeSurface(loaded_surface);
-	}
-	return result;
-}
-
 sdl_game_data init_sdl()
 {
 	sdl_game_data sdl_game = {};
-	bool success = true;
+	b32 success = true;
 
 	int init = SDL_Init(SDL_INIT_EVERYTHING);
 	if (init == 0) // wg dokumentacji oznacza to sukces
@@ -92,40 +95,13 @@ sdl_game_data init_sdl()
 				int img_flags = IMG_INIT_PNG;
 				if (IMG_Init(img_flags) & img_flags)
 				{
-					sdl_game.tileset_texture = load_image(sdl_game.renderer, "gfx/tileset.png");
-					if (sdl_game.tileset_texture == NULL)
-					{
-						print_sdl_image_error();
-						success = false;
-					}
-
-					sdl_game.player_texture = load_image(sdl_game.renderer, "gfx/player.png");
-					if (sdl_game.player_texture == NULL)
-					{
-						print_sdl_image_error();
-						success = false;
-					}
-
-					sdl_game.bullets_texture = load_image(sdl_game.renderer, "gfx/bullets.png");
-					if (sdl_game.bullets_texture == NULL)
-					{
-						print_sdl_image_error();
-						success = false;
-					}
-
-					sdl_game.ui_texture = load_image(sdl_game.renderer, "gfx/interface.png");
-					if (sdl_game.ui_texture == NULL)
-					{
-						print_sdl_image_error();
-						success = false;
-					}
-
-					sdl_game.font_texture = load_image(sdl_game.renderer, "gfx/font.png");
-					if (sdl_game.font_texture == NULL)
-					{
-						print_sdl_image_error();
-						success = false;
-					}
+					load_image(sdl_game.renderer, &sdl_game.tileset_texture,	"gfx/tileset.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.player_texture,		"gfx/player.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.bullets_texture,	"gfx/bullets.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.gates_texture,		"gfx/gates.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.misc_texture,		"gfx/misc.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.ui_texture,			"gfx/interface.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.font_texture,	    "gfx/font.png", &success);
 				}
 				else
 				{
@@ -2123,23 +2099,29 @@ int main(int argc, char* args[])
 	{
 		bool run = true;
 
-		memory_arena arena = {};
-		u32 memory_for_permanent_arena_size = megabytes_to_bytes(100);
+		u32 memory_for_permanent_arena_size = megabytes_to_bytes(50);
+		memory_arena permantent_arena = {};
 		void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);
-		initialize_memory_arena(&arena, memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
+		initialize_memory_arena(&permantent_arena, memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
+		
+		memory_arena transient_arena = {};
+		u32 memory_for_transient_arena_size = megabytes_to_bytes(50);
+		void* memory_for_transient_arena = SDL_malloc(memory_for_transient_arena_size);
+		initialize_memory_arena(&transient_arena, memory_for_transient_arena_size, (byte*)memory_for_transient_arena);
 
-		sdl_game.arena = &arena;
+		sdl_game.arena = &permantent_arena;
+		sdl_game.transient_arena = &transient_arena;
 
 		//circular_buffer_test(&arena);
 
-		const char* test_c_str = "calkiem dlugi napis ktory sam sie zawija i w ogole 2137";
-		sdl_game.test_str = c_string_to_string_ref(&arena, test_c_str);
+		//const char* test_c_str = "calkiem dlugi napis ktory sam sie zawija i w ogole 2137";
+		//sdl_game.test_str = c_string_to_string_ref(&permantent_arena, test_c_str);
 		
-		game_data* game = push_struct(&arena, game_data);
+		game_data* game = push_struct(&permantent_arena, game_data);
 		game->input.size = 60 * 2; // 2 sekundy
-		game->input.buffer = push_array(&arena, game->input.size, game_input);
+		game->input.buffer = push_array(&permantent_arena, game->input.size, game_input);
 
-		load_game_data(&sdl_game, game, &arena);
+		load_game_data(&sdl_game, game, &permantent_arena, &transient_arena);
 
 		u32 frame_counter = 0;
 
@@ -2215,6 +2197,9 @@ int main(int argc, char* args[])
 	{
 		invalid_code_path;
 	}
+
+	check_arena(sdl_game.arena);
+	check_arena(sdl_game.transient_arena);
 
 	TTF_CloseFont(sdl_game.font);
 	SDL_DestroyTexture(sdl_game.tileset_texture);

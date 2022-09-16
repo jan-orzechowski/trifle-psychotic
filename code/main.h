@@ -39,6 +39,8 @@ struct sdl_game_data
 	SDL_Texture* ui_texture;
 	SDL_Texture* font_texture;
 	SDL_Texture* player_texture;
+	SDL_Texture* misc_texture;
+	SDL_Texture* gates_texture;
 	TTF_Font* font;
 
 	u32 debug_frame_counter;
@@ -46,6 +48,7 @@ struct sdl_game_data
 
 	string_ref test_str;
 	memory_arena* arena;
+	memory_arena* transient_arena;
 };
 
 void print_sdl_error();
@@ -109,16 +112,8 @@ enum class entity_type_enum
 	PLAYER,
 	STATIC_ENEMY,
 	MOVING_ENEMY,
-
-	//GATE_RED,
-	//GATE_WHITE,
-	//GATE_BLUE,
-	//GATE_GREEN,
-	//SWITCH_RED,
-	//SWITCH_WHITE,
-	//SWITCH_BLUE,
-	//SWITCH_GREEN,
-
+	GATE,
+	SWITCH,
 	_LAST
 };
 
@@ -126,12 +121,7 @@ struct entity_to_spawn
 {
 	tile_position position;
 	entity_type_enum type;
-};
-
-struct level_entities
-{
-	entity_to_spawn* entities;
-	u32 entities_count;
+	v4 color;
 };
 
 struct level
@@ -140,7 +130,8 @@ struct level
 	u32 height;
 	i32* tiles;
 	u32 tiles_count;
-	level_entities entities_to_spawn;
+	entity_to_spawn* entities_to_spawn;
+	u32 entities_to_spawn_count;
 	tile_position starting_tile;
 };
 
@@ -195,9 +186,11 @@ enum class entity_flags
 	PLAYER =			 (1 << 0),
 	COLLIDES =			 (1 << 1),
 	ENEMY =				 (1 << 2),
-	//TAKES_DAMAGE =       (1 << 3),
+	//TAKES_DAMAGE =     (1 << 3),
 	DAMAGES_PLAYER =	 (1 << 4),
-	WALKS_HORIZONTALLY = (1 << 5)
+	WALKS_HORIZONTALLY = (1 << 5),
+	GATE			   = (1 << 6),
+	SWITCH             = (1 << 7)
 };
 
 struct entity_type
@@ -222,6 +215,8 @@ struct entity_type
 	animation* walk_animation;
 
 	entity_type* fired_bullet_type;
+
+	v4 color; // używane w przypadku bram i przełączników	
 };
 
 struct entity_type_dictionary
@@ -328,6 +323,16 @@ struct game_data
 
 	sprite_effect* visual_effects;
 	u32 visual_effects_count;
+	sprite_part gate_sprite;
+	sprite_part switch_frame_left_sprite;
+	sprite_part switch_frame_middle_sprite;
+	sprite_part switch_frame_right_sprite;
+	sprite_part switch_on_left_sprite;
+	sprite_part switch_on_middle_sprite;
+	sprite_part switch_on_right_sprite;
+	sprite_part switch_off_left_sprite;
+	sprite_part switch_off_middle_sprite;
+	sprite_part switch_off_right_sprite;
 };
 
 SDL_Rect get_tile_rect(u32 tile_id);

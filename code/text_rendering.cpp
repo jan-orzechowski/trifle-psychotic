@@ -103,7 +103,7 @@ string_ref* get_next_line(lines_to_render* lines)
     return result;
 }
 
-void write(memory_arena* temp_arena, sdl_game_data* sdl_game, font font, rect area, string_ref text)
+void write(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, rect area, string_ref text)
 {
     u32 max_text_length = 1000;
     if (text.string_size > max_text_length)
@@ -111,14 +111,14 @@ void write(memory_arena* temp_arena, sdl_game_data* sdl_game, font font, rect ar
         text.string_size = max_text_length;
     }
 
-    temporary_memory temp_writing_memory = begin_temporary_memory(temp_arena);
+    temporary_memory writing_memory = begin_temporary_memory(transient_arena);
 
     v2 area_dim = get_rect_dimensions(area);
     u32 max_line_length = area_dim.x / font.pixel_width;
     
     lines_to_render text_lines = {};
     text_lines.max_lines_count = (area_dim.y / font.pixel_height);
-    text_lines.lines = push_array(temp_arena, text_lines.max_lines_count, string_ref);
+    text_lines.lines = push_array(transient_arena, text_lines.max_lines_count, string_ref);
 
     string_ref* current_line = get_next_line(&text_lines);    
     current_line->ptr = text.ptr;
@@ -170,5 +170,5 @@ void write(memory_arena* temp_arena, sdl_game_data* sdl_game, font font, rect ar
 
     render_text(sdl_game, font, area, text_lines);
 
-    end_temporary_memory(temp_writing_memory);
+    end_temporary_memory(writing_memory);
 }

@@ -38,6 +38,14 @@ read_file_result read_file(std::string path)
 	return result;
 }
 
+sprite_part get_16x16_sprite_part(SDL_Texture* texture, u32 tile_x, u32 tile_y)
+{
+	sprite_part result = {};
+	result.texture = texture;
+	result.texture_rect = {(i32)tile_x * 16, (i32)tile_y * 16, 16, 16};
+	return result;
+}
+
 animation_frame get_tile_graphics(sdl_game_data* sdl_game, memory_arena* arena, u32 tile_value)
 {
 	animation_frame result = {};
@@ -226,19 +234,33 @@ void test_if_all_types_loaded(entity_type_dictionary dictionary)
 	}
 }
 
-void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* arena)
+void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* arena, memory_arena* transient_arena)
 {
+	temporary_memory transient_memory = begin_temporary_memory(transient_arena);
+
 	std::string collision_file_path = "data/collision_map.tmx";
 	read_file_result collision_file = read_file(collision_file_path);
-	game->collision_reference = read_level_from_tmx_file(arena, collision_file, "collision");
+	game->collision_reference = read_level_from_tmx_file(arena, transient_arena, collision_file, "collision");
 
 	std::string map_file_path = "data/map_01.tmx";
 	read_file_result map_file = read_file(map_file_path);
-	game->current_level = read_level_from_tmx_file(arena, map_file, "map");
+	game->current_level = read_level_from_tmx_file(arena, transient_arena, map_file, "map");
 
 	delete map_file.contents;
+	delete collision_file.contents;
 
-	game->entity_types_count = 5;
+	game->gate_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 8, 1);
+	game->switch_frame_left_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 0, 0);
+	game->switch_frame_middle_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 1, 0);
+	game->switch_frame_right_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 2, 0);	
+	game->switch_on_left_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 3, 1);
+	game->switch_on_middle_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 4, 1);
+	game->switch_on_right_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 5, 1);
+	game->switch_off_left_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 3, 0);
+	game->switch_off_middle_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 4, 0);
+	game->switch_off_right_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 5, 0);
+
+	game->entity_types_count = 20;
 	game->entity_types = push_array(arena, game->entity_types_count, entity_type);
 	game->entities_count = 0;
 	game->entities_max_count = 1000;
@@ -286,7 +308,7 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	set_entity_type_ptr(game->entity_types_dict, entity_type_enum::PLAYER, player_entity_type);
 	set_entity_type_ptr(game->entity_types_dict, entity_type_enum::STATIC_ENEMY, static_enemy_type);
 	set_entity_type_ptr(game->entity_types_dict, entity_type_enum::MOVING_ENEMY, moving_enemy_type);
-	test_if_all_types_loaded(game->entity_types_dict);
+	//test_if_all_types_loaded(game->entity_types_dict);
 
 	game->bullet_types_count = 5;
 	game->bullet_types = push_array(arena, game->bullet_types_count, entity_type);
@@ -318,4 +340,6 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 
 	add_sprite_effect_stage(damage_tint_effect, 1.0f, 0.0f, 0.0f, 5.0f, 5.0f);
 	add_constant_tint_sprite_effect_stage(damage_tint_effect, 0.5f, 5.0f);
+
+	end_temporary_memory(transient_memory, true);
 }
