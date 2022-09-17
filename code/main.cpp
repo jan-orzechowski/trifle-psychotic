@@ -1403,7 +1403,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 			{
 				if (false == are_entity_flags_set(collided_entity, entity_flags::INDESTRUCTIBLE))
 				{
-					start_visual_effect(game, collided_entity, 0, false);
+					start_visual_effect(game, collided_entity, 1, false);
 					collided_entity->health -= moving_bullet->type->damage_on_contact;
 					printf("pocisk trafil w entity, %.2f obrazen, zostalo %.2f\n",
 						moving_bullet->type->damage_on_contact, collided_entity->health);
@@ -1942,34 +1942,84 @@ void add_gate_to_dictionary(memory_arena* arena, gate_dictionary dict, entity* g
 	}
 }
 
-void open_gates_with_given_color(gate_dictionary dict, v4 color)
+sprite_effect* get_sprite_effect_by_color(sprite_effect_dictionary dict, v4 color)
 {
-	u32 index = get_hash_from_color(color) % dict.entries_count;
-	gate_dictionary_entry* entry = &dict.entries[index];
+	sprite_effect* result = NULL;
+	u32 index_to_check = get_hash_from_color(color) % dict.sprite_effects_count;
+	for (u32 attempts = 0; attempts < dict.sprite_effects_count; attempts++)
+	{
+		sprite_effect* effect = dict.sprite_effects[index_to_check];	
+		if (effect && effect->color == color)
+		{
+			result = effect;
+			break;
+		}
+		
+		index_to_check = (index_to_check + dict.probing_jump) % dict.sprite_effects_count;
+	}
+	return result;
+}
+
+void set_sprite_effect_for_color(sprite_effect_dictionary dict, sprite_effect* effect)
+{
+	u32 index_to_check = get_hash_from_color(effect->color) % dict.sprite_effects_count;
+	for (u32 attempts = 0; attempts < dict.sprite_effects_count; attempts++)
+	{
+		if (dict.sprite_effects[index_to_check] == NULL
+			|| is_zero(dict.sprite_effects[index_to_check]->color))
+		{
+			dict.sprite_effects[index_to_check] = effect;
+			break;
+		}
+
+		if (dict.sprite_effects[index_to_check]->color == effect->color)
+		{
+			break;
+		}
+		
+		index_to_check = (index_to_check + dict.probing_jump) % dict.sprite_effects_count;
+	}
+}
+
+void open_gates_with_given_color(game_data* game, v4 color)
+{
+	u32 index = get_hash_from_color(color) % game->gates_dict.entries_count;
+	gate_dictionary_entry* entry = &game->gates_dict.entries[index];
 	while (entry)
 	{
 		if (entry->entity != NULL)
 		{
-			assert(entry->entity->type->color == color);
-			tile_position pos = get_tile_position(entry->entity->position);
-			if (are_entity_flags_set(entry->entity, entity_flags::SWITCH))
+			// na wypadek kolizji
+			if (entry->entity->type->color == color)
 			{
-				printf("switch na pozycji (%d,%d)\n", pos.x, pos.y);
+				tile_position pos = get_tile_position(entry->entity->position);
+				if (are_entity_flags_set(entry->entity, entity_flags::SWITCH))
+				{
+					printf("switch na pozycji (%d,%d)\n", pos.x, pos.y);
+				}
+				else if (are_entity_flags_set(entry->entity, entity_flags::GATE))
+				{
+					unset_flags(&entry->entity->type->flags, entity_flags::COLLIDES);
+					sprite* sprite = &entry->entity->type->idle_pose.sprite;
+					for (u32 sprite_index = 1; sprite_index < sprite->parts_count - 1; sprite_index++)
+					{
+						sprite->parts[sprite_index].texture = NULL;
+					}
+
+					printf("brama na pozycji (%d,%d)\n", pos.x, pos.y);
+				}
+				else if (are_entity_flags_set(entry->entity, entity_flags::TINTED_DISPLAY))
+				{
+					start_visual_effect(entry->entity, &game->visual_effects[0], true);
+				}
+
+				// w ten sposób nie będziemy otwierać bram ponownie
+				entry->entity = NULL;
 			}
-			else
-			{
-				unset_flags(&entry->entity->type->flags, entity_flags::COLLIDES);
-				//entry->entity->type->collision_rect_dim = get_zero_v2();
-				entry->entity->type->idle_pose.sprite.parts_count = 0;
-				printf("brama na pozycji (%d,%d)\n", pos.x, pos.y);
-			}					
 		}
+
 		entry = entry->next;
 	}
-
-	// w ten sposób nie będziemy otwierać bram ponownie
-	dict.entries[index].entity = NULL;
-	dict.entries[index].next = NULL;
 }
 
 void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_entity_to_spawn, b32 is_switch)
@@ -2005,7 +2055,7 @@ void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_
 		u32 tiles_count = occupied_tiles.end.x - occupied_tiles.start.x + 1;
 
 		animation_frame frame = {};
-		frame.sprite.parts_count = tiles_count * 2;
+		frame.sprite.parts_count = tiles_count;
 		frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
 
 		for (u32 distance = 0; distance < tiles_count; distance++)
@@ -2028,31 +2078,11 @@ void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_
 				* TILE_SIDE_IN_PIXELS;
 		}
 
-		for (u32 distance = 0; distance < tiles_count; distance++)
-		{
-			sprite_part* part = &frame.sprite.parts[tiles_count + distance];
-			if (distance == 0)
-			{
-				*part = game->switch_off_left_sprite;
-			}
-			else if (distance == tiles_count - 1)
-			{
-				*part = game->switch_off_right_sprite;
-			}
-			else
-			{
-				*part = game->switch_off_middle_sprite;
-			}
-			part->offset_in_pixels = get_position_difference(
-				get_tile_position(occupied_tiles.start.x + distance, occupied_tiles.start.y), new_position) 
-				* TILE_SIDE_IN_PIXELS;
-		}
-
 		new_type->idle_pose = frame;
 	}
 	else
 	{
-		u32 tiles_count = occupied_tiles.end.y - occupied_tiles.start.y + 1;
+		u32 tiles_count = occupied_tiles.end.y - occupied_tiles.start.y + 3;
 
 		animation_frame frame = {};
 		frame.sprite.parts_count = tiles_count;
@@ -2061,10 +2091,21 @@ void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_
 		for (u32 distance = 0; distance < tiles_count; distance++)
 		{
 			sprite_part* part = &frame.sprite.parts[distance];
-			*part = game->gate_sprite;
+			if (distance == 0)
+			{
+				*part = game->gate_frame_lower_sprite;
+			}
+			else if (distance == tiles_count - 1)
+			{
+				*part = game->gate_frame_upper_sprite;
+			}
+			else
+			{
+				*part = game->gate_sprite;
+			}
 
 			part->offset_in_pixels = get_position_difference(
-				get_tile_position(occupied_tiles.start.x, occupied_tiles.start.y + distance), new_position) 
+				get_tile_position(occupied_tiles.start.x, occupied_tiles.start.y - 1 + distance), new_position) 
 				* TILE_SIDE_IN_PIXELS;
 		}
 
@@ -2077,6 +2118,85 @@ void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_
 
 	entity* new_entity = add_entity(game, new_position, new_type);
 	add_gate_to_dictionary(arena, game->gates_dict, new_entity);
+
+	// dodanie wyświetlaczy
+
+	entity_type* new_display_type = push_struct(arena, entity_type);
+	set_flags(&new_display_type->flags, entity_flags::TINTED_DISPLAY);
+	new_display_type->color = new_entity_to_spawn->color;
+
+	if (is_switch)
+	{
+		u32 tiles_count = occupied_tiles.end.x - occupied_tiles.start.x + 1;
+
+		animation_frame frame = {};
+		frame.sprite.parts_count = tiles_count;
+		frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
+
+		for (u32 distance = 0; distance < tiles_count; distance++)
+		{
+			sprite_part* part = &frame.sprite.parts[distance];
+			if (distance == 0)
+			{
+				*part = game->switch_display_left_sprite;
+			}
+			else if (distance == tiles_count - 1)
+			{
+				*part = game->switch_display_right_sprite;
+			}
+			else
+			{
+				*part = game->switch_display_middle_sprite;
+			}
+			part->offset_in_pixels = get_position_difference(
+				get_tile_position(occupied_tiles.start.x + distance, occupied_tiles.start.y), new_position)
+				* TILE_SIDE_IN_PIXELS;
+		}
+
+		new_display_type->idle_pose = frame;
+	}
+	else
+	{
+		animation_frame frame = {};
+		frame.sprite.parts_count = 2;
+		frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
+
+		frame.sprite.parts[0] = game->gate_display_upper_sprite;
+		frame.sprite.parts[0].offset_in_pixels = get_position_difference(
+			get_tile_position(occupied_tiles.start.x, occupied_tiles.start.y - 1), new_position)
+			* TILE_SIDE_IN_PIXELS;
+		frame.sprite.parts[1] = game->gate_display_lower_sprite;
+		frame.sprite.parts[1].offset_in_pixels = get_position_difference(
+			get_tile_position(occupied_tiles.start.x, occupied_tiles.end.y + 1), new_position)
+			* TILE_SIDE_IN_PIXELS;
+
+		new_display_type->idle_pose = frame;
+	}
+
+	entity* display_entity = add_entity(game, new_position, new_display_type);
+	add_gate_to_dictionary(arena, game->gates_dict, display_entity);
+
+	// efekt kolorystyczny
+	
+	sprite_effect* tint_effect = get_sprite_effect_by_color(game->gate_tints_dict, new_entity_to_spawn->color);
+	if (tint_effect == NULL)
+	{
+		tint_effect = push_struct(arena, sprite_effect);
+		tint_effect->stages_count = 1;
+		tint_effect->stages = push_array(arena, tint_effect->stages_count, sprite_effect_stage);
+		tint_effect->color = new_entity_to_spawn->color;
+		tint_effect->stages[0].amplitude = 1.0f;
+		tint_effect->stages[0].vertical_shift = 0.5f;
+		tint_effect->stages[0].phase_shift = 0;
+		tint_effect->stages[0].period = 3.0f;
+		tint_effect->stages[0].stage_duration = 100000.0f;
+		tint_effect->total_duration = tint_effect->stages[0].stage_duration;
+
+		set_flags(&tint_effect->flags, sprite_effect_flags::REPEATS);
+		set_sprite_effect_for_color(game->gate_tints_dict, tint_effect);
+	}
+
+	start_visual_effect(display_entity, tint_effect, true);
 }
 
 void initialize_entites(sdl_game_data* sdl_game, game_data* game)
@@ -2088,6 +2208,10 @@ void initialize_entites(sdl_game_data* sdl_game, game_data* game)
 
 	game->gates_dict.entries_count = 100;
 	game->gates_dict.entries = push_array(sdl_game->arena, game->gates_dict.entries_count, gate_dictionary_entry);
+
+	game->gate_tints_dict.sprite_effects_count = 100;
+	game->gate_tints_dict.sprite_effects = push_array(sdl_game->arena, game->gate_tints_dict.sprite_effects_count, sprite_effect*);
+	game->gate_tints_dict.probing_jump = 7;
 
 	for (u32 entity_index = 0;
 		entity_index < game->current_level.entities_to_spawn_count;
@@ -2168,7 +2292,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		if (collision.collided_switch_entity)
 		{
 			v4 color = collision.collided_switch_entity->type->color;
-			open_gates_with_given_color(game->gates_dict, color);
+			open_gates_with_given_color(game, color);
 		}
 
 		v2 player_direction_v2 = get_unit_vector(player->velocity);

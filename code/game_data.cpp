@@ -250,15 +250,16 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	delete collision_file.contents;
 
 	game->gate_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 8, 1);
+	game->gate_display_lower_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 7, 1);
+	game->gate_display_upper_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 7, 0);
+	game->gate_frame_lower_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 8, 0);
+	game->gate_frame_upper_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 8, 2);
 	game->switch_frame_left_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 0, 0);
 	game->switch_frame_middle_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 1, 0);
 	game->switch_frame_right_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 2, 0);	
-	game->switch_on_left_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 3, 1);
-	game->switch_on_middle_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 4, 1);
-	game->switch_on_right_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 5, 1);
-	game->switch_off_left_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 3, 0);
-	game->switch_off_middle_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 4, 0);
-	game->switch_off_right_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 5, 0);
+	game->switch_display_left_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 3, 0);
+	game->switch_display_middle_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 4, 0);
+	game->switch_display_right_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 5, 0);
 
 	game->entity_types_count = 20;
 	game->entity_types = push_array(arena, game->entity_types_count, entity_type);
@@ -333,7 +334,12 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	game->visual_effects_count = 5;
 	game->visual_effects = push_array(arena, game->visual_effects_count, sprite_effect);
 
-	sprite_effect* damage_tint_effect = &game->visual_effects[0];
+	sprite_effect* gate_display_fade_effect = &game->visual_effects[0];
+	gate_display_fade_effect->stages_count = 1;
+	gate_display_fade_effect->stages = push_array(arena, gate_display_fade_effect->stages_count, sprite_effect_stage);
+	gate_display_fade_effect->color = get_v4(100, 100, 100, 0);
+
+	sprite_effect* damage_tint_effect = &game->visual_effects[1];
 	damage_tint_effect->stages_count = 1;
 	damage_tint_effect->stages = push_array(arena, damage_tint_effect->stages_count, sprite_effect_stage);
 	damage_tint_effect->color = get_v4(255, 0, 0, 0);

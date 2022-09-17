@@ -197,7 +197,8 @@ enum class entity_flags
 	DAMAGES_PLAYER     = (1 << 4),
 	WALKS_HORIZONTALLY = (1 << 5),
 	GATE			   = (1 << 6),
-	SWITCH             = (1 << 7)
+	SWITCH             = (1 << 7),
+	TINTED_DISPLAY     = (1 << 8)
 };
 
 struct entity_type
@@ -223,7 +224,7 @@ struct entity_type
 
 	entity_type* fired_bullet_type;
 
-	v4 color; // używane w przypadku bram i przełączników	
+	v4 color; // używane w przypadku bram i przełączników
 };
 
 struct entity_type_dictionary
@@ -316,6 +317,13 @@ struct gate_dictionary
 	u32 entries_count;
 };
 
+struct sprite_effect_dictionary
+{
+	sprite_effect** sprite_effects;
+	u32 sprite_effects_count;
+	u32 probing_jump;
+};
+
 struct game_data
 {	
 	input_buffer input;
@@ -344,17 +352,19 @@ struct game_data
 	u32 visual_effects_count;
 
 	gate_dictionary gates_dict;
+	sprite_effect_dictionary gate_tints_dict;
 
 	sprite_part gate_sprite;
+	sprite_part gate_frame_upper_sprite;
+	sprite_part gate_frame_lower_sprite;
+	sprite_part gate_display_upper_sprite;
+	sprite_part gate_display_lower_sprite;
 	sprite_part switch_frame_left_sprite;
 	sprite_part switch_frame_middle_sprite;
 	sprite_part switch_frame_right_sprite;
-	sprite_part switch_on_left_sprite;
-	sprite_part switch_on_middle_sprite;
-	sprite_part switch_on_right_sprite;
-	sprite_part switch_off_left_sprite;
-	sprite_part switch_off_middle_sprite;
-	sprite_part switch_off_right_sprite;
+	sprite_part switch_display_left_sprite;
+	sprite_part switch_display_middle_sprite;
+	sprite_part switch_display_right_sprite;
 };
 
 SDL_Rect get_tile_rect(u32 tile_id);
