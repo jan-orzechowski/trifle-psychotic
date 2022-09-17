@@ -97,10 +97,10 @@ enum class direction
 	S = (1 << 4)
 };
 
-struct walking_path
+struct tile_range
 {
-	tile_position left_end;
-	tile_position right_end;
+	tile_position start;
+	tile_position end;
 };
 
 // istotne - _LAST musi być ostatnie, a UNKNOWN pierwsze! 
@@ -183,11 +183,11 @@ struct animation
 
 enum class entity_flags
 {
-	PLAYER =			 (1 << 0),
-	COLLIDES =			 (1 << 1),
-	ENEMY =				 (1 << 2),
-	//TAKES_DAMAGE =     (1 << 3),
-	DAMAGES_PLAYER =	 (1 << 4),
+	PLAYER   		   = (1 << 0),
+	COLLIDES           = (1 << 1),
+	ENEMY              = (1 << 2),
+	INDESTRUCTIBLE     = (1 << 3),
+	DAMAGES_PLAYER     = (1 << 4),
 	WALKS_HORIZONTALLY = (1 << 5),
 	GATE			   = (1 << 6),
 	SWITCH             = (1 << 7)
@@ -204,7 +204,7 @@ struct entity_type
 	r32 slowdown_multiplier;
 
 	r32 player_detecting_distance;
-	i32 damage_on_contact;
+	r32 damage_on_contact;
 	r32 max_health;
 	r32 default_attack_cooldown;
 	
@@ -246,7 +246,7 @@ struct entity
 	r32 animation_duration;
 
 	b32 has_walking_path;
-	walking_path path;
+	tile_range path;
 	u32 goal_path_point;
 };
 
@@ -297,6 +297,18 @@ struct player_movement
 	v2 recoil_acceleration;
 };
 
+struct gate_dictionary_entry
+{
+	entity* entity;
+	gate_dictionary_entry* next;
+};
+
+struct gate_dictionary
+{
+	gate_dictionary_entry* entries;
+	u32 entries_count;
+};
+
 struct game_data
 {	
 	input_buffer input;
@@ -323,6 +335,9 @@ struct game_data
 
 	sprite_effect* visual_effects;
 	u32 visual_effects_count;
+
+	gate_dictionary gates_dict;
+
 	sprite_part gate_sprite;
 	sprite_part switch_frame_left_sprite;
 	sprite_part switch_frame_middle_sprite;
@@ -338,3 +353,8 @@ struct game_data
 SDL_Rect get_tile_rect(u32 tile_id);
 tile_position get_tile_position(i32 tile_x, i32 tile_y);
 entity* add_entity(game_data* game, tile_position tile, entity_type* type);
+
+b32 are_flags_set(entity_flags* flags, entity_flags flag_values_to_check);
+void set_flags(entity_flags* flags, entity_flags flag_values_to_check);
+void unset_flags(entity_flags* flags, entity_flags flag_values_to_check);
+b32 are_entity_flags_set(entity* entity, entity_flags flag_values);

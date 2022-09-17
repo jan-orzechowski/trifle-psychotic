@@ -590,15 +590,15 @@ u32 get_tile_value(level map, tile_position tile)
 	return result;
 }
 
-b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
+b32 is_tile_colliding(level collision_ref, u32 tile_value)
 {
-	u32 x_coord = (tile_value - 1) % collision_ref_level.width;
-	u32 y_coord = (tile_value - 1) / collision_ref_level.width;
+	u32 x_coord = (tile_value - 1) % collision_ref.width;
+	u32 y_coord = (tile_value - 1) / collision_ref.width;
 
 	debug_breakpoint;
 
 	b32 collides = false;
-	u32 collision_tile_value = get_tile_value(collision_ref_level, x_coord, y_coord);
+	u32 collision_tile_value = get_tile_value(collision_ref, x_coord, y_coord);
 	//u32 first_gid = 1; // tymczasowe, potrzebna jest obsługa GID w tmx
 	//collision_tile_value -= first_gid;
 	//collision_tile_value++;
@@ -615,16 +615,21 @@ b32 is_tile_colliding(level collision_ref_level, u32 tile_value)
 	return collides;
 }
 
-b32 is_good_for_walk_path(level map, level collision_ref, u32 tile_x, u32 tile_y)
+b32 is_tile_colliding(level map, level collision_ref, u32 tile_x, u32 tile_y)
 {
 	u32 tile_value = get_tile_value(map, tile_x, tile_y);
-	u32 tile_under_value = get_tile_value(map, tile_x, tile_y + 1);
-	b32 result = (false == is_tile_colliding(collision_ref, tile_value)
-		&& is_tile_colliding(collision_ref, tile_under_value));
+	b32 result = is_tile_colliding(collision_ref, tile_value);
 	return result;
 }
 
-walking_path find_walking_path_for_enemy(level map, level collision_ref, tile_position start_tile)
+b32 is_good_for_walk_path(level map, level collision_ref, u32 tile_x, u32 tile_y)
+{
+	b32 result = (false == is_tile_colliding(map, collision_ref, tile_x, tile_y)
+		&& is_tile_colliding(map, collision_ref, tile_x, tile_y + 1));
+	return result;
+}
+
+tile_range find_walking_path_for_enemy(level map, level collision_ref, tile_position start_tile)
 {
 	b32 found_good_start_pos = false;
 	tile_position good_start_tile = {};
@@ -678,13 +683,104 @@ walking_path find_walking_path_for_enemy(level map, level collision_ref, tile_po
 		}
 	}
 
-	walking_path result = {};
-	result.left_end = left_end;
-	result.right_end = right_end;
+	tile_range result = {};
+	result.start = left_end;
+	result.end = right_end;
+	return result;
+}
 
-	//u32 path_length = right_end.x - left_end.x;
-	//printf("znaleziono sciezke, od (%d,%d) do (%d,%d)\n", left_end.x, left_end.y, right_end.x, right_end.y);
+tile_range find_horizontal_range_of_free_tiles(level map, level collision_ref, tile_position starting_tile, u32 length_limit)
+{
+	tile_position left_end = starting_tile;
+	tile_position right_end = starting_tile;
+	tile_position test_tile = starting_tile;
+	for (i32 distance = 0; distance <= length_limit; distance++)
+	{
+		test_tile.x = starting_tile.x - distance;
+		if (false == is_tile_colliding(map, collision_ref, test_tile.x, test_tile.y))
+		{
+			left_end = test_tile;
+		}
+		else
+		{
+			break;
+		}
+	}
 
+	test_tile = starting_tile;
+	for (i32 distance = 0; distance <= length_limit; distance++)
+	{
+		test_tile.x = starting_tile.x + distance;
+		if (false == is_tile_colliding(map, collision_ref, test_tile.x, test_tile.y))
+		{
+			right_end = test_tile;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	tile_range result = {};
+	result.start = left_end;
+	result.end = right_end;
+	return result;
+}
+
+tile_range find_vertical_range_of_free_tiles(level map, level collision_ref, tile_position starting_tile, u32 length_limit)
+{
+	tile_position upper_end = starting_tile;
+	tile_position lower_end = starting_tile;
+	tile_position test_tile = starting_tile;
+	for (i32 distance = 0; distance <= length_limit; distance++)
+	{
+		test_tile.y = starting_tile.y - distance;
+		if (false == is_tile_colliding(map, collision_ref, test_tile.x, test_tile.y))
+		{
+			upper_end = test_tile;	
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	test_tile = starting_tile;
+	for (i32 distance = 0; distance <= length_limit; distance++)
+	{
+		test_tile.y = starting_tile.y + distance;
+		if (false == is_tile_colliding(map, collision_ref, test_tile.x, test_tile.y))
+		{
+			lower_end = test_tile;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	tile_range result = {};
+	result.start = upper_end;
+	result.end = lower_end;
+	return result;
+}
+
+v2 get_length_from_tile_range(tile_range path)
+{
+	v2 result = {};
+	v2 distance = get_position_difference(path.end, path.start);
+	if (distance.x > 0)
+	{
+		// pozioma
+		result.x = distance.x + 1.0f;
+		result.y = 1.0f;
+	}
+	else
+	{
+		// pionowa
+		result.x = 1.0f;
+		result.y = distance.y + 1.0f;
+	}
 	return result;
 }
 
@@ -791,6 +887,28 @@ b32 check_segment_intersection(r32 movement_start_x, r32 movement_start_y,
 	return result;
 }
 
+b32 are_flags_set(entity_flags* flags, entity_flags flag_values_to_check)
+{
+	b32 result = are_flags_set((u32*)flags, (u32)flag_values_to_check);
+	return result;
+}
+
+void set_flags(entity_flags* flags, entity_flags flag_values_to_check)
+{
+	set_flags((u32*)flags, (u32)flag_values_to_check);
+}
+
+void unset_flags(entity_flags* flags, entity_flags flag_values_to_check)
+{
+	unset_flags((u32*)flags, (u32)flag_values_to_check);
+}
+
+b32 are_entity_flags_set(entity* entity, entity_flags flag_values)
+{
+	b32 result = are_flags_set(&entity->type->flags, flag_values);
+	return result;
+}
+
 entity* add_entity(game_data* game, world_position position, entity_type* type)
 {
 	assert(game->entities_count + 1 < game->entities_max_count);
@@ -821,12 +939,6 @@ void remove_entity(game_data* game, u32 entity_index)
 	game->entities_count--;
 }
 
-b32 are_entity_flags_set(entity* entity, entity_flags flag_values)
-{
-	b32 result = are_flags_set((u32*)&entity->type->flags, (u32)flag_values);
-	return result;
-}
-
 entity* get_player(game_data* game)
 {
 	entity* result = &game->entities[0];
@@ -841,7 +953,7 @@ b32 damage_player(game_data* game, i32 damage_amount)
 		damaged = true;
 		game->entities[0].health -= damage_amount;
 		start_visual_effect(game, &game->entities[0], 0, false);
-		printf("gracz dostaje %d obrazen, zostalo %d zdrowia\n", damage_amount, game->entities[0].health);
+		printf("gracz dostaje %.0f obrazen, zostalo %.0f zdrowia\n", damage_amount, game->entities[0].health);
 		if (game->entities[0].health < 0.0f)
 		{
 			// przegrywamy
@@ -975,9 +1087,10 @@ struct collision_with_effect
 {
 	collision data;
 	entity* collided_entity;
+	entity* collided_switch_entity;
 };
 
-collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* moving_entity, world_position target_pos)
+collision_with_effect move(game_data* game, entity* moving_entity, world_position target_pos)
 {
 	collision_with_effect result = {};
 
@@ -1068,6 +1181,17 @@ collision_with_effect move(sdl_game_data* sdl_game, game_data* game, entity* mov
 
 						if (new_collision.collided_wall != direction::NONE)
 						{
+							if (are_entity_flags_set(entity_to_check, entity_flags::COLLIDES))
+							{
+								closest_collision = new_collision;
+
+								if (are_entity_flags_set(moving_entity, entity_flags::PLAYER) 
+									&& are_entity_flags_set(entity_to_check, entity_flags::SWITCH))
+								{
+									result.collided_switch_entity = entity_to_check;
+								}
+							}
+
 							if (new_collision.possible_movement_perc < closest_effect_entity_collision.possible_movement_perc)
 							{
 								closest_effect_entity_collision = new_collision;
@@ -1198,7 +1322,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 
 					if (new_collision.collided_wall != direction::NONE)
 					{
-						if (are_flags_set((u32*)&moving_bullet->type->flags, (u32)entity_flags::DAMAGES_PLAYER))
+						if (are_flags_set(&moving_bullet->type->flags, entity_flags::DAMAGES_PLAYER))
 						{
 							if (entity_index == 0)
 							{
@@ -1238,22 +1362,24 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 
 		if (collided_entity)
 		{
-			// trzeba wymyślić lepszy sposób na sprawdzenie, czy to gracz
-			if (collided_entity == &game->entities[0])
+			if (are_entity_flags_set(collided_entity, entity_flags::PLAYER))
 			{
 				damage_player(game, moving_bullet->type->damage_on_contact);
 			}
 			else
 			{
-				start_visual_effect(game, collided_entity, 0, false);
-				collided_entity->health -= moving_bullet->type->damage_on_contact;
-				printf("pocisk trafil w entity, %i obrazen, zostalo %i\n", moving_bullet->type->damage_on_contact, collided_entity->health);
+				if (false == are_entity_flags_set(collided_entity, entity_flags::INDESTRUCTIBLE))
+				{
+					start_visual_effect(game, collided_entity, 0, false);
+					collided_entity->health -= moving_bullet->type->damage_on_contact;
+					printf("pocisk trafil w entity, %.2f obrazen, zostalo %.2f\n",
+						moving_bullet->type->damage_on_contact, collided_entity->health);
+				}
 			}
 		}
 
 		if (was_collision)
 		{
-			//printf("pocisk usuniety\n");
 			remove_bullet(game, bullet_index);
 		}
 	}
@@ -1261,7 +1387,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 	return was_collision;
 }
 
-b32 is_standing_on_ground(sdl_game_data* sdl_game, game_data* game, entity* entity_to_check)
+b32 is_standing_on_ground(game_data* game, entity* entity_to_check)
 {
 	b32 result = false;
 	r32 corner_distance_apron = 0.0f;
@@ -1269,7 +1395,7 @@ b32 is_standing_on_ground(sdl_game_data* sdl_game, game_data* game, entity* enti
 
 	entity test_entity = *entity_to_check;
 	world_position target_pos = add_to_position(test_entity.position, get_v2(0.0f, 0.1f));
-	collision_with_effect collision = move(sdl_game, game, &test_entity, target_pos);
+	collision_with_effect collision = move(game, &test_entity, target_pos);
 	if (collision.collided_entity || collision.data.collided_wall == direction::S)
 	{
 		result = true;
@@ -1281,7 +1407,7 @@ void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 {
 	entity* player = get_player(game);
 
-	b32 is_standing = is_standing_on_ground(sdl_game, game, player);
+	b32 is_standing = is_standing_on_ground(game, player);
 
 	char buffer[200];
 	SDL_Color text_color = { 255, 255, 255, 0 };
@@ -1389,11 +1515,11 @@ void change_movement_mode(player_movement* movement, movement_mode mode)
 	}
 }
 
-world_position process_input(sdl_game_data* sdl_game, game_data* game, entity* player, r32 delta_time)
+world_position process_input(game_data* game, entity* player, r32 delta_time)
 {
 	game_input* input = get_last_frame_input(&game->input);
 
-	b32 is_standing_at_frame_beginning = is_standing_on_ground(sdl_game, game, player);
+	b32 is_standing_at_frame_beginning = is_standing_on_ground(game, player);
 
 	v2 gravity = get_v2(0, 1.0f);
 
@@ -1660,8 +1786,8 @@ void render_debug_path_ends(sdl_game_data* sdl_game, entity* entity, world_posit
 	if (entity->has_walking_path)
 	{
 		SDL_SetRenderDrawColor(sdl_game->renderer, 0, 0, 255, 0);
-		debug_render_tile(sdl_game->renderer, entity->path.left_end, { 255,255,0,255 }, camera_pos);
-		debug_render_tile(sdl_game->renderer, entity->path.right_end, { 0,0,255,255 }, camera_pos);
+		debug_render_tile(sdl_game->renderer, entity->path.start, { 255,255,0,255 }, camera_pos);
+		debug_render_tile(sdl_game->renderer, entity->path.end, { 0,0,255,255 }, camera_pos);
 	}
 }
 
@@ -1729,24 +1855,217 @@ void render_entity_animation_frame(SDL_Renderer* renderer,
 		entity->visual_effect, entity->visual_effect_duration, *sprite_to_render);
 }
 
+u32 get_hash_from_color(v4 color)
+{
+	u32 result = ((u32)color.r * 13 + (u32)color.g * 7 + (u32)color.b * 3);
+	return result;
+}
+
+void add_gate_to_dictionary(memory_arena* arena, gate_dictionary dict, entity* gate_entity)
+{
+	v4 color = gate_entity->type->color;
+	u32 index = get_hash_from_color(color) % dict.entries_count;
+	gate_dictionary_entry* entry = dict.entries + index;
+	if (entry->entity == NULL)
+	{
+		entry->entity = gate_entity;
+	}
+	else
+	{
+		while (entry && entry->next)
+		{
+			entry = entry->next;
+		}
+
+		gate_dictionary_entry* new_entry = push_struct(arena, gate_dictionary_entry);
+		new_entry->entity = gate_entity;
+		entry->next = new_entry;
+	}
+}
+
+void open_gates_with_given_color(gate_dictionary dict, v4 color)
+{
+	u32 index = get_hash_from_color(color) % dict.entries_count;
+	gate_dictionary_entry* entry = &dict.entries[index];
+	while (entry)
+	{
+		if (entry->entity != NULL)
+		{
+			assert(entry->entity->type->color == color);
+			tile_position pos = get_tile_position(entry->entity->position);
+			if (are_entity_flags_set(entry->entity, entity_flags::SWITCH))
+			{
+				printf("switch na pozycji (%d,%d)\n", pos.x, pos.y);
+			}
+			else
+			{
+				unset_flags(&entry->entity->type->flags, entity_flags::COLLIDES);
+				//entry->entity->type->collision_rect_dim = get_zero_v2();
+				entry->entity->type->idle_pose.sprite.parts_count = 0;
+				printf("brama na pozycji (%d,%d)\n", pos.x, pos.y);
+			}					
+		}
+		entry = entry->next;
+	}
+
+	// w ten sposób nie będziemy otwierać bram ponownie
+	dict.entries[index].entity = NULL;
+	dict.entries[index].next = NULL;
+}
+
+void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_entity_to_spawn, b32 is_switch)
+{
+	entity_type* new_type = push_struct(arena, entity_type);
+
+	u32 max_size = 10;
+
+	v2 collision_rect_dim;
+	tile_range occupied_tiles;
+	if (is_switch)
+	{
+		occupied_tiles = find_horizontal_range_of_free_tiles(
+			game->current_level, game->collision_reference, new_entity_to_spawn->position, max_size);
+		collision_rect_dim = get_length_from_tile_range(occupied_tiles);
+	}
+	else
+	{
+		occupied_tiles = find_vertical_range_of_free_tiles(
+			game->current_level, game->collision_reference, new_entity_to_spawn->position, max_size);
+		collision_rect_dim = get_length_from_tile_range(occupied_tiles);
+	}
+
+	new_type->collision_rect_dim = collision_rect_dim;
+	new_type->color = new_entity_to_spawn->color;
+
+	world_position new_position = add_to_position(
+		get_world_position(occupied_tiles.start),
+		get_position_difference(occupied_tiles.end, occupied_tiles.start) / 2);
+
+	if (is_switch)
+	{
+		u32 tiles_count = occupied_tiles.end.x - occupied_tiles.start.x + 1;
+
+		animation_frame frame = {};
+		frame.sprite.parts_count = tiles_count * 2;
+		frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
+
+		for (u32 distance = 0; distance < tiles_count; distance++)
+		{
+			sprite_part* part = &frame.sprite.parts[distance];
+			if (distance == 0)
+			{
+				*part = game->switch_frame_left_sprite;
+			}
+			else if (distance == tiles_count - 1)
+			{
+				*part = game->switch_frame_right_sprite;
+			}
+			else
+			{
+				*part = game->switch_frame_middle_sprite;
+			}
+			part->offset_in_pixels = get_position_difference(
+				get_tile_position(occupied_tiles.start.x + distance, occupied_tiles.start.y), new_position) 
+				* TILE_SIDE_IN_PIXELS;
+		}
+
+		for (u32 distance = 0; distance < tiles_count; distance++)
+		{
+			sprite_part* part = &frame.sprite.parts[tiles_count + distance];
+			if (distance == 0)
+			{
+				*part = game->switch_off_left_sprite;
+			}
+			else if (distance == tiles_count - 1)
+			{
+				*part = game->switch_off_right_sprite;
+			}
+			else
+			{
+				*part = game->switch_off_middle_sprite;
+			}
+			part->offset_in_pixels = get_position_difference(
+				get_tile_position(occupied_tiles.start.x + distance, occupied_tiles.start.y), new_position) 
+				* TILE_SIDE_IN_PIXELS;
+		}
+
+		new_type->idle_pose = frame;
+	}
+	else
+	{
+		u32 tiles_count = occupied_tiles.end.y - occupied_tiles.start.y + 1;
+
+		animation_frame frame = {};
+		frame.sprite.parts_count = tiles_count;
+		frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
+
+		for (u32 distance = 0; distance < tiles_count; distance++)
+		{
+			sprite_part* part = &frame.sprite.parts[distance];
+			*part = game->gate_sprite;
+
+			part->offset_in_pixels = get_position_difference(
+				get_tile_position(occupied_tiles.start.x, occupied_tiles.start.y + distance), new_position) 
+				* TILE_SIDE_IN_PIXELS;
+		}
+
+		new_type->idle_pose = frame;
+	}
+
+	set_flags(&new_type->flags, entity_flags::COLLIDES);
+	set_flags(&new_type->flags, entity_flags::INDESTRUCTIBLE);
+	set_flags(&new_type->flags, (is_switch ? entity_flags::SWITCH : entity_flags::GATE));
+
+	entity* new_entity = add_entity(game, new_position, new_type);
+	add_gate_to_dictionary(arena, game->gates_dict, new_entity);
+}
+
+void initialize_entites(sdl_game_data* sdl_game, game_data* game)
+{
+	temporary_memory memory_for_entities_initialization = begin_temporary_memory(sdl_game->transient_arena);
+
+	add_entity(game, game->current_level.starting_tile,
+		get_entity_type_ptr(game->entity_types_dict, entity_type_enum::PLAYER));
+
+	game->gates_dict.entries_count = 100;
+	game->gates_dict.entries = push_array(sdl_game->arena, game->gates_dict.entries_count, gate_dictionary_entry);
+
+	for (u32 entity_index = 0;
+		entity_index < game->current_level.entities_to_spawn_count;
+		entity_index++)
+	{
+		entity_to_spawn* new_entity = game->current_level.entities_to_spawn + entity_index;
+		switch (new_entity->type)
+		{
+			case entity_type_enum::GATE:
+			{
+				add_gate_entity(game, sdl_game->arena, new_entity, false);
+			}
+			break;
+			case entity_type_enum::SWITCH:
+			{
+				add_gate_entity(game, sdl_game->arena, new_entity, true);
+			}
+			break;
+			case entity_type_enum::UNKNOWN:
+			break;
+			default:
+			{
+				add_entity(game, get_world_position(new_entity->position),
+					get_entity_type_ptr(game->entity_types_dict, new_entity->type));
+			}
+			break;
+		}
+	}
+
+	end_temporary_memory(memory_for_entities_initialization);
+}
+
 void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 {
 	if (false == game->current_level_initialized)
 	{
-		add_entity(game, game->current_level.starting_tile, get_entity_type_ptr(game->entity_types_dict, entity_type_enum::PLAYER));
-
-		for (u32 entity_index = 0; 
-			entity_index < game->current_level.entities_to_spawn.entities_count; 
-			entity_index++)
-		{
-			entity_to_spawn* entity = game->current_level.entities_to_spawn.entities + entity_index;						
-			if (entity->type != entity_type_enum::UNKNOWN)
-			{
-				add_entity(game, get_world_position(entity->position),
-					get_entity_type_ptr(game->entity_types_dict, entity->type));
-			}
-		}
-
+		initialize_entites(sdl_game, game);
 		game->current_level_initialized = true;
 	}
 
@@ -1764,9 +2083,9 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 
 		animate(&game->player_movement, player, delta_time);
 
-		world_position target_pos = process_input(sdl_game, game, player, delta_time);
+		world_position target_pos = process_input(game, player, delta_time);
 
-		collision_with_effect collision = move(sdl_game, game, player, target_pos);
+		collision_with_effect collision = move(game, player, target_pos);
 		if (collision.collided_entity)
 		{
 			damage_player(game, collision.collided_entity->type->damage_on_contact);
@@ -1785,6 +2104,12 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 				game->player_movement.recoil_acceleration.y);
 
 			change_movement_mode(&game->player_movement, movement_mode::RECOIL);
+		}
+
+		if (collision.collided_switch_entity)
+		{
+			v4 color = collision.collided_switch_entity->type->color;
+			open_gates_with_given_color(game->gates_dict, color);
 		}
 
 		v2 player_direction_v2 = get_unit_vector(player->velocity);
@@ -1810,7 +2135,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 
 		animate(NULL, entity, delta_time);
 
-		if (entity->health <= 0)
+		if (entity->health < 0)
 		{
 			remove_entity(game, entity_index);
 			entity_index--; // ze względu na działanie compact array
@@ -1830,20 +2155,20 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 
 				if (entity->goal_path_point == 0)
 				{
-					current_goal = entity->path.left_end;
-					current_start = entity->path.right_end;
+					current_goal = entity->path.start;
+					current_start = entity->path.end;
 				}
 				else if (entity->goal_path_point == 1)
 				{
-					current_goal = entity->path.right_end;
-					current_start = entity->path.left_end;
+					current_goal = entity->path.end;
+					current_start = entity->path.start;
 				}
 				else
 				{
 					// wracamy na początek
 					entity->goal_path_point = 0;
-					current_goal = entity->path.left_end;
-					current_start = entity->path.right_end;
+					current_goal = entity->path.start;
+					current_start = entity->path.end;
 				}
 
 				if (current_goal != current_start)
@@ -1895,16 +2220,16 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			}
 			else
 			{
-				walking_path new_path = find_walking_path_for_enemy(
+				tile_range new_path = find_walking_path_for_enemy(
 					game->current_level, game->collision_reference, get_tile_position(entity->position));
 				entity->path = new_path;
 				entity->has_walking_path = true;
 
 				// zabezpieczenie na wypadek nierównego ustawienia entity w edytorze 
 				tile_position current_position = get_tile_position(entity->position);
-				if (current_position.y != entity->path.left_end.y)
+				if (current_position.y != entity->path.start.y)
 				{
-					tile_position new_position = get_tile_position(current_position.x, entity->path.left_end.y);
+					tile_position new_position = get_tile_position(current_position.x, entity->path.start.y);
 					entity->position = get_world_position(new_position);
 				}
 			}
@@ -1995,7 +2320,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 				SDL_Rect screen_rect = get_tile_render_rect(position);
 				SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &tile_bitmap, &screen_rect);
 
-#if 1
+#if 0
 				if (is_tile_colliding(game->collision_reference, tile_value))
 				{
 					tile_position tile_pos = get_tile_position(x_coord_in_world, y_coord_in_world);
@@ -2039,7 +2364,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			}
 		}
 
-		// draw debug info
+		// draw collision debug info
 		{
 #if 1
 			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
@@ -2047,6 +2372,11 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 				entity* entity = game->entities + entity_index;
 				if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
 				{
+					if (false == is_zero(entity->type->color))
+					{
+						debug_breakpoint;
+					}
+
 					// istotne - offset sprite'a nie ma tu znaczenia
 					v2 relative_position = get_position_difference(entity->position, player->position);
 					v2 center = relative_position + entity->type->collision_rect_offset;
@@ -2061,14 +2391,16 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 					SDL_RenderDrawPoint(sdl_game->renderer, entity_position.x, entity_position.y);
 				}
 			}
-
-			render_debug_information(sdl_game, game);
+	
 #endif
 		}
+		
+		render_debug_information(sdl_game, game);
 
 		render_hitpoint_bar(sdl_game, player);
 
 		// testowy textbox
+#if 0
 		{
 			rect textbox_area = get_rect_from_center(
 				SCREEN_CENTER_IN_PIXELS + get_v2(0, 80),
@@ -2081,6 +2413,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			font.pixel_width = 8;
 			write(sdl_game->arena, sdl_game, font, textbox_area, sdl_game->test_str);
 		}
+#endif
 
 		SDL_RenderPresent(sdl_game->renderer);
 	}

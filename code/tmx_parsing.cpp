@@ -825,11 +825,13 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 									color.a,
 									color.r
 								);
+								// alpha pomijamy
+								swapped_color.a = 255;
 								gate_color = swapped_color;
 							}
 							else
 							{
-								// coś poszło nie tak
+								// błąd
 							}
 						}
 						else
@@ -868,7 +870,8 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 			}
 			map->starting_tile = position;
 			starting_point_is_set = true;
-		} break;
+		} 
+		break;
 		default:
 		{
 			entity_to_spawn* new_entity = push_struct(permanent_arena, entity_to_spawn);
