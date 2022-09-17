@@ -105,6 +105,30 @@ b32 operator ==(v4 a, v4 b)
     return result;
 }
 
+b32 operator !=(v2 a, v2 b)
+{
+    b32 result = ((a.x != b.x)
+        || (a.y != b.y));
+    return result;
+}
+
+b32 operator !=(v3 a, v3 b)
+{
+    b32 result = ((a.x != b.x)
+        || (a.y != b.y)
+        || (a.z != b.z));
+    return result;
+}
+
+b32 operator !=(v4 a, v4 b)
+{
+    b32 result = ((a.x != b.x)
+        || (a.y != b.y)
+        || (a.z != b.z)
+        || (a.w != b.w));
+    return result;
+}
+
 v2 operator +(v2 a, v2 b)
 {
     v2 result;

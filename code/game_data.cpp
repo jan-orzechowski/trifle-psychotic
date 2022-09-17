@@ -336,7 +336,7 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	sprite_effect* damage_tint_effect = &game->visual_effects[0];
 	damage_tint_effect->stages_count = 1;
 	damage_tint_effect->stages = push_array(arena, damage_tint_effect->stages_count, sprite_effect_stage);
-	damage_tint_effect->color = { 255, 0, 0, 0 };
+	damage_tint_effect->color = get_v4(255, 0, 0, 0);
 
 	add_sprite_effect_stage(damage_tint_effect, 1.0f, 0.0f, 0.0f, 5.0f, 5.0f);
 	add_constant_tint_sprite_effect_stage(damage_tint_effect, 0.5f, 5.0f);

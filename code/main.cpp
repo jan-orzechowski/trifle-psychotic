@@ -2,6 +2,50 @@
 #include "game_data.h"
 #include "text_rendering.h"
 
+b32 are_flags_set(entity_flags* flags, entity_flags flag_values_to_check)
+{
+	b32 result = are_flags_set((u32*)flags, (u32)flag_values_to_check);
+	return result;
+}
+
+void set_flags(entity_flags* flags, entity_flags flag_values_to_check)
+{
+	set_flags((u32*)flags, (u32)flag_values_to_check);
+}
+
+void unset_flags(entity_flags* flags, entity_flags flag_values_to_check)
+{
+	unset_flags((u32*)flags, (u32)flag_values_to_check);
+}
+
+b32 are_entity_flags_set(entity* entity, entity_flags flag_values)
+{
+	b32 result = are_flags_set(&entity->type->flags, flag_values);
+	return result;
+}
+
+b32 are_flags_set(sprite_effect_flags* flags, sprite_effect_flags flag_values_to_check)
+{
+	b32 result = are_flags_set((u32*)flags, (u32)flag_values_to_check);
+	return result;
+}
+
+void set_flags(sprite_effect_flags* flags, sprite_effect_flags flag_values_to_check)
+{
+	set_flags((u32*)flags, (u32)flag_values_to_check);
+}
+
+void unset_flags(sprite_effect_flags* flags, sprite_effect_flags flag_values_to_check)
+{
+	unset_flags((u32*)flags, (u32)flag_values_to_check);
+}
+
+SDL_Color get_sdl_color(v4 color)
+{
+	SDL_Color result = { (Uint8)color.r, (Uint8)color.g, (Uint8)color.b, (Uint8)color.a };
+	return result;
+}
+
 void print_sdl_error()
 {
 	const char* error = SDL_GetError();
@@ -181,9 +225,9 @@ void render_rect(sdl_game_data* sdl_game, rect rectangle)
 		rectangle.min_corner.x, rectangle.max_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
 }
 
-void render_text(sdl_game_data* sdl_game, std::string textureText, int x, int y, SDL_Color color)
+void render_text(sdl_game_data* sdl_game, std::string textureText, int x, int y, v4 color)
 {
-	SDL_Surface* text_surface = TTF_RenderText_Solid(sdl_game->font, textureText.c_str(), color);
+	SDL_Surface* text_surface = TTF_RenderText_Solid(sdl_game->font, textureText.c_str(), get_sdl_color(color));
 	if (text_surface)
 	{
 		SDL_Texture* font_texture = SDL_CreateTextureFromSurface(sdl_game->renderer, text_surface);
@@ -264,44 +308,45 @@ void render_hitpoint_bar(sdl_game_data* sdl_game, entity* player)
 
 r32 get_stage_tint(sprite_effect_stage* stage, r32 total_time)
 {
-	r32 result = 1.0f;
+	r32 result = 0.0f;
 	if (total_time < stage->stage_duration)
 	{
 		if (stage->period == 0)
-		{
-			// stała wartość 
-			result = stage->amplitude;
+		{			
+			result = stage->amplitude; // stała wartość
 		}
 		else
 		{
-			// czy tutaj powinniśmy podzielić period przez 2PI?
-			result = (stage->amplitude *
-				SDL_sinf((total_time / stage->period) + stage->phase_shift))
-				+ stage->vertical_shift;
-
-			debug_breakpoint;
+			// używamy pi zamiast 2pi ze względu na to, że niżej mamy odbicie ujemnych wartości
+			result = (stage->amplitude * 
+				SDL_sinf((total_time * pi32/ stage->period) + stage->phase_shift));
 		}
 
 		if (result < 0)
 		{
-			if (stage->ignore_negatives)
-			{
-				result = 0;
-			}
-			else 
-			{
-				result = -result;
-			}
+			result = -result;
 		}		
+
+		result += stage->vertical_shift;
+	}
+
+	if (result < 0.0f)
+	{
+		result = 0.0f;
+	}
+
+	if (result > 1.0f)
+	{
+		result = 1.0f;
 	}
 
 	return result;
 }
 
-SDL_Color get_tint(sprite_effect* effect, r32 time)
+v4 get_tint(sprite_effect* effect, r32 time)
 {
-	SDL_Color result = effect->color;
-	if (time >= 0.0f && time <= effect->total_duration)
+	v4 result = effect->color / 255;
+	if ((time >= 0.0f && time <= effect->total_duration))
 	{
 		b32 found = false;
 		r32 tint_value = 1.0f;
@@ -312,6 +357,7 @@ SDL_Color get_tint(sprite_effect* effect, r32 time)
 			{
 				tint_value = get_stage_tint(stage, time);
 				found = true;
+				//printf("time: %.02f tint: %.02f\n", time, tint_value);
 				break;
 			}
 			else
@@ -321,26 +367,35 @@ SDL_Color get_tint(sprite_effect* effect, r32 time)
 		}
 
 		if (found)
-		{
-			result.r = effect->color.r * tint_value;
-			result.g = effect->color.g * tint_value;
-			result.b = effect->color.b * tint_value;
-			result.a = effect->color.a * tint_value;
+		{		
+			result = (effect->color / 255) * tint_value;
+
+			if (are_flags_set(&effect->flags, sprite_effect_flags::REVERSE_VALUES))
+			{
+				if (result.r != 0) { result.r = (1.0f - result.r);}
+				if (result.g != 0) { result.g = (1.0f - result.g);}
+				if (result.b != 0) { result.b = (1.0f - result.b);}				
+			}
 		}
 	}
 
 	return result;
 }
 
-void start_visual_effect(game_data* game, entity* entity, u32 sprite_effect_index, b32 override_current)
+void start_visual_effect(entity* entity, sprite_effect* effect, b32 override_current)
 {
-	assert(sprite_effect_index < game->visual_effects_count);
 	if (entity->visual_effect == NULL || override_current)
 	{
-		sprite_effect* effect = &game->visual_effects[sprite_effect_index];
 		entity->visual_effect = effect;
 		entity->visual_effect_duration = 0;
 	}
+}
+
+void start_visual_effect(game_data* game, entity* entity, u32 sprite_effect_index, b32 override_current)
+{
+	assert(sprite_effect_index < game->visual_effects_count);
+	sprite_effect* effect = &game->visual_effects[sprite_effect_index];
+	start_visual_effect(entity, effect, override_current);	
 }
 
 SDL_Rect get_tile_rect(u32 tile_id)
@@ -887,28 +942,6 @@ b32 check_segment_intersection(r32 movement_start_x, r32 movement_start_y,
 	return result;
 }
 
-b32 are_flags_set(entity_flags* flags, entity_flags flag_values_to_check)
-{
-	b32 result = are_flags_set((u32*)flags, (u32)flag_values_to_check);
-	return result;
-}
-
-void set_flags(entity_flags* flags, entity_flags flag_values_to_check)
-{
-	set_flags((u32*)flags, (u32)flag_values_to_check);
-}
-
-void unset_flags(entity_flags* flags, entity_flags flag_values_to_check)
-{
-	unset_flags((u32*)flags, (u32)flag_values_to_check);
-}
-
-b32 are_entity_flags_set(entity* entity, entity_flags flag_values)
-{
-	b32 result = are_flags_set(&entity->type->flags, flag_values);
-	return result;
-}
-
 entity* add_entity(game_data* game, world_position position, entity_type* type)
 {
 	assert(game->entities_count + 1 < game->entities_max_count);
@@ -1410,7 +1443,7 @@ void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 	b32 is_standing = is_standing_on_ground(game, player);
 
 	char buffer[200];
-	SDL_Color text_color = { 255, 255, 255, 0 };
+	v4 text_color = get_v4(255, 255, 255, 0);
 	/*int error = SDL_snprintf(buffer, 200, "Frame: %d Elapsed: %0.2f ms, Pos: (%0.2f,%0.2f) Acc: (%0.2f,%0.2f) Standing: %d ",
 		sdl_game->debug_frame_counter, sdl_game->debug_elapsed_work_ms, player->position.x, player->position.y,
 		player->acceleration.x, player->acceleration.y, is_standing);*/
@@ -1687,17 +1720,27 @@ world_position process_input(game_data* game, entity* player, r32 delta_time)
 	return target_pos;
 }
 
-void animate(player_movement* movement, entity* entity, r32 delta_time)
+void animate_entity(player_movement* movement, entity* entity, r32 delta_time)
 {
 	if (entity->visual_effect)
 	{
-		if (entity->visual_effect_duration < entity->visual_effect->total_duration)
+		if (entity->visual_effect->total_duration != 0.0f)
 		{
-			entity->visual_effect_duration += delta_time;
-		}
-		else
-		{
-			entity->visual_effect = NULL;
+			if (entity->visual_effect_duration < entity->visual_effect->total_duration)
+			{
+				entity->visual_effect_duration += delta_time;
+			}
+			else
+			{
+				if (are_flags_set((u32*)&entity->visual_effect->flags, (u32)sprite_effect_flags::REPEATS))
+				{
+					entity->visual_effect_duration = 0;
+				}
+				else
+				{
+					entity->visual_effect = NULL;
+				}
+			}
 		}
 	}
 
@@ -1774,7 +1817,7 @@ SDL_Rect get_tile_render_rect(v2 position_relative_to_camera)
 	return result;
 }
 
-void debug_render_tile(SDL_Renderer* renderer, tile_position tile_pos, SDL_Color color, world_position camera_pos)
+void debug_render_tile(SDL_Renderer* renderer, tile_position tile_pos, v4 color, world_position camera_pos)
 {
 	v2 position = get_position_difference(tile_pos, camera_pos);
 	SDL_Rect screen_rect = get_tile_render_rect(position);
@@ -1794,26 +1837,21 @@ void render_debug_path_ends(sdl_game_data* sdl_game, entity* entity, world_posit
 void render_entity_sprite(SDL_Renderer* renderer,
 	world_position camera_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite)
-{
+{	
 	b32 tint_modified = false;
-	SDL_Color tint = { 255,255,255,255 };
+	v4 tint = get_zero_v4();
 
 	if (visual_effect)
 	{
-		tint_modified = true;
+		tint_modified = true;	
 		tint = get_tint(visual_effect, visual_effect_duration);
-	}
+	}	
 
 	for (u32 part_index = 0; part_index < sprite.parts_count; part_index++)
 	{
 		sprite_part* part = &sprite.parts[part_index];
-
-		if (tint_modified)
-		{
-			SDL_SetTextureColorMod(part->texture, tint.r, tint.g, tint.b);
-		}
-
 		v2 offset = part->offset_in_pixels;
+
 		SDL_RendererFlip flip = SDL_FLIP_NONE;
 		if (entity_direction != part->default_direction)
 		{
@@ -1825,12 +1863,33 @@ void render_entity_sprite(SDL_Renderer* renderer,
 		SDL_Rect screen_rect = get_render_rect(position, get_v2(part->texture_rect.w, part->texture_rect.h));
 		screen_rect.x += offset.x;
 		screen_rect.y += offset.y;
-		SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
 
 		if (tint_modified)
 		{
-			// przywracamy domyślne ustawienia
-			SDL_SetTextureColorMod(part->texture, 255, 255, 255);
+			assert(tint.r >= 0 && tint.r <= 1 && tint.g >= 0 && tint.g <= 1 && tint.b >= 0 && tint.b <= 1);
+
+			v4 sdl_tint = tint * 255;
+			if (are_flags_set(&visual_effect->flags, sprite_effect_flags::ADDITIVE_MODE))
+			{
+				// rysujemy dwa razy - raz normalnie, a raz dodajemy do wartości koloru
+				SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
+
+				SDL_SetTextureBlendMode(part->texture, SDL_BLENDMODE_ADD);
+				SDL_SetTextureColorMod(part->texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
+				SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
+				SDL_SetTextureColorMod(part->texture, 255, 255, 255);
+				SDL_SetTextureBlendMode(part->texture, SDL_BLENDMODE_BLEND);
+			}
+			else
+			{
+				SDL_SetTextureColorMod(part->texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
+				SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
+				SDL_SetTextureColorMod(part->texture, 255, 255, 255);
+			}
+		}
+		else
+		{
+			SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
 		}
 	}
 }
@@ -2081,7 +2140,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			//printf("niezniszczalnosc jeszcze przez %.02f\n", game->player_invincibility_cooldown);
 		}
 
-		animate(&game->player_movement, player, delta_time);
+		animate_entity(&game->player_movement, player, delta_time);
 
 		world_position target_pos = process_input(game, player, delta_time);
 
@@ -2133,7 +2192,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			continue;
 		}
 
-		animate(NULL, entity, delta_time);
+		animate_entity(NULL, entity, delta_time);
 
 		if (entity->health < 0)
 		{

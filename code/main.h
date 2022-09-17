@@ -142,15 +142,22 @@ struct sprite_effect_stage
 	r32 vertical_shift;
 	r32 period; // jeśli 0, to mamy stałą funkcję
 	r32 stage_duration;
-	b32 ignore_negatives;
+};
+
+enum class sprite_effect_flags
+{
+	REPEATS = (1 << 0),
+	ADDITIVE_MODE = (1 << 1),
+	REVERSE_VALUES = (1 << 2)
 };
 
 struct sprite_effect
 {
-	SDL_Color color;
+	v4 color;
 	sprite_effect_stage* stages;
 	u32 stages_count;
 	r32 total_duration;
+	sprite_effect_flags flags;
 };
 
 struct sprite_part
