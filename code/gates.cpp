@@ -279,7 +279,7 @@ void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_
 		tint_effect->stages[0].vertical_shift = 0.5f;
 		tint_effect->stages[0].phase_shift = 0;
 		tint_effect->stages[0].period = 3.0f;
-		tint_effect->stages[0].stage_duration = 100000.0f;
+		tint_effect->stages[0].stage_duration = 0.0f;
 		tint_effect->total_duration = tint_effect->stages[0].stage_duration;
 
 		set_flags(&tint_effect->flags, sprite_effect_flags::REPEATS);

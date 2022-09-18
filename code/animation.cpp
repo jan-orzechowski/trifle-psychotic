@@ -20,27 +20,24 @@ void unset_flags(sprite_effect_flags* flags, sprite_effect_flags flag_values_to_
 
 r32 get_stage_tint(sprite_effect_stage* stage, r32 total_time)
 {
-	r32 result = 0.0f;
-	if (total_time < stage->stage_duration)
+	r32 result;
+	if (stage->period == 0)
 	{
-		if (stage->period == 0)
-		{
-			result = stage->amplitude; // stała wartość
-		}
-		else
-		{
-			// używamy pi zamiast 2pi ze względu na to, że niżej mamy odbicie ujemnych wartości
-			result = (stage->amplitude *
-				SDL_sinf((total_time * pi32 / stage->period) + stage->phase_shift));
-		}
-
-		if (result < 0)
-		{
-			result = -result;
-		}
-
-		result += stage->vertical_shift;
+		result = stage->amplitude; // stała wartość
 	}
+	else
+	{
+		// używamy pi zamiast 2pi ze względu na to, że niżej mamy odbicie ujemnych wartości
+		result = (stage->amplitude *
+			SDL_sinf((total_time * pi32 / stage->period) + stage->phase_shift));
+	}
+
+	if (result < 0)
+	{
+		result = -result;
+	}
+
+	result += stage->vertical_shift;
 
 	if (result < 0.0f)
 	{
@@ -58,14 +55,14 @@ r32 get_stage_tint(sprite_effect_stage* stage, r32 total_time)
 v4 get_tint(sprite_effect* effect, r32 time)
 {
 	v4 result = effect->color / 255;
-	if ((time >= 0.0f && time <= effect->total_duration))
+	if (effect->total_duration == 0 || (time >= 0.0f && time <= effect->total_duration))
 	{
 		b32 found = false;
 		r32 tint_value = 1.0f;
 		for (u32 stage_index = 0; stage_index < effect->stages_count; stage_index++)
 		{
 			sprite_effect_stage* stage = effect->stages + stage_index;
-			if (time < stage->stage_duration)
+			if (stage->stage_duration == 0 || (time < stage->stage_duration))
 			{
 				tint_value = get_stage_tint(stage, time);
 				found = true;
@@ -152,14 +149,25 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time)
 {
 	if (entity->visual_effect)
 	{
-		if (entity->visual_effect->total_duration != 0.0f)
+		if (entity->visual_effect->total_duration == 0.0f)
+		{
+			// efekt bez końca
+			entity->visual_effect_duration += delta_time;
+			if (entity->visual_effect_duration > R32_MAX_VALUE - 10.0f)
+			{
+				// zapętlenie
+				entity->visual_effect_duration = 0;
+			}
+		}
+		else
 		{
 			if (entity->visual_effect_duration < entity->visual_effect->total_duration)
 			{
 				entity->visual_effect_duration += delta_time;
 			}
-			else
-			{
+			else	
+			{	
+				// zapętlenie lub skończenie efektu 
 				if (are_flags_set((u32*)&entity->visual_effect->flags, (u32)sprite_effect_flags::REPEATS))
 				{
 					entity->visual_effect_duration = 0;

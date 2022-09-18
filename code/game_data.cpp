@@ -337,11 +337,13 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	sprite_effect* gate_display_fade_effect = &game->visual_effects[0];
 	gate_display_fade_effect->stages_count = 1;
 	gate_display_fade_effect->stages = push_array(arena, gate_display_fade_effect->stages_count, sprite_effect_stage);
+	gate_display_fade_effect->stages[0].amplitude = 1.0f;
 	gate_display_fade_effect->color = get_v4(100, 100, 100, 0);
 
 	sprite_effect* damage_tint_effect = &game->visual_effects[1];
 	damage_tint_effect->stages_count = 1;
 	damage_tint_effect->stages = push_array(arena, damage_tint_effect->stages_count, sprite_effect_stage);
+	damage_tint_effect->stages[0].amplitude = 1.0f;
 	damage_tint_effect->color = get_v4(255, 0, 0, 0);
 
 	add_sprite_effect_stage(damage_tint_effect, 1.0f, 0.0f, 0.0f, 5.0f, 5.0f);
