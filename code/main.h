@@ -114,7 +114,26 @@ enum class entity_type_enum
 	MOVING_ENEMY,
 	GATE,
 	SWITCH,
+	POWER_UP_INVINCIBILITY,
+	POWER_UP_HEALTH,
+	POWER_UP_SPEED,
+	POWER_UP_DAMAGE,
+	POWER_UP_GRANADES,
 	_LAST
+};
+
+enum class entity_flags
+{
+	PLAYER   		       = (1 << 0),
+	COLLIDES               = (1 << 1),
+	ENEMY                  = (1 << 2),
+	INDESTRUCTIBLE         = (1 << 3),
+	DAMAGES_PLAYER         = (1 << 4),
+	WALKS_HORIZONTALLY     = (1 << 5),
+	GATE			       = (1 << 6),
+	SWITCH                 = (1 << 7),
+	TINTED_DISPLAY         = (1 << 8),
+	POWER_UP               = (1 << 9)
 };
 
 struct entity_to_spawn
@@ -188,21 +207,28 @@ struct animation
 	u32 current_frame_index;
 };
 
-enum class entity_flags
+struct power_up_state
 {
-	PLAYER   		   = (1 << 0),
-	COLLIDES           = (1 << 1),
-	ENEMY              = (1 << 2),
-	INDESTRUCTIBLE     = (1 << 3),
-	DAMAGES_PLAYER     = (1 << 4),
-	WALKS_HORIZONTALLY = (1 << 5),
-	GATE			   = (1 << 6),
-	SWITCH             = (1 << 7),
-	TINTED_DISPLAY     = (1 << 8)
+	r32 time_remaining;
+};
+
+union power_ups 
+{
+	struct
+	{
+		power_up_state invincibility;
+		//power_up_state health;
+		power_up_state speed;
+		power_up_state damage;
+		//power_up_state granades;
+	};	 
+	power_up_state states[3];
 };
 
 struct entity_type
 {
+	entity_type_enum type_enum;
+
 	v2 collision_rect_dim;
 	v2 collision_rect_offset;
 
@@ -325,7 +351,7 @@ struct sprite_effect_dictionary
 };
 
 struct game_data
-{	
+{
 	input_buffer input;
 	player_movement player_movement;
 	r32 player_invincibility_cooldown;
@@ -365,6 +391,8 @@ struct game_data
 	sprite_part switch_display_left_sprite;
 	sprite_part switch_display_middle_sprite;
 	sprite_part switch_display_right_sprite;
+
+	power_ups power_ups;
 };
 
 SDL_Rect get_tile_rect(u32 tile_id);

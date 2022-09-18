@@ -95,9 +95,21 @@ void start_visual_effect(entity* entity, sprite_effect* effect, b32 override_cur
 {
 	if (entity->visual_effect == NULL || override_current)
 	{
-		entity->visual_effect = effect;
-		entity->visual_effect_duration = 0;
+		if (entity->visual_effect != effect)
+		{
+			entity->visual_effect = effect;
+			entity->visual_effect_duration = 0;
+		}
 	}
+}
+
+void stop_visual_effect(entity* entity, sprite_effect* effect_to_stop)
+{
+	if (entity->visual_effect == effect_to_stop)
+	{
+		entity->visual_effect = NULL;
+		entity->visual_effect_duration = 0;
+	}	
 }
 
 void start_visual_effect(game_data* game, entity* entity, u32 sprite_effect_index, b32 override_current)

@@ -2,6 +2,9 @@
 #include "tmx_parsing.h"
 #include "jorutils.h"
 
+#define ENTITY_TYPES_MAX_COUNT 20
+#define BULLET_TYPES_MAX_COUNT 10
+
 read_file_result read_file(std::string path)
 {
 	read_file_result result = {};
@@ -43,6 +46,16 @@ sprite_part get_16x16_sprite_part(SDL_Texture* texture, u32 tile_x, u32 tile_y)
 	sprite_part result = {};
 	result.texture = texture;
 	result.texture_rect = {(i32)tile_x * 16, (i32)tile_y * 16, 16, 16};
+	return result;
+}
+
+animation_frame get_16x16_animation_frame(memory_arena* arena, SDL_Texture* texture, u32 tile_x, u32 tile_y)
+{
+	animation_frame result = {};
+	result.sprite.parts_count = 1;
+	result.sprite.parts = push_array(arena, result.sprite.parts_count, sprite_part);
+	result.sprite.parts[0].texture = texture;
+	result.sprite.parts[0].texture_rect = { (i32)tile_x * 16, (i32)tile_y * 16, 16, 16 };
 	return result;
 }
 
@@ -190,8 +203,8 @@ animation_frame get_bullet_graphics(sdl_game_data* sdl_game, memory_arena* arena
 	SDL_Rect texture_rect = {};
 	texture_rect.w = 10;
 	texture_rect.h = 10;
-	texture_rect.x = y * 10;
-	texture_rect.y = x * 10;
+	texture_rect.x = x * 10;
+	texture_rect.y = y * 10;
 
 	result.sprite.parts_count = 1;
 	result.sprite.parts = push_array(arena, result.sprite.parts_count, sprite_part);
@@ -234,6 +247,29 @@ void test_if_all_types_loaded(entity_type_dictionary dictionary)
 	}
 }
 
+entity_type* add_entity_type(game_data* game, entity_type_enum type)
+{
+	assert(game->entity_types_count < ENTITY_TYPES_MAX_COUNT);
+
+	entity_type* result = &game->entity_types[game->entity_types_count];
+	game->entity_types_count++;
+	
+	result->type_enum = type;
+	set_entity_type_ptr(game->entity_types_dict, type, result);
+
+	return result;
+}
+
+entity_type* add_bullet_type(game_data* game)
+{
+	assert(game->bullet_types_count < BULLET_TYPES_MAX_COUNT);
+
+	entity_type* result = &game->bullet_types[game->bullet_types_count];
+	game->bullet_types_count++;
+
+	return result;
+}
+
 void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* arena, memory_arena* transient_arena)
 {
 	temporary_memory transient_memory = begin_temporary_memory(transient_arena);
@@ -256,21 +292,24 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	game->gate_frame_upper_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 8, 2);
 	game->switch_frame_left_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 0, 0);
 	game->switch_frame_middle_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 1, 0);
-	game->switch_frame_right_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 2, 0);	
+	game->switch_frame_right_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 2, 0);
 	game->switch_display_left_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 3, 0);
 	game->switch_display_middle_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 4, 0);
 	game->switch_display_right_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 5, 0);
 
-	game->entity_types_count = 20;
-	game->entity_types = push_array(arena, game->entity_types_count, entity_type);
+	game->entity_types = push_array(arena, BULLET_TYPES_MAX_COUNT, entity_type);
+	game->entity_types_count = 0;
 	game->entities_count = 0;
 	game->entities_max_count = 1000;
 	game->entities = push_array(arena, game->entities_max_count, entity);
 
 	game->default_player_invincibility_cooldown = 2.0f;
 	game->player_invincibility_cooldown = 0.0f;
+	game->player_movement.current_mode = movement_mode::WALK;
 
-	entity_type* player_entity_type = &game->entity_types[0];
+	game->entity_types_dict = create_entity_types_dictionary(arena);
+
+	entity_type* player_entity_type = add_entity_type(game, entity_type_enum::PLAYER);
 	player_entity_type->idle_pose = get_player_idle_pose(sdl_game, arena);
 	player_entity_type->flags = (entity_flags)((u32)entity_flags::COLLIDES | (u32)entity_flags::PLAYER);
 	player_entity_type->max_health = 100;
@@ -281,9 +320,7 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	player_entity_type->fired_bullet_offset = get_v2(0.85f, -0.60f); // nie w pikselach!
 	player_entity_type->collision_rect_dim = get_v2(0.35f, 1.6f);
 
-	game->player_movement.current_mode = movement_mode::WALK;
-
-	entity_type* static_enemy_type = &game->entity_types[1];
+	entity_type* static_enemy_type = add_entity_type(game, entity_type_enum::STATIC_ENEMY);
 	static_enemy_type->idle_pose = get_tile_graphics(sdl_game, arena, 837);
 	static_enemy_type->flags = (entity_flags)((u32)entity_flags::COLLIDES | (u32)entity_flags::ENEMY);
 	static_enemy_type->max_health = 10;
@@ -293,10 +330,10 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	static_enemy_type->player_acceleration_on_collision = 3.0f;
 	static_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 
-	entity_type* moving_enemy_type = &game->entity_types[2];
+	entity_type* moving_enemy_type = add_entity_type(game, entity_type_enum::MOVING_ENEMY);
 	moving_enemy_type->idle_pose = get_tile_graphics(sdl_game, arena, 1992);
-	moving_enemy_type->flags = (entity_flags)((u32)entity_flags::COLLIDES 
-		| (u32)entity_flags::WALKS_HORIZONTALLY 
+	moving_enemy_type->flags = (entity_flags)((u32)entity_flags::COLLIDES
+		| (u32)entity_flags::WALKS_HORIZONTALLY
 		| (u32)entity_flags::ENEMY);
 	moving_enemy_type->max_health = 10;
 	moving_enemy_type->damage_on_contact = 10;
@@ -305,28 +342,27 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	moving_enemy_type->player_acceleration_on_collision = 3.0f;
 	moving_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 
-	game->entity_types_dict = create_entity_types_dictionary(arena);
-	set_entity_type_ptr(game->entity_types_dict, entity_type_enum::PLAYER, player_entity_type);
-	set_entity_type_ptr(game->entity_types_dict, entity_type_enum::STATIC_ENEMY, static_enemy_type);
-	set_entity_type_ptr(game->entity_types_dict, entity_type_enum::MOVING_ENEMY, moving_enemy_type);
-	//test_if_all_types_loaded(game->entity_types_dict);
-
-	game->bullet_types_count = 5;
-	game->bullet_types = push_array(arena, game->bullet_types_count, entity_type);
+	game->bullet_types = push_array(arena, BULLET_TYPES_MAX_COUNT, entity_type);
+	game->bullet_types_count = 0;
 	game->bullets_count = 0;
 	game->bullets_max_count = 5000;
 	game->bullets = push_array(arena, game->bullets_max_count, bullet);
 
-	entity_type* player_bullet_type = &game->bullet_types[0];
+	entity_type* player_bullet_type = add_bullet_type(game);
 	player_bullet_type->damage_on_contact = 5;
 	player_bullet_type->constant_velocity = 12.0f;
 	player_bullet_type->idle_pose = get_bullet_graphics(sdl_game, arena, 1, 1);
 
-	entity_type* enemy_bullet_type = &game->bullet_types[1];
+	entity_type* enemy_bullet_type = add_bullet_type(game);
 	enemy_bullet_type->damage_on_contact = 5;
 	enemy_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
 	enemy_bullet_type->constant_velocity = 12.0f;
-	enemy_bullet_type->idle_pose = get_bullet_graphics(sdl_game, arena, 1, 1);
+	enemy_bullet_type->idle_pose = get_bullet_graphics(sdl_game, arena, 1, 0);
+
+	entity_type* power_up_bullet_type = add_bullet_type(game);
+	power_up_bullet_type->damage_on_contact = 10;
+	power_up_bullet_type->constant_velocity = 16.0f;
+	power_up_bullet_type->idle_pose = get_bullet_graphics(sdl_game, arena, 3, 1);
 
 	player_entity_type->fired_bullet_type = player_bullet_type;
 	static_enemy_type->fired_bullet_type = enemy_bullet_type;
@@ -346,8 +382,45 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 	damage_tint_effect->stages[0].amplitude = 1.0f;
 	damage_tint_effect->color = get_v4(255, 0, 0, 0);
 
+	sprite_effect* invinvibility_tint_effect = &game->visual_effects[2];
+	invinvibility_tint_effect->stages_count = 1;
+	invinvibility_tint_effect->stages = push_array(arena, invinvibility_tint_effect->stages_count, sprite_effect_stage);
+	invinvibility_tint_effect->stages[0].period = 10.0f;
+	invinvibility_tint_effect->stages[0].amplitude = 1.5f;
+	invinvibility_tint_effect->flags = (sprite_effect_flags)((u32)sprite_effect_flags::REPEATS | (u32)sprite_effect_flags::ADDITIVE_MODE);
+	invinvibility_tint_effect->color = get_v4(0, 0, 255, 0);
+
 	add_sprite_effect_stage(damage_tint_effect, 1.0f, 0.0f, 0.0f, 5.0f, 5.0f);
 	add_constant_tint_sprite_effect_stage(damage_tint_effect, 0.5f, 5.0f);
+
+	entity_flags power_up_flags = (entity_flags)((u32)entity_flags::COLLIDES
+		| (u32)entity_flags::POWER_UP
+		| (u32)entity_flags::INDESTRUCTIBLE);
+
+	entity_type* power_up_invincibility_type = add_entity_type(game, entity_type_enum::POWER_UP_INVINCIBILITY);
+	power_up_invincibility_type->idle_pose = get_16x16_animation_frame(arena, sdl_game->misc_texture, 1, 0);
+	power_up_invincibility_type->flags = power_up_flags;
+	power_up_invincibility_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+
+	entity_type* power_up_health_type = add_entity_type(game, entity_type_enum::POWER_UP_HEALTH);
+	power_up_health_type->idle_pose = get_16x16_animation_frame(arena, sdl_game->misc_texture, 0, 0);
+	power_up_health_type->flags = power_up_flags;
+	power_up_health_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+
+	entity_type* power_up_speed_type = add_entity_type(game, entity_type_enum::POWER_UP_SPEED);
+	power_up_speed_type->idle_pose = get_16x16_animation_frame(arena, sdl_game->misc_texture, 2, 0);
+	power_up_speed_type->flags = power_up_flags;
+	power_up_speed_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+
+	entity_type* power_up_damage_type = add_entity_type(game, entity_type_enum::POWER_UP_DAMAGE);
+	power_up_damage_type->idle_pose = get_tile_graphics(sdl_game, arena, 964);
+	power_up_damage_type->flags = power_up_flags;
+	power_up_damage_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+
+	entity_type* power_up_granades_type = add_entity_type(game, entity_type_enum::POWER_UP_GRANADES);
+	power_up_granades_type->idle_pose = get_tile_graphics(sdl_game, arena, 965);
+	power_up_granades_type->flags = power_up_flags;
+	power_up_granades_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 
 	end_temporary_memory(transient_memory, true);
 }

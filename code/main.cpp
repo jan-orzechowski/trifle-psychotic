@@ -242,7 +242,7 @@ void render_text(sdl_game_data* sdl_game, std::string textureText, int x, int y,
 	}
 }
 
-void render_hitpoint_bar(sdl_game_data* sdl_game, entity* player)
+void render_hitpoint_bar(sdl_game_data* sdl_game, entity* player, b32 draw_white_bars)
 {
 	u32 filled_health_bars = (u32)(player->health / 10);
 	u32 max_health_bars = (u32)(player->type->max_health / 10);
@@ -270,6 +270,12 @@ void render_hitpoint_bar(sdl_game_data* sdl_game, entity* player)
 	texture_rect.h = 8;
 	texture_rect.x = 4;
 	texture_rect.y = 16;
+
+	if (draw_white_bars)
+	{
+		texture_rect.x = 0;
+		texture_rect.y = 16;
+	}
 
 	icon_screen_rect.x = 18;
 	icon_screen_rect.y = 10;
@@ -506,6 +512,61 @@ void remove_bullet(game_data* game, u32 bullet_index)
 	game->bullets_count--;
 }
 
+void update_power_up_timers(game_data* game, r32 delta_time)
+{
+	for (u32 index = 0; index < array_count(game->power_ups.states); index++)
+	{
+		power_up_state* state = &game->power_ups.states[index];
+		state->time_remaining -= delta_time;
+		if (state->time_remaining < 0.0f)
+		{
+			state->time_remaining = 0.0f;
+		}
+	}
+}
+
+b32 is_power_up_active(power_up_state power_up)
+{
+	b32 result = (power_up.time_remaining > 0.0f);
+	return result;
+}
+
+void apply_power_up(game_data* game, entity* player, entity* power_up)
+{
+	assert(are_entity_flags_set(power_up, entity_flags::POWER_UP));
+	switch (power_up->type->type_enum)
+	{
+		case entity_type_enum::POWER_UP_INVINCIBILITY:
+		{
+			game->power_ups.invincibility.time_remaining += 20.0f;
+		} 
+		break;
+		case entity_type_enum::POWER_UP_HEALTH:
+		{
+			player->type->max_health += 20.0f;
+			player->health = player->type->max_health;
+		} 
+		break;
+		case entity_type_enum::POWER_UP_SPEED:
+		{
+			game->power_ups.speed.time_remaining += 20.0f;
+		} 
+		break;
+		case entity_type_enum::POWER_UP_DAMAGE:
+		{
+			game->power_ups.damage.time_remaining += 20.0f;
+		} 
+		break;
+		case entity_type_enum::POWER_UP_GRANADES:
+		{
+			printf("granaty\n");
+		} 
+		break;
+	}
+
+	power_up->health = -10.0f; // usuwamy obiekt
+}
+
 // nie ma znaczenia, czy sprawdzamy na osi x, czy y
 b32 check_line_intersection(r32 start_coord, r32 movement_delta, r32 line_coord, r32* movement_perc)
 {
@@ -600,15 +661,16 @@ entity* get_player(game_data* game)
 	return result;
 }
 
-b32 damage_player(game_data* game, i32 damage_amount)
+b32 damage_player(game_data* game, r32 damage_amount)
 {
 	b32 damaged = false;
-	if (game->player_invincibility_cooldown <= 0)
+	if (game->player_invincibility_cooldown <= 0.0f
+		&& false == is_power_up_active(game->power_ups.invincibility))
 	{
 		damaged = true;
 		game->entities[0].health -= damage_amount;
-		start_visual_effect(game, &game->entities[0], 0, false);
-		printf("gracz dostaje %.0f obrazen, zostalo %.0f zdrowia\n", damage_amount, game->entities[0].health);
+		start_visual_effect(game, &game->entities[0], 1, false);
+		printf("gracz dostaje %.02f obrazen, zostalo %.02f zdrowia\n", damage_amount, game->entities[0].health);
 		if (game->entities[0].health < 0.0f)
 		{
 			// przegrywamy
@@ -852,7 +914,8 @@ collision_with_effect move(game_data* game, entity* moving_entity, world_positio
 								closest_effect_entity_collision = new_collision;
 
 								if (are_entity_flags_set(moving_entity, entity_flags::PLAYER)
-									&& are_entity_flags_set(entity_to_check, entity_flags::ENEMY))
+									&& (are_entity_flags_set(entity_to_check, entity_flags::ENEMY)
+										|| (are_entity_flags_set(entity_to_check, entity_flags::POWER_UP))))
 								{
 									collided_effect_entity = entity_to_check;
 								}
@@ -1330,9 +1393,19 @@ world_position process_input(game_data* game, entity* player, r32 delta_time)
 		break;
 	}
 
+	if (is_power_up_active(game->power_ups.invincibility))
+	{
+		player->acceleration.x *= 0.5f;
+	}
+
+	if (is_power_up_active(game->power_ups.speed))
+	{
+		player->acceleration.x *= 2.0f;
+	}
+
 	player->velocity = player->type->slowdown_multiplier *
 		(player->velocity + (player->acceleration * delta_time));
-
+	
 	world_position target_pos = add_to_position(player->position,
 		player->velocity * player->type->velocity_multiplier * delta_time);
 
@@ -1425,6 +1498,8 @@ void render_entity_sprite(SDL_Renderer* renderer,
 
 				SDL_SetTextureBlendMode(part->texture, SDL_BLENDMODE_ADD);
 				SDL_SetTextureColorMod(part->texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
+				// dwa razy - raz nie daje zauważalnych efektów
+				SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
 				SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
 				SDL_SetTextureColorMod(part->texture, 255, 255, 255);
 				SDL_SetTextureBlendMode(part->texture, SDL_BLENDMODE_BLEND);
@@ -1475,6 +1550,9 @@ void initialize_entites(sdl_game_data* sdl_game, game_data* game)
 			}
 			break;
 			case entity_type_enum::UNKNOWN:
+			{
+				// ignorujemy
+			}
 			break;
 			default:
 			{
@@ -1508,6 +1586,16 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			//printf("niezniszczalnosc jeszcze przez %.02f\n", game->player_invincibility_cooldown);
 		}
 
+		update_power_up_timers(game, delta_time);
+		if (is_power_up_active(game->power_ups.damage))
+		{
+			player->type->fired_bullet_type = &game->bullet_types[2];
+		}
+		else
+		{
+			player->type->fired_bullet_type = &game->bullet_types[0];
+		}
+
 		animate_entity(&game->player_movement, player, delta_time);
 
 		world_position target_pos = process_input(game, player, delta_time);
@@ -1515,22 +1603,36 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		collision_with_effect collision = move(game, player, target_pos);
 		if (collision.collided_entity)
 		{
-			damage_player(game, collision.collided_entity->type->damage_on_contact);
+			if (are_entity_flags_set(collision.collided_entity, entity_flags::POWER_UP))
+			{
+				apply_power_up(game, player, collision.collided_entity);
+			}
+			else
+			{
+				if (is_power_up_active(game->power_ups.invincibility))
+				{
+					collision.collided_entity->health -= 50.0f;
+				}
+				else
+				{
+					damage_player(game, collision.collided_entity->type->damage_on_contact);
 
-			v2 direction = get_unit_vector(
-				get_position_difference(player->position, collision.collided_entity->position));
-			
-			r32 acceleration = collision.collided_entity->type->player_acceleration_on_collision;
+					v2 direction = get_unit_vector(
+						get_position_difference(player->position, collision.collided_entity->position));
 
-			game->player_movement.recoil_timer = 2.0f;
-			game->player_movement.recoil_acceleration_timer = 1.0f;
-			game->player_movement.recoil_acceleration = (direction * acceleration);
+					r32 acceleration = collision.collided_entity->type->player_acceleration_on_collision;
 
-			printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
-				game->player_movement.recoil_acceleration.x,
-				game->player_movement.recoil_acceleration.y);
+					game->player_movement.recoil_timer = 2.0f;
+					game->player_movement.recoil_acceleration_timer = 1.0f;
+					game->player_movement.recoil_acceleration = (direction * acceleration);
 
-			change_movement_mode(&game->player_movement, movement_mode::RECOIL);
+					printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
+						game->player_movement.recoil_acceleration.x,
+						game->player_movement.recoil_acceleration.y);
+
+					change_movement_mode(&game->player_movement, movement_mode::RECOIL);
+				}
+			}
 		}
 
 		if (collision.collided_switch_entity)
@@ -1547,6 +1649,15 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		else
 		{
 			// zostawiamy stary
+		}
+
+		if (is_power_up_active(game->power_ups.invincibility))
+		{
+			start_visual_effect(player, &game->visual_effects[2], true);
+		}
+		else 
+		{
+			stop_visual_effect(player, &game->visual_effects[2]);
 		}
 	}
 
@@ -1824,7 +1935,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		
 		render_debug_information(sdl_game, game);
 
-		render_hitpoint_bar(sdl_game, player);
+		render_hitpoint_bar(sdl_game, player, is_power_up_active(game->power_ups.invincibility));
 
 		// testowy textbox
 #if 0
