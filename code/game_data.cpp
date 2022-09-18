@@ -247,7 +247,7 @@ void test_if_all_types_loaded(entity_type_dictionary dictionary)
 	}
 }
 
-entity_type* add_entity_type(game_data* game, entity_type_enum type)
+entity_type* add_entity_type(static_game_data* game, entity_type_enum type)
 {
 	assert(game->entity_types_count < ENTITY_TYPES_MAX_COUNT);
 
@@ -260,7 +260,7 @@ entity_type* add_entity_type(game_data* game, entity_type_enum type)
 	return result;
 }
 
-entity_type* add_bullet_type(game_data* game)
+entity_type* add_bullet_type(static_game_data* game)
 {
 	assert(game->bullet_types_count < BULLET_TYPES_MAX_COUNT);
 
@@ -270,19 +270,46 @@ entity_type* add_bullet_type(game_data* game)
 	return result;
 }
 
-void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* arena, memory_arena* transient_arena)
+level load_level(const char* map_name, memory_arena* arena, memory_arena* transient_arena)
+{
+	level result = {};
+	
+	std::string map_file_path = "data/";
+	map_file_path.append(map_name);
+	map_file_path.append(".tmx");
+
+	read_file_result map_file = read_file(map_file_path);
+	result = read_level_from_tmx_file(arena, transient_arena, map_file, "map");
+	delete map_file.contents;
+
+	return result;
+}
+
+void initialize_game_data(game_data* game, static_game_data* static_data, memory_arena* arena)
+{
+	game->static_data = static_data;
+
+	game->input.size = 60 * 2; // 2 sekundy
+	game->input.buffer = push_array(arena, game->input.size, game_input);
+
+	game->entities_count = 0;
+	game->entities_max_count = 1000;
+	game->entities = push_array(arena, game->entities_max_count, entity);
+
+	game->bullets_count = 0;
+	game->bullets_max_count = 5000;
+	game->bullets = push_array(arena, game->bullets_max_count, bullet);
+
+	game->player_movement.current_mode = movement_mode::WALK;
+}
+
+void load_static_game_data(sdl_game_data* sdl_game, static_game_data* game, memory_arena* arena, memory_arena* transient_arena)
 {
 	temporary_memory transient_memory = begin_temporary_memory(transient_arena);
 
 	std::string collision_file_path = "data/collision_map.tmx";
 	read_file_result collision_file = read_file(collision_file_path);
 	game->collision_reference = read_level_from_tmx_file(arena, transient_arena, collision_file, "collision");
-
-	std::string map_file_path = "data/map_01.tmx";
-	read_file_result map_file = read_file(map_file_path);
-	game->current_level = read_level_from_tmx_file(arena, transient_arena, map_file, "map");
-
-	delete map_file.contents;
 	delete collision_file.contents;
 
 	game->gate_sprite = get_16x16_sprite_part(sdl_game->gates_texture, 8, 1);
@@ -299,13 +326,8 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 
 	game->entity_types = push_array(arena, BULLET_TYPES_MAX_COUNT, entity_type);
 	game->entity_types_count = 0;
-	game->entities_count = 0;
-	game->entities_max_count = 1000;
-	game->entities = push_array(arena, game->entities_max_count, entity);
 
 	game->default_player_invincibility_cooldown = 2.0f;
-	game->player_invincibility_cooldown = 0.0f;
-	game->player_movement.current_mode = movement_mode::WALK;
 
 	game->entity_types_dict = create_entity_types_dictionary(arena);
 
@@ -344,9 +366,6 @@ void load_game_data(sdl_game_data* sdl_game, game_data* game, memory_arena* aren
 
 	game->bullet_types = push_array(arena, BULLET_TYPES_MAX_COUNT, entity_type);
 	game->bullet_types_count = 0;
-	game->bullets_count = 0;
-	game->bullets_max_count = 5000;
-	game->bullets = push_array(arena, game->bullets_max_count, bullet);
 
 	entity_type* player_bullet_type = add_bullet_type(game);
 	player_bullet_type->damage_on_contact = 5;

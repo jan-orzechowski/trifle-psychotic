@@ -350,35 +350,21 @@ struct sprite_effect_dictionary
 	u32 probing_jump;
 };
 
-struct game_data
+struct static_game_data
 {
-	input_buffer input;
-	player_movement player_movement;
-	r32 player_invincibility_cooldown;
-	r32 default_player_invincibility_cooldown;
-
-	b32 current_level_initialized;
-	level current_level;
 	level collision_reference;
+
+	r32 default_player_invincibility_cooldown;
 
 	entity_type_dictionary entity_types_dict;
 	entity_type* entity_types;
 	u32 entity_types_count;
-	entity* entities; // compact array
-	u32 entities_max_count;
-	u32 entities_count;
 
 	entity_type* bullet_types;
 	u32 bullet_types_count;
-	bullet* bullets; // compact array
-	u32 bullets_max_count;
-	u32 bullets_count;
 
 	sprite_effect* visual_effects;
 	u32 visual_effects_count;
-
-	gate_dictionary gates_dict;
-	sprite_effect_dictionary gate_tints_dict;
 
 	sprite_part gate_sprite;
 	sprite_part gate_frame_upper_sprite;
@@ -391,6 +377,29 @@ struct game_data
 	sprite_part switch_display_left_sprite;
 	sprite_part switch_display_middle_sprite;
 	sprite_part switch_display_right_sprite;
+};
+
+struct game_data
+{
+	b32 current_level_initialized;
+	level current_level;
+	
+	input_buffer input;
+	player_movement player_movement;
+	r32 player_invincibility_cooldown;
+	
+	entity* entities; // compact array
+	u32 entities_max_count;
+	u32 entities_count;
+
+	bullet* bullets; // compact array
+	u32 bullets_max_count;
+	u32 bullets_count;
+
+	gate_dictionary gates_dict;
+	sprite_effect_dictionary gate_tints_dict;
+
+	static_game_data* static_data;
 
 	power_ups power_ups;
 };

@@ -100,7 +100,7 @@ void open_gates_with_given_color(game_data* game, v4 color)
 				}
 				else if (are_entity_flags_set(entry->entity, entity_flags::TINTED_DISPLAY))
 				{
-					start_visual_effect(entry->entity, &game->visual_effects[0], true);
+					start_visual_effect(entry->entity, &game->static_data->visual_effects[0], true);
 				}
 
 				// w ten sposób nie będziemy otwierać bram ponownie
@@ -123,13 +123,13 @@ void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_
 	if (is_switch)
 	{
 		occupied_tiles = find_horizontal_range_of_free_tiles(
-			game->current_level, game->collision_reference, new_entity_to_spawn->position, max_size);
+			game->current_level, game->static_data->collision_reference, new_entity_to_spawn->position, max_size);
 		collision_rect_dim = get_length_from_tile_range(occupied_tiles);
 	}
 	else
 	{
 		occupied_tiles = find_vertical_range_of_free_tiles(
-			game->current_level, game->collision_reference, new_entity_to_spawn->position, max_size);
+			game->current_level, game->static_data->collision_reference, new_entity_to_spawn->position, max_size);
 		collision_rect_dim = get_length_from_tile_range(occupied_tiles);
 	}
 
@@ -153,15 +153,15 @@ void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_
 			sprite_part* part = &frame.sprite.parts[distance];
 			if (distance == 0)
 			{
-				*part = game->switch_frame_left_sprite;
+				*part = game->static_data->switch_frame_left_sprite;
 			}
 			else if (distance == tiles_count - 1)
 			{
-				*part = game->switch_frame_right_sprite;
+				*part = game->static_data->switch_frame_right_sprite;
 			}
 			else
 			{
-				*part = game->switch_frame_middle_sprite;
+				*part = game->static_data->switch_frame_middle_sprite;
 			}
 			part->offset_in_pixels = get_position_difference(
 				get_tile_position(occupied_tiles.start.x + distance, occupied_tiles.start.y), new_position)
@@ -183,15 +183,15 @@ void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_
 			sprite_part* part = &frame.sprite.parts[distance];
 			if (distance == 0)
 			{
-				*part = game->gate_frame_lower_sprite;
+				*part = game->static_data->gate_frame_lower_sprite;
 			}
 			else if (distance == tiles_count - 1)
 			{
-				*part = game->gate_frame_upper_sprite;
+				*part = game->static_data->gate_frame_upper_sprite;
 			}
 			else
 			{
-				*part = game->gate_sprite;
+				*part = game->static_data->gate_sprite;
 			}
 
 			part->offset_in_pixels = get_position_difference(
@@ -228,15 +228,15 @@ void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_
 			sprite_part* part = &frame.sprite.parts[distance];
 			if (distance == 0)
 			{
-				*part = game->switch_display_left_sprite;
+				*part = game->static_data->switch_display_left_sprite;
 			}
 			else if (distance == tiles_count - 1)
 			{
-				*part = game->switch_display_right_sprite;
+				*part = game->static_data->switch_display_right_sprite;
 			}
 			else
 			{
-				*part = game->switch_display_middle_sprite;
+				*part = game->static_data->switch_display_middle_sprite;
 			}
 			part->offset_in_pixels = get_position_difference(
 				get_tile_position(occupied_tiles.start.x + distance, occupied_tiles.start.y), new_position)
@@ -251,11 +251,11 @@ void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_
 		frame.sprite.parts_count = 2;
 		frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
 
-		frame.sprite.parts[0] = game->gate_display_upper_sprite;
+		frame.sprite.parts[0] = game->static_data->gate_display_upper_sprite;
 		frame.sprite.parts[0].offset_in_pixels = get_position_difference(
 			get_tile_position(occupied_tiles.start.x, occupied_tiles.start.y - 1), new_position)
 			* TILE_SIDE_IN_PIXELS;
-		frame.sprite.parts[1] = game->gate_display_lower_sprite;
+		frame.sprite.parts[1] = game->static_data->gate_display_lower_sprite;
 		frame.sprite.parts[1].offset_in_pixels = get_position_difference(
 			get_tile_position(occupied_tiles.start.x, occupied_tiles.end.y + 1), new_position)
 			* TILE_SIDE_IN_PIXELS;

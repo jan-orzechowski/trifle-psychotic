@@ -678,7 +678,7 @@ b32 damage_player(game_data* game, r32 damage_amount)
 		}
 		else
 		{
-			game->player_invincibility_cooldown = game->default_player_invincibility_cooldown;
+			game->player_invincibility_cooldown = game->static_data->default_player_invincibility_cooldown;
 		}
 	}
 	return damaged;
@@ -842,7 +842,7 @@ collision_with_effect move(game_data* game, entity* moving_entity, world_positio
 					{
 						tile_position tile_to_check_pos = get_tile_position(tile_x_to_check, tile_y_to_check);
 						u32 tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check);
-						if (is_tile_colliding(game->collision_reference, tile_value))
+						if (is_tile_colliding(game->static_data->collision_reference, tile_value))
 						{
 							collision new_collision = check_minkowski_collision(
 								get_entity_collision_data(reference_chunk, moving_entity),
@@ -1007,7 +1007,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 				{
 					tile_position tile_to_check_pos = get_tile_position(tile_x_to_check, tile_y_to_check);
 					u32 tile_value = get_tile_value(game->current_level, tile_x_to_check, tile_y_to_check);
-					if (is_tile_colliding(game->collision_reference, tile_value))
+					if (is_tile_colliding(game->static_data->collision_reference, tile_value))
 					{
 						collision new_collision = check_minkowski_collision(
 							get_bullet_collision_data(reference_chunk, moving_bullet),
@@ -1523,7 +1523,7 @@ void initialize_entites(sdl_game_data* sdl_game, game_data* game)
 	temporary_memory memory_for_entities_initialization = begin_temporary_memory(sdl_game->transient_arena);
 
 	add_entity(game, game->current_level.starting_tile,
-		get_entity_type_ptr(game->entity_types_dict, entity_type_enum::PLAYER));
+		get_entity_type_ptr(game->static_data->entity_types_dict, entity_type_enum::PLAYER));
 
 	game->gates_dict.entries_count = 100;
 	game->gates_dict.entries = push_array(sdl_game->arena, game->gates_dict.entries_count, gate_dictionary_entry);
@@ -1557,7 +1557,7 @@ void initialize_entites(sdl_game_data* sdl_game, game_data* game)
 			default:
 			{
 				add_entity(game, get_world_position(new_entity->position),
-					get_entity_type_ptr(game->entity_types_dict, new_entity->type));
+					get_entity_type_ptr(game->static_data->entity_types_dict, new_entity->type));
 			}
 			break;
 		}
@@ -1589,11 +1589,11 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 		update_power_up_timers(game, delta_time);
 		if (is_power_up_active(game->power_ups.damage))
 		{
-			player->type->fired_bullet_type = &game->bullet_types[2];
+			player->type->fired_bullet_type = &game->static_data->bullet_types[2];
 		}
 		else
 		{
-			player->type->fired_bullet_type = &game->bullet_types[0];
+			player->type->fired_bullet_type = &game->static_data->bullet_types[0];
 		}
 
 		animate_entity(&game->player_movement, player, delta_time);
@@ -1653,11 +1653,11 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 
 		if (is_power_up_active(game->power_ups.invincibility))
 		{
-			start_visual_effect(player, &game->visual_effects[2], true);
+			start_visual_effect(player, &game->static_data->visual_effects[2], true);
 		}
 		else 
 		{
-			stop_visual_effect(player, &game->visual_effects[2]);
+			stop_visual_effect(player, &game->static_data->visual_effects[2]);
 		}
 	}
 
@@ -1759,7 +1759,7 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 			else
 			{
 				tile_range new_path = find_walking_path_for_enemy(
-					game->current_level, game->collision_reference, get_tile_position(entity->position));
+					game->current_level, game->static_data->collision_reference, get_tile_position(entity->position));
 				entity->path = new_path;
 				entity->has_walking_path = true;
 
@@ -1971,28 +1971,33 @@ int main(int argc, char* args[])
 		bool run = true;
 
 		u32 memory_for_permanent_arena_size = megabytes_to_bytes(50);
-		memory_arena permantent_arena = {};
+		memory_arena permanent_arena = {};
 		void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);
-		initialize_memory_arena(&permantent_arena, memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
+		initialize_memory_arena(&permanent_arena, memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
 		
 		memory_arena transient_arena = {};
 		u32 memory_for_transient_arena_size = megabytes_to_bytes(50);
 		void* memory_for_transient_arena = SDL_malloc(memory_for_transient_arena_size);
 		initialize_memory_arena(&transient_arena, memory_for_transient_arena_size, (byte*)memory_for_transient_arena);
 
-		sdl_game.arena = &permantent_arena;
+		sdl_game.arena = &permanent_arena;
 		sdl_game.transient_arena = &transient_arena;
 
 		//circular_buffer_test(&arena);
 
 		//const char* test_c_str = "calkiem dlugi napis ktory sam sie zawija i w ogole 2137";
-		//sdl_game.test_str = c_string_to_string_ref(&permantent_arena, test_c_str);
+		//sdl_game.test_str = c_string_to_string_ref(&permanent_arena , test_c_str);
 		
-		game_data* game = push_struct(&permantent_arena, game_data);
-		game->input.size = 60 * 2; // 2 sekundy
-		game->input.buffer = push_array(&permantent_arena, game->input.size, game_input);
+		game_data* game = push_struct(&permanent_arena, game_data);
+		static_game_data* static_data = push_struct(&permanent_arena, static_game_data);
 
-		load_game_data(&sdl_game, game, &permantent_arena, &transient_arena);
+		load_static_game_data(&sdl_game, static_data, &permanent_arena, &transient_arena);
+
+		temporary_memory non_static_memory = begin_temporary_memory(&permanent_arena);
+
+		initialize_game_data(game, static_data, &permanent_arena);
+
+		game->current_level = load_level("map_02", &permanent_arena, &transient_arena);
 
 		u32 frame_counter = 0;
 
@@ -2063,6 +2068,8 @@ int main(int argc, char* args[])
 
 			debug_breakpoint;
 		}
+
+		end_temporary_memory(non_static_memory);
 	}
 	else
 	{
