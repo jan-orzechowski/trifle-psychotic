@@ -56,6 +56,31 @@ SDL_Rect get_glyph_rect(font font, u32 code)
     return rect;
 }
 
+void render_text(sdl_game_data* sdl_game, font font, rect area, string_ref line)
+{
+    i32 letter_spacing = -1;
+
+    u32 x = area.min_corner.x;
+    u32 y = area.min_corner.y;
+    for (u32 char_index = 0;
+        char_index < line.string_size;
+        char_index++)
+    {
+        char char_to_render = *(line.ptr + char_index);
+        if (is_letter(char_to_render))
+        {
+            SDL_Rect src_rect = get_glyph_rect(font, (u32)char_to_render);
+            SDL_Rect dst_rect = {};
+            dst_rect.w = font.pixel_width;
+            dst_rect.h = font.pixel_height;
+            dst_rect.x = x;
+            dst_rect.y = x;
+            SDL_RenderCopy(sdl_game->renderer, sdl_game->font_texture, &src_rect, &dst_rect);
+        }
+        x += font.pixel_width + letter_spacing;
+    }
+}
+
 void render_text(sdl_game_data* sdl_game, font font, rect area, lines_to_render lines)
 {
     u32 x = 0;
@@ -103,7 +128,7 @@ string_ref* get_next_line(lines_to_render* lines)
     return result;
 }
 
-void write(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, rect area, string_ref text)
+void write(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, rect area, string_ref text, b32 wrap)
 {
     u32 max_text_length = 1000;
     if (text.string_size > max_text_length)
@@ -115,60 +140,78 @@ void write(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, re
 
     v2 area_dim = get_rect_dimensions(area);
     u32 max_line_length = area_dim.x / font.pixel_width;
-    
-    lines_to_render text_lines = {};
-    text_lines.max_lines_count = (area_dim.y / font.pixel_height);
-    text_lines.lines = push_array(transient_arena, text_lines.max_lines_count, string_ref);
 
-    string_ref* current_line = get_next_line(&text_lines);    
-    current_line->ptr = text.ptr;
-    current_line->string_size = 0;
+    if (wrap) 
+    {        
+        lines_to_render text_lines = {};
 
-    u32 char_index = 0;
-    while (char_index < text.string_size) 
-    {
-        char letter = *(text.ptr + char_index);
-        string_ref next_word = peek_next_word(text, char_index);
-        if (next_word.string_size)
+        // tutaj znowu możemy mieć uint wrap jeśli area dim y z jakiegoś powodu wyjdzie ujemne
+        text_lines.max_lines_count = (area_dim.y / font.pixel_height);
+        text_lines.lines = push_array(transient_arena, text_lines.max_lines_count, string_ref);
+
+        string_ref* current_line = get_next_line(&text_lines);
+        current_line->ptr = text.ptr;
+        current_line->string_size = 0;
+
+        u32 char_index = 0;
+        while (char_index < text.string_size)
         {
-            // mamy słowo            
-            if (next_word.string_size > (max_line_length - current_line->string_size))
-            {            
-                // nowa linia
-                current_line = get_next_line(&text_lines);
-                if (current_line)
+            char letter = *(text.ptr + char_index);
+            string_ref next_word = peek_next_word(text, char_index);
+            if (next_word.string_size)
+            {
+                // mamy słowo            
+                if (next_word.string_size > (max_line_length - current_line->string_size))
                 {
-                    current_line->ptr = next_word.ptr;
-                    current_line->string_size = next_word.string_size;              
+                    // nowa linia
+                    current_line = get_next_line(&text_lines);
+                    if (current_line)
+                    {
+                        current_line->ptr = next_word.ptr;
+                        current_line->string_size = next_word.string_size;
+                    }
+                    else
+                    {
+                        // skończyło nam się miejsce - nie czytamy dalej
+                        break;
+                    }
                 }
                 else
                 {
-                    // skończyło nam się miejsce - nie czytamy dalej
-                    break;
+                    current_line->string_size += next_word.string_size;
                 }
+                char_index += next_word.string_size;
             }
             else
             {
-                current_line->string_size += next_word.string_size;
+                // spacja
+                if (max_line_length - current_line->string_size < 1)
+                {
+                    // koniec linii - pomijamy
+                }
+                else
+                {
+                    current_line->string_size++;
+                }
+                char_index++;
             }
-            char_index += next_word.string_size;
         }
-        else
-        {
-            // spacja
-            if (max_line_length - current_line->string_size < 1)
-            {
-                // koniec linii - pomijamy
-            }
-            else
-            {
-                current_line->string_size++;
-            }   
-            char_index++;
-        }
-    }
 
-    render_text(sdl_game, font, area, text_lines);
+        render_text(sdl_game, font, area, text_lines);
+    }
+    else
+    {
+        string_ref line_to_render = {};
+        line_to_render.ptr = text.ptr;
+        line_to_render.string_size = text.string_size;
+
+        if (line_to_render.string_size > max_line_length)
+        {
+            line_to_render.string_size = max_line_length;
+        }
+
+        render_text(sdl_game, font, area, line_to_render);
+    }
 
     end_temporary_memory(writing_memory);
 }

@@ -1598,7 +1598,7 @@ void initialize_current_level(sdl_game_data* sdl_game, game_data* game)
 	game->current_level_initialized = true;
 }
 
-void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
+void game_update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 {
 	if (false == game->current_level_initialized)
 	{
@@ -1988,9 +1988,207 @@ void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 	}
 }
 
+void render_menu_option(sdl_game_data* sdl_game, u32 x_coord, u32 y_coord, string_ref title)
+{
+	rect textbox_area = get_rect_from_corners(
+		get_v2(x_coord, y_coord),
+		get_v2(x_coord + 100, y_coord + 20));
+
+	font font = {};
+	font.pixel_height = 8;
+	font.pixel_width = 8;
+	write(sdl_game->arena, sdl_game, font, textbox_area, title);
+}
+
+void menu_update_and_render(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
+{
+	game_input* input = get_last_frame_input(input_buffer);
+
+	local_persist i32 menu_index = 0;
+	local_persist i32 menu_max_index = 3;
+
+	r32 menu_change_default_timer = 0.15f;
+	local_persist r32 menu_change_timer = 0.0f;
+
+	if (input->up.number_of_presses > 0)
+	{
+		if (menu_change_timer < 0)
+		{
+			menu_index--;
+			menu_change_timer = menu_change_default_timer;
+		}
+	} 
+	if (input->down.number_of_presses > 0)
+	{
+		if (menu_change_timer < 0)
+		{
+			menu_index++;
+			menu_change_timer = menu_change_default_timer;
+		}
+	}
+
+	menu_change_timer -= delta_time;
+
+	if (menu_index < 0)
+	{
+		menu_index = menu_max_index;
+	}
+	if (menu_index > menu_max_index)
+	{
+		menu_index = 0;
+	}
+
+	if (input->fire.number_of_presses)
+	{
+		switch (menu_index)
+		{
+			case 0: 
+			{
+				printf("Nowa gra\n");
+			} 
+			break;
+			case 1:
+			{
+				printf("Kontynuacja\n");
+			}
+			break;
+			case 2:
+			{
+				printf("Credits\n");
+			}
+			break;
+			case 3:
+			{
+				printf("Wyjscie\n");
+			}
+			break;
+			invalid_default_case;
+		}
+	}
+	
+	SDL_SetRenderDrawColor(sdl_game->renderer, 0, 0, 0, 0);
+	SDL_RenderClear(sdl_game->renderer);
+
+	i32 option_spacing = 20;
+	u32 options_x = 140;
+	u32 first_option_y = 140;
+
+	render_menu_option(sdl_game, options_x, first_option_y, static_data->menu_new_game_str);
+	render_menu_option(sdl_game, options_x, first_option_y + option_spacing, static_data->menu_continue_str);
+	render_menu_option(sdl_game, options_x, first_option_y + 2 * option_spacing, static_data->menu_credits_str);
+	render_menu_option(sdl_game, options_x, first_option_y + 3 * option_spacing, static_data->menu_exit_str);
+
+	u32 indicator_y = first_option_y + (menu_index * option_spacing) - 4;
+	u32 indicator_x = options_x - 20;
+
+	SDL_Rect indicator_screen_rect = {};
+	indicator_screen_rect.x = indicator_x;
+	indicator_screen_rect.y = indicator_y;
+	indicator_screen_rect.h = 16;
+	indicator_screen_rect.w = 16;
+
+	SDL_Rect bitmap_rect = {};
+	bitmap_rect.x = 16;
+	bitmap_rect.y = 0;
+	bitmap_rect.w = 16;
+	bitmap_rect.h = 16;
+
+	SDL_RenderCopy(sdl_game->renderer, sdl_game->misc_texture, &bitmap_rect, &indicator_screen_rect);
+
+	SDL_RenderPresent(sdl_game->renderer);
+};
+
 r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
 {
 	r32 result = ((end_counter - start_counter) * 1000) / (r64)SDL_GetPerformanceFrequency();
+	return result;
+}
+
+enum class scene
+{
+	NONE,
+	GAME,
+	MAIN_MENU,
+	DEATH,
+	CREDITS
+};
+
+struct game_state_change
+{
+	scene new_scene;
+};
+
+void main_game_loop(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
+{
+	local_persist game_data* game = push_struct(sdl_game->arena, game_data);
+
+	local_persist b32 load_level_two = false;
+	local_persist r32 level_change_timer = 0.0f;
+	local_persist b32 level_initialized = false;
+	local_persist temporary_memory level_memory;
+
+	level_change_timer += delta_time;
+
+	scene current_scene = scene::GAME;
+
+	switch (current_scene)
+	{
+		case scene::GAME:
+		{
+			if (false == level_initialized)
+			{
+				level_memory = begin_temporary_memory(sdl_game->arena);
+				initialize_game_data(game, static_data, input_buffer, sdl_game->arena);
+				game->current_level = load_level("map_02", sdl_game->arena, sdl_game->transient_arena);
+
+				level_initialized = true;
+			}
+						
+			game->input = *(input_buffer);
+			game_update_and_render(sdl_game, game, delta_time);
+
+			if (level_change_timer > 5.0f)
+			{
+				save save = save_game_state(game);
+
+ 				end_temporary_memory(level_memory, true);
+				level_memory = begin_temporary_memory(sdl_game->arena);
+
+				initialize_game_data(game, static_data, input_buffer, sdl_game->arena);
+				game->current_level = load_level(load_level_two ? "map_02" : "map_01", sdl_game->arena, sdl_game->transient_arena);
+				initialize_current_level(sdl_game, game);
+
+				restore_game_state(game, save);
+
+				level_change_timer = 0.0f;
+				load_level_two = !load_level_two;
+			}			
+		};
+		break;
+		case scene::MAIN_MENU:
+		{
+			menu_update_and_render(sdl_game, static_data, input_buffer, delta_time);
+		};
+		break;
+		case scene::DEATH:
+		{
+			// czy potrzebujemy tutaj osobnej "sceny"?
+		};
+		break;
+		case scene::CREDITS:
+		{
+			// czy potrzebujemy tutaj osobnej "sceny"?
+		};
+		break;
+		invalid_default_case;
+	}
+}
+
+input_buffer initialize_input_buffer(memory_arena* arena)
+{
+	input_buffer result = {};
+	result.size = 60 * 2; // 2 sekundy
+	result.buffer = push_array(arena, result.size, game_input);
 	return result;
 }
 
@@ -2016,17 +2214,13 @@ int main(int argc, char* args[])
 
 		//circular_buffer_test(&arena);
 
-		//const char* test_c_str = "calkiem dlugi napis ktory sam sie zawija i w ogole 2137";
-		//sdl_game.test_str = c_string_to_string_ref(&permanent_arena , test_c_str);
+		const char* test_c_str = "calkiem dlugi napis ktory sam sie zawija i w ogole 2137";
+		sdl_game.test_str = c_string_to_string_ref(&permanent_arena , test_c_str);
 		
-		game_data* game = push_struct(&permanent_arena, game_data);
 		static_game_data* static_data = push_struct(&permanent_arena, static_game_data);
 
 		load_static_game_data(&sdl_game, static_data, &permanent_arena, &transient_arena);
-
-		temporary_memory level_memory = begin_temporary_memory(&permanent_arena);
-		initialize_game_data(game, static_data, &permanent_arena);
-		game->current_level = load_level("map_02", &permanent_arena, &transient_arena);
+		input_buffer input_buffer = initialize_input_buffer(&permanent_arena);
 
 		u32 frame_counter = 0;
 
@@ -2035,9 +2229,6 @@ int main(int argc, char* args[])
 		r32 elapsed_work_ms = 0;
 		r64 delta_time = 1 / target_hz;
 
-		b32 load_level_two = false;
-		r32 level_change_timer = 0.0f;
-
 		while (run)
 		{
 			frame_counter++;
@@ -2045,7 +2236,7 @@ int main(int argc, char* args[])
 			u32 start_work_counter = SDL_GetPerformanceCounter();
 			{
 				SDL_Event e = {};
-				game_input input = {};
+				game_input new_input = {};
 				while (SDL_PollEvent(&e) != 0)
 				{
 					if (e.type == SDL_QUIT)
@@ -2055,45 +2246,27 @@ int main(int argc, char* args[])
 
 					if (e.type == SDL_MOUSEBUTTONDOWN)
 					{
-						input.fire.number_of_presses++;
+						new_input.fire.number_of_presses++;
 					}
 				}
 
 				const Uint8* state = SDL_GetKeyboardState(NULL);
-				if (state[SDL_SCANCODE_UP] || state[SDL_SCANCODE_W]) input.up.number_of_presses++;
-				if (state[SDL_SCANCODE_DOWN] || state[SDL_SCANCODE_S]) input.down.number_of_presses++;
-				if (state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A]) input.left.number_of_presses++;
-				if (state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D]) input.right.number_of_presses++;
+				if (state[SDL_SCANCODE_UP] || state[SDL_SCANCODE_W]) new_input.up.number_of_presses++;
+				if (state[SDL_SCANCODE_DOWN] || state[SDL_SCANCODE_S]) new_input.down.number_of_presses++;
+				if (state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A]) new_input.left.number_of_presses++;
+				if (state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D]) new_input.right.number_of_presses++;
 
 				int mouse_x = -1;
 				int mouse_y = -1;
 				Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 				if (mouse_buttons & SDL_BUTTON_LMASK)
 				{
-					input.is_left_mouse_key_held = true;
+					new_input.is_left_mouse_key_held = true;
 				}
 
-				write_to_input_buffer(&game->input, &input);
+				write_to_input_buffer(&input_buffer, &new_input);
 
-				update_and_render(&sdl_game, game, delta_time);
-				
-				level_change_timer += delta_time;
-				if (level_change_timer > 10.0f)
-				{
-					save save = save_game_state(game);
-					
-					end_temporary_memory(level_memory, true);
-					level_memory = begin_temporary_memory(&permanent_arena);
-
-					initialize_game_data(game, static_data, &permanent_arena);
-					game->current_level = load_level(load_level_two ? "map_02" : "map_01", &permanent_arena, &transient_arena);	
-					initialize_current_level(&sdl_game, game);
-
-					restore_game_state(game, save);
-
-					level_change_timer = 0.0f;
-					load_level_two = !load_level_two;
-				}				
+				main_game_loop(&sdl_game, static_data, &input_buffer, delta_time);				
 			}
 
 			u32 end_work_counter = SDL_GetPerformanceCounter();
@@ -2117,8 +2290,6 @@ int main(int argc, char* args[])
 			sdl_game.debug_elapsed_work_ms = elapsed_work_ms;
 			sdl_game.debug_frame_counter = frame_counter + 1;
 		}
-
-		end_temporary_memory(level_memory);
 	}
 	else
 	{

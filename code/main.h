@@ -379,6 +379,11 @@ struct static_game_data
 	sprite_part switch_display_left_sprite;
 	sprite_part switch_display_middle_sprite;
 	sprite_part switch_display_right_sprite;
+
+	string_ref menu_new_game_str;
+	string_ref menu_continue_str;
+	string_ref menu_credits_str;
+	string_ref menu_exit_str;
 };
 
 struct game_data

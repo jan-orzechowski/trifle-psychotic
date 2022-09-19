@@ -9,4 +9,4 @@ struct font
     u32 offset;
 };
 
-void write(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, rect area, string_ref text);
+void write(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, rect area, string_ref text, b32 wrap = true);

@@ -285,15 +285,14 @@ level load_level(const char* map_name, memory_arena* arena, memory_arena* transi
 	return result;
 }
 
-void initialize_game_data(game_data* game, static_game_data* static_data, memory_arena* arena)
+void initialize_game_data(game_data* game, static_game_data* static_data, input_buffer* input_buffer, memory_arena* arena)
 {
 	*game = {};
 
+	game->input = *input_buffer;
+
 	game->static_data = static_data;
-
-	game->input.size = 60 * 2; // 2 sekundy
-	game->input.buffer = push_array(arena, game->input.size, game_input);
-
+	
 	game->entities_count = 0;
 	game->entities_max_count = 1000;
 	game->entities = push_array(arena, game->entities_max_count, entity);
@@ -325,6 +324,11 @@ void restore_game_state(game_data* game, save save)
 void load_static_game_data(sdl_game_data* sdl_game, static_game_data* game, memory_arena* arena, memory_arena* transient_arena)
 {
 	temporary_memory transient_memory = begin_temporary_memory(transient_arena);
+
+	game->menu_new_game_str = c_string_to_string_ref(sdl_game->arena, "New Game");
+	game->menu_continue_str = c_string_to_string_ref(sdl_game->arena, "Continue");
+	game->menu_credits_str = c_string_to_string_ref(sdl_game->arena, "Credits");
+	game->menu_exit_str = c_string_to_string_ref(sdl_game->arena, "Exit");
 
 	std::string collision_file_path = "data/collision_map.tmx";
 	read_file_result collision_file = read_file(collision_file_path);
