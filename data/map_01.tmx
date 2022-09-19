@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.9" tiledversion="1.9.1" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="3" nextobjectid="69">
+<map version="1.9" tiledversion="1.9.1" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="3" nextobjectid="73">
  <tileset firstgid="1" source="../_dev_files/tileset.tsx"/>
  <layer id="1" name="map" width="50" height="50">
   <data encoding="csv">
@@ -115,5 +115,13 @@
   <object id="66" gid="963" x="128" y="16" width="16" height="16"/>
   <object id="67" gid="964" x="112" y="80" width="16" height="16"/>
   <object id="68" gid="965" x="0" y="32" width="16" height="16"/>
+  <object id="69" gid="962" x="48" y="208" width="16" height="16"/>
+  <object id="70" gid="962" x="80" y="208" width="16" height="16"/>
+  <object id="71" gid="962" x="112" y="208" width="16" height="16"/>
+  <object id="72" gid="906" x="368" y="192" width="16" height="16">
+   <properties>
+    <property name="next_level" value="map_002"/>
+   </properties>
+  </object>
  </objectgroup>
 </map>
