@@ -42,6 +42,18 @@ b32 operator ==(string_ref a, string_ref b)
 	return result;
 }
 
+string_ref copy_string(memory_arena* arena, string_ref str)
+{
+	string_ref new_str = {};
+	new_str.string_size = str.string_size;
+	new_str.ptr = (char*)push_size(arena, str.string_size);
+	for (u32 char_index = 0; char_index < str.string_size; char_index++)
+	{
+		*(new_str.ptr + char_index) = *(str.ptr + char_index);
+	}
+	return new_str;
+}
+
 char* get_c_string(memory_arena* arena, string_ref str)
 {
 	char* new_c_str = (char*)push_size(arena, str.string_size + 1);
@@ -116,17 +128,47 @@ string_ref copy_c_string_to_memory_arena(memory_arena* arena, const char* str, u
 	return result;
 }
 
-string_ref c_string_to_string_ref(memory_arena* arena, const char* str, u32 max_string_length)
+u32 get_c_string_length(const char* str, u32 max_string_length)
 {
-	u32 length = 0;
+	u32 result = 0;
 	const char* str_temp = str;
-	while (*str_temp && length <= max_string_length)
+	while (*str_temp && result <= max_string_length)
 	{
 		str_temp++;
-		length++;
+		result++;
 	}
+	return result;
+}
 
-	string_ref result = copy_c_string_to_memory_arena(arena, str, length);
+string_ref c_string_to_string_ref(memory_arena* arena, const char* str, u32 max_string_length)
+{
+	u32 c_str_length = get_c_string_length(str, max_string_length);
+	string_ref result = copy_c_string_to_memory_arena(arena, str, c_str_length);
+	return result;
+}
+
+b32 ends_with(string_ref str, const char* suffix)
+{
+	b32 result = false;	
+	if (str.string_size > 0)
+	{
+		u32 suffix_length = get_c_string_length(suffix, str.string_size);
+		if (suffix_length < str.string_size)
+		{
+			result = true;				
+			for (i32 char_index_from_end = 0;
+				char_index_from_end < suffix_length;
+				char_index_from_end++)
+			{
+				char suffix_char = *(suffix + suffix_length - char_index_from_end - 1);
+				char str_char = *(str.ptr + str.string_size - char_index_from_end - 1);
+				if (suffix_char != str_char)
+				{
+					result = false;
+				}
+			}
+		}	
+	}
 	return result;
 }
 

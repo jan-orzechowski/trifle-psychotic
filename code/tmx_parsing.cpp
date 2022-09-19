@@ -748,6 +748,20 @@ xml_node_search_result* find_all_nodes_with_tag(memory_arena* arena, xml_node* r
 	return result;
 }
 
+void add_read_entity(level* map, memory_arena* arena, entity_type_enum type, tile_position position, v4 gate_color = get_zero_v4())
+{
+	entity_to_spawn* new_entity = push_struct(arena, entity_to_spawn);
+	new_entity->type = type;
+	new_entity->position = position;
+	new_entity->color = gate_color;
+
+	map->entities_to_spawn_count++;
+	if (map->entities_to_spawn == NULL)
+	{
+		map->entities_to_spawn = new_entity;
+	}
+}
+
 void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, level* map, xml_node* node)
 {
 	string_ref gid_str = get_attribute_value(node, "gid");
@@ -767,6 +781,8 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 		position = get_tile_position(tile_x, tile_y);
 	}
 
+	string_ref next_level_name = {};
+	b32 next_level_transition_point_is_set = false;
 	b32 starting_point_is_set = false;
 
 	entity_type_enum type = entity_type_enum::UNKNOWN;
@@ -785,6 +801,7 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 			case 963: type = entity_type_enum::POWER_UP_SPEED; break;
 			case 964: type = entity_type_enum::POWER_UP_DAMAGE; break;
 			case 965: type = entity_type_enum::POWER_UP_GRANADES; break;
+			case 906: type = entity_type_enum::NEXT_LEVEL_TRANSITION; break;
 			case 132: type = entity_type_enum::PLAYER; break;			
 		}
 	}
@@ -828,6 +845,7 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 								// alpha pomijamy
 								swapped_color.a = 255;
 								gate_color = swapped_color;
+								break;
 							}
 							else
 							{
@@ -848,16 +866,7 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 
 			if (false == is_zero(gate_color))
 			{
-				entity_to_spawn* new_gate = push_struct(permanent_arena, entity_to_spawn);
-				new_gate->type = type;
-				new_gate->position = position;
-				new_gate->color = gate_color;
-
-				map->entities_to_spawn_count++;
-				if (map->entities_to_spawn == NULL)
-				{
-					map->entities_to_spawn = new_gate;
-				}
+				add_read_entity(map, permanent_arena, type, position, gate_color);
 			}
 		}
 		break;
@@ -872,19 +881,60 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 			starting_point_is_set = true;
 		} 
 		break;
-		default:
+		case entity_type_enum::NEXT_LEVEL_TRANSITION:
 		{
-			entity_to_spawn* new_entity = push_struct(permanent_arena, entity_to_spawn);
-			new_entity->type = type;
-			new_entity->position = position;
-
-			map->entities_to_spawn_count++;
-			if (map->entities_to_spawn == NULL)
+			if (next_level_transition_point_is_set)
 			{
-				map->entities_to_spawn = new_entity;
+				// na razie nie wspieram tego
+				invalid_code_path;
+			}
+
+			xml_node* properties_parent_node = find_tag_in_children(node, "properties");
+			if (properties_parent_node)
+			{
+				xml_node_search_result* properties = find_all_nodes_with_tag(
+					transient_arena, properties_parent_node, "property");
+
+				for (u32 property_index = 0;
+					property_index < properties->found_nodes_count;
+					property_index++)
+				{
+					xml_node* prop = properties->found_nodes[property_index];
+					string_ref name = get_attribute_value(prop, "name");
+					if (compare_to_c_string(name, "next_level"))
+					{
+						string_ref next_level_str = get_attribute_value(prop, "value");
+						if (next_level_str.string_size)
+						{
+							if (ends_with(next_level_str, ".tmx"))
+							{
+								next_level_str.string_size -= 4;
+							}
+							next_level_name = next_level_str;					
+							break;
+						}
+					}
+				}
+			}
+
+			if (next_level_name.string_size)
+			{
+				add_read_entity(map, permanent_arena, type, position);
+				next_level_transition_point_is_set = true;
 			}
 		}
 		break;
+		default:
+		{
+			add_read_entity(map, permanent_arena, type, position);
+		}
+		break;
+	}
+
+	// alokujemy na samym końcu, ponieważ lista nowych entities jest "dynamiczna"
+	if (next_level_name.string_size)
+	{
+		map->next_level = copy_string(permanent_arena, next_level_name);
 	}
 }
 

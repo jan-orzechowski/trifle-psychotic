@@ -1524,6 +1524,23 @@ void render_entity_sprite(SDL_Renderer* renderer,
 	}
 }
 
+void add_next_level_transition(game_data* game, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+{
+	entity_type* transition_type = push_struct(arena, entity_type);
+	tile_range occupied_tiles = find_vertical_range_of_free_tiles(
+		game->current_level, game->static_data->collision_reference, new_entity_to_spawn->position, 20);
+	transition_type->collision_rect_dim = get_length_from_tile_range(occupied_tiles);
+
+	world_position new_position = add_to_position(
+		get_world_position(occupied_tiles.start),
+		get_position_difference(occupied_tiles.end, occupied_tiles.start) / 2);
+
+	set_flags(&transition_type->flags, entity_flags::COLLIDES);
+	set_flags(&transition_type->flags, entity_flags::INDESTRUCTIBLE);
+
+	add_entity(game, new_position, transition_type);
+}
+
 void initialize_current_level(sdl_game_data* sdl_game, game_data* game)
 {
 	assert(false == game->current_level_initialized);
@@ -1555,6 +1572,11 @@ void initialize_current_level(sdl_game_data* sdl_game, game_data* game)
 			case entity_type_enum::SWITCH:
 			{
 				add_gate_entity(game, sdl_game->arena, new_entity, true);
+			}
+			break;
+			case entity_type_enum::NEXT_LEVEL_TRANSITION:
+			{
+				add_next_level_transition(game, sdl_game->arena, new_entity);
 			}
 			break;
 			case entity_type_enum::UNKNOWN:

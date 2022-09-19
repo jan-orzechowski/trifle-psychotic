@@ -119,6 +119,7 @@ enum class entity_type_enum
 	POWER_UP_SPEED,
 	POWER_UP_DAMAGE,
 	POWER_UP_GRANADES,
+	NEXT_LEVEL_TRANSITION,
 	_LAST
 };
 
@@ -152,6 +153,7 @@ struct level
 	entity_to_spawn* entities_to_spawn;
 	u32 entities_to_spawn_count;
 	tile_position starting_tile;
+	string_ref next_level;
 };
 
 struct sprite_effect_stage
