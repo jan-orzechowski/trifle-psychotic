@@ -150,11 +150,8 @@ internal void end_temporary_memory(temporary_memory temp, b32 zero_bytes = false
 		void* temporary_memory_base = arena->base + temp.size_used_at_creation;
 		zero_memory(size_of_temporary_memory, temporary_memory_base);
 	}
-	else
-	{
-		arena->size_used = temp.size_used_at_creation;
-	}
 
+	arena->size_used = temp.size_used_at_creation;
 	arena->temporary_memory_stack_frame_count--;
 }
 

@@ -244,6 +244,12 @@ void render_text(sdl_game_data* sdl_game, std::string textureText, int x, int y,
 
 void render_hitpoint_bar(sdl_game_data* sdl_game, entity* player, b32 draw_white_bars)
 {
+	// zabezpieczenie na uint wrapping
+	if (player->health < 0.0f)
+	{
+		player->health = 0.0f;
+	}
+
 	u32 filled_health_bars = (u32)(player->health / 10);
 	u32 max_health_bars = (u32)(player->type->max_health / 10);
 
@@ -1518,9 +1524,11 @@ void render_entity_sprite(SDL_Renderer* renderer,
 	}
 }
 
-void initialize_entites(sdl_game_data* sdl_game, game_data* game)
+void initialize_current_level(sdl_game_data* sdl_game, game_data* game)
 {
-	temporary_memory memory_for_entities_initialization = begin_temporary_memory(sdl_game->transient_arena);
+	assert(false == game->current_level_initialized);
+
+	temporary_memory memory_for_initialization = begin_temporary_memory(sdl_game->transient_arena);
 
 	add_entity(game, game->current_level.starting_tile,
 		get_entity_type_ptr(game->static_data->entity_types_dict, entity_type_enum::PLAYER));
@@ -1563,15 +1571,16 @@ void initialize_entites(sdl_game_data* sdl_game, game_data* game)
 		}
 	}
 
-	end_temporary_memory(memory_for_entities_initialization);
+	end_temporary_memory(memory_for_initialization);
+
+	game->current_level_initialized = true;
 }
 
 void update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
 {
 	if (false == game->current_level_initialized)
 	{
-		initialize_entites(sdl_game, game);
-		game->current_level_initialized = true;
+		initialize_current_level(sdl_game, game);
 	}
 
 	entity* player = get_player(game);
@@ -1993,10 +2002,8 @@ int main(int argc, char* args[])
 
 		load_static_game_data(&sdl_game, static_data, &permanent_arena, &transient_arena);
 
-		temporary_memory non_static_memory = begin_temporary_memory(&permanent_arena);
-
+		temporary_memory level_memory = begin_temporary_memory(&permanent_arena);
 		initialize_game_data(game, static_data, &permanent_arena);
-
 		game->current_level = load_level("map_02", &permanent_arena, &transient_arena);
 
 		u32 frame_counter = 0;
@@ -2005,6 +2012,9 @@ int main(int argc, char* args[])
 		r32 target_elapsed_ms = 1000 / target_hz;
 		r32 elapsed_work_ms = 0;
 		r64 delta_time = 1 / target_hz;
+
+		b32 load_level_two = false;
+		r32 level_change_timer = 0.0f;
 
 		while (run)
 		{
@@ -2044,7 +2054,26 @@ int main(int argc, char* args[])
 				write_to_input_buffer(&game->input, &input);
 
 				update_and_render(&sdl_game, game, delta_time);
+				
+				level_change_timer += delta_time;
+				if (level_change_timer > 10.0f)
+				{
+					save save = save_game_state(game);
+					
+					end_temporary_memory(level_memory, true);
+					level_memory = begin_temporary_memory(&permanent_arena);
+
+					initialize_game_data(game, static_data, &permanent_arena);
+					game->current_level = load_level(load_level_two ? "map_02" : "map_01", &permanent_arena, &transient_arena);	
+					initialize_current_level(&sdl_game, game);
+
+					restore_game_state(game, save);
+
+					level_change_timer = 0.0f;
+					load_level_two = !load_level_two;
+				}				
 			}
+
 			u32 end_work_counter = SDL_GetPerformanceCounter();
 
 			elapsed_work_ms = get_elapsed_miliseconds(start_work_counter, end_work_counter);
@@ -2065,11 +2094,9 @@ int main(int argc, char* args[])
 
 			sdl_game.debug_elapsed_work_ms = elapsed_work_ms;
 			sdl_game.debug_frame_counter = frame_counter + 1;
-
-			debug_breakpoint;
 		}
 
-		end_temporary_memory(non_static_memory);
+		end_temporary_memory(level_memory);
 	}
 	else
 	{

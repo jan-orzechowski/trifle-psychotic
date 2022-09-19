@@ -404,6 +404,13 @@ struct game_data
 	power_ups power_ups;
 };
 
+struct save
+{
+	//string_ref level_name;
+	u32 granades_count;
+	u32 player_max_health;
+};
+
 SDL_Rect get_tile_rect(u32 tile_id);
 tile_position get_tile_position(i32 tile_x, i32 tile_y);
 

@@ -287,6 +287,8 @@ level load_level(const char* map_name, memory_arena* arena, memory_arena* transi
 
 void initialize_game_data(game_data* game, static_game_data* static_data, memory_arena* arena)
 {
+	*game = {};
+
 	game->static_data = static_data;
 
 	game->input.size = 60 * 2; // 2 sekundy
@@ -301,6 +303,23 @@ void initialize_game_data(game_data* game, static_game_data* static_data, memory
 	game->bullets = push_array(arena, game->bullets_max_count, bullet);
 
 	game->player_movement.current_mode = movement_mode::WALK;
+}
+
+save save_game_state(game_data* game)
+{
+	assert(game->entities[0].type);
+
+	save result = {};
+	result.granades_count = 0;
+	result.player_max_health = game->entities[0].type->max_health;
+	return result;
+}
+
+void restore_game_state(game_data* game, save save)
+{
+	assert(game->current_level_initialized);
+
+	game->entities[0].type->max_health = save.player_max_health;
 }
 
 void load_static_game_data(sdl_game_data* sdl_game, static_game_data* game, memory_arena* arena, memory_arena* transient_arena)
