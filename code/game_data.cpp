@@ -356,7 +356,7 @@ void load_static_game_data(sdl_game_data* sdl_game, static_game_data* game, memo
 
 	entity_type* player_entity_type = add_entity_type(game, entity_type_enum::PLAYER);
 	player_entity_type->idle_pose = get_player_idle_pose(sdl_game, arena);
-	player_entity_type->flags = (entity_flags)((u32)entity_flags::COLLIDES | (u32)entity_flags::PLAYER);
+	player_entity_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT | (u32)entity_flags::PLAYER);
 	player_entity_type->max_health = 100;
 	player_entity_type->velocity_multiplier = 40.0f;
 	player_entity_type->slowdown_multiplier = 0.80f;
@@ -367,7 +367,7 @@ void load_static_game_data(sdl_game_data* sdl_game, static_game_data* game, memo
 
 	entity_type* static_enemy_type = add_entity_type(game, entity_type_enum::STATIC_ENEMY);
 	static_enemy_type->idle_pose = get_tile_graphics(sdl_game, arena, 837);
-	static_enemy_type->flags = (entity_flags)((u32)entity_flags::COLLIDES | (u32)entity_flags::ENEMY);
+	static_enemy_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT | (u32)entity_flags::ENEMY);
 	static_enemy_type->max_health = 10;
 	static_enemy_type->damage_on_contact = 10;
 	static_enemy_type->default_attack_cooldown = 0.5f;
@@ -377,7 +377,7 @@ void load_static_game_data(sdl_game_data* sdl_game, static_game_data* game, memo
 
 	entity_type* moving_enemy_type = add_entity_type(game, entity_type_enum::MOVING_ENEMY);
 	moving_enemy_type->idle_pose = get_tile_graphics(sdl_game, arena, 1992);
-	moving_enemy_type->flags = (entity_flags)((u32)entity_flags::COLLIDES
+	moving_enemy_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT
 		| (u32)entity_flags::WALKS_HORIZONTALLY
 		| (u32)entity_flags::ENEMY);
 	moving_enemy_type->max_health = 10;
@@ -435,34 +435,32 @@ void load_static_game_data(sdl_game_data* sdl_game, static_game_data* game, memo
 	add_sprite_effect_stage(damage_tint_effect, 1.0f, 0.0f, 0.0f, 5.0f, 5.0f);
 	add_constant_tint_sprite_effect_stage(damage_tint_effect, 0.5f, 5.0f);
 
-	entity_flags power_up_flags = (entity_flags)((u32)entity_flags::COLLIDES
-		| (u32)entity_flags::POWER_UP
-		| (u32)entity_flags::INDESTRUCTIBLE);
-
+	entity_flags power_up_flags = (entity_flags)((u32)entity_flags::POWER_UP | (u32)entity_flags::INDESTRUCTIBLE);
+	v2 power_up_size = get_v2(0.5f, 0.5f);
 	entity_type* power_up_invincibility_type = add_entity_type(game, entity_type_enum::POWER_UP_INVINCIBILITY);
 	power_up_invincibility_type->idle_pose = get_16x16_animation_frame(arena, sdl_game->misc_texture, 1, 0);
 	power_up_invincibility_type->flags = power_up_flags;
-	power_up_invincibility_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+	power_up_invincibility_type->collision_rect_dim = power_up_size;
 
 	entity_type* power_up_health_type = add_entity_type(game, entity_type_enum::POWER_UP_HEALTH);
 	power_up_health_type->idle_pose = get_16x16_animation_frame(arena, sdl_game->misc_texture, 0, 0);
 	power_up_health_type->flags = power_up_flags;
-	power_up_health_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+	power_up_health_type->collision_rect_dim = power_up_size;
 
 	entity_type* power_up_speed_type = add_entity_type(game, entity_type_enum::POWER_UP_SPEED);
 	power_up_speed_type->idle_pose = get_16x16_animation_frame(arena, sdl_game->misc_texture, 2, 0);
 	power_up_speed_type->flags = power_up_flags;
-	power_up_speed_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+	power_up_speed_type->collision_rect_dim = power_up_size;
 
 	entity_type* power_up_damage_type = add_entity_type(game, entity_type_enum::POWER_UP_DAMAGE);
 	power_up_damage_type->idle_pose = get_tile_graphics(sdl_game, arena, 964);
 	power_up_damage_type->flags = power_up_flags;
-	power_up_damage_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+	power_up_damage_type->collision_rect_dim = power_up_size;
 
 	entity_type* power_up_granades_type = add_entity_type(game, entity_type_enum::POWER_UP_GRANADES);
 	power_up_granades_type->idle_pose = get_tile_graphics(sdl_game, arena, 965);
 	power_up_granades_type->flags = power_up_flags;
-	power_up_granades_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+	power_up_granades_type->collision_rect_dim = power_up_size;
 
 	end_temporary_memory(transient_memory, true);
 }

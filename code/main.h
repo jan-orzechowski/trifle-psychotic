@@ -126,7 +126,7 @@ enum class entity_type_enum
 enum class entity_flags
 {
 	PLAYER   		       = (1 << 0),
-	COLLIDES               = (1 << 1),
+	BLOCKS_MOVEMENT        = (1 << 1),
 	ENEMY                  = (1 << 2),
 	INDESTRUCTIBLE         = (1 << 3),
 	DAMAGES_PLAYER         = (1 << 4),
@@ -416,6 +416,22 @@ struct save
 	//string_ref level_name;
 	u32 granades_count;
 	u32 player_max_health;
+};
+
+enum class scene
+{
+	GAME,
+	MAIN_MENU,
+	DEATH,
+	CREDITS,
+	EXIT
+};
+
+struct scene_change
+{
+	b32 change_scene;
+	save save;
+	scene new_scene;
 };
 
 SDL_Rect get_tile_rect(u32 tile_id);

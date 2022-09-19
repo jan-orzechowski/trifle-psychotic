@@ -806,16 +806,18 @@ rect get_tiles_area_to_check_for_collision(bullet* bullet, world_position target
 	return result;
 }
 
-struct collision_with_effect
+struct collision_result
 {
-	collision data;
-	entity* collided_entity;
-	entity* collided_switch_entity;
+	collision collision_data;
+	entity* collided_enemy;
+	entity* collided_switch;
+	entity* collided_transition;
+	entity* collided_power_up;
 };
 
-collision_with_effect move(game_data* game, entity* moving_entity, world_position target_pos)
+collision_result move(game_data* game, entity* moving_entity, world_position target_pos)
 {
-	collision_with_effect result = {};
+	collision_result result = {};
 
 	v2 movement_delta = get_position_difference(target_pos, moving_entity->position);
 	chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(moving_entity->position));
@@ -884,47 +886,52 @@ collision_with_effect move(game_data* game, entity* moving_entity, world_positio
 				}
 			}
 
-			collision closest_effect_entity_collision = {};
-			closest_effect_entity_collision.collided_wall = direction::NONE;
-			closest_effect_entity_collision.possible_movement_perc = 1.0f;
-			entity* collided_effect_entity = NULL;
+			collision closest_tile_collision = closest_collision;
 
 			// collision with entities
 			{
 				for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 				{
 					entity* entity_to_check = game->entities + entity_index;
-					if (entity_to_check != moving_entity
-						&& are_entity_flags_set(entity_to_check, entity_flags::COLLIDES))
+					if (entity_to_check != moving_entity)
 					{
 						collision new_collision = check_minkowski_collision(
 							get_entity_collision_data(reference_chunk, moving_entity),
 							get_entity_collision_data(reference_chunk, entity_to_check),
-							movement_delta, closest_effect_entity_collision.possible_movement_perc);
+							movement_delta, closest_collision.possible_movement_perc);
 
 						if (new_collision.collided_wall != direction::NONE)
 						{
-							if (are_entity_flags_set(entity_to_check, entity_flags::COLLIDES))
+							// bierzemy tutaj uwagę tylko entities, z którymi kolidowalibyśmy wcześniej niż ze ścianą
+							if (new_collision.possible_movement_perc < closest_tile_collision.possible_movement_perc)
 							{
-								closest_collision = new_collision;
-
-								if (are_entity_flags_set(moving_entity, entity_flags::PLAYER) 
-									&& are_entity_flags_set(entity_to_check, entity_flags::SWITCH))
+								if (are_entity_flags_set(moving_entity, entity_flags::PLAYER))
 								{
-									result.collided_switch_entity = entity_to_check;
+									if (are_entity_flags_set(entity_to_check, entity_flags::ENEMY))
+									{
+										result.collided_enemy = entity_to_check;
+									}
+
+									if (are_entity_flags_set(entity_to_check, entity_flags::SWITCH))
+									{
+										result.collided_switch = entity_to_check;
+									}
+
+									if (entity_to_check->type->type_enum == entity_type_enum::NEXT_LEVEL_TRANSITION)
+									{
+										result.collided_transition = entity_to_check;
+									}
+
+									if (are_entity_flags_set(entity_to_check, entity_flags::POWER_UP))
+									{
+										result.collided_power_up = entity_to_check;
+									}
 								}
 							}
 
-							if (new_collision.possible_movement_perc < closest_effect_entity_collision.possible_movement_perc)
+							if (are_entity_flags_set(entity_to_check, entity_flags::BLOCKS_MOVEMENT))
 							{
-								closest_effect_entity_collision = new_collision;
-
-								if (are_entity_flags_set(moving_entity, entity_flags::PLAYER)
-									&& (are_entity_flags_set(entity_to_check, entity_flags::ENEMY)
-										|| (are_entity_flags_set(entity_to_check, entity_flags::POWER_UP))))
-								{
-									collided_effect_entity = entity_to_check;
-								}
+								closest_collision = new_collision;
 							}
 						}
 					}
@@ -941,17 +948,7 @@ collision_with_effect move(game_data* game, entity* moving_entity, world_positio
 				//printf("przesuniecie o (%.04f, %.04f)\n", possible_movement.x, possible_movement.y);
 			}
 			
-			result.data = closest_collision;
-
-			// jeśli z entity mieliśmy kolizję wcześniej niż z tile
-			if (closest_effect_entity_collision.possible_movement_perc <= closest_collision.possible_movement_perc)
-			{
-				if (collided_effect_entity)
-				{
-					result.data = closest_effect_entity_collision;
-					result.collided_entity = collided_effect_entity;
-				}
-			}			
+			result.collision_data = closest_collision;
 
 			if (false == is_zero(closest_collision.collided_wall_normal))
 			{
@@ -1037,7 +1034,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 			{
 				entity* entity_to_check = game->entities + entity_index;
-				if (are_entity_flags_set(entity_to_check, entity_flags::COLLIDES))
+				if (are_entity_flags_set(entity_to_check, entity_flags::BLOCKS_MOVEMENT))
 				{
 					collision new_collision = check_minkowski_collision(
 						get_bullet_collision_data(reference_chunk, moving_bullet),
@@ -1119,8 +1116,10 @@ b32 is_standing_on_ground(game_data* game, entity* entity_to_check)
 
 	entity test_entity = *entity_to_check;
 	world_position target_pos = add_to_position(test_entity.position, get_v2(0.0f, 0.1f));
-	collision_with_effect collision = move(game, &test_entity, target_pos);
-	if (collision.collided_entity || collision.data.collided_wall == direction::S)
+	collision_result collision = move(game, &test_entity, target_pos);
+	if (collision.collided_enemy 
+		|| collision.collided_switch 
+		|| collision.collision_data.collided_wall == direction::S)
 	{
 		result = true;
 	}
@@ -1527,6 +1526,8 @@ void render_entity_sprite(SDL_Renderer* renderer,
 void add_next_level_transition(game_data* game, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
 {
 	entity_type* transition_type = push_struct(arena, entity_type);
+	transition_type->type_enum = entity_type_enum::NEXT_LEVEL_TRANSITION;
+
 	tile_range occupied_tiles = find_vertical_range_of_free_tiles(
 		game->current_level, game->static_data->collision_reference, new_entity_to_spawn->position, 20);
 	transition_type->collision_rect_dim = get_length_from_tile_range(occupied_tiles);
@@ -1535,7 +1536,6 @@ void add_next_level_transition(game_data* game, memory_arena* arena, entity_to_s
 		get_world_position(occupied_tiles.start),
 		get_position_difference(occupied_tiles.end, occupied_tiles.start) / 2);
 
-	set_flags(&transition_type->flags, entity_flags::COLLIDES);
 	set_flags(&transition_type->flags, entity_flags::INDESTRUCTIBLE);
 
 	add_entity(game, new_position, transition_type);
@@ -1598,8 +1598,37 @@ void initialize_current_level(sdl_game_data* sdl_game, game_data* game)
 	game->current_level_initialized = true;
 }
 
-void game_update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
+void handle_player_and_enemy_collision(game_data* game, entity* player, entity* enemy)
 {
+	if (is_power_up_active(game->power_ups.invincibility))
+	{
+		enemy->health -= 50.0f;
+	}
+	else
+	{
+		damage_player(game, enemy->type->damage_on_contact);
+
+		v2 direction = get_unit_vector(
+			get_position_difference(player->position, enemy->position));
+
+		r32 acceleration = enemy->type->player_acceleration_on_collision;
+
+		game->player_movement.recoil_timer = 2.0f;
+		game->player_movement.recoil_acceleration_timer = 1.0f;
+		game->player_movement.recoil_acceleration = (direction * acceleration);
+
+		printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
+			game->player_movement.recoil_acceleration.x,
+			game->player_movement.recoil_acceleration.y);
+
+		change_movement_mode(&game->player_movement, movement_mode::RECOIL);
+	}
+}
+
+scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
+{
+	scene_change change_to_other_scene = {};
+
 	if (false == game->current_level_initialized)
 	{
 		initialize_current_level(sdl_game, game);
@@ -1631,45 +1660,29 @@ void game_update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_
 
 		world_position target_pos = process_input(game, player, delta_time);
 
-		collision_with_effect collision = move(game, player, target_pos);
-		if (collision.collided_entity)
+		collision_result collision = move(game, player, target_pos);
+		if (collision.collided_power_up)
 		{
-			if (are_entity_flags_set(collision.collided_entity, entity_flags::POWER_UP))
-			{
-				apply_power_up(game, player, collision.collided_entity);
-			}
-			else
-			{
-				if (is_power_up_active(game->power_ups.invincibility))
-				{
-					collision.collided_entity->health -= 50.0f;
-				}
-				else
-				{
-					damage_player(game, collision.collided_entity->type->damage_on_contact);
-
-					v2 direction = get_unit_vector(
-						get_position_difference(player->position, collision.collided_entity->position));
-
-					r32 acceleration = collision.collided_entity->type->player_acceleration_on_collision;
-
-					game->player_movement.recoil_timer = 2.0f;
-					game->player_movement.recoil_acceleration_timer = 1.0f;
-					game->player_movement.recoil_acceleration = (direction * acceleration);
-
-					printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
-						game->player_movement.recoil_acceleration.x,
-						game->player_movement.recoil_acceleration.y);
-
-					change_movement_mode(&game->player_movement, movement_mode::RECOIL);
-				}
-			}
+			apply_power_up(game, player, collision.collided_power_up);
 		}
 
-		if (collision.collided_switch_entity)
+		if (collision.collided_enemy)
 		{
-			v4 color = collision.collided_switch_entity->type->color;
+			handle_player_and_enemy_collision(game, player, collision.collided_enemy);
+		}
+	
+		if (collision.collided_switch)
+		{
+			v4 color = collision.collided_switch->type->color;
 			open_gates_with_given_color(game, color);
+		}
+
+		if (collision.collided_transition)
+		{
+			change_to_other_scene.change_scene = true;
+			change_to_other_scene.new_scene = scene::GAME;
+			change_to_other_scene.save = save_game_state(game);
+			printf("zmiana sceny!!\n");
 		}
 
 		v2 player_direction_v2 = get_unit_vector(player->velocity);
@@ -1767,7 +1780,19 @@ void game_update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_
 					}
 
 					world_position new_position = add_to_position(entity->position, (direction * velocity * delta_time));
+					v2 movement_delta = get_position_difference(new_position, entity->position);
 					entity->position = new_position;
+
+					// sprawdzenie kolizji z graczem
+					chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(entity->position));
+					collision new_collision = check_minkowski_collision(
+						get_entity_collision_data(reference_chunk, entity),
+						get_entity_collision_data(reference_chunk, player),
+						movement_delta, 1.0f);
+					if (new_collision.collided_wall != direction::NONE)
+					{
+						handle_player_and_enemy_collision(game, player, entity);
+					}
 
 					if (length(get_position_difference(current_goal, entity->position)) < 0.01f)
 					{
@@ -1986,6 +2011,8 @@ void game_update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_
 
 		SDL_RenderPresent(sdl_game->renderer);
 	}
+
+	return change_to_other_scene;
 }
 
 void render_menu_option(sdl_game_data* sdl_game, u32 x_coord, u32 y_coord, string_ref title)
@@ -2103,20 +2130,6 @@ r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
 	r32 result = ((end_counter - start_counter) * 1000) / (r64)SDL_GetPerformanceFrequency();
 	return result;
 }
-
-enum class scene
-{
-	NONE,
-	GAME,
-	MAIN_MENU,
-	DEATH,
-	CREDITS
-};
-
-struct game_state_change
-{
-	scene new_scene;
-};
 
 void main_game_loop(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
 {

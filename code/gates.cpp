@@ -89,7 +89,7 @@ void open_gates_with_given_color(game_data* game, v4 color)
 				}
 				else if (are_entity_flags_set(entry->entity, entity_flags::GATE))
 				{
-					unset_flags(&entry->entity->type->flags, entity_flags::COLLIDES);
+					unset_flags(&entry->entity->type->flags, entity_flags::BLOCKS_MOVEMENT);
 					sprite* sprite = &entry->entity->type->idle_pose.sprite;
 					for (u32 sprite_index = 1; sprite_index < sprite->parts_count - 1; sprite_index++)
 					{
@@ -202,7 +202,7 @@ void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_
 		new_type->idle_pose = frame;
 	}
 
-	set_flags(&new_type->flags, entity_flags::COLLIDES);
+	set_flags(&new_type->flags, entity_flags::BLOCKS_MOVEMENT);
 	set_flags(&new_type->flags, entity_flags::INDESTRUCTIBLE);
 	set_flags(&new_type->flags, (is_switch ? entity_flags::SWITCH : entity_flags::GATE));
 
