@@ -108,7 +108,7 @@
   <object id="94" gid="962" x="304" y="112" width="16" height="16"/>
   <object id="95" gid="906" x="368" y="32" width="16" height="16">
    <properties>
-    <property name="next_level" value="map_001"/>
+    <property name="next_level" value="map_01.tmx"/>
    </properties>
   </object>
  </objectgroup>
