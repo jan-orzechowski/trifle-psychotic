@@ -270,12 +270,12 @@ entity_type* add_bullet_type(static_game_data* game)
 	return result;
 }
 
-level load_level(const char* map_name, memory_arena* arena, memory_arena* transient_arena)
+level load_level(string_ref map_name, memory_arena* arena, memory_arena* transient_arena)
 {
 	level result = {};
 	
 	std::string map_file_path = "data/";
-	map_file_path.append(map_name);
+	map_file_path.append(map_name.ptr, map_name.string_size);
 	map_file_path.append(".tmx");
 
 	read_file_result map_file = read_file(map_file_path);
@@ -285,10 +285,11 @@ level load_level(const char* map_name, memory_arena* arena, memory_arena* transi
 	return result;
 }
 
-void initialize_game_data(game_data* game, static_game_data* static_data, input_buffer* input_buffer, memory_arena* arena)
+void initialize_game_data(game_data* game, static_game_data* static_data, input_buffer* input_buffer, string_ref level_name, memory_arena* arena)
 {
 	*game = {};
 
+	game->current_level_name = copy_string(arena, level_name);
 	game->input = *input_buffer;
 
 	game->static_data = static_data;
@@ -304,31 +305,14 @@ void initialize_game_data(game_data* game, static_game_data* static_data, input_
 	game->player_movement.current_mode = movement_mode::WALK;
 }
 
-save save_game_state(game_data* game)
-{
-	assert(game->entities[0].type);
-
-	save result = {};
-	result.granades_count = 0;
-	result.player_max_health = game->entities[0].type->max_health;
-	return result;
-}
-
-void restore_game_state(game_data* game, save save)
-{
-	assert(game->current_level_initialized);
-
-	game->entities[0].type->max_health = save.player_max_health;
-}
-
 void load_static_game_data(sdl_game_data* sdl_game, static_game_data* game, memory_arena* arena, memory_arena* transient_arena)
-{
+{	
 	temporary_memory transient_memory = begin_temporary_memory(transient_arena);
 
-	game->menu_new_game_str = c_string_to_string_ref(sdl_game->arena, "New Game");
-	game->menu_continue_str = c_string_to_string_ref(sdl_game->arena, "Continue");
-	game->menu_credits_str = c_string_to_string_ref(sdl_game->arena, "Credits");
-	game->menu_exit_str = c_string_to_string_ref(sdl_game->arena, "Exit");
+	game->menu_new_game_str = copy_c_string_to_memory_arena(sdl_game->arena, "New Game");
+	game->menu_continue_str = copy_c_string_to_memory_arena(sdl_game->arena, "Continue");
+	game->menu_credits_str = copy_c_string_to_memory_arena(sdl_game->arena, "Credits");
+	game->menu_exit_str = copy_c_string_to_memory_arena(sdl_game->arena, "Exit");
 
 	std::string collision_file_path = "data/collision_map.tmx";
 	read_file_result collision_file = read_file(collision_file_path);

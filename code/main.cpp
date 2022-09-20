@@ -1681,8 +1681,7 @@ scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r3
 		{
 			change_to_other_scene.change_scene = true;
 			change_to_other_scene.new_scene = scene::GAME;
-			change_to_other_scene.save = save_game_state(game);
-			printf("zmiana sceny!!\n");
+			change_to_other_scene.level_to_load = game->current_level.next_level;
 		}
 
 		v2 player_direction_v2 = get_unit_vector(player->velocity);
@@ -1985,7 +1984,6 @@ scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r3
 					SDL_RenderDrawPoint(sdl_game->renderer, entity_position.x, entity_position.y);
 				}
 			}
-	
 #endif
 		}
 		
@@ -2027,8 +2025,10 @@ void render_menu_option(sdl_game_data* sdl_game, u32 x_coord, u32 y_coord, strin
 	write(sdl_game->arena, sdl_game, font, textbox_area, title);
 }
 
-void menu_update_and_render(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
+scene_change menu_update_and_render(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
 {
+	scene_change change_to_other_scene = {};
+
 	game_input* input = get_last_frame_input(input_buffer);
 
 	local_persist i32 menu_index = 0;
@@ -2072,21 +2072,30 @@ void menu_update_and_render(sdl_game_data* sdl_game, static_game_data* static_da
 			case 0: 
 			{
 				printf("Nowa gra\n");
+				change_to_other_scene.change_scene = true;
+				change_to_other_scene.new_scene = scene::GAME;
 			} 
 			break;
 			case 1:
 			{
 				printf("Kontynuacja\n");
+				change_to_other_scene.change_scene = true;
+				change_to_other_scene.new_scene = scene::GAME;
+				//result.save = ?
 			}
 			break;
 			case 2:
 			{
 				printf("Credits\n");
+				change_to_other_scene.change_scene = true;
+				change_to_other_scene.new_scene = scene::CREDITS;
 			}
 			break;
 			case 3:
 			{
 				printf("Wyjscie\n");
+				change_to_other_scene.change_scene = true;
+				change_to_other_scene.new_scene = scene::EXIT;
 			}
 			break;
 			invalid_default_case;
@@ -2123,6 +2132,8 @@ void menu_update_and_render(sdl_game_data* sdl_game, static_game_data* static_da
 	SDL_RenderCopy(sdl_game->renderer, sdl_game->misc_texture, &bitmap_rect, &indicator_screen_rect);
 
 	SDL_RenderPresent(sdl_game->renderer);
+
+	return change_to_other_scene;
 };
 
 r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
@@ -2131,56 +2142,50 @@ r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
 	return result;
 }
 
-void main_game_loop(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
+save* save_game_state(memory_arena* arena, game_data* game)
 {
-	local_persist game_data* game = push_struct(sdl_game->arena, game_data);
+	assert(game->entities[0].type);
+	save* result = push_struct(arena, save);
+	result->level_name = copy_string(arena, game->current_level_name);
+	result->granades_count = 0;
+	result->player_max_health = game->entities[0].type->max_health;
+	return result;
+}
 
-	local_persist b32 load_level_two = false;
-	local_persist r32 level_change_timer = 0.0f;
-	local_persist b32 level_initialized = false;
-	local_persist temporary_memory level_memory;
+void restore_game_state(game_data* game, save* save)
+{
+	assert(game->current_level_initialized);
+	assert(game && save);
+	game->entities[0].type->max_health = save->player_max_health;
+}
 
-	level_change_timer += delta_time;
-
-	scene current_scene = scene::GAME;
-
-	switch (current_scene)
+void main_game_loop(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
+{		
+	scene_change scene_change = {};
+	switch (sdl_game->current_scene)
 	{
 		case scene::GAME:
 		{
-			if (false == level_initialized)
+			if (false == sdl_game->first_game_run_initialized)
 			{
-				level_memory = begin_temporary_memory(sdl_game->arena);
-				initialize_game_data(game, static_data, input_buffer, sdl_game->arena);
-				game->current_level = load_level("map_02", sdl_game->arena, sdl_game->transient_arena);
+				sdl_game->game_data = push_struct(sdl_game->arena, game_data);
 
-				level_initialized = true;
+				sdl_game->game_temporary_memory = begin_temporary_memory(sdl_game->arena);
+				string_ref level_name = copy_c_string_to_memory_arena(sdl_game->arena, "map_02");
+				initialize_game_data(sdl_game->game_data, static_data, input_buffer, level_name, sdl_game->arena);
+				sdl_game->game_data->current_level = load_level(level_name, sdl_game->arena, sdl_game->transient_arena);
+
+				sdl_game->first_game_run_initialized = true;
 			}
 						
-			game->input = *(input_buffer);
-			game_update_and_render(sdl_game, game, delta_time);
+			sdl_game->game_data->input = *(input_buffer);
+			scene_change = game_update_and_render(sdl_game, sdl_game->game_data, delta_time);
 
-			if (level_change_timer > 5.0f)
-			{
-				save save = save_game_state(game);
-
- 				end_temporary_memory(level_memory, true);
-				level_memory = begin_temporary_memory(sdl_game->arena);
-
-				initialize_game_data(game, static_data, input_buffer, sdl_game->arena);
-				game->current_level = load_level(load_level_two ? "map_02" : "map_01", sdl_game->arena, sdl_game->transient_arena);
-				initialize_current_level(sdl_game, game);
-
-				restore_game_state(game, save);
-
-				level_change_timer = 0.0f;
-				load_level_two = !load_level_two;
-			}			
 		};
 		break;
 		case scene::MAIN_MENU:
 		{
-			menu_update_and_render(sdl_game, static_data, input_buffer, delta_time);
+			scene_change = menu_update_and_render(sdl_game, static_data, input_buffer, delta_time);
 		};
 		break;
 		case scene::DEATH:
@@ -2194,6 +2199,43 @@ void main_game_loop(sdl_game_data* sdl_game, static_game_data* static_data, inpu
 		};
 		break;
 		invalid_default_case;
+	}
+
+	if (scene_change.change_scene)
+	{
+		switch (scene_change.new_scene)
+		{
+			case scene::GAME:
+			{
+				temporary_memory auxillary_memory_for_loading = begin_temporary_memory(sdl_game->transient_arena);
+				{
+					string_ref level_name = copy_string(sdl_game->transient_arena, scene_change.level_to_load);
+					save* save = save_game_state(sdl_game->transient_arena, sdl_game->game_data);
+					end_temporary_memory(sdl_game->game_temporary_memory, true);
+
+					sdl_game->game_temporary_memory = begin_temporary_memory(sdl_game->arena);
+					initialize_game_data(sdl_game->game_data, static_data, input_buffer, level_name, sdl_game->arena);
+					sdl_game->game_data->current_level = load_level(level_name, sdl_game->arena, sdl_game->transient_arena);
+					initialize_current_level(sdl_game, sdl_game->game_data);
+					restore_game_state(sdl_game->game_data, save);
+				}
+				end_temporary_memory(auxillary_memory_for_loading, true);
+			}
+			case scene::MAIN_MENU:
+			{
+				
+			}
+			case scene::DEATH:
+			{
+
+			}
+			case scene::CREDITS:
+			{
+
+			}
+			break;
+			invalid_default_case;
+		}
 	}
 }
 
@@ -2228,7 +2270,7 @@ int main(int argc, char* args[])
 		//circular_buffer_test(&arena);
 
 		const char* test_c_str = "calkiem dlugi napis ktory sam sie zawija i w ogole 2137";
-		sdl_game.test_str = c_string_to_string_ref(&permanent_arena , test_c_str);
+		sdl_game.test_str = copy_c_string_to_memory_arena(&permanent_arena , test_c_str);
 		
 		static_game_data* static_data = push_struct(&permanent_arena, static_game_data);
 
@@ -2303,6 +2345,8 @@ int main(int argc, char* args[])
 			sdl_game.debug_elapsed_work_ms = elapsed_work_ms;
 			sdl_game.debug_frame_counter = frame_counter + 1;
 		}
+
+		end_temporary_memory(sdl_game.game_temporary_memory);
 	}
 	else
 	{

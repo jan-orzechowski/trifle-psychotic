@@ -111,6 +111,30 @@ b32 compare_to_c_string(string_ref my_str, const char* c_str)
 	return result;
 }
 
+u32 get_c_string_length(const char* str, u32 max_string_length)
+{
+	u32 result = 0;
+	const char* str_temp = str;
+	while (*str_temp && result <= max_string_length)
+	{
+		str_temp++;
+		result++;
+	}
+	return result;
+}
+
+u32 get_c_string_length(const char* str)
+{
+	u32 result = 0;
+	const char* str_temp = str;
+	while (*str_temp)
+	{
+		str_temp++;
+		result++;
+	}
+	return result;
+}
+
 string_ref copy_c_string_to_memory_arena(memory_arena* arena, const char* str, u32 str_size)
 {
 	string_ref result = {};
@@ -128,21 +152,9 @@ string_ref copy_c_string_to_memory_arena(memory_arena* arena, const char* str, u
 	return result;
 }
 
-u32 get_c_string_length(const char* str, u32 max_string_length)
+string_ref copy_c_string_to_memory_arena(memory_arena* arena, const char* str)
 {
-	u32 result = 0;
-	const char* str_temp = str;
-	while (*str_temp && result <= max_string_length)
-	{
-		str_temp++;
-		result++;
-	}
-	return result;
-}
-
-string_ref c_string_to_string_ref(memory_arena* arena, const char* str, u32 max_string_length)
-{
-	u32 c_str_length = get_c_string_length(str, max_string_length);
+	u32 c_str_length = get_c_string_length(str);
 	string_ref result = copy_c_string_to_memory_arena(arena, str, c_str_length);
 	return result;
 }
@@ -592,43 +604,43 @@ void string_function_test(memory_arena* test_arena)
 {
 	temporary_memory test = begin_temporary_memory(test_arena);
 
-	string_ref integer = c_string_to_string_ref(test_arena, "  100  ");
+	string_ref integer = copy_c_string_to_memory_arena(test_arena, "  100  ");
 	i32 integer_parsed = parse_i32(integer);
 	assert(integer_parsed == 100);
 
-	string_ref integer2 = c_string_to_string_ref(test_arena, "432358192");
+	string_ref integer2 = copy_c_string_to_memory_arena(test_arena, "432358192");
 	i32 integer2_parsed = parse_i32(integer2);
 	assert(integer2_parsed == 432358192);
 
-	string_ref integer3 = c_string_to_string_ref(test_arena, "-2137");
+	string_ref integer3 = copy_c_string_to_memory_arena(test_arena, "-2137");
 	i32 integer3_parsed = parse_i32(integer3);
 	assert(integer3_parsed == -2137);
 
-	string_ref integer4 = c_string_to_string_ref(test_arena, "   -10   ");
+	string_ref integer4 = copy_c_string_to_memory_arena(test_arena, "   -10   ");
 	i32 integer4_parsed = parse_i32(integer4);
 	assert(integer4_parsed == -10);
 
-	string_ref fraction1 = c_string_to_string_ref(test_arena, "  10,0  ");
+	string_ref fraction1 = copy_c_string_to_memory_arena(test_arena, "  10,0  ");
 	r32 fraction1_parsed = parse_r32(fraction1, ',');
 	assert(fraction1_parsed == 10);
 
-	string_ref fraction2 = c_string_to_string_ref(test_arena, "10.5");
+	string_ref fraction2 = copy_c_string_to_memory_arena(test_arena, "10.5");
 	r32 fraction2_parsed = parse_r32(fraction2, '.');
 	assert(fraction2_parsed == 10.5f);
 
-	string_ref fraction3 = c_string_to_string_ref(test_arena, "123.123");
+	string_ref fraction3 = copy_c_string_to_memory_arena(test_arena, "123.123");
 	r32 fraction3_parsed = parse_r32(fraction3, '.');
 	assert(fraction3_parsed == 123.123f);
 
-	string_ref fraction4 = c_string_to_string_ref(test_arena, "-192.19");
+	string_ref fraction4 = copy_c_string_to_memory_arena(test_arena, "-192.19");
 	r32 fraction4_parsed = parse_r32(fraction4, '.');
 	assert(fraction4_parsed == -192.19f);
 
-	string_ref hex1 = c_string_to_string_ref(test_arena, "#b5d3ff");
+	string_ref hex1 = copy_c_string_to_memory_arena(test_arena, "#b5d3ff");
 	v4 hex1_parsed = parse_color_from_hexadecimal(hex1);
 	assert(hex1_parsed == get_v4(181.0f, 211.0f, 255.0f, 0.0f));
 
-	string_ref hex2 = c_string_to_string_ref(test_arena, "   3cff6a6a   ");
+	string_ref hex2 = copy_c_string_to_memory_arena(test_arena, "   3cff6a6a   ");
 	v4 hex2_parsed = parse_color_from_hexadecimal(hex2);
 	assert(hex2_parsed == get_v4(60.0f, 255.0f, 106.0f, 106.0f));
 

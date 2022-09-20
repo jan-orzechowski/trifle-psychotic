@@ -941,7 +941,9 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 level read_level_from_tmx_file(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file, const char* layer_name)
 {
 	level map = {};
-	temporary_memory memory_for_parsing = begin_temporary_memory(transient_arena);
+	// nie jest to konieczne, ponieważ i tak przy ładowaniu poziomu czyścimy potem transient memory
+	// ewentualnie można by dodać flagę, czy czyścić, czy nie
+	//temporary_memory memory_for_parsing = begin_temporary_memory(transient_arena);
 	string_function_test(transient_arena);
 
 	xml_scanner scan = {};
@@ -1052,7 +1054,7 @@ level read_level_from_tmx_file(memory_arena* permanent_arena, memory_arena* tran
 		}
 	}
 
-	end_temporary_memory(memory_for_parsing, true);
+	//end_temporary_memory(memory_for_parsing, true);
 	
 	return map;
 }

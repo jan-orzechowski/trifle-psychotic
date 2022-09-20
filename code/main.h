@@ -29,28 +29,6 @@
 
 #define CHUNK_SIDE_IN_TILES 16
 
-struct sdl_game_data
-{
-	bool initialized;
-	SDL_Window* window;
-	SDL_Renderer* renderer;
-	SDL_Texture* tileset_texture;
-	SDL_Texture* bullets_texture;
-	SDL_Texture* ui_texture;
-	SDL_Texture* font_texture;
-	SDL_Texture* player_texture;
-	SDL_Texture* misc_texture;
-	SDL_Texture* gates_texture;
-	TTF_Font* font;
-
-	u32 debug_frame_counter;
-	r32 debug_elapsed_work_ms;
-
-	string_ref test_str;
-	memory_arena* arena;
-	memory_arena* transient_arena;
-};
-
 void print_sdl_error();
 void print_sdl_image_error();
 void print_sdl_ttf_error();
@@ -388,6 +366,7 @@ struct static_game_data
 
 struct game_data
 {
+	string_ref current_level_name;
 	b32 current_level_initialized;
 	level current_level;
 	
@@ -413,7 +392,7 @@ struct game_data
 
 struct save
 {
-	//string_ref level_name;
+	string_ref level_name;
 	u32 granades_count;
 	u32 player_max_health;
 };
@@ -430,8 +409,35 @@ enum class scene
 struct scene_change
 {
 	b32 change_scene;
-	save save;
 	scene new_scene;
+	string_ref level_to_load;
+};
+
+struct sdl_game_data
+{
+	bool initialized;
+	SDL_Window* window;
+	SDL_Renderer* renderer;
+	SDL_Texture* tileset_texture;
+	SDL_Texture* bullets_texture;
+	SDL_Texture* ui_texture;
+	SDL_Texture* font_texture;
+	SDL_Texture* player_texture;
+	SDL_Texture* misc_texture;
+	SDL_Texture* gates_texture;
+	TTF_Font* font;
+
+	u32 debug_frame_counter;
+	r32 debug_elapsed_work_ms;
+
+	string_ref test_str;
+	memory_arena* arena;
+	memory_arena* transient_arena;
+
+	b32 first_game_run_initialized;
+	scene current_scene;
+	temporary_memory game_temporary_memory;
+	game_data* game_data;
 };
 
 SDL_Rect get_tile_rect(u32 tile_id);
