@@ -161,6 +161,7 @@
     <ClCompile Include="code\jorstring.cpp" />
     <ClCompile Include="code\main.cpp" />
     <ClCompile Include="code\map.cpp" />
+    <ClCompile Include="code\sdl_platform.cpp" />
     <ClCompile Include="code\text_rendering.cpp" />
     <ClCompile Include="code\tmx_parsing.cpp" />
     <ClCompile Include="code\game_data.cpp" />
@@ -172,6 +173,7 @@
     <ClInclude Include="code\jorutils.h" />
     <ClInclude Include="code\main.h" />
     <ClInclude Include="code\map.h" />
+    <ClInclude Include="code\sdl_platform.h" />
     <ClInclude Include="code\text_rendering.h" />
     <ClInclude Include="code\tmx_parsing.h" />
     <ClInclude Include="code\jorstring.h" />

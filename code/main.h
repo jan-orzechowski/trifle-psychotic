@@ -441,12 +441,13 @@ struct sdl_game_data
 SDL_Rect get_tile_rect(u32 tile_id);
 tile_position get_tile_position(i32 tile_x, i32 tile_y);
 
-entity* add_entity(game_data* game, world_position position, entity_type* type);
-entity* add_entity(game_data* game, tile_position position, entity_type* type);
+input_buffer initialize_input_buffer(memory_arena* arena);
 b32 are_flags_set(entity_flags*	 flags, entity_flags flag_values_to_check);
 void set_flags(entity_flags* flags, entity_flags flag_values_to_check);
 void unset_flags(entity_flags* flags, entity_flags flag_values_to_check);
 b32 are_entity_flags_set(entity* entity, entity_flags flag_values);
+entity* add_entity(game_data* game, world_position position, entity_type* type);
+entity* add_entity(game_data* game, tile_position position, entity_type* type);
 
 void render_entity_sprite(SDL_Renderer* renderer,
 	world_position camera_position, world_position entity_position, direction entity_direction,
@@ -454,3 +455,6 @@ void render_entity_sprite(SDL_Renderer* renderer,
 
 tile_range find_horizontal_range_of_free_tiles(level map, level collision_ref, tile_position starting_tile, u32 length_limit);
 tile_range find_vertical_range_of_free_tiles(level map, level collision_ref, tile_position starting_tile, u32 length_limit);
+
+void write_to_input_buffer(input_buffer* buffer, game_input* new_input);
+void main_game_loop(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time);

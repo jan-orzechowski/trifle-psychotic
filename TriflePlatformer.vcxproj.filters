@@ -56,6 +56,12 @@
     <ClCompile Include="code\map.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="code\sdl_platform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\movement.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\tmx_parsing.h">
