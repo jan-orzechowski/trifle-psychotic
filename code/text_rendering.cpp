@@ -128,7 +128,7 @@ string_ref* get_next_line(lines_to_render* lines)
     return result;
 }
 
-void write(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, rect area, string_ref text, b32 wrap)
+void render_text(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, rect area, string_ref text, b32 wrap)
 {
     u32 max_text_length = 1000;
     if (text.string_size > max_text_length)
@@ -214,4 +214,11 @@ void write(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, re
     }
 
     end_temporary_memory(writing_memory);
+}
+
+void render_text(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, rect area, char* buffer, u32 buffer_size, b32 wrap)
+{
+    u32 string_length = get_c_string_length(buffer, buffer_size);
+    string_ref str_to_render = get_string_ref(buffer, string_length);
+    render_text(transient_arena, sdl_game, font, area, str_to_render, wrap);
 }

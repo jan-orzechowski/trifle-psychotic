@@ -147,7 +147,6 @@
     <None Include="data\trifle_tileset.tsx" />
     <None Include="SDL2.dll" />
     <None Include="SDL2_image.dll" />
-    <None Include="SDL2_ttf.dll" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="gfx\kenney_pixel.ttf" />

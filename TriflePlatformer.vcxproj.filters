@@ -17,7 +17,6 @@
   <ItemGroup>
     <None Include="SDL2.dll" />
     <None Include="SDL2_image.dll" />
-    <None Include="SDL2_ttf.dll" />
     <None Include="data\trifle_map_01.tmx" />
     <None Include="data\trifle_tileset.tsx" />
   </ItemGroup>

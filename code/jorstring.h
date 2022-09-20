@@ -9,11 +9,15 @@ struct string_ref
 	char* ptr;
 };
 
+string_ref get_string_ref(const char*, u32);
+string_ref get_string_ref(const char*);
 b32 is_empty_string(string_ref);
 b32 operator ==(string_ref, string_ref);
 string_ref copy_string(memory_arena*, string_ref);
 char* get_c_string(memory_arena*, string_ref);
 b32 compare_to_c_string(string_ref, const char*);
+u32 get_c_string_length(const char*, u32);
+u32 get_c_string_length(const char*);
 string_ref copy_c_string_to_memory_arena(memory_arena*, const char*, u32);
 string_ref copy_c_string_to_memory_arena(memory_arena*, const char*);
 b32 ends_with(string_ref, const char*);

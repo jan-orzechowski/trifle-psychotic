@@ -4,6 +4,22 @@
 #include "jorstring.h"
 #include "jormath.h"
 
+string_ref get_string_ref(const char* str_ptr, u32 size)
+{
+	string_ref result = {};
+	result.ptr = (char*)str_ptr;
+	result.string_size = size;
+	return result;
+}
+
+string_ref get_string_ref(const char* str_ptr)
+{
+	string_ref result = {};
+	result.ptr = (char*)str_ptr;
+	result.string_size = get_c_string_length(str_ptr);
+	return result;
+}
+
 b32 is_empty_string(string_ref str)
 {
 	b32 result = (str.ptr == 0 || str.string_size == 0);

@@ -47,13 +47,6 @@ void print_sdl_image_error()
 	invalid_code_path;
 }
 
-void print_sdl_ttf_error()
-{
-	const char* error = TTF_GetError();
-	printf("SDL_ttf error: %s\n", error);
-	invalid_code_path;
-}
-
 void load_image(SDL_Renderer* renderer, SDL_Texture** place_to_load, const char* file_path, b32* success)
 {
 	SDL_Surface* loaded_surface = IMG_Load(file_path);
@@ -139,26 +132,6 @@ sdl_game_data init_sdl()
 					print_sdl_image_error();
 					success = false;
 				}
-
-				int ttf_init = TTF_Init();
-				if (ttf_init == 0) // wg dokumentacji 0 oznacza sukces
-				{
-					TTF_Font* font = TTF_OpenFont("gfx/font.ttf", 15);
-					if (font)
-					{
-						sdl_game.font = font;
-					}
-					else
-					{					
-						print_sdl_ttf_error();
-						success = false;
-					}
-				}
-				else
-				{
-					print_sdl_ttf_error();
-					success = false;
-				}
 			}
 			else
 			{
@@ -210,36 +183,6 @@ void render_rect(sdl_game_data* sdl_game, rect rectangle)
 		rectangle.max_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
 	SDL_RenderDrawLine(sdl_game->renderer, // góra
 		rectangle.min_corner.x, rectangle.max_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
-}
-
-void render_text(sdl_game_data* sdl_game, std::string textureText, int x, int y, v4 color)
-{
-	SDL_Surface* text_surface = TTF_RenderText_Solid(sdl_game->font, textureText.c_str(), get_sdl_color(color));
-	if (text_surface)
-	{
-		SDL_Texture* font_texture = SDL_CreateTextureFromSurface(sdl_game->renderer, text_surface);
-		if (font_texture)
-		{
-			SDL_Rect dest = {};
-			dest.w = text_surface->w;
-			dest.h = text_surface->h;
-			dest.x = x;
-			dest.y = y;
-
-			SDL_RenderCopy(sdl_game->renderer, font_texture, NULL, &dest);
-			SDL_DestroyTexture(font_texture);
-		}
-		else
-		{
-			print_sdl_error();
-		}
-
-		SDL_FreeSurface(text_surface);
-	}
-	else
-	{
-		print_sdl_ttf_error();
-	}
 }
 
 void render_hitpoint_bar(sdl_game_data* sdl_game, entity* player, b32 draw_white_bars)
@@ -1140,7 +1083,16 @@ void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 	int error = SDL_snprintf(buffer, 200, "Chunk:(%d,%d),Pos:(%0.2f,%0.2f),Acc: (%0.2f,%0.2f) Standing: %d, Direction: %s",
 		player->position.chunk_pos.x, player->position.chunk_pos.y, player->position.pos_in_chunk.x, player->position.pos_in_chunk.y,
 		player->acceleration.x, player->acceleration.y, is_standing, (player->direction == direction::W ? "W" : "E"));
-	render_text(sdl_game, buffer, 10, 200, text_color);
+
+	rect area = get_rect_from_corners(
+		get_v2(10, 200), get_v2((SCREEN_WIDTH / 2) - 10, 260)
+	);
+
+	font font = {};
+	font.pixel_height = 8;
+	font.pixel_width = 8;
+
+	render_text(sdl_game->transient_arena, sdl_game, font, area, buffer, 200, true);
 }
 
 void write_to_input_buffer(input_buffer* buffer, game_input* new_input)
@@ -2022,7 +1974,7 @@ void render_menu_option(sdl_game_data* sdl_game, u32 x_coord, u32 y_coord, strin
 	font font = {};
 	font.pixel_height = 8;
 	font.pixel_width = 8;
-	write(sdl_game->arena, sdl_game, font, textbox_area, title);
+	render_text(sdl_game->arena, sdl_game, font, textbox_area, title);
 }
 
 scene_change menu_update_and_render(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
@@ -2356,13 +2308,11 @@ int main(int argc, char* args[])
 	check_arena(sdl_game.arena);
 	check_arena(sdl_game.transient_arena);
 
-	TTF_CloseFont(sdl_game.font);
 	SDL_DestroyTexture(sdl_game.tileset_texture);
 
 	SDL_DestroyRenderer(sdl_game.renderer);
 	SDL_DestroyWindow(sdl_game.window);
 
-	TTF_Quit();
 	IMG_Quit();
 	SDL_Quit();
 

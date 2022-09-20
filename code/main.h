@@ -2,7 +2,6 @@
 
 #include <SDL.h>
 #include <SDL_image.h>
-#include <SDL_ttf.h>
 
 #include <stdio.h>
 #include <string>
@@ -425,7 +424,6 @@ struct sdl_game_data
 	SDL_Texture* player_texture;
 	SDL_Texture* misc_texture;
 	SDL_Texture* gates_texture;
-	TTF_Font* font;
 
 	u32 debug_frame_counter;
 	r32 debug_elapsed_work_ms;
