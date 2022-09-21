@@ -748,21 +748,21 @@ xml_node_search_result* find_all_nodes_with_tag(memory_arena* arena, xml_node* r
 	return result;
 }
 
-void add_read_entity(level* map, memory_arena* arena, entity_type_enum type, tile_position position, v4 gate_color = get_zero_v4())
+void add_read_entity(map* level, memory_arena* arena, entity_type_enum type, tile_position position, v4 gate_color = get_zero_v4())
 {
 	entity_to_spawn* new_entity = push_struct(arena, entity_to_spawn);
 	new_entity->type = type;
 	new_entity->position = position;
 	new_entity->color = gate_color;
 
-	map->entities_to_spawn_count++;
-	if (map->entities_to_spawn == NULL)
+	level->entities_to_spawn_count++;
+	if (level->entities_to_spawn == NULL)
 	{
-		map->entities_to_spawn = new_entity;
+		level->entities_to_spawn = new_entity;
 	}
 }
 
-void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, level* map, xml_node* node)
+void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, map* level, xml_node* node)
 {
 	string_ref gid_str = get_attribute_value(node, "gid");
 	//string_ref class_str = get_attribute_value(node, "class");
@@ -866,7 +866,7 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 
 			if (false == is_zero(gate_color))
 			{
-				add_read_entity(map, permanent_arena, type, position, gate_color);
+				add_read_entity(level, permanent_arena, type, position, gate_color);
 			}
 		}
 		break;
@@ -877,7 +877,7 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 				// ktoś ustawił pozycję gracza dwa razy!
 				invalid_code_path;
 			}
-			map->starting_tile = position;
+			level->starting_tile = position;
 			starting_point_is_set = true;
 		} 
 		break;
@@ -919,14 +919,14 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 
 			if (next_level_name.string_size)
 			{
-				add_read_entity(map, permanent_arena, type, position);
+				add_read_entity(level, permanent_arena, type, position);
 				next_level_transition_point_is_set = true;
 			}
 		}
 		break;
 		default:
 		{
-			add_read_entity(map, permanent_arena, type, position);
+			add_read_entity(level, permanent_arena, type, position);
 		}
 		break;
 	}
@@ -934,13 +934,13 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, l
 	// alokujemy na samym końcu, ponieważ lista nowych entities jest "dynamiczna"
 	if (next_level_name.string_size)
 	{
-		map->next_level = copy_string(permanent_arena, next_level_name);
+		level->next_map = copy_string(permanent_arena, next_level_name);
 	}
 }
 
-level read_level_from_tmx_file(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file, const char* layer_name)
+map read_map_from_tmx_file(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file, const char* layer_name)
 {
-	level map = {};
+	map level = {};
 	// nie jest to konieczne, ponieważ i tak przy ładowaniu poziomu czyścimy potem transient memory
 	// ewentualnie można by dodać flagę, czy czyścić, czy nie
 	//temporary_memory memory_for_parsing = begin_temporary_memory(transient_arena);
@@ -989,8 +989,8 @@ level read_level_from_tmx_file(memory_arena* permanent_arena, memory_arena* tran
 						i32 layer_height = parse_i32(height);
 						if (layer_width == map_width && layer_height == map_height)
 						{
-							map.width = map_width;
-							map.height = map_height;
+							level.width = map_width;
+							level.height = map_height;
 
 							xml_node* data_node = find_tag_in_children(layer_node, "data");
 							if (data_node)
@@ -1000,8 +1000,8 @@ level read_level_from_tmx_file(memory_arena* permanent_arena, memory_arena* tran
 								string_ref encoding_str = get_attribute_value(data_node, "encoding");
 								if (compare_to_c_string(encoding_str, "csv"))
 								{
-									map.tiles_count = map.width * map.height;
-									map.tiles = parse_array_of_i32(permanent_arena, map.tiles_count, data, ',');
+									level.tiles_count = level.width * level.height;
+									level.tiles = parse_array_of_i32(permanent_arena, level.tiles_count, data, ',');
 								}
 								else
 								{
@@ -1039,14 +1039,14 @@ level read_level_from_tmx_file(memory_arena* permanent_arena, memory_arena* tran
 				xml_node_search_result* objects = find_all_nodes_with_tag(transient_arena, objectgroup_node, "object");
 				if (objects->found_nodes_count > 0)
 				{
-					map.entities_to_spawn_count = 0;
-					map.entities_to_spawn = NULL;
+					level.entities_to_spawn_count = 0;
+					level.entities_to_spawn = NULL;
 					for (u32 xml_node_index = 0; xml_node_index < objects->found_nodes_count; xml_node_index++)
 					{
 						xml_node* node = *(objects->found_nodes + xml_node_index);
 						if (node)
 						{
-							read_entity(permanent_arena, transient_arena, &map, node);
+							read_entity(permanent_arena, transient_arena, &level, node);
 						}
 					}
 				}
@@ -1056,5 +1056,5 @@ level read_level_from_tmx_file(memory_arena* permanent_arena, memory_arena* tran
 
 	//end_temporary_memory(memory_for_parsing, true);
 	
-	return map;
+	return level;
 }

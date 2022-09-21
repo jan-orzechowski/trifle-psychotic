@@ -211,26 +211,26 @@ entity_type* add_bullet_type(static_game_data* data)
 	return result;
 }
 
-level load_level(string_ref map_name, memory_arena* arena, memory_arena* transient_arena)
+map load_map(string_ref map_name, memory_arena* arena, memory_arena* transient_arena)
 {
-	level result = {};
+	map result = {};
 	
 	std::string map_file_path = "data/";
 	map_file_path.append(map_name.ptr, map_name.string_size);
 	map_file_path.append(".tmx");
 
 	read_file_result map_file = read_file(map_file_path);
-	result = read_level_from_tmx_file(arena, transient_arena, map_file, "map");
+	result = read_map_from_tmx_file(arena, transient_arena, map_file, "map");
 	delete map_file.contents;
 
 	return result;
 }
 
-void initialize_level_state(level_state* state, static_game_data* static_data, input_buffer* input_buffer, string_ref level_name, memory_arena* arena)
+void initialize_level_state(level_state* state, static_game_data* static_data, input_buffer* input_buffer, string_ref map_name, memory_arena* arena)
 {
 	*state = {};
 
-	state->current_level_name = copy_string(arena, level_name);
+	state->current_map_name = copy_string(arena, map_name);
 	state->input = *input_buffer;
 
 	state->static_data = static_data;
@@ -257,7 +257,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	std::string collision_file_path = "data/collision_map.tmx";
 	read_file_result collision_file = read_file(collision_file_path);
-	data->collision_reference = read_level_from_tmx_file(arena, transient_arena, collision_file, "collision");
+	data->collision_reference = read_map_from_tmx_file(arena, transient_arena, collision_file, "collision");
 	delete collision_file.contents;
 
 	data->gate_sprite = get_16x16_sprite_part(temp_texture_enum::GATES_TEXTURE, 8, 1);

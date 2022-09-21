@@ -127,7 +127,7 @@ struct entity_to_spawn
 	v4 color;
 };
 
-struct level
+struct map
 {
 	u32 width;
 	u32 height;
@@ -136,7 +136,7 @@ struct level
 	entity_to_spawn* entities_to_spawn;
 	u32 entities_to_spawn_count;
 	tile_position starting_tile;
-	string_ref next_level;
+	string_ref next_map;
 };
 
 struct sprite_effect_stage
@@ -346,7 +346,7 @@ struct sprite_effect_dictionary
 
 struct static_game_data
 {
-	level collision_reference;
+	map collision_reference;
 
 	r32 default_player_invincibility_cooldown;
 
@@ -380,9 +380,9 @@ struct static_game_data
 
 struct level_state
 {
-	string_ref current_level_name;
-	b32 current_level_initialized;
-	level current_level;
+	string_ref current_map_name;
+	b32 current_map_initialized;
+	map current_map;
 	
 	input_buffer input;
 	player_movement player_movement;
@@ -406,7 +406,7 @@ struct level_state
 
 struct save
 {
-	string_ref level_name;
+	string_ref map_name;
 	u32 granades_count;
 	u32 player_max_health;
 };
@@ -424,7 +424,7 @@ struct scene_change
 {
 	b32 change_scene;
 	scene new_scene;
-	string_ref level_to_load;
+	string_ref map_to_load;
 };
 
 struct render_piece
@@ -470,14 +470,14 @@ b32 are_flags_set(entity_flags*	 flags, entity_flags flag_values_to_check);
 void set_flags(entity_flags* flags, entity_flags flag_values_to_check);
 void unset_flags(entity_flags* flags, entity_flags flag_values_to_check);
 b32 are_entity_flags_set(entity* entity, entity_flags flag_values);
-entity* add_entity(level_state* game, world_position position, entity_type* type);
-entity* add_entity(level_state* game, tile_position position, entity_type* type);
+entity* add_entity(level_state* level, world_position position, entity_type* type);
+entity* add_entity(level_state* level, tile_position position, entity_type* type);
 
 void render_entity_sprite(render_group* render, world_position camera_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite);
 
-tile_range find_horizontal_range_of_free_tiles(level map, level collision_ref, tile_position starting_tile, u32 length_limit);
-tile_range find_vertical_range_of_free_tiles(level map, level collision_ref, tile_position starting_tile, u32 length_limit);
+tile_range find_horizontal_range_of_free_tiles(map level, map collision_ref, tile_position starting_tile, u32 length_limit);
+tile_range find_vertical_range_of_free_tiles(map level, map collision_ref, tile_position starting_tile, u32 length_limit);
 
 void write_to_input_buffer(input_buffer* buffer, game_input* new_input);
 void main_game_loop(game_state* game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time);
@@ -486,8 +486,8 @@ enum class render_group_entry_type
 {
 	CLEAR,
 	FADE,
-	RECTANGLE,
-	RECTANGLE_WITH_EFFECTS,
+	BITMAP,
+	BITMAP_WITH_EFFECTS,
 	DEBUG_RECTANGLE,
 };
 
@@ -532,4 +532,4 @@ struct render_group_entry_debug_rectangle
 	rect destination_rect;
 };
 
-void sdl_render_copy_replacement(render_group* group, temp_texture_enum texture, rect source_rect, rect destination_rect);
+void render_bitmap(render_group* group, temp_texture_enum texture, rect source_rect, rect destination_rect);

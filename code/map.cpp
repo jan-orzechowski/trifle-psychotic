@@ -166,27 +166,27 @@ b32 is_in_neighbouring_chunk(chunk_position reference_chunk, world_position posi
 	return result;
 }
 
-u32 get_tile_value(level map, i32 x_coord, i32 y_coord)
+u32 get_tile_value(map level, i32 x_coord, i32 y_coord)
 {
 	u32 result = 0;
 	if (x_coord >= 0
 		&& y_coord >= 0
-		&& x_coord < (i32)map.width
-		&& y_coord < (i32)map.height)
+		&& x_coord < (i32)level.width
+		&& y_coord < (i32)level.height)
 	{
-		u32 tile_index = x_coord + (map.width * y_coord);
-		result = map.tiles[tile_index];
+		u32 tile_index = x_coord + (level.width * y_coord);
+		result = level.tiles[tile_index];
 	}
 	return result;
 }
 
-u32 get_tile_value(level map, tile_position tile)
+u32 get_tile_value(map level, tile_position tile)
 {
-	u32 result = get_tile_value(map, tile.x, tile.y);
+	u32 result = get_tile_value(level, tile.x, tile.y);
 	return result;
 }
 
-b32 is_tile_colliding(level collision_ref, u32 tile_value)
+b32 is_tile_colliding(map collision_ref, u32 tile_value)
 {
 	u32 x_coord = (tile_value - 1) % collision_ref.width;
 	u32 y_coord = (tile_value - 1) / collision_ref.width;
@@ -211,9 +211,9 @@ b32 is_tile_colliding(level collision_ref, u32 tile_value)
 	return collides;
 }
 
-b32 is_tile_colliding(level map, level collision_ref, u32 tile_x, u32 tile_y)
+b32 is_tile_colliding(map level, map collision_ref, u32 tile_x, u32 tile_y)
 {
-	u32 tile_value = get_tile_value(map, tile_x, tile_y);
+	u32 tile_value = get_tile_value(level, tile_x, tile_y);
 	b32 result = is_tile_colliding(collision_ref, tile_value);
 	return result;
 }

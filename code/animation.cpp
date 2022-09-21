@@ -111,10 +111,10 @@ void stop_visual_effect(entity* entity, sprite_effect* effect_to_stop)
 	}	
 }
 
-void start_visual_effect(level_state* game, entity* entity, u32 sprite_effect_index, b32 override_current)
+void start_visual_effect(level_state* level, entity* entity, u32 sprite_effect_index, b32 override_current)
 {
-	assert(sprite_effect_index < game->static_data->visual_effects_count);
-	sprite_effect* effect = &game->static_data->visual_effects[sprite_effect_index];
+	assert(sprite_effect_index < level->static_data->visual_effects_count);
+	sprite_effect* effect = &level->static_data->visual_effects[sprite_effect_index];
 	start_visual_effect(entity, effect, override_current);
 }
 

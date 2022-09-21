@@ -71,10 +71,10 @@ void set_sprite_effect_for_color(sprite_effect_dictionary dict, sprite_effect* e
 	}
 }
 
-void open_gates_with_given_color(level_state* game, v4 color)
+void open_gates_with_given_color(level_state* level, v4 color)
 {
-	u32 index = get_hash_from_color(color) % game->gates_dict.entries_count;
-	gate_dictionary_entry* entry = &game->gates_dict.entries[index];
+	u32 index = get_hash_from_color(color) % level->gates_dict.entries_count;
+	gate_dictionary_entry* entry = &level->gates_dict.entries[index];
 	while (entry)
 	{
 		if (entry->entity != NULL)
@@ -100,7 +100,7 @@ void open_gates_with_given_color(level_state* game, v4 color)
 				}
 				else if (are_entity_flags_set(entry->entity, entity_flags::TINTED_DISPLAY))
 				{
-					start_visual_effect(entry->entity, &game->static_data->visual_effects[0], true);
+					start_visual_effect(entry->entity, &level->static_data->visual_effects[0], true);
 				}
 
 				// w ten sposób nie będziemy otwierać bram ponownie
@@ -112,7 +112,7 @@ void open_gates_with_given_color(level_state* game, v4 color)
 	}
 }
 
-void add_gate_entity(level_state* game, memory_arena* arena, entity_to_spawn* new_entity_to_spawn, b32 is_switch)
+void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn, b32 is_switch)
 {
 	entity_type* new_type = push_struct(arena, entity_type);
 
@@ -123,13 +123,13 @@ void add_gate_entity(level_state* game, memory_arena* arena, entity_to_spawn* ne
 	if (is_switch)
 	{
 		occupied_tiles = find_horizontal_range_of_free_tiles(
-			game->current_level, game->static_data->collision_reference, new_entity_to_spawn->position, max_size);
+			level->current_map, level->static_data->collision_reference, new_entity_to_spawn->position, max_size);
 		collision_rect_dim = get_length_from_tile_range(occupied_tiles);
 	}
 	else
 	{
 		occupied_tiles = find_vertical_range_of_free_tiles(
-			game->current_level, game->static_data->collision_reference, new_entity_to_spawn->position, max_size);
+			level->current_map, level->static_data->collision_reference, new_entity_to_spawn->position, max_size);
 		collision_rect_dim = get_length_from_tile_range(occupied_tiles);
 	}
 
@@ -153,15 +153,15 @@ void add_gate_entity(level_state* game, memory_arena* arena, entity_to_spawn* ne
 			sprite_part* part = &frame.sprite.parts[distance];
 			if (distance == 0)
 			{
-				*part = game->static_data->switch_frame_left_sprite;
+				*part = level->static_data->switch_frame_left_sprite;
 			}
 			else if (distance == tiles_count - 1)
 			{
-				*part = game->static_data->switch_frame_right_sprite;
+				*part = level->static_data->switch_frame_right_sprite;
 			}
 			else
 			{
-				*part = game->static_data->switch_frame_middle_sprite;
+				*part = level->static_data->switch_frame_middle_sprite;
 			}
 			part->offset_in_pixels = get_position_difference(
 				get_tile_position(occupied_tiles.start.x + distance, occupied_tiles.start.y), new_position)
@@ -183,15 +183,15 @@ void add_gate_entity(level_state* game, memory_arena* arena, entity_to_spawn* ne
 			sprite_part* part = &frame.sprite.parts[distance];
 			if (distance == 0)
 			{
-				*part = game->static_data->gate_frame_lower_sprite;
+				*part = level->static_data->gate_frame_lower_sprite;
 			}
 			else if (distance == tiles_count - 1)
 			{
-				*part = game->static_data->gate_frame_upper_sprite;
+				*part = level->static_data->gate_frame_upper_sprite;
 			}
 			else
 			{
-				*part = game->static_data->gate_sprite;
+				*part = level->static_data->gate_sprite;
 			}
 
 			part->offset_in_pixels = get_position_difference(
@@ -206,8 +206,8 @@ void add_gate_entity(level_state* game, memory_arena* arena, entity_to_spawn* ne
 	set_flags(&new_type->flags, entity_flags::INDESTRUCTIBLE);
 	set_flags(&new_type->flags, (is_switch ? entity_flags::SWITCH : entity_flags::GATE));
 
-	entity* new_entity = add_entity(game, new_position, new_type);
-	add_gate_to_dictionary(arena, game->gates_dict, new_entity);
+	entity* new_entity = add_entity(level, new_position, new_type);
+	add_gate_to_dictionary(arena, level->gates_dict, new_entity);
 
 	// dodanie wyświetlaczy
 
@@ -228,15 +228,15 @@ void add_gate_entity(level_state* game, memory_arena* arena, entity_to_spawn* ne
 			sprite_part* part = &frame.sprite.parts[distance];
 			if (distance == 0)
 			{
-				*part = game->static_data->switch_display_left_sprite;
+				*part = level->static_data->switch_display_left_sprite;
 			}
 			else if (distance == tiles_count - 1)
 			{
-				*part = game->static_data->switch_display_right_sprite;
+				*part = level->static_data->switch_display_right_sprite;
 			}
 			else
 			{
-				*part = game->static_data->switch_display_middle_sprite;
+				*part = level->static_data->switch_display_middle_sprite;
 			}
 			part->offset_in_pixels = get_position_difference(
 				get_tile_position(occupied_tiles.start.x + distance, occupied_tiles.start.y), new_position)
@@ -251,11 +251,11 @@ void add_gate_entity(level_state* game, memory_arena* arena, entity_to_spawn* ne
 		frame.sprite.parts_count = 2;
 		frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
 
-		frame.sprite.parts[0] = game->static_data->gate_display_upper_sprite;
+		frame.sprite.parts[0] = level->static_data->gate_display_upper_sprite;
 		frame.sprite.parts[0].offset_in_pixels = get_position_difference(
 			get_tile_position(occupied_tiles.start.x, occupied_tiles.start.y - 1), new_position)
 			* TILE_SIDE_IN_PIXELS;
-		frame.sprite.parts[1] = game->static_data->gate_display_lower_sprite;
+		frame.sprite.parts[1] = level->static_data->gate_display_lower_sprite;
 		frame.sprite.parts[1].offset_in_pixels = get_position_difference(
 			get_tile_position(occupied_tiles.start.x, occupied_tiles.end.y + 1), new_position)
 			* TILE_SIDE_IN_PIXELS;
@@ -263,12 +263,12 @@ void add_gate_entity(level_state* game, memory_arena* arena, entity_to_spawn* ne
 		new_display_type->idle_pose = frame;
 	}
 
-	entity* display_entity = add_entity(game, new_position, new_display_type);
-	add_gate_to_dictionary(arena, game->gates_dict, display_entity);
+	entity* display_entity = add_entity(level, new_position, new_display_type);
+	add_gate_to_dictionary(arena, level->gates_dict, display_entity);
 
 	// efekt kolorystyczny
 
-	sprite_effect* tint_effect = get_sprite_effect_by_color(game->gate_tints_dict, new_entity_to_spawn->color);
+	sprite_effect* tint_effect = get_sprite_effect_by_color(level->gate_tints_dict, new_entity_to_spawn->color);
 	if (tint_effect == NULL)
 	{
 		tint_effect = push_struct(arena, sprite_effect);
@@ -283,7 +283,7 @@ void add_gate_entity(level_state* game, memory_arena* arena, entity_to_spawn* ne
 		tint_effect->total_duration = tint_effect->stages[0].stage_duration;
 
 		set_flags(&tint_effect->flags, sprite_effect_flags::REPEATS);
-		set_sprite_effect_for_color(game->gate_tints_dict, tint_effect);
+		set_sprite_effect_for_color(level->gate_tints_dict, tint_effect);
 	}
 
 	start_visual_effect(display_entity, tint_effect, true);

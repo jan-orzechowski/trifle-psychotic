@@ -372,7 +372,7 @@ void render_group_to_output(render_group* render_group)
 
 		switch (header->type)
 		{
-			case render_group_entry_type::RECTANGLE:
+			case render_group_entry_type::BITMAP:
 			{
 				render_group_entry_bitmap* entry = (render_group_entry_bitmap*)data;
 
@@ -385,7 +385,7 @@ void render_group_to_output(render_group* render_group)
 
 			}
 			break;
-			case render_group_entry_type::RECTANGLE_WITH_EFFECTS:
+			case render_group_entry_type::BITMAP_WITH_EFFECTS:
 			{
 				render_group_entry_bitmap_with_effects* entry = (render_group_entry_bitmap_with_effects*)data;
 
