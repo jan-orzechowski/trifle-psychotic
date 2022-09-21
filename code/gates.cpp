@@ -71,7 +71,7 @@ void set_sprite_effect_for_color(sprite_effect_dictionary dict, sprite_effect* e
 	}
 }
 
-void open_gates_with_given_color(game_data* game, v4 color)
+void open_gates_with_given_color(level_state* game, v4 color)
 {
 	u32 index = get_hash_from_color(color) % game->gates_dict.entries_count;
 	gate_dictionary_entry* entry = &game->gates_dict.entries[index];
@@ -93,7 +93,7 @@ void open_gates_with_given_color(game_data* game, v4 color)
 					sprite* sprite = &entry->entity->type->idle_pose.sprite;
 					for (u32 sprite_index = 1; sprite_index < sprite->parts_count - 1; sprite_index++)
 					{
-						sprite->parts[sprite_index].texture = NULL;
+						sprite->parts[sprite_index].texture = temp_texture_enum::NONE;
 					}
 
 					printf("brama na pozycji (%d,%d)\n", pos.x, pos.y);
@@ -112,7 +112,7 @@ void open_gates_with_given_color(game_data* game, v4 color)
 	}
 }
 
-void add_gate_entity(game_data* game, memory_arena* arena, entity_to_spawn* new_entity_to_spawn, b32 is_switch)
+void add_gate_entity(level_state* game, memory_arena* arena, entity_to_spawn* new_entity_to_spawn, b32 is_switch)
 {
 	entity_type* new_type = push_struct(arena, entity_type);
 

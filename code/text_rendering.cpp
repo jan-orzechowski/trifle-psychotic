@@ -44,19 +44,17 @@ string_ref peek_next_word(string_ref text, u32 current_index_in_text)
     return result;
 }
 
-SDL_Rect get_glyph_rect(font font, u32 code)
+rect get_glyph_rect(font font, u32 code)
 {
     assert(is_letter(code));
     u32 index = code - 33;
-    SDL_Rect rect = {};
-    rect.w = font.pixel_width;
-    rect.h = font.pixel_height;
-    rect.x = 1 + (index * (font.pixel_width + 1));
-    rect.y = 1;
-    return rect;
+    v2 position = get_v2(1 + (index * (font.pixel_width + 1)), 1);
+    v2 dimensions = get_v2(font.pixel_width, font.pixel_height);
+    rect result = get_rect_from_dimensions(position, dimensions);
+    return result;
 }
 
-void render_text(sdl_game_data* sdl_game, font font, rect area, string_ref line)
+void render_text_line(game_state* game, font font, rect area, string_ref line)
 {
     i32 letter_spacing = -1;
 
@@ -69,19 +67,15 @@ void render_text(sdl_game_data* sdl_game, font font, rect area, string_ref line)
         char char_to_render = *(line.ptr + char_index);
         if (is_letter(char_to_render))
         {
-            SDL_Rect src_rect = get_glyph_rect(font, (u32)char_to_render);
-            SDL_Rect dst_rect = {};
-            dst_rect.w = font.pixel_width;
-            dst_rect.h = font.pixel_height;
-            dst_rect.x = x;
-            dst_rect.y = x;
-            SDL_RenderCopy(sdl_game->renderer, sdl_game->font_texture, &src_rect, &dst_rect);
+            rect src_rect = get_glyph_rect(font, (u32)char_to_render);
+            rect dst_rect = get_rect_from_dimensions(get_v2(x, y), get_v2(font.pixel_width, font.pixel_height));
+            sdl_render_copy_replacement(game, temp_texture_enum::FONT_TEXTURE, src_rect, dst_rect);
         }
         x += font.pixel_width + letter_spacing;
     }
 }
 
-void render_text(sdl_game_data* sdl_game, font font, rect area, lines_to_render lines)
+void render_text_lines(game_state* game, font font, rect area, lines_to_render lines)
 {
     u32 x = 0;
     u32 y = 0;
@@ -102,13 +96,9 @@ void render_text(sdl_game_data* sdl_game, font font, rect area, lines_to_render 
             char char_to_render = *(line.ptr + char_index);
             if (is_letter(char_to_render))
             {
-                SDL_Rect src_rect = get_glyph_rect(font, (u32)char_to_render);
-                SDL_Rect dst_rect = {};
-                dst_rect.w = font.pixel_width;
-                dst_rect.h = font.pixel_height;
-                dst_rect.x = x;
-                dst_rect.y = y;
-                SDL_RenderCopy(sdl_game->renderer, sdl_game->font_texture, &src_rect, &dst_rect);
+                rect src_rect = get_glyph_rect(font, (u32)char_to_render);
+                rect dst_rect = get_rect_from_dimensions(get_v2(x, y), get_v2(font.pixel_width, font.pixel_height));
+                sdl_render_copy_replacement(game, temp_texture_enum::FONT_TEXTURE, src_rect, dst_rect);
             }
             x += font.pixel_width + letter_spacing;
         }
@@ -128,7 +118,7 @@ string_ref* get_next_line(lines_to_render* lines)
     return result;
 }
 
-void render_text(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, rect area, string_ref text, b32 wrap)
+void render_text(game_state* game, font font, rect writing_area, string_ref text, b32 wrap)
 {
     u32 max_text_length = 1000;
     if (text.string_size > max_text_length)
@@ -136,9 +126,9 @@ void render_text(memory_arena* transient_arena, sdl_game_data* sdl_game, font fo
         text.string_size = max_text_length;
     }
 
-    temporary_memory writing_memory = begin_temporary_memory(transient_arena);
+    temporary_memory writing_memory = begin_temporary_memory(game->transient_arena);
 
-    v2 area_dim = get_rect_dimensions(area);
+    v2 area_dim = get_rect_dimensions(writing_area);
     u32 max_line_length = area_dim.x / font.pixel_width;
 
     if (wrap) 
@@ -147,7 +137,7 @@ void render_text(memory_arena* transient_arena, sdl_game_data* sdl_game, font fo
 
         // tutaj znowu możemy mieć uint wrap jeśli area dim y z jakiegoś powodu wyjdzie ujemne
         text_lines.max_lines_count = (area_dim.y / font.pixel_height);
-        text_lines.lines = push_array(transient_arena, text_lines.max_lines_count, string_ref);
+        text_lines.lines = push_array(game->transient_arena, text_lines.max_lines_count, string_ref);
 
         string_ref* current_line = get_next_line(&text_lines);
         current_line->ptr = text.ptr;
@@ -197,7 +187,7 @@ void render_text(memory_arena* transient_arena, sdl_game_data* sdl_game, font fo
             }
         }
 
-        render_text(sdl_game, font, area, text_lines);
+        render_text_lines(game, font, writing_area, text_lines);
     }
     else
     {
@@ -210,15 +200,15 @@ void render_text(memory_arena* transient_arena, sdl_game_data* sdl_game, font fo
             line_to_render.string_size = max_line_length;
         }
 
-        render_text(sdl_game, font, area, line_to_render);
+        render_text_line(game, font, writing_area, line_to_render);
     }
 
     end_temporary_memory(writing_memory);
 }
 
-void render_text(memory_arena* transient_arena, sdl_game_data* sdl_game, font font, rect area, char* buffer, u32 buffer_size, b32 wrap)
+void render_text(game_state* game, font font, rect writing_area, char* buffer, u32 buffer_size, b32 wrap)
 {
     u32 string_length = get_c_string_length(buffer, buffer_size);
     string_ref str_to_render = get_string_ref(buffer, string_length);
-    render_text(transient_arena, sdl_game, font, area, str_to_render, wrap);
+    render_text(game, font, writing_area, str_to_render, wrap);
 }

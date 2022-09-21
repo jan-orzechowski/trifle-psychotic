@@ -1,5 +1,6 @@
 ﻿#include "main.h"
 #include "game_data.h"
+#include "sdl_platform.h"
 
 r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
 {
@@ -52,6 +53,42 @@ void load_image(SDL_Renderer* renderer, SDL_Texture** place_to_load, const char*
 	}
 }
 
+read_file_result read_file(std::string path)
+{
+	read_file_result result = {};
+
+	SDL_RWops* file = SDL_RWFromFile(path.c_str(), "r");
+	if (file)
+	{
+		int64_t file_size = SDL_RWsize(file);
+		if (file_size != -1 // błąd
+			&& file_size < 1024 * 1024 * 5) // zabezpieczenie
+		{
+			result.size = file_size;
+			result.contents = new char[file_size + 1]; // dodatkowy bajt na końcu przyda się przy parsowaniu
+			for (int byte_index = 0;
+				byte_index < file_size;
+				++byte_index)
+			{
+				SDL_RWread(file, (void*)((char*)result.contents + byte_index), sizeof(char), 1);
+			}
+			*((char*)result.contents + file_size) = 0;
+		}
+		else
+		{
+			print_sdl_error();
+		}
+
+		SDL_RWclose(file);
+	}
+	else
+	{
+		print_sdl_error();
+	}
+
+	return result;
+}
+
 SDL_Renderer* get_renderer(SDL_Window* window)
 {
 	SDL_Renderer* renderer = NULL;
@@ -80,9 +117,9 @@ SDL_Renderer* get_renderer(SDL_Window* window)
 	return renderer;
 }
 
-sdl_game_data init_sdl()
+sdl_data init_sdl()
 {
-	sdl_game_data sdl_game = {};
+	sdl_data sdl_game = {};
 	b32 success = true;
 
 	int init = SDL_Init(SDL_INIT_EVERYTHING);
@@ -154,8 +191,8 @@ sdl_game_data init_sdl()
 
 int main(int argc, char* args[])
 {
-	sdl_game_data sdl_game = init_sdl();
-	if (sdl_game.initialized)
+	sdl_data sdl = init_sdl();
+	if (sdl.initialized)
 	{
 		bool run = true;
 
@@ -169,17 +206,14 @@ int main(int argc, char* args[])
 		void* memory_for_transient_arena = SDL_malloc(memory_for_transient_arena_size);
 		initialize_memory_arena(&transient_arena, memory_for_transient_arena_size, (byte*)memory_for_transient_arena);
 
-		sdl_game.arena = &permanent_arena;
-		sdl_game.transient_arena = &transient_arena;
+		game_state game = {};
 
-		//circular_buffer_test(&arena);
-
-		const char* test_c_str = "calkiem dlugi napis ktory sam sie zawija i w ogole 2137";
-		sdl_game.test_str = copy_c_string_to_memory_arena(&permanent_arena, test_c_str);
+		game.arena = &permanent_arena;
+		game.transient_arena = &transient_arena;
 
 		static_game_data* static_data = push_struct(&permanent_arena, static_game_data);
 
-		load_static_game_data(&sdl_game, static_data, &permanent_arena, &transient_arena);
+		load_static_game_data(static_data, &permanent_arena, &transient_arena);
 		input_buffer input_buffer = initialize_input_buffer(&permanent_arena);
 
 		u32 frame_counter = 0;
@@ -226,7 +260,7 @@ int main(int argc, char* args[])
 
 				write_to_input_buffer(&input_buffer, &new_input);
 
-				main_game_loop(&sdl_game, static_data, &input_buffer, delta_time);
+				main_game_loop(&game, static_data, &input_buffer, delta_time);
 			}
 
 			u32 end_work_counter = SDL_GetPerformanceCounter();
@@ -247,27 +281,46 @@ int main(int argc, char* args[])
 				}
 			}
 
-			sdl_game.debug_elapsed_work_ms = elapsed_work_ms;
-			sdl_game.debug_frame_counter = frame_counter + 1;
+			sdl.debug_elapsed_work_ms = elapsed_work_ms;
+			sdl.debug_frame_counter = frame_counter + 1;
 		}
 
-		end_temporary_memory(sdl_game.game_temporary_memory);
+		end_temporary_memory(game.game_level_memory);
+
+		check_arena(game.arena);
+		check_arena(game.transient_arena);
 	}
 	else
 	{
 		invalid_code_path;
 	}
+	
+	SDL_DestroyTexture(sdl.tileset_texture);
+	SDL_DestroyTexture(sdl.bullets_texture);
+	SDL_DestroyTexture(sdl.ui_texture);
+	SDL_DestroyTexture(sdl.font_texture);
+	SDL_DestroyTexture(sdl.player_texture);
+	SDL_DestroyTexture(sdl.misc_texture);
+	SDL_DestroyTexture(sdl.gates_texture);
 
-	check_arena(sdl_game.arena);
-	check_arena(sdl_game.transient_arena);
-
-	SDL_DestroyTexture(sdl_game.tileset_texture);
-
-	SDL_DestroyRenderer(sdl_game.renderer);
-	SDL_DestroyWindow(sdl_game.window);
+	SDL_DestroyRenderer(sdl.renderer);
+	SDL_DestroyWindow(sdl.window);
 
 	IMG_Quit();
 	SDL_Quit();
 
 	return 0;
+}
+
+void render_rect(sdl_data* sdl, rect rectangle)
+{
+	SDL_SetRenderDrawColor(sdl->renderer, 255, 255, 255, 0);
+	SDL_RenderDrawLine(sdl->renderer, // dół
+		rectangle.min_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.min_corner.y);
+	SDL_RenderDrawLine(sdl->renderer, // lewa
+		rectangle.min_corner.x, rectangle.min_corner.y, rectangle.min_corner.x, rectangle.max_corner.y);
+	SDL_RenderDrawLine(sdl->renderer, // prawa
+		rectangle.max_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
+	SDL_RenderDrawLine(sdl->renderer, // góra
+		rectangle.min_corner.x, rectangle.max_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
 }

@@ -14,8 +14,8 @@ tile_position get_tile_position(world_position world_pos)
 {
 	tile_position result = {};
 	// origin pola (0,0) to punkt (0,0) - środek wypada w (0,5;0,5) itd.
-	i32 tile_in_chunk_x = SDL_floor(world_pos.pos_in_chunk.x);
-	i32 tile_in_chunk_y = SDL_floor(world_pos.pos_in_chunk.y);
+	i32 tile_in_chunk_x = floor(world_pos.pos_in_chunk.x);
+	i32 tile_in_chunk_y = floor(world_pos.pos_in_chunk.y);
 	result.x = (world_pos.chunk_pos.x * CHUNK_SIDE_IN_TILES) + tile_in_chunk_x;
 	result.y = (world_pos.chunk_pos.y * CHUNK_SIDE_IN_TILES) + tile_in_chunk_y;
 	return result;
@@ -37,8 +37,8 @@ chunk_position get_tile_chunk_position(tile_position tile_pos)
 {
 	chunk_position result = {};
 	// np. (3,15) -> (0,0), (4,16) -> (1,2)
-	result.x = SDL_floor((tile_pos.x + 1) / CHUNK_SIDE_IN_TILES);
-	result.y = SDL_floor((tile_pos.y + 1) / CHUNK_SIDE_IN_TILES);
+	result.x = floor((r32)(tile_pos.x + 1) / (r32)CHUNK_SIDE_IN_TILES);
+	result.y = floor((r32)(tile_pos.y + 1) / (r32)CHUNK_SIDE_IN_TILES);
 	return result;
 }
 

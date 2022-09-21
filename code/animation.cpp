@@ -28,8 +28,7 @@ r32 get_stage_tint(sprite_effect_stage* stage, r32 total_time)
 	else
 	{
 		// używamy pi zamiast 2pi ze względu na to, że niżej mamy odbicie ujemnych wartości
-		result = (stage->amplitude *
-			SDL_sinf((total_time * pi32 / stage->period) + stage->phase_shift));
+		result = stage->amplitude * sinf((total_time * pi32 / stage->period) + stage->phase_shift);
 	}
 
 	if (result < 0)
@@ -112,7 +111,7 @@ void stop_visual_effect(entity* entity, sprite_effect* effect_to_stop)
 	}	
 }
 
-void start_visual_effect(game_data* game, entity* entity, u32 sprite_effect_index, b32 override_current)
+void start_visual_effect(level_state* game, entity* entity, u32 sprite_effect_index, b32 override_current)
 {
 	assert(sprite_effect_index < game->static_data->visual_effects_count);
 	sprite_effect* effect = &game->static_data->visual_effects[sprite_effect_index];
@@ -241,7 +240,7 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time)
 	}
 }
 
-void render_entity_animation_frame(SDL_Renderer* renderer,
+void render_entity_animation_frame(game_state* game,
 	world_position camera_position, entity* entity)
 {
 	sprite* sprite_to_render = NULL;
@@ -257,6 +256,6 @@ void render_entity_animation_frame(SDL_Renderer* renderer,
 
 	assert(sprite_to_render != NULL);
 
-	render_entity_sprite(renderer, camera_position, entity->position, entity->direction,
+	render_entity_sprite(game, camera_position, entity->position, entity->direction,
 		entity->visual_effect, entity->visual_effect_duration, *sprite_to_render);
 }

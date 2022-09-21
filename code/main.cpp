@@ -35,20 +35,7 @@ b32 are_entity_flags_set(entity* entity, entity_flags flag_values)
 	return result;
 }
 
-void render_rect(sdl_game_data* sdl_game, rect rectangle)
-{
-	SDL_SetRenderDrawColor(sdl_game->renderer, 255, 255, 255, 0);
-	SDL_RenderDrawLine(sdl_game->renderer, // dół
-		rectangle.min_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.min_corner.y);
-	SDL_RenderDrawLine(sdl_game->renderer, // lewa
-		rectangle.min_corner.x, rectangle.min_corner.y, rectangle.min_corner.x, rectangle.max_corner.y);
-	SDL_RenderDrawLine(sdl_game->renderer, // prawa
-		rectangle.max_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
-	SDL_RenderDrawLine(sdl_game->renderer, // góra
-		rectangle.min_corner.x, rectangle.max_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
-}
-
-void render_hitpoint_bar(sdl_game_data* sdl_game, entity* player, b32 draw_white_bars)
+void render_hitpoint_bar(game_state* game, entity* player, b32 draw_white_bars)
 {
 	// zabezpieczenie na uint wrapping
 	if (player->health < 0.0f)
@@ -59,61 +46,44 @@ void render_hitpoint_bar(sdl_game_data* sdl_game, entity* player, b32 draw_white
 	u32 filled_health_bars = (u32)(player->health / 10);
 	u32 max_health_bars = (u32)(player->type->max_health / 10);
 
-	SDL_Rect texture_rect = {};
-	texture_rect.w = 8;
-	texture_rect.h = 8;
-	texture_rect.x = 0;
-	texture_rect.y = 0;
+	v2 icon_dim = get_v2(8, 8);
+	v2 bar_dim = get_v2(4, 8);
 
-	SDL_Rect icon_screen_rect = {};
-	icon_screen_rect.w = 8;
-	icon_screen_rect.h = 8;
-	icon_screen_rect.x = 10;
-	icon_screen_rect.y = 10;
-	SDL_RenderCopy(sdl_game->renderer, sdl_game->ui_texture, &texture_rect, &icon_screen_rect);
-
-	/*texture_rect.x += 8;
-	icon_screen_rect.y += 8;
-	SDL_RenderCopy(sdl_game->renderer, sdl_game->ui_texture, &texture_rect, &icon_screen_rect);*/
-
-	icon_screen_rect.w = 4;
-	icon_screen_rect.h = 8;
-	texture_rect.w = 4;
-	texture_rect.h = 8;
-	texture_rect.x = 4;
-	texture_rect.y = 16;
+	rect icon_texture_rect = get_rect_from_dimensions(get_v2(0, 0), icon_dim);
+	rect icon_screen_rect = get_rect_from_dimensions(get_v2(10, 10), icon_dim);
+	
+	sdl_render_copy_replacement(game, temp_texture_enum::UI_TEXTURE, icon_texture_rect, icon_screen_rect);
+	
+	rect bar_texture_rect = get_rect_from_dimensions(get_v2(4, 16), bar_dim);
 
 	if (draw_white_bars)
 	{
-		texture_rect.x = 0;
-		texture_rect.y = 16;
+		bar_texture_rect = get_rect_from_dimensions(get_v2(0, 16), bar_dim);
 	}
 
-	icon_screen_rect.x = 18;
-	icon_screen_rect.y = 10;
+	rect bar_screen_rect = get_rect_from_dimensions(get_v2(18, 10), bar_dim);
 	for (u32 health_bar_index = 0;
 		health_bar_index < filled_health_bars;
 		health_bar_index++)
 	{
-		icon_screen_rect.x += 4;
-		SDL_RenderCopy(sdl_game->renderer, sdl_game->ui_texture, &texture_rect, &icon_screen_rect);
+		move_rect(bar_screen_rect, get_v2(4, 0));
+		sdl_render_copy_replacement(game, temp_texture_enum::UI_TEXTURE, bar_texture_rect, bar_screen_rect);
 	}
 
-	texture_rect.x = 0;
-	texture_rect.y = 8;
+	bar_texture_rect = get_rect_from_dimensions(get_v2(0, 8), bar_dim);
 
 	for (u32 health_bar_index = filled_health_bars;
 		health_bar_index < max_health_bars;
 		health_bar_index++)
 	{
-		icon_screen_rect.x += 4;
-		SDL_RenderCopy(sdl_game->renderer, sdl_game->ui_texture, &texture_rect, &icon_screen_rect);
+		move_rect(bar_screen_rect, get_v2(4, 0));
+		sdl_render_copy_replacement(game, temp_texture_enum::UI_TEXTURE, bar_texture_rect, bar_screen_rect);
 	}
 }
 
-SDL_Rect get_tile_rect(u32 tile_id)
+rect get_tile_rect(u32 tile_id)
 {
-	SDL_Rect tile_rect = {};
+	rect result = {};
 	if (tile_id == 0)
 	{
 		
@@ -127,13 +97,10 @@ SDL_Rect get_tile_rect(u32 tile_id)
 		u32 x = column * TILE_SIDE_IN_PIXELS;
 		u32 y = row * TILE_SIDE_IN_PIXELS;
 
-		tile_rect.x = x;
-		tile_rect.y = y;
-		tile_rect.w = TILE_SIDE_IN_PIXELS;
-		tile_rect.h = TILE_SIDE_IN_PIXELS;
+		result = get_rect_from_dimensions(get_v2(x, y), get_v2(TILE_SIDE_IN_PIXELS, TILE_SIDE_IN_PIXELS));
 	}
 	
-	return tile_rect;
+	return result;
 }
 
 b32 is_good_for_walk_path(level map, level collision_ref, u32 tile_x, u32 tile_y)
@@ -279,7 +246,7 @@ tile_range find_vertical_range_of_free_tiles(level map, level collision_ref, til
 	return result;
 }
 
-void fire_bullet(game_data* game, entity_type* bullet_type, world_position bullet_starting_position, 
+void fire_bullet(level_state* game, entity_type* bullet_type, world_position bullet_starting_position, 
 	v2 bullet_offset, v2 velocity)
 {
 	if (game->bullets_count < game->bullets_max_count)
@@ -293,7 +260,7 @@ void fire_bullet(game_data* game, entity_type* bullet_type, world_position bulle
 	}
 }
 
-void fire_bullet(game_data* game, entity* entity, b32 cooldown)
+void fire_bullet(level_state* game, entity* entity, b32 cooldown)
 {
 	assert(entity->type->fired_bullet_type);
 
@@ -313,7 +280,7 @@ void fire_bullet(game_data* game, entity* entity, b32 cooldown)
 	}
 }
 
-void remove_bullet(game_data* game, u32 bullet_index)
+void remove_bullet(level_state* game, u32 bullet_index)
 {
 	assert(game->bullets_count > 0);
 	assert(bullet_index < game->bullets_max_count);
@@ -324,7 +291,7 @@ void remove_bullet(game_data* game, u32 bullet_index)
 	game->bullets_count--;
 }
 
-void update_power_up_timers(game_data* game, r32 delta_time)
+void update_power_up_timers(level_state* game, r32 delta_time)
 {
 	for (u32 index = 0; index < array_count(game->power_ups.states); index++)
 	{
@@ -343,7 +310,7 @@ b32 is_power_up_active(power_up_state power_up)
 	return result;
 }
 
-void apply_power_up(game_data* game, entity* player, entity* power_up)
+void apply_power_up(level_state* game, entity* player, entity* power_up)
 {
 	assert(are_entity_flags_set(power_up, entity_flags::POWER_UP));
 	switch (power_up->type->type_enum)
@@ -437,7 +404,7 @@ b32 check_segment_intersection(r32 movement_start_x, r32 movement_start_y,
 	return result;
 }
 
-entity* add_entity(game_data* game, world_position position, entity_type* type)
+entity* add_entity(level_state* game, world_position position, entity_type* type)
 {
 	assert(game->entities_count + 1 < game->entities_max_count);
 
@@ -449,13 +416,13 @@ entity* add_entity(game_data* game, world_position position, entity_type* type)
 	return new_entity;
 }
 
-entity* add_entity(game_data* game, tile_position position, entity_type* type)
+entity* add_entity(level_state* game, tile_position position, entity_type* type)
 {
 	entity* result = add_entity(game, get_world_position(position), type);
 	return result;
 }
 
-void remove_entity(game_data* game, u32 entity_index)
+void remove_entity(level_state* game, u32 entity_index)
 {
 	assert(game->entities_count > 1);
 	assert(entity_index != 0);
@@ -467,13 +434,13 @@ void remove_entity(game_data* game, u32 entity_index)
 	game->entities_count--;
 }
 
-entity* get_player(game_data* game)
+entity* get_player(level_state* game)
 {
 	entity* result = &game->entities[0];
 	return result;
 }
 
-b32 damage_player(game_data* game, r32 damage_amount)
+b32 damage_player(level_state* game, r32 damage_amount)
 {
 	b32 damaged = false;
 	if (game->player_invincibility_cooldown <= 0.0f
@@ -587,8 +554,9 @@ rect get_tiles_area_to_check_for_collision(world_position entity_position, v2 co
 	tile_position entity_tile = get_tile_position(entity_position);
 	tile_position target_tile = get_tile_position(target_pos);
 
-	i32 x_margin = (i32)SDL_ceil(collision_rect_dim.x);
-	i32 y_margin = (i32)SDL_ceil(collision_rect_dim.y);
+	// domyślne zachowanie casta to obcięcie części ułamkowej
+	i32 x_margin = (i32)/*SDL_ceil*/(collision_rect_dim.x);
+	i32 y_margin = (i32)/*SDL_ceil*/(collision_rect_dim.y);
 
 	rect result = {};
 	result.min_corner.x = (r32)min((i32)entity_tile.x - x_margin, (i32)target_tile.x - x_margin);
@@ -612,16 +580,9 @@ rect get_tiles_area_to_check_for_collision(bullet* bullet, world_position target
 	return result;
 }
 
-struct collision_result
-{
-	collision collision_data;
-	entity* collided_enemy;
-	entity* collided_switch;
-	entity* collided_transition;
-	entity* collided_power_up;
-};
 
-collision_result move(game_data* game, entity* moving_entity, world_position target_pos)
+
+collision_result move(level_state* game, entity* moving_entity, world_position target_pos)
 {
 	collision_result result = {};
 
@@ -779,7 +740,7 @@ collision_result move(game_data* game, entity* moving_entity, world_position tar
 	return result;
 }
 
-b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_position target_pos)
+b32 move_bullet(level_state* game, bullet* moving_bullet, u32 bullet_index, world_position target_pos)
 {
 	b32 was_collision = false;
 	
@@ -906,7 +867,7 @@ b32 move_bullet(game_data* game, bullet* moving_bullet, u32 bullet_index, world_
 	return was_collision;
 }
 
-b32 is_standing_on_ground(game_data* game, entity* entity_to_check)
+b32 is_standing_on_ground(level_state* game, entity* entity_to_check)
 {
 	b32 result = false;
 	r32 corner_distance_apron = 0.0f;
@@ -924,15 +885,15 @@ b32 is_standing_on_ground(game_data* game, entity* entity_to_check)
 	return result;
 }
 
-void render_debug_information(sdl_game_data* sdl_game, game_data* game)
+void render_debug_information(game_state* game, level_state* state)
 {
-	entity* player = get_player(game);
+	entity* player = get_player(state);
 
-	b32 is_standing = is_standing_on_ground(game, player);
+	b32 is_standing = is_standing_on_ground(state, player);
 
 	char buffer[200];
 	v4 text_color = get_v4(255, 255, 255, 0);
-	int error = SDL_snprintf(buffer, 200, "Chunk:(%d,%d),Pos:(%0.2f,%0.2f),Acc: (%0.2f,%0.2f) Standing: %d, Direction: %s",
+	int error = snprintf(buffer, 200, "Chunk:(%d,%d),Pos:(%0.2f,%0.2f),Acc: (%0.2f,%0.2f) Standing: %d, Direction: %s",
 		player->position.chunk_pos.x, player->position.chunk_pos.y, player->position.pos_in_chunk.x, player->position.pos_in_chunk.y,
 		player->acceleration.x, player->acceleration.y, is_standing, (player->direction == direction::W ? "W" : "E"));
 
@@ -944,7 +905,7 @@ void render_debug_information(sdl_game_data* sdl_game, game_data* game)
 	font.pixel_height = 8;
 	font.pixel_width = 8;
 
-	render_text(sdl_game->transient_arena, sdl_game, font, area, buffer, 200, true);
+	render_text(game, font, area, buffer, 200, true);
 }
 
 void write_to_input_buffer(input_buffer* buffer, game_input* new_input)
@@ -1042,7 +1003,7 @@ void change_movement_mode(player_movement* movement, movement_mode mode)
 	}
 }
 
-world_position process_input(game_data* game, entity* player, r32 delta_time)
+world_position process_input(level_state* game, entity* player, r32 delta_time)
 {
 	game_input* input = get_last_frame_input(&game->input);
 
@@ -1218,55 +1179,52 @@ world_position process_input(game_data* game, entity* player, r32 delta_time)
 	world_position target_pos = add_to_position(player->position,
 		player->velocity * player->type->velocity_multiplier * delta_time);
 
-	/*printf("target_pos: chunk: (%d,%d), pos: (%0.02f,%0.2f)\n", 
-		target_pos.chunk_pos.x, target_pos.chunk_pos.y, target_pos.pos_in_chunk.x, target_pos.pos_in_chunk.y);*/
-
 	return target_pos;
 }
 
-SDL_Rect get_render_rect(v2 position_relative_to_camera, v2 rect_size)
+rect get_render_rect(v2 position_relative_to_camera, v2 rect_size)
 {
-	SDL_Rect result = {};
-	result.w = rect_size.x;
-	result.h = rect_size.y;
-	result.x = SCREEN_CENTER_IN_PIXELS.x + (position_relative_to_camera.x * TILE_SIDE_IN_PIXELS)
+	r32 w = rect_size.x;
+	r32 h = rect_size.y;
+	r32 x = SCREEN_CENTER_IN_PIXELS.x + (position_relative_to_camera.x * TILE_SIDE_IN_PIXELS)
 		- (rect_size.x / 2);
-	result.y = SCREEN_CENTER_IN_PIXELS.y + (position_relative_to_camera.y * TILE_SIDE_IN_PIXELS)
+	r32 y = SCREEN_CENTER_IN_PIXELS.y + (position_relative_to_camera.y * TILE_SIDE_IN_PIXELS)
 		- (rect_size.y / 2);
+	
+	rect result = get_rect_from_dimensions(x, y, w, h);
 	return result;
 }
 
-SDL_Rect get_tile_render_rect(v2 position_relative_to_camera)
+rect get_tile_render_rect(v2 position_relative_to_camera)
 {
-	SDL_Rect result = {};
-	result.w = TILE_SIDE_IN_PIXELS;
-	result.h = TILE_SIDE_IN_PIXELS;
-	result.x = SCREEN_CENTER_IN_PIXELS.x + (position_relative_to_camera.x * TILE_SIDE_IN_PIXELS) 
+	r32 w = TILE_SIDE_IN_PIXELS;
+	r32 h = TILE_SIDE_IN_PIXELS;
+	r32 x = SCREEN_CENTER_IN_PIXELS.x + (position_relative_to_camera.x * TILE_SIDE_IN_PIXELS)
 		- (TILE_SIDE_IN_PIXELS / 2);
-	result.y = SCREEN_CENTER_IN_PIXELS.y + (position_relative_to_camera.y * TILE_SIDE_IN_PIXELS) 
+	r32 y = SCREEN_CENTER_IN_PIXELS.y + (position_relative_to_camera.y * TILE_SIDE_IN_PIXELS)
 		- (TILE_SIDE_IN_PIXELS / 2);
+
+	rect result = get_rect_from_dimensions(x, y, w, h);
 	return result;
 }
 
-void debug_render_tile(SDL_Renderer* renderer, tile_position tile_pos, v4 color, world_position camera_pos)
+void debug_render_tile(game_state* game, tile_position tile_pos, v4 color, world_position camera_pos)
 {
 	v2 position = get_position_difference(tile_pos, camera_pos);
-	SDL_Rect screen_rect = get_tile_render_rect(position);
-	SDL_RenderFillRect(renderer, &screen_rect);
+	rect screen_rect = get_tile_render_rect(position);
+	sdl_render_fill_rect_replacement(game, screen_rect);
 }
 
-void render_debug_path_ends(sdl_game_data* sdl_game, entity* entity, world_position camera_pos)
+void render_debug_path_ends(game_state* game, entity* entity, world_position camera_pos)
 {
 	if (entity->has_walking_path)
 	{
-		SDL_SetRenderDrawColor(sdl_game->renderer, 0, 0, 255, 0);
-		debug_render_tile(sdl_game->renderer, entity->path.start, { 255,255,0,255 }, camera_pos);
-		debug_render_tile(sdl_game->renderer, entity->path.end, { 0,0,255,255 }, camera_pos);
+		debug_render_tile(game, entity->path.start, { 255,255,0,255 }, camera_pos);
+		debug_render_tile(game, entity->path.end, { 0,0,255,255 }, camera_pos);
 	}
 }
 
-void render_entity_sprite(SDL_Renderer* renderer,
-	world_position camera_position, world_position entity_position, direction entity_direction,
+void render_entity_sprite(game_state* game, world_position camera_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite)
 {	
 	b32 tint_modified = false;
@@ -1283,51 +1241,59 @@ void render_entity_sprite(SDL_Renderer* renderer,
 		sprite_part* part = &sprite.parts[part_index];
 		v2 offset = part->offset_in_pixels;
 
-		SDL_RendererFlip flip = SDL_FLIP_NONE;
+		b32 /*SDL_RendererFlip*/ flip = false /*SDL_FLIP_NONE*/;
 		if (entity_direction != part->default_direction)
 		{
-			flip = SDL_FLIP_HORIZONTAL; // SDL_FLIP_VERTICAL
+			flip = true; //SDL_FLIP_HORIZONTAL; // SDL_FLIP_VERTICAL
 			offset = get_v2(-part->offset_in_pixels.x, part->offset_in_pixels.y);
 		}
 
 		v2 position = get_position_difference(entity_position, camera_position);
-		SDL_Rect screen_rect = get_render_rect(position, get_v2(part->texture_rect.w, part->texture_rect.h));
-		screen_rect.x += offset.x;
-		screen_rect.y += offset.y;
+		v2 render_rect_dim = get_rect_dimensions(part->texture_rect);
+		rect screen_rect = get_render_rect(position, render_rect_dim);
+		screen_rect = move_rect(screen_rect, offset);
 
 		if (tint_modified)
 		{
 			assert(tint.r >= 0 && tint.r <= 1 && tint.g >= 0 && tint.g <= 1 && tint.b >= 0 && tint.b <= 1);
 
-			v4 sdl_tint = tint * 255;
+			//v4 sdl_tint = tint * 255;
 			if (are_flags_set(&visual_effect->flags, sprite_effect_flags::ADDITIVE_MODE))
 			{
 				// rysujemy dwa razy - raz normalnie, a raz dodajemy do wartości koloru
-				SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
+				//SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
 
-				SDL_SetTextureBlendMode(part->texture, SDL_BLENDMODE_ADD);
-				SDL_SetTextureColorMod(part->texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
-				// dwa razy - raz nie daje zauważalnych efektów
-				SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
-				SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
-				SDL_SetTextureColorMod(part->texture, 255, 255, 255);
-				SDL_SetTextureBlendMode(part->texture, SDL_BLENDMODE_BLEND);
+				sdl_render_copy_ex_replacement(game, part->texture, part->texture_rect, screen_rect, tint, false, flip);
+
+				//SDL_SetTextureBlendMode(part->texture, SDL_BLENDMODE_ADD);
+				//SDL_SetTextureColorMod(part->texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
+				//// dwa razy - raz nie daje zauważalnych efektów
+				//SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
+				//SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
+				//SDL_SetTextureColorMod(part->texture, 255, 255, 255);
+				//SDL_SetTextureBlendMode(part->texture, SDL_BLENDMODE_BLEND);
+
+				sdl_render_copy_ex_replacement(game, part->texture, part->texture_rect, screen_rect, tint, true, flip);
 			}
 			else
 			{
-				SDL_SetTextureColorMod(part->texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
-				SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
-				SDL_SetTextureColorMod(part->texture, 255, 255, 255);
+				//SDL_SetTextureColorMod(part->texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
+				//SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
+				//SDL_SetTextureColorMod(part->texture, 255, 255, 255);
+
+				sdl_render_copy_ex_replacement(game, part->texture, part->texture_rect, screen_rect, tint, false, flip);
 			}
 		}
 		else
 		{
-			SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
+			sdl_render_copy_ex_replacement(game, part->texture, part->texture_rect, screen_rect, tint, false, flip);
+
+			//SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
 		}
 	}
 }
 
-void add_next_level_transition(game_data* game, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+void add_next_level_transition(level_state* game, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
 {
 	entity_type* transition_type = push_struct(arena, entity_type);
 	transition_type->type_enum = entity_type_enum::NEXT_LEVEL_TRANSITION;
@@ -1345,20 +1311,20 @@ void add_next_level_transition(game_data* game, memory_arena* arena, entity_to_s
 	add_entity(game, new_position, transition_type);
 }
 
-void initialize_current_level(sdl_game_data* sdl_game, game_data* game)
+void initialize_current_level(game_state* game_state, level_state* game)
 {
 	assert(false == game->current_level_initialized);
 
-	temporary_memory memory_for_initialization = begin_temporary_memory(sdl_game->transient_arena);
+	temporary_memory memory_for_initialization = begin_temporary_memory(game_state->transient_arena);
 
 	add_entity(game, game->current_level.starting_tile,
 		get_entity_type_ptr(game->static_data->entity_types_dict, entity_type_enum::PLAYER));
 
 	game->gates_dict.entries_count = 100;
-	game->gates_dict.entries = push_array(sdl_game->arena, game->gates_dict.entries_count, gate_dictionary_entry);
+	game->gates_dict.entries = push_array(game_state->arena, game->gates_dict.entries_count, gate_dictionary_entry);
 
 	game->gate_tints_dict.sprite_effects_count = 100;
-	game->gate_tints_dict.sprite_effects = push_array(sdl_game->arena, game->gate_tints_dict.sprite_effects_count, sprite_effect*);
+	game->gate_tints_dict.sprite_effects = push_array(game_state->arena, game->gate_tints_dict.sprite_effects_count, sprite_effect*);
 	game->gate_tints_dict.probing_jump = 7;
 
 	for (u32 entity_index = 0;
@@ -1370,17 +1336,17 @@ void initialize_current_level(sdl_game_data* sdl_game, game_data* game)
 		{
 			case entity_type_enum::GATE:
 			{
-				add_gate_entity(game, sdl_game->arena, new_entity, false);
+				add_gate_entity(game, game_state->arena, new_entity, false);
 			}
 			break;
 			case entity_type_enum::SWITCH:
 			{
-				add_gate_entity(game, sdl_game->arena, new_entity, true);
+				add_gate_entity(game, game_state->arena, new_entity, true);
 			}
 			break;
 			case entity_type_enum::NEXT_LEVEL_TRANSITION:
 			{
-				add_next_level_transition(game, sdl_game->arena, new_entity);
+				add_next_level_transition(game, game_state->arena, new_entity);
 			}
 			break;
 			case entity_type_enum::UNKNOWN:
@@ -1402,7 +1368,7 @@ void initialize_current_level(sdl_game_data* sdl_game, game_data* game)
 	game->current_level_initialized = true;
 }
 
-void handle_player_and_enemy_collision(game_data* game, entity* player, entity* enemy)
+void handle_player_and_enemy_collision(level_state* game, entity* player, entity* enemy)
 {
 	if (is_power_up_active(game->power_ups.invincibility))
 	{
@@ -1429,13 +1395,13 @@ void handle_player_and_enemy_collision(game_data* game, entity* player, entity* 
 	}
 }
 
-scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r32 delta_time)
+scene_change game_update_and_render(game_state* state, level_state* game, r32 delta_time)
 {
 	scene_change change_to_other_scene = {};
 
 	if (false == game->current_level_initialized)
 	{
-		initialize_current_level(sdl_game, game);
+		initialize_current_level(state, game);
 	}
 
 	entity* player = get_player(game);
@@ -1683,8 +1649,8 @@ scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r3
 
 	// rendering
 	{
-		SDL_SetRenderDrawColor(sdl_game->renderer, 0, 255, 0, 0);
-		SDL_RenderClear(sdl_game->renderer);
+		//SDL_SetRenderDrawColor(sdl_game->renderer, 0, 255, 0, 0);
+		//SDL_RenderClear(sdl_game->renderer);
 		
 		chunk_position reference_chunk = player->position.chunk_pos;
 		tile_position player_tile_pos = get_tile_position(player->position);
@@ -1692,8 +1658,8 @@ scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r3
 		v2 player_offset_in_chunk = get_position_difference(player->position, reference_chunk);
 		v2 player_offset_in_tile = player_offset_in_chunk - player_tile_offset_in_chunk;
 	
-		i32 screen_half_width = SDL_ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
-		i32 screen_half_height = SDL_ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
+		i32 screen_half_width = ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
+		i32 screen_half_height = ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
 
 		// draw tiles
 		for (i32 y_coord_relative = -screen_half_height;
@@ -1711,11 +1677,11 @@ scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r3
 				i32 x_coord_in_world = player_tile_pos.x + x_coord_relative;
 
 				u32 tile_value = get_tile_value(game->current_level, x_coord_in_world, y_coord_in_world);
-				SDL_Rect tile_bitmap = get_tile_rect(tile_value);
+				rect tile_bitmap = get_tile_rect(tile_value);
 
 				v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - player_offset_in_tile;
-				SDL_Rect screen_rect = get_tile_render_rect(position);
-				SDL_RenderCopy(sdl_game->renderer, sdl_game->tileset_texture, &tile_bitmap, &screen_rect);
+				rect screen_rect = get_tile_render_rect(position);
+				sdl_render_copy_replacement(state, temp_texture_enum::TILESET_TEXTURE, tile_bitmap, screen_rect);
 
 #if 0
 				if (is_tile_colliding(game->collision_reference, tile_value))
@@ -1736,7 +1702,7 @@ scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r3
 
 		if (debug_entity_to_render_path)
 		{
-			render_debug_path_ends(sdl_game, debug_entity_to_render_path, player->position);
+			render_debug_path_ends(state, debug_entity_to_render_path, player->position);
 		}
 
 		// draw entities
@@ -1745,7 +1711,7 @@ scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r3
 			entity* entity = game->entities + entity_index;
 			if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
 			{
-				render_entity_animation_frame(sdl_game->renderer, player->position, entity);
+				render_entity_animation_frame(state, player->position, entity);
 			}
 		}
 
@@ -1755,7 +1721,7 @@ scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r3
 			bullet* bullet = game->bullets + bullet_index;
 			if (is_in_neighbouring_chunk(player->position.chunk_pos, bullet->position))
 			{
-				render_entity_sprite(sdl_game->renderer,
+				render_entity_sprite(state,
 					player->position, bullet->position, direction::NONE,
 					NULL, 0, bullet->type->idle_pose.sprite);
 			}
@@ -1763,7 +1729,7 @@ scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r3
 
 		// draw collision debug info
 		{
-#if 1
+#if 0
 			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 			{
 				entity* entity = game->entities + entity_index;
@@ -1781,19 +1747,18 @@ scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r3
 					rect collision_rect = get_rect_from_center(
 						SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS), 
 						size * TILE_SIDE_IN_PIXELS);
-					render_rect(sdl_game, collision_rect);
+					render_rect_outline(state, collision_rect);
 
-					SDL_SetRenderDrawColor(sdl_game->renderer, 255, 0, 0, 0);
 					v2 entity_position = SCREEN_CENTER_IN_PIXELS + relative_position * TILE_SIDE_IN_PIXELS;
-					SDL_RenderDrawPoint(sdl_game->renderer, entity_position.x, entity_position.y);
+					sdl_render_draw_point_replacement(state, entity_position, get_v4(255, 255, 255, 0));
 				}
 			}
 #endif
 		}
 		
-		render_debug_information(sdl_game, game);
+		render_debug_information(state, game);
 
-		render_hitpoint_bar(sdl_game, player, is_power_up_active(game->power_ups.invincibility));
+		render_hitpoint_bar(state, player, is_power_up_active(game->power_ups.invincibility));
 
 		// testowy textbox
 #if 0
@@ -1811,13 +1776,13 @@ scene_change game_update_and_render(sdl_game_data* sdl_game, game_data* game, r3
 		}
 #endif
 
-		SDL_RenderPresent(sdl_game->renderer);
+		sdl_render_present_replacement(state);
 	}
 
 	return change_to_other_scene;
 }
 
-void render_menu_option(sdl_game_data* sdl_game, u32 x_coord, u32 y_coord, string_ref title)
+void render_menu_option(game_state* game, u32 x_coord, u32 y_coord, string_ref title)
 {
 	rect textbox_area = get_rect_from_corners(
 		get_v2(x_coord, y_coord),
@@ -1826,10 +1791,10 @@ void render_menu_option(sdl_game_data* sdl_game, u32 x_coord, u32 y_coord, strin
 	font font = {};
 	font.pixel_height = 8;
 	font.pixel_width = 8;
-	render_text(sdl_game->arena, sdl_game, font, textbox_area, title);
+	render_text(game, font, textbox_area, title);
 }
 
-scene_change menu_update_and_render(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
+scene_change menu_update_and_render(game_state* game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
 {
 	scene_change change_to_other_scene = {};
 
@@ -1906,41 +1871,30 @@ scene_change menu_update_and_render(sdl_game_data* sdl_game, static_game_data* s
 		}
 	}
 	
-	SDL_SetRenderDrawColor(sdl_game->renderer, 0, 0, 0, 0);
-	SDL_RenderClear(sdl_game->renderer);
+	sdl_render_clear_replacement(game, get_zero_v4());
 
 	i32 option_spacing = 20;
 	u32 options_x = 140;
 	u32 first_option_y = 140;
 
-	render_menu_option(sdl_game, options_x, first_option_y, static_data->menu_new_game_str);
-	render_menu_option(sdl_game, options_x, first_option_y + option_spacing, static_data->menu_continue_str);
-	render_menu_option(sdl_game, options_x, first_option_y + 2 * option_spacing, static_data->menu_credits_str);
-	render_menu_option(sdl_game, options_x, first_option_y + 3 * option_spacing, static_data->menu_exit_str);
+	render_menu_option(game, options_x, first_option_y, static_data->menu_new_game_str);
+	render_menu_option(game, options_x, first_option_y + option_spacing, static_data->menu_continue_str);
+	render_menu_option(game, options_x, first_option_y + 2 * option_spacing, static_data->menu_credits_str);
+	render_menu_option(game, options_x, first_option_y + 3 * option_spacing, static_data->menu_exit_str);
 
 	u32 indicator_y = first_option_y + (menu_index * option_spacing) - 4;
 	u32 indicator_x = options_x - 20;
 
-	SDL_Rect indicator_screen_rect = {};
-	indicator_screen_rect.x = indicator_x;
-	indicator_screen_rect.y = indicator_y;
-	indicator_screen_rect.h = 16;
-	indicator_screen_rect.w = 16;
+	rect indicator_screen_rect = get_rect_from_dimensions(indicator_x, indicator_y, 16, 16);
+	rect bitmap_rect = get_rect_from_dimensions(16, 0, 16, 16);
 
-	SDL_Rect bitmap_rect = {};
-	bitmap_rect.x = 16;
-	bitmap_rect.y = 0;
-	bitmap_rect.w = 16;
-	bitmap_rect.h = 16;
-
-	SDL_RenderCopy(sdl_game->renderer, sdl_game->misc_texture, &bitmap_rect, &indicator_screen_rect);
-
-	SDL_RenderPresent(sdl_game->renderer);
+	sdl_render_copy_replacement(game, temp_texture_enum::MISC_TEXTURE, bitmap_rect, indicator_screen_rect);
+	sdl_render_present_replacement(game);
 
 	return change_to_other_scene;
 };
 
-save* save_game_state(memory_arena* arena, game_data* game)
+save* save_game_state(memory_arena* arena, level_state* game)
 {
 	assert(game->entities[0].type);
 	save* result = push_struct(arena, save);
@@ -1950,40 +1904,40 @@ save* save_game_state(memory_arena* arena, game_data* game)
 	return result;
 }
 
-void restore_game_state(game_data* game, save* save)
+void restore_game_state(level_state* game, save* save)
 {
 	assert(game->current_level_initialized);
 	assert(game && save);
 	game->entities[0].type->max_health = save->player_max_health;
 }
 
-void main_game_loop(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
+void main_game_loop(game_state* game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
 {		
 	scene_change scene_change = {};
-	switch (sdl_game->current_scene)
+	switch (game->current_scene)
 	{
 		case scene::GAME:
 		{
-			if (false == sdl_game->first_game_run_initialized)
+			if (false == game->first_game_run_initialized)
 			{
-				sdl_game->game_data = push_struct(sdl_game->arena, game_data);
+				game->level_state = push_struct(game->arena, level_state);
 
-				sdl_game->game_temporary_memory = begin_temporary_memory(sdl_game->arena);
-				string_ref level_name = copy_c_string_to_memory_arena(sdl_game->arena, "map_02");
-				initialize_game_data(sdl_game->game_data, static_data, input_buffer, level_name, sdl_game->arena);
-				sdl_game->game_data->current_level = load_level(level_name, sdl_game->arena, sdl_game->transient_arena);
+				game->game_level_memory = begin_temporary_memory(game->arena);
+				string_ref level_name = copy_c_string_to_memory_arena(game->arena, "map_02");
+				initialize_level_state(game->level_state, static_data, input_buffer, level_name, game->arena);
+				game->level_state->current_level = load_level(level_name, game->arena, game->transient_arena);
 
-				sdl_game->first_game_run_initialized = true;
+				game->first_game_run_initialized = true;
 			}
 						
-			sdl_game->game_data->input = *(input_buffer);
-			scene_change = game_update_and_render(sdl_game, sdl_game->game_data, delta_time);
+			game->level_state->input = *(input_buffer);
+			scene_change = game_update_and_render(game, game->level_state, delta_time);
 
 		};
 		break;
 		case scene::MAIN_MENU:
 		{
-			scene_change = menu_update_and_render(sdl_game, static_data, input_buffer, delta_time);
+			scene_change = menu_update_and_render(game, static_data, input_buffer, delta_time);
 		};
 		break;
 		case scene::DEATH:
@@ -2005,17 +1959,17 @@ void main_game_loop(sdl_game_data* sdl_game, static_game_data* static_data, inpu
 		{
 			case scene::GAME:
 			{
-				temporary_memory auxillary_memory_for_loading = begin_temporary_memory(sdl_game->transient_arena);
+				temporary_memory auxillary_memory_for_loading = begin_temporary_memory(game->transient_arena);
 				{
-					string_ref level_name = copy_string(sdl_game->transient_arena, scene_change.level_to_load);
-					save* save = save_game_state(sdl_game->transient_arena, sdl_game->game_data);
-					end_temporary_memory(sdl_game->game_temporary_memory, true);
+					string_ref level_name = copy_string(game->transient_arena, scene_change.level_to_load);
+					save* save = save_game_state(game->transient_arena, game->level_state);
+					end_temporary_memory(game->game_level_memory, true);
 
-					sdl_game->game_temporary_memory = begin_temporary_memory(sdl_game->arena);
-					initialize_game_data(sdl_game->game_data, static_data, input_buffer, level_name, sdl_game->arena);
-					sdl_game->game_data->current_level = load_level(level_name, sdl_game->arena, sdl_game->transient_arena);
-					initialize_current_level(sdl_game, sdl_game->game_data);
-					restore_game_state(sdl_game->game_data, save);
+					game->game_level_memory = begin_temporary_memory(game->arena);
+					initialize_level_state(game->level_state, static_data, input_buffer, level_name, game->arena);
+					game->level_state->current_level = load_level(level_name, game->arena, game->transient_arena);
+					initialize_current_level(game, game->level_state);
+					restore_game_state(game->level_state, save);
 				}
 				end_temporary_memory(auxillary_memory_for_loading, true);
 			}

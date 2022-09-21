@@ -1,8 +1,5 @@
 ﻿#pragma once
 
-#include <SDL.h>
-#include <SDL_image.h>
-
 #include <stdio.h>
 #include <string>
 #include "jorutils.h"
@@ -28,9 +25,18 @@
 
 #define CHUNK_SIDE_IN_TILES 16
 
-void print_sdl_error();
-void print_sdl_image_error();
-void print_sdl_ttf_error();
+// do usunięcia - ostatecznie mamy mieć jedną teksturę
+enum class temp_texture_enum
+{
+	NONE, // to był głównie trik przy bramach - trzeba to czymś zastąpić
+	TILESET_TEXTURE,
+	BULLETS_TEXTURE,
+	UI_TEXTURE,
+	FONT_TEXTURE,
+	PLAYER_TEXTURE,
+	MISC_TEXTURE,
+	GATES_TEXTURE
+};
 
 struct tile_position
 {
@@ -160,8 +166,8 @@ struct sprite_effect
 
 struct sprite_part
 {
-	SDL_Texture* texture;
-	SDL_Rect texture_rect;
+	temp_texture_enum texture;
+	rect texture_rect;
 	v2 offset_in_pixels;
 	direction default_direction;
 };
@@ -277,6 +283,15 @@ struct collision
 	r32 possible_movement_perc;
 };
 
+struct collision_result
+{
+	collision collision_data;
+	entity* collided_enemy;
+	entity* collided_switch;
+	entity* collided_transition;
+	entity* collided_power_up;
+};
+
 struct entity_collision_data
 {
 	v2 position;
@@ -363,7 +378,7 @@ struct static_game_data
 	string_ref menu_exit_str;
 };
 
-struct game_data
+struct level_state
 {
 	string_ref current_level_name;
 	b32 current_level_initialized;
@@ -412,33 +427,33 @@ struct scene_change
 	string_ref level_to_load;
 };
 
-struct sdl_game_data
+struct render_piece
 {
-	bool initialized;
-	SDL_Window* window;
-	SDL_Renderer* renderer;
-	SDL_Texture* tileset_texture;
-	SDL_Texture* bullets_texture;
-	SDL_Texture* ui_texture;
-	SDL_Texture* font_texture;
-	SDL_Texture* player_texture;
-	SDL_Texture* misc_texture;
-	SDL_Texture* gates_texture;
 
-	u32 debug_frame_counter;
-	r32 debug_elapsed_work_ms;
-
-	string_ref test_str;
-	memory_arena* arena;
-	memory_arena* transient_arena;
-
-	b32 first_game_run_initialized;
-	scene current_scene;
-	temporary_memory game_temporary_memory;
-	game_data* game_data;
 };
 
-SDL_Rect get_tile_rect(u32 tile_id);
+struct render_buffer
+{
+	render_piece* pieces;
+	u32 pieces_count;
+};
+
+struct game_state
+{
+	b32 initialized;
+	scene current_scene;
+	
+	b32 first_game_run_initialized;
+	level_state* level_state;
+	memory_arena* arena;
+	memory_arena* transient_arena;	
+	
+	temporary_memory game_level_memory;	
+
+	render_buffer render_buffer;
+};
+
+rect get_tile_rect(u32 tile_id);
 tile_position get_tile_position(i32 tile_x, i32 tile_y);
 
 input_buffer initialize_input_buffer(memory_arena* arena);
@@ -446,15 +461,48 @@ b32 are_flags_set(entity_flags*	 flags, entity_flags flag_values_to_check);
 void set_flags(entity_flags* flags, entity_flags flag_values_to_check);
 void unset_flags(entity_flags* flags, entity_flags flag_values_to_check);
 b32 are_entity_flags_set(entity* entity, entity_flags flag_values);
-entity* add_entity(game_data* game, world_position position, entity_type* type);
-entity* add_entity(game_data* game, tile_position position, entity_type* type);
+entity* add_entity(level_state* game, world_position position, entity_type* type);
+entity* add_entity(level_state* game, tile_position position, entity_type* type);
 
-void render_entity_sprite(SDL_Renderer* renderer,
-	world_position camera_position, world_position entity_position, direction entity_direction,
+void render_entity_sprite(game_state* game, world_position camera_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite);
 
 tile_range find_horizontal_range_of_free_tiles(level map, level collision_ref, tile_position starting_tile, u32 length_limit);
 tile_range find_vertical_range_of_free_tiles(level map, level collision_ref, tile_position starting_tile, u32 length_limit);
 
 void write_to_input_buffer(input_buffer* buffer, game_input* new_input);
-void main_game_loop(sdl_game_data* sdl_game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time);
+void main_game_loop(game_state* game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time);
+
+static void sdl_render_copy_replacement(game_state* game, temp_texture_enum texture, rect source_rect, rect destination_rect)
+{
+
+}
+
+// i to będzie też zastępowało render outline
+static void sdl_render_fill_rect_replacement(game_state* game, rect screen_rect_to_fill)
+{
+
+}
+
+static void sdl_render_draw_point_replacement(game_state* game, v2 point, v4 color)
+{
+
+}
+
+static void sdl_render_copy_ex_replacement(game_state* game,
+	temp_texture_enum texture, rect source_rect, rect destination_rect, v4 tint_color, b32 render_in_additive_mode, b32 flip_horizontally)
+{
+
+}
+
+static void sdl_render_clear_replacement(game_state* game, v4 color)
+{
+
+}
+
+static void sdl_render_present_replacement(game_state* game)
+{
+
+}
+
+

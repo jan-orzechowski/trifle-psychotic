@@ -668,6 +668,14 @@ rect get_rect_from_dimensions(v2 min_corner, v2 dimensions)
     return result;
 }
 
+rect get_rect_from_dimensions(r32 min_corner_x, r32 min_corner_y, r32 dimension_x, r32 dimension_y)
+{
+    rect result = {};
+    result.min_corner = get_v2(min_corner_x, min_corner_y);
+    result.max_corner = result.min_corner + get_v2(dimension_x, dimension_y);
+    return result;
+}
+
 rect get_rect_from_center(v2 center, v2 dimensions)
 {
     rect result = {};
@@ -707,6 +715,14 @@ rect add_side_length(rect rectangle, v2 sides_length)
     result.max_corner.x = rectangle.max_corner.x + half_x;
     result.max_corner.y = rectangle.max_corner.y + half_y;
 
+    return result;
+}
+
+rect move_rect(rect rect_to_move, v2 distance)
+{
+    rect result = {};
+    result.min_corner = rect_to_move.min_corner + distance;
+    result.max_corner = rect_to_move.max_corner + distance;
     return result;
 }
 
@@ -858,6 +874,14 @@ cuboid add_side_length(cuboid cub, v3 sides_lengths)
     result.max_corner.y = cub.max_corner.y + half_y;
     result.max_corner.z = cub.max_corner.z + half_z;
 
+    return result;
+}
+
+cuboid move_cuboid(cuboid cub_to_move, v3 distance)
+{
+    cuboid result = {};
+    result.min_corner = cub_to_move.min_corner + distance;
+    result.max_corner = cub_to_move.max_corner + distance;
     return result;
 }
 
