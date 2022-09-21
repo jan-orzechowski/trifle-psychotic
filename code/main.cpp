@@ -5,6 +5,87 @@
 #include "animation.h"
 #include "gates.h"
 
+#include "sdl_platform.h"
+
+void* push_render_element(render_group* group, u32 size, render_group_entry_type type)
+{
+	render_group_entry_header* result = 0;
+	u32 header_size = sizeof(render_group_entry_header);
+
+	if ((group->push_buffer_size + size + header_size) < group->max_push_buffer_size)
+	{
+		result = (render_group_entry_header*)(group->push_buffer_base + group->push_buffer_size);
+		result->type = type;
+
+		// dajemy wskaźnik do elementu, nie do headera - ten zostanie odczytany w render_group_to_output
+		result = result + 1; // przesuwamy się o rozmiar headera
+		group->push_buffer_size += (size + header_size);
+	}
+	else
+	{
+		invalid_code_path;
+	}
+
+	return result;
+}
+
+void sdl_render_copy_replacement(render_group* group, temp_texture_enum texture, rect source_rect, rect destination_rect)
+{
+	render_group_entry_bitmap* entry = (render_group_entry_bitmap*)push_render_element(
+		group, sizeof(render_group_entry_bitmap), render_group_entry_type::RECTANGLE);
+
+	entry->source_rect = source_rect;
+	entry->destination_rect = destination_rect;
+	entry->texture = texture;
+}
+
+void sdl_render_fill_rect_replacement(render_group* group, rect screen_rect_to_fill, v4 color, b32 render_outline_only)
+{
+	render_group_entry_debug_rectangle* entry = (render_group_entry_debug_rectangle*)push_render_element(
+		group, sizeof(render_group_entry_debug_rectangle), render_group_entry_type::DEBUG_RECTANGLE);
+
+	entry->destination_rect = screen_rect_to_fill;
+	entry->color = color;
+	entry->render_outline_only = render_outline_only;
+}
+
+void sdl_render_draw_point_replacement(render_group* group, v2 point, v4 color)
+{
+	rect screen_rect = get_rect_from_center(point, get_v2(2.0f, 2.0f));
+	sdl_render_fill_rect_replacement(group, screen_rect, color, false);
+}
+
+void sdl_render_copy_ex_replacement(render_group* group,
+	temp_texture_enum texture, rect source_rect, rect destination_rect, v4 tint_color, b32 render_in_additive_mode, b32 flip_horizontally)
+{
+	render_group_entry_bitmap_with_effects* entry = (render_group_entry_bitmap_with_effects*)push_render_element(
+		group, sizeof(render_group_entry_bitmap_with_effects), render_group_entry_type::RECTANGLE_WITH_EFFECTS);
+
+	entry->source_rect = source_rect;
+	entry->destination_rect = destination_rect;
+	entry->texture = texture;
+	entry->tint_color = tint_color;
+	entry->render_in_additive_mode = render_in_additive_mode;
+	entry->flip_horizontally = flip_horizontally;
+}
+
+static void sdl_render_clear_replacement(render_group* group, v4 color)
+{
+	render_group_entry_clear* entry = (render_group_entry_clear*)push_render_element(
+		group, sizeof(render_group_entry_clear), render_group_entry_type::RECTANGLE_WITH_EFFECTS);
+
+	entry->color = color;
+}
+
+void sdl_render_fade(render_group* group, v4 color, r32 percentage)
+{
+	render_group_entry_fade* entry = (render_group_entry_fade*)push_render_element(
+		group, sizeof(render_group_entry_fade), render_group_entry_type::FADE);
+
+	entry->color = color;
+	entry->percentage = percentage;
+}
+
 input_buffer initialize_input_buffer(memory_arena* arena)
 {
 	input_buffer result = {};
@@ -35,7 +116,7 @@ b32 are_entity_flags_set(entity* entity, entity_flags flag_values)
 	return result;
 }
 
-void render_hitpoint_bar(game_state* game, entity* player, b32 draw_white_bars)
+void render_hitpoint_bar(render_group* render, entity* player, b32 draw_white_bars)
 {
 	// zabezpieczenie na uint wrapping
 	if (player->health < 0.0f)
@@ -52,7 +133,7 @@ void render_hitpoint_bar(game_state* game, entity* player, b32 draw_white_bars)
 	rect icon_texture_rect = get_rect_from_dimensions(get_v2(0, 0), icon_dim);
 	rect icon_screen_rect = get_rect_from_dimensions(get_v2(10, 10), icon_dim);
 	
-	sdl_render_copy_replacement(game, temp_texture_enum::UI_TEXTURE, icon_texture_rect, icon_screen_rect);
+	sdl_render_copy_replacement(render, temp_texture_enum::UI_TEXTURE, icon_texture_rect, icon_screen_rect);
 	
 	rect bar_texture_rect = get_rect_from_dimensions(get_v2(4, 16), bar_dim);
 
@@ -66,8 +147,8 @@ void render_hitpoint_bar(game_state* game, entity* player, b32 draw_white_bars)
 		health_bar_index < filled_health_bars;
 		health_bar_index++)
 	{
-		move_rect(bar_screen_rect, get_v2(4, 0));
-		sdl_render_copy_replacement(game, temp_texture_enum::UI_TEXTURE, bar_texture_rect, bar_screen_rect);
+		bar_screen_rect = move_rect(bar_screen_rect, get_v2(4, 0));
+		sdl_render_copy_replacement(render, temp_texture_enum::UI_TEXTURE, bar_texture_rect, bar_screen_rect);
 	}
 
 	bar_texture_rect = get_rect_from_dimensions(get_v2(0, 8), bar_dim);
@@ -76,8 +157,8 @@ void render_hitpoint_bar(game_state* game, entity* player, b32 draw_white_bars)
 		health_bar_index < max_health_bars;
 		health_bar_index++)
 	{
-		move_rect(bar_screen_rect, get_v2(4, 0));
-		sdl_render_copy_replacement(game, temp_texture_enum::UI_TEXTURE, bar_texture_rect, bar_screen_rect);
+		bar_screen_rect = move_rect(bar_screen_rect, get_v2(4, 0));
+		sdl_render_copy_replacement(render, temp_texture_enum::UI_TEXTURE, bar_texture_rect, bar_screen_rect);
 	}
 }
 
@@ -555,8 +636,8 @@ rect get_tiles_area_to_check_for_collision(world_position entity_position, v2 co
 	tile_position target_tile = get_tile_position(target_pos);
 
 	// domyślne zachowanie casta to obcięcie części ułamkowej
-	i32 x_margin = (i32)/*SDL_ceil*/(collision_rect_dim.x);
-	i32 y_margin = (i32)/*SDL_ceil*/(collision_rect_dim.y);
+	i32 x_margin = (i32)ceil(collision_rect_dim.x);
+	i32 y_margin = (i32)ceil(collision_rect_dim.y);
 
 	rect result = {};
 	result.min_corner.x = (r32)min((i32)entity_tile.x - x_margin, (i32)target_tile.x - x_margin);
@@ -646,6 +727,7 @@ collision_result move(level_state* game, entity* moving_entity, world_position t
 								if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
 								{
 									closest_collision = new_collision;
+									printf("collision with tile\n");
 								}
 							}
 						}
@@ -892,7 +974,7 @@ void render_debug_information(game_state* game, level_state* state)
 	b32 is_standing = is_standing_on_ground(state, player);
 
 	char buffer[200];
-	v4 text_color = get_v4(255, 255, 255, 0);
+	v4 text_color = get_v4(1, 1, 1, 0);
 	int error = snprintf(buffer, 200, "Chunk:(%d,%d),Pos:(%0.2f,%0.2f),Acc: (%0.2f,%0.2f) Standing: %d, Direction: %s",
 		player->position.chunk_pos.x, player->position.chunk_pos.y, player->position.pos_in_chunk.x, player->position.pos_in_chunk.y,
 		player->acceleration.x, player->acceleration.y, is_standing, (player->direction == direction::W ? "W" : "E"));
@@ -905,7 +987,7 @@ void render_debug_information(game_state* game, level_state* state)
 	font.pixel_height = 8;
 	font.pixel_width = 8;
 
-	render_text(game, font, area, buffer, 200, true);
+	render_text(&game->render, game->transient_arena, font, area, buffer, 200, true);
 }
 
 void write_to_input_buffer(input_buffer* buffer, game_input* new_input)
@@ -1208,23 +1290,23 @@ rect get_tile_render_rect(v2 position_relative_to_camera)
 	return result;
 }
 
-void debug_render_tile(game_state* game, tile_position tile_pos, v4 color, world_position camera_pos)
+void debug_render_tile(render_group* render, tile_position tile_pos, v4 color, world_position camera_pos)
 {
 	v2 position = get_position_difference(tile_pos, camera_pos);
 	rect screen_rect = get_tile_render_rect(position);
-	sdl_render_fill_rect_replacement(game, screen_rect);
+	sdl_render_fill_rect_replacement(render, screen_rect, color, false);
 }
 
-void render_debug_path_ends(game_state* game, entity* entity, world_position camera_pos)
+void render_debug_path_ends(render_group* render, entity* entity, world_position camera_pos)
 {
 	if (entity->has_walking_path)
 	{
-		debug_render_tile(game, entity->path.start, { 255,255,0,255 }, camera_pos);
-		debug_render_tile(game, entity->path.end, { 0,0,255,255 }, camera_pos);
+		debug_render_tile(render, entity->path.start, { 1, 1, 0, 1 }, camera_pos);
+		debug_render_tile(render, entity->path.end, { 0, 0, 1, 1 }, camera_pos);
 	}
 }
 
-void render_entity_sprite(game_state* game, world_position camera_position, world_position entity_position, direction entity_direction,
+void render_entity_sprite(render_group* render, world_position camera_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite)
 {	
 	b32 tint_modified = false;
@@ -1241,10 +1323,10 @@ void render_entity_sprite(game_state* game, world_position camera_position, worl
 		sprite_part* part = &sprite.parts[part_index];
 		v2 offset = part->offset_in_pixels;
 
-		b32 /*SDL_RendererFlip*/ flip = false /*SDL_FLIP_NONE*/;
+		b32 flip = false;
 		if (entity_direction != part->default_direction)
 		{
-			flip = true; //SDL_FLIP_HORIZONTAL; // SDL_FLIP_VERTICAL
+			flip = true;
 			offset = get_v2(-part->offset_in_pixels.x, part->offset_in_pixels.y);
 		}
 
@@ -1256,39 +1338,24 @@ void render_entity_sprite(game_state* game, world_position camera_position, worl
 		if (tint_modified)
 		{
 			assert(tint.r >= 0 && tint.r <= 1 && tint.g >= 0 && tint.g <= 1 && tint.b >= 0 && tint.b <= 1);
-
-			//v4 sdl_tint = tint * 255;
 			if (are_flags_set(&visual_effect->flags, sprite_effect_flags::ADDITIVE_MODE))
 			{
-				// rysujemy dwa razy - raz normalnie, a raz dodajemy do wartości koloru
-				//SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
-
-				sdl_render_copy_ex_replacement(game, part->texture, part->texture_rect, screen_rect, tint, false, flip);
-
-				//SDL_SetTextureBlendMode(part->texture, SDL_BLENDMODE_ADD);
-				//SDL_SetTextureColorMod(part->texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
-				//// dwa razy - raz nie daje zauważalnych efektów
-				//SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
-				//SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
-				//SDL_SetTextureColorMod(part->texture, 255, 255, 255);
-				//SDL_SetTextureBlendMode(part->texture, SDL_BLENDMODE_BLEND);
-
-				sdl_render_copy_ex_replacement(game, part->texture, part->texture_rect, screen_rect, tint, true, flip);
+				sdl_render_copy_ex_replacement(render, part->texture, part->texture_rect, screen_rect, tint, false, flip);
+				sdl_render_copy_ex_replacement(render, part->texture, part->texture_rect, screen_rect, tint, true, flip);
 			}
 			else
 			{
-				//SDL_SetTextureColorMod(part->texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
-				//SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
-				//SDL_SetTextureColorMod(part->texture, 255, 255, 255);
-
-				sdl_render_copy_ex_replacement(game, part->texture, part->texture_rect, screen_rect, tint, false, flip);
+				sdl_render_copy_ex_replacement(render, part->texture, part->texture_rect, screen_rect, tint, false, flip);
 			}
 		}
 		else
 		{
-			sdl_render_copy_ex_replacement(game, part->texture, part->texture_rect, screen_rect, tint, false, flip);
+			if (part->texture == temp_texture_enum::BULLETS_TEXTURE)
+			{
+				debug_breakpoint;
+			}
 
-			//SDL_RenderCopyEx(renderer, part->texture, &part->texture_rect, &screen_rect, 0, NULL, flip);
+			sdl_render_copy_ex_replacement(render, part->texture, part->texture_rect, screen_rect, get_zero_v4(), false, flip);
 		}
 	}
 }
@@ -1648,10 +1715,7 @@ scene_change game_update_and_render(game_state* state, level_state* game, r32 de
 	}
 
 	// rendering
-	{
-		//SDL_SetRenderDrawColor(sdl_game->renderer, 0, 255, 0, 0);
-		//SDL_RenderClear(sdl_game->renderer);
-		
+	{		
 		chunk_position reference_chunk = player->position.chunk_pos;
 		tile_position player_tile_pos = get_tile_position(player->position);
 		v2 player_tile_offset_in_chunk = get_tile_offset_in_chunk(reference_chunk, player_tile_pos);
@@ -1666,14 +1730,14 @@ scene_change game_update_and_render(game_state* state, level_state* game, r32 de
 			y_coord_relative < screen_half_height;
 			y_coord_relative++)
 		{
-			i32 y_coord_on_screen = y_coord_relative;;// +screen_half_height;
+			i32 y_coord_on_screen = y_coord_relative;
 			i32 y_coord_in_world = player_tile_pos.y + y_coord_relative;
 
 			for (i32 x_coord_relative = -screen_half_width;
 				x_coord_relative < screen_half_width;
 				x_coord_relative++)
 			{
-				i32 x_coord_on_screen = x_coord_relative;//+ screen_half_width;
+				i32 x_coord_on_screen = x_coord_relative;
 				i32 x_coord_in_world = player_tile_pos.x + x_coord_relative;
 
 				u32 tile_value = get_tile_value(game->current_level, x_coord_in_world, y_coord_in_world);
@@ -1681,10 +1745,10 @@ scene_change game_update_and_render(game_state* state, level_state* game, r32 de
 
 				v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - player_offset_in_tile;
 				rect screen_rect = get_tile_render_rect(position);
-				sdl_render_copy_replacement(state, temp_texture_enum::TILESET_TEXTURE, tile_bitmap, screen_rect);
+				sdl_render_copy_replacement(&state->render, temp_texture_enum::TILESET_TEXTURE, tile_bitmap, screen_rect);
 
-#if 0
-				if (is_tile_colliding(game->collision_reference, tile_value))
+#if 1
+				if (is_tile_colliding(game->static_data->collision_reference, tile_value))
 				{
 					tile_position tile_pos = get_tile_position(x_coord_in_world, y_coord_in_world);
 					entity_collision_data tile_collision = get_tile_collision_data(player->position.chunk_pos, tile_pos);
@@ -1694,7 +1758,8 @@ scene_change game_update_and_render(game_state* state, level_state* game, r32 de
 					rect collision_rect = get_rect_from_center(
 						SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS),
 						(size * TILE_SIDE_IN_PIXELS));
-					render_rect(sdl_game, collision_rect);
+					
+					sdl_render_fill_rect_replacement(&state->render, collision_rect, { 0,0,0,0 }, true);
 				}
 #endif
 			}
@@ -1702,7 +1767,7 @@ scene_change game_update_and_render(game_state* state, level_state* game, r32 de
 
 		if (debug_entity_to_render_path)
 		{
-			render_debug_path_ends(state, debug_entity_to_render_path, player->position);
+			render_debug_path_ends(&state->render, debug_entity_to_render_path, player->position);
 		}
 
 		// draw entities
@@ -1711,7 +1776,7 @@ scene_change game_update_and_render(game_state* state, level_state* game, r32 de
 			entity* entity = game->entities + entity_index;
 			if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
 			{
-				render_entity_animation_frame(state, player->position, entity);
+				render_entity_animation_frame(&state->render, player->position, entity);
 			}
 		}
 
@@ -1721,7 +1786,7 @@ scene_change game_update_and_render(game_state* state, level_state* game, r32 de
 			bullet* bullet = game->bullets + bullet_index;
 			if (is_in_neighbouring_chunk(player->position.chunk_pos, bullet->position))
 			{
-				render_entity_sprite(state,
+				render_entity_sprite(&state->render,
 					player->position, bullet->position, direction::NONE,
 					NULL, 0, bullet->type->idle_pose.sprite);
 			}
@@ -1729,7 +1794,7 @@ scene_change game_update_and_render(game_state* state, level_state* game, r32 de
 
 		// draw collision debug info
 		{
-#if 0
+#if 1
 			for (u32 entity_index = 0; entity_index < game->entities_count; entity_index++)
 			{
 				entity* entity = game->entities + entity_index;
@@ -1747,10 +1812,11 @@ scene_change game_update_and_render(game_state* state, level_state* game, r32 de
 					rect collision_rect = get_rect_from_center(
 						SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS), 
 						size * TILE_SIDE_IN_PIXELS);
-					render_rect_outline(state, collision_rect);
+					
+					sdl_render_fill_rect_replacement(&state->render, collision_rect, { 0, 0, 0, 0 }, true);
 
 					v2 entity_position = SCREEN_CENTER_IN_PIXELS + relative_position * TILE_SIDE_IN_PIXELS;
-					sdl_render_draw_point_replacement(state, entity_position, get_v4(255, 255, 255, 0));
+					sdl_render_draw_point_replacement(&state->render, entity_position, get_v4(1, 0, 0, 0));
 				}
 			}
 #endif
@@ -1758,25 +1824,7 @@ scene_change game_update_and_render(game_state* state, level_state* game, r32 de
 		
 		render_debug_information(state, game);
 
-		render_hitpoint_bar(state, player, is_power_up_active(game->power_ups.invincibility));
-
-		// testowy textbox
-#if 0
-		{
-			rect textbox_area = get_rect_from_center(
-				SCREEN_CENTER_IN_PIXELS + get_v2(0, 80),
-				get_v2(240, 60));
-			SDL_SetRenderDrawColor(sdl_game->renderer, 0, 0, 0, 0);
-			SDL_Rect sdl_textbox_rect = get_sdl_rect(textbox_area);
-			SDL_RenderFillRect(sdl_game->renderer, &sdl_textbox_rect);
-			font font = {};
-			font.pixel_height = 8;
-			font.pixel_width = 8;
-			render_text(sdl_game->arena, sdl_game, font, textbox_area, sdl_game->test_str);
-		}
-#endif
-
-		sdl_render_present_replacement(state);
+		render_hitpoint_bar(&state->render, player, is_power_up_active(game->power_ups.invincibility));
 	}
 
 	return change_to_other_scene;
@@ -1791,7 +1839,7 @@ void render_menu_option(game_state* game, u32 x_coord, u32 y_coord, string_ref t
 	font font = {};
 	font.pixel_height = 8;
 	font.pixel_width = 8;
-	render_text(game, font, textbox_area, title);
+	render_text(&game->render, game->transient_arena, font, textbox_area, title);
 }
 
 scene_change menu_update_and_render(game_state* game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
@@ -1871,7 +1919,7 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 		}
 	}
 	
-	sdl_render_clear_replacement(game, get_zero_v4());
+	sdl_render_clear_replacement(&game->render, get_zero_v4());
 
 	i32 option_spacing = 20;
 	u32 options_x = 140;
@@ -1888,8 +1936,7 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	rect indicator_screen_rect = get_rect_from_dimensions(indicator_x, indicator_y, 16, 16);
 	rect bitmap_rect = get_rect_from_dimensions(16, 0, 16, 16);
 
-	sdl_render_copy_replacement(game, temp_texture_enum::MISC_TEXTURE, bitmap_rect, indicator_screen_rect);
-	sdl_render_present_replacement(game);
+	sdl_render_copy_replacement(&game->render, temp_texture_enum::MISC_TEXTURE, bitmap_rect, indicator_screen_rect);
 
 	return change_to_other_scene;
 };
@@ -1923,7 +1970,7 @@ void main_game_loop(game_state* game, static_game_data* static_data, input_buffe
 				game->level_state = push_struct(game->arena, level_state);
 
 				game->game_level_memory = begin_temporary_memory(game->arena);
-				string_ref level_name = copy_c_string_to_memory_arena(game->arena, "map_02");
+				string_ref level_name = copy_c_string_to_memory_arena(game->arena, "map_01");
 				initialize_level_state(game->level_state, static_data, input_buffer, level_name, game->arena);
 				game->level_state->current_level = load_level(level_name, game->arena, game->transient_arena);
 
@@ -1989,4 +2036,6 @@ void main_game_loop(game_state* game, static_game_data* static_data, input_buffe
 			invalid_default_case;
 		}
 	}
+
+	render_group_to_output(&game->render);
 }

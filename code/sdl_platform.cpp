@@ -2,6 +2,8 @@
 #include "game_data.h"
 #include "sdl_platform.h"
 
+sdl_data GLOBAL_SDL_DATA;
+
 r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
 {
 	r32 result = ((end_counter - start_counter) * 1000) / (r64)SDL_GetPerformanceFrequency();
@@ -17,10 +19,10 @@ SDL_Color get_sdl_color(v4 color)
 SDL_Rect get_sdl_rect(rect rect)
 {
 	SDL_Rect result = {};
-	result.x = (int)rect.min_corner.x;
-	result.y = (int)rect.min_corner.y;
-	result.w = (int)(rect.max_corner.x - rect.min_corner.x);
-	result.h = (int)(rect.max_corner.y - rect.min_corner.y);
+	result.x = (int)round(rect.min_corner.x);
+	result.y = (int)round(rect.min_corner.y);
+	result.w = (int)round((rect.max_corner.x - rect.min_corner.x));
+	result.h = (int)round((rect.max_corner.y - rect.min_corner.y));
 	return result;
 }
 
@@ -194,6 +196,8 @@ int main(int argc, char* args[])
 	sdl_data sdl = init_sdl();
 	if (sdl.initialized)
 	{
+		GLOBAL_SDL_DATA = sdl;
+
 		bool run = true;
 
 		u32 memory_for_permanent_arena_size = megabytes_to_bytes(50);
@@ -209,7 +213,10 @@ int main(int argc, char* args[])
 		game_state game = {};
 
 		game.arena = &permanent_arena;
-		game.transient_arena = &transient_arena;
+		game.transient_arena = &transient_arena;		
+
+		game.render.max_push_buffer_size = megabytes_to_bytes(20);
+		game.render.push_buffer_base = (u8*)push_size(&transient_arena, game.render.max_push_buffer_size);
 
 		static_game_data* static_data = push_struct(&permanent_arena, static_game_data);
 
@@ -314,7 +321,11 @@ int main(int argc, char* args[])
 
 void render_rect(sdl_data* sdl, rect rectangle)
 {
-	SDL_SetRenderDrawColor(sdl->renderer, 255, 255, 255, 0);
+	rectangle.min_corner.x = round(rectangle.min_corner.x);
+	rectangle.min_corner.y = round(rectangle.min_corner.y);
+	rectangle.max_corner.x = round(rectangle.max_corner.x);
+	rectangle.max_corner.y = round(rectangle.max_corner.y);
+
 	SDL_RenderDrawLine(sdl->renderer, // dół
 		rectangle.min_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.min_corner.y);
 	SDL_RenderDrawLine(sdl->renderer, // lewa
@@ -323,4 +334,148 @@ void render_rect(sdl_data* sdl, rect rectangle)
 		rectangle.max_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
 	SDL_RenderDrawLine(sdl->renderer, // góra
 		rectangle.min_corner.x, rectangle.max_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
+}
+
+internal SDL_Texture* get_texture(sdl_data sdl, temp_texture_enum type)
+{
+	SDL_Texture* result = NULL;
+	switch (type)
+	{
+		case temp_texture_enum::NONE: { result = NULL; }; break;
+		case temp_texture_enum::TILESET_TEXTURE: { result = sdl.tileset_texture;  }; break;
+		case temp_texture_enum::BULLETS_TEXTURE: { result = sdl.bullets_texture; }; break;
+		case temp_texture_enum::UI_TEXTURE: { result = sdl.ui_texture; }; break;
+		case temp_texture_enum::FONT_TEXTURE: { result = sdl.font_texture; }; break;
+		case temp_texture_enum::PLAYER_TEXTURE: { result = sdl.player_texture; }; break;
+		case temp_texture_enum::MISC_TEXTURE: { result = sdl.misc_texture; }; break;
+		case temp_texture_enum::GATES_TEXTURE: { result = sdl.gates_texture; }; break;
+		invalid_default_case;
+	}
+	return result;
+}
+
+void render_group_to_output(render_group* render_group)
+{
+	SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, 0, 0, 0, 0);
+	SDL_RenderClear(GLOBAL_SDL_DATA.renderer);
+	SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, 255, 255, 255, 0);
+
+	assert(GLOBAL_SDL_DATA.initialized);
+	for (u32 base_address = 0;
+		base_address < render_group->push_buffer_size;
+		)
+	{
+		render_group_entry_header* header = (render_group_entry_header*)(render_group->push_buffer_base + base_address);
+
+		void* data = (u8*)header + sizeof(render_group_entry_header);
+		base_address += sizeof(render_group_entry_header);
+
+		switch (header->type)
+		{
+			case render_group_entry_type::RECTANGLE:
+			{
+				render_group_entry_bitmap* entry = (render_group_entry_bitmap*)data;
+
+				SDL_Rect src = get_sdl_rect(entry->source_rect);
+				SDL_Rect dst = get_sdl_rect(entry->destination_rect);
+				SDL_RenderCopy(GLOBAL_SDL_DATA.renderer, get_texture(GLOBAL_SDL_DATA, entry->texture),
+					&src, &dst);
+
+				base_address += sizeof(render_group_entry_bitmap);
+
+			}
+			break;
+			case render_group_entry_type::RECTANGLE_WITH_EFFECTS:
+			{
+				render_group_entry_bitmap_with_effects* entry = (render_group_entry_bitmap_with_effects*)data;
+
+				SDL_Texture* texture = get_texture(GLOBAL_SDL_DATA, entry->texture);
+
+				if (entry->render_in_additive_mode)
+				{
+					SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_ADD);			
+				}
+
+				if (false == is_zero(entry->tint_color))
+				{
+					v4 sdl_tint = entry->tint_color * 255;
+					SDL_SetTextureColorMod(texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
+				}
+
+				SDL_Rect src = get_sdl_rect(entry->source_rect);
+				SDL_Rect dst = get_sdl_rect(entry->destination_rect);
+				SDL_RendererFlip flip = (entry->flip_horizontally ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
+				SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, flip);
+				if (entry->render_in_additive_mode)
+				{
+					// drugi raz - zastosowanie pojedynczo nie daje zauważalnych efektów
+					SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, flip);
+				}
+
+				if (false == is_zero(entry->tint_color))
+				{
+					SDL_SetTextureColorMod(texture, 255, 255, 255);
+				}
+
+				if (entry->render_in_additive_mode)
+				{
+					SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+				}
+
+				base_address += sizeof(render_group_entry_bitmap_with_effects);
+			}
+			break;
+			case render_group_entry_type::DEBUG_RECTANGLE:
+			{
+				render_group_entry_debug_rectangle* entry = (render_group_entry_debug_rectangle*)data;
+			
+				if (false == is_zero(entry->color))
+				{
+					v4 sdl_tint = entry->color * 255;
+					SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, sdl_tint.r, sdl_tint.g, sdl_tint.b, sdl_tint.a);
+				}
+
+				if (entry->render_outline_only)
+				{
+					render_rect(&GLOBAL_SDL_DATA, entry->destination_rect);
+				}
+				else
+				{
+					SDL_Rect dst = get_sdl_rect(entry->destination_rect);
+					SDL_RenderFillRect(GLOBAL_SDL_DATA.renderer, &dst);
+				}
+
+				if (false == is_zero(entry->color))
+				{				
+					SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, 255, 255, 255, 0);
+				}
+
+				base_address += sizeof(render_group_entry_debug_rectangle);
+			}
+			break;
+			case render_group_entry_type::CLEAR:
+			{
+				render_group_entry_clear* entry = (render_group_entry_clear*)data;
+
+				SDL_RenderClear(GLOBAL_SDL_DATA.renderer);
+
+				base_address += sizeof(render_group_entry_clear);
+			}
+			break;
+			case render_group_entry_type::FADE:
+			{
+				render_group_entry_fade* entry = (render_group_entry_fade*)data;
+
+				base_address += sizeof(render_group_entry_fade);
+			}
+			break;
+
+			invalid_default_case;
+		}
+	}
+
+	SDL_RenderPresent(GLOBAL_SDL_DATA.renderer);
+
+	// zapisujemy od nowa - nie trzeba zerować
+	render_group->push_buffer_size = 0;
 }

@@ -100,13 +100,13 @@ animation* get_player_walk_animation(memory_arena* arena)
 	new_animation->frames[2].sprite.parts_count = 2;
 	new_animation->frames[3].sprite.parts_count = 2;
 
-	move_rect(legs_rect, get_v2(24, 0));
+	legs_rect = get_rect_from_dimensions(24, 24, 24, 24);
 	fill_animation_frame(new_animation, 0, 0, get_sprite_part(texture, legs_rect, legs_offset), frame_duration);
 	fill_animation_frame(new_animation, 0, 1, get_sprite_part(texture, head_rect, head_offset), frame_duration);
 	head_offset.x += 1;
 	fill_animation_frame(new_animation, 1, 0, get_sprite_part(texture, legs_rect, legs_offset), frame_duration);
 	fill_animation_frame(new_animation, 1, 1, get_sprite_part(texture, head_rect, head_offset), frame_duration);
-	move_rect(legs_rect, get_v2(48, 0));
+	legs_rect = get_rect_from_dimensions(48, 24, 24, 24);
 	fill_animation_frame(new_animation, 2, 0, get_sprite_part(texture, legs_rect, legs_offset), frame_duration);
 	fill_animation_frame(new_animation, 2, 1, get_sprite_part(texture, head_rect, head_offset), frame_duration);
 	head_offset.x -= 1;	
@@ -145,7 +145,7 @@ animation_frame get_bullet_graphics(memory_arena* arena, u32 x, u32 y)
 {
 	animation_frame result = {};
 
-	rect texture_rect = get_rect_from_dimensions(10, 10, x * 10, y * 10);	
+	rect texture_rect = get_rect_from_dimensions(x * 10, y * 10, 10, 10);	
 
 	result.sprite.parts_count = 1;
 	result.sprite.parts = push_array(arena, result.sprite.parts_count, sprite_part);

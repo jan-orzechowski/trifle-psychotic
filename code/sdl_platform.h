@@ -27,3 +27,5 @@ SDL_Color get_sdl_color(v4 color);
 SDL_Rect get_sdl_rect(rect rect);
 void print_sdl_error();
 void print_sdl_image_error();
+
+void render_group_to_output(render_group* render_group);

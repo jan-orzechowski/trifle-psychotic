@@ -438,6 +438,15 @@ struct render_buffer
 	u32 pieces_count;
 };
 
+struct render_group
+{
+	uint32 piece_count;
+
+	u32 max_push_buffer_size;
+	u32 push_buffer_size;
+	u8* push_buffer_base;
+};
+
 struct game_state
 {
 	b32 initialized;
@@ -450,7 +459,7 @@ struct game_state
 	
 	temporary_memory game_level_memory;	
 
-	render_buffer render_buffer;
+	render_group render;
 };
 
 rect get_tile_rect(u32 tile_id);
@@ -464,7 +473,7 @@ b32 are_entity_flags_set(entity* entity, entity_flags flag_values);
 entity* add_entity(level_state* game, world_position position, entity_type* type);
 entity* add_entity(level_state* game, tile_position position, entity_type* type);
 
-void render_entity_sprite(game_state* game, world_position camera_position, world_position entity_position, direction entity_direction,
+void render_entity_sprite(render_group* render, world_position camera_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite);
 
 tile_range find_horizontal_range_of_free_tiles(level map, level collision_ref, tile_position starting_tile, u32 length_limit);
@@ -473,36 +482,54 @@ tile_range find_vertical_range_of_free_tiles(level map, level collision_ref, til
 void write_to_input_buffer(input_buffer* buffer, game_input* new_input);
 void main_game_loop(game_state* game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time);
 
-static void sdl_render_copy_replacement(game_state* game, temp_texture_enum texture, rect source_rect, rect destination_rect)
+enum class render_group_entry_type
 {
+	CLEAR,
+	FADE,
+	RECTANGLE,
+	RECTANGLE_WITH_EFFECTS,
+	DEBUG_RECTANGLE,
+};
 
-}
-
-// i to będzie też zastępowało render outline
-static void sdl_render_fill_rect_replacement(game_state* game, rect screen_rect_to_fill)
+struct render_group_entry_header
 {
+	render_group_entry_type type;
+};
 
-}
-
-static void sdl_render_draw_point_replacement(game_state* game, v2 point, v4 color)
+struct render_group_entry_clear
 {
+	v4 color;
+};
 
-}
-
-static void sdl_render_copy_ex_replacement(game_state* game,
-	temp_texture_enum texture, rect source_rect, rect destination_rect, v4 tint_color, b32 render_in_additive_mode, b32 flip_horizontally)
+struct render_group_entry_fade
 {
+	v4 color;
+	r32 percentage;
+};
 
-}
-
-static void sdl_render_clear_replacement(game_state* game, v4 color)
+struct render_group_entry_bitmap
 {
+	rect source_rect;
+	rect destination_rect;
+	temp_texture_enum texture;
+};
 
-}
-
-static void sdl_render_present_replacement(game_state* game)
+struct render_group_entry_bitmap_with_effects
 {
+	rect source_rect;
+	rect destination_rect;
+	temp_texture_enum texture;
 
-}
+	v4 tint_color;
+	b32 render_in_additive_mode;
+	b32 flip_horizontally;
+};
 
+struct render_group_entry_debug_rectangle
+{
+	v4 color;
+	b32 render_outline_only;
+	rect destination_rect;
+};
 
+void sdl_render_copy_replacement(render_group* group, temp_texture_enum texture, rect source_rect, rect destination_rect);

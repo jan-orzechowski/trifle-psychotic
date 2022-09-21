@@ -240,8 +240,7 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time)
 	}
 }
 
-void render_entity_animation_frame(game_state* game,
-	world_position camera_position, entity* entity)
+void render_entity_animation_frame(render_group* render, world_position camera_position, entity* entity)
 {
 	sprite* sprite_to_render = NULL;
 	if (entity->current_animation && entity->current_animation->frames)
@@ -256,6 +255,6 @@ void render_entity_animation_frame(game_state* game,
 
 	assert(sprite_to_render != NULL);
 
-	render_entity_sprite(game, camera_position, entity->position, entity->direction,
+	render_entity_sprite(render, camera_position, entity->position, entity->direction,
 		entity->visual_effect, entity->visual_effect_duration, *sprite_to_render);
 }

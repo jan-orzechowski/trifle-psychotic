@@ -54,7 +54,7 @@ rect get_glyph_rect(font font, u32 code)
     return result;
 }
 
-void render_text_line(game_state* game, font font, rect area, string_ref line)
+void render_text_line(render_group* render, font font, rect area, string_ref line)
 {
     i32 letter_spacing = -1;
 
@@ -69,13 +69,13 @@ void render_text_line(game_state* game, font font, rect area, string_ref line)
         {
             rect src_rect = get_glyph_rect(font, (u32)char_to_render);
             rect dst_rect = get_rect_from_dimensions(get_v2(x, y), get_v2(font.pixel_width, font.pixel_height));
-            sdl_render_copy_replacement(game, temp_texture_enum::FONT_TEXTURE, src_rect, dst_rect);
+            sdl_render_copy_replacement(render, temp_texture_enum::FONT_TEXTURE, src_rect, dst_rect);
         }
         x += font.pixel_width + letter_spacing;
     }
 }
 
-void render_text_lines(game_state* game, font font, rect area, lines_to_render lines)
+void render_text_lines(render_group* render, font font, rect area, lines_to_render lines)
 {
     u32 x = 0;
     u32 y = 0;
@@ -98,7 +98,7 @@ void render_text_lines(game_state* game, font font, rect area, lines_to_render l
             {
                 rect src_rect = get_glyph_rect(font, (u32)char_to_render);
                 rect dst_rect = get_rect_from_dimensions(get_v2(x, y), get_v2(font.pixel_width, font.pixel_height));
-                sdl_render_copy_replacement(game, temp_texture_enum::FONT_TEXTURE, src_rect, dst_rect);
+                sdl_render_copy_replacement(render, temp_texture_enum::FONT_TEXTURE, src_rect, dst_rect);
             }
             x += font.pixel_width + letter_spacing;
         }
@@ -118,7 +118,7 @@ string_ref* get_next_line(lines_to_render* lines)
     return result;
 }
 
-void render_text(game_state* game, font font, rect writing_area, string_ref text, b32 wrap)
+void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, string_ref text, b32 wrap)
 {
     u32 max_text_length = 1000;
     if (text.string_size > max_text_length)
@@ -126,7 +126,7 @@ void render_text(game_state* game, font font, rect writing_area, string_ref text
         text.string_size = max_text_length;
     }
 
-    temporary_memory writing_memory = begin_temporary_memory(game->transient_arena);
+    temporary_memory writing_memory = begin_temporary_memory(transient_arena);
 
     v2 area_dim = get_rect_dimensions(writing_area);
     u32 max_line_length = area_dim.x / font.pixel_width;
@@ -137,7 +137,7 @@ void render_text(game_state* game, font font, rect writing_area, string_ref text
 
         // tutaj znowu możemy mieć uint wrap jeśli area dim y z jakiegoś powodu wyjdzie ujemne
         text_lines.max_lines_count = (area_dim.y / font.pixel_height);
-        text_lines.lines = push_array(game->transient_arena, text_lines.max_lines_count, string_ref);
+        text_lines.lines = push_array(transient_arena, text_lines.max_lines_count, string_ref);
 
         string_ref* current_line = get_next_line(&text_lines);
         current_line->ptr = text.ptr;
@@ -187,7 +187,7 @@ void render_text(game_state* game, font font, rect writing_area, string_ref text
             }
         }
 
-        render_text_lines(game, font, writing_area, text_lines);
+        render_text_lines(render, font, writing_area, text_lines);
     }
     else
     {
@@ -200,15 +200,15 @@ void render_text(game_state* game, font font, rect writing_area, string_ref text
             line_to_render.string_size = max_line_length;
         }
 
-        render_text_line(game, font, writing_area, line_to_render);
+        render_text_line(render, font, writing_area, line_to_render);
     }
 
     end_temporary_memory(writing_memory);
 }
 
-void render_text(game_state* game, font font, rect writing_area, char* buffer, u32 buffer_size, b32 wrap)
+void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, char* buffer, u32 buffer_size, b32 wrap)
 {
     u32 string_length = get_c_string_length(buffer, buffer_size);
     string_ref str_to_render = get_string_ref(buffer, string_length);
-    render_text(game, font, writing_area, str_to_render, wrap);
+    render_text(render, transient_arena, font, writing_area, str_to_render, wrap);
 }

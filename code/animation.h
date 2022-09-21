@@ -15,4 +15,4 @@ void stop_visual_effect(entity* entity, sprite_effect* effect_to_stop);
 u32 get_current_animation_frame_index(animation* animation, r32 elapsed_time);
 animation_frame* get_current_animation_frame(entity* entity);
 void animate_entity(player_movement* movement, entity* entity, r32 delta_time);
-void render_entity_animation_frame(game_state* game, world_position camera_position, entity* entity);
+void render_entity_animation_frame(render_group* render, world_position camera_position, entity* entity);
