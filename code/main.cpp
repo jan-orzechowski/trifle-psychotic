@@ -784,7 +784,9 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 				for (u32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 				{
 					entity* entity_to_check = level->entities + entity_index;
-					if (entity_to_check != moving_entity)
+
+					if (entity_to_check != moving_entity 
+						&& is_in_neighbouring_chunk(reference_chunk, entity_to_check->position))
 					{
 						collision new_collision = check_minkowski_collision(
 							get_entity_collision_data(reference_chunk, moving_entity),
@@ -866,20 +868,17 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 
 b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, world_position target_pos)
 {
-	b32 was_collision = false;
-	
 	v2 movement_delta = get_position_difference(target_pos, moving_bullet->position);
 	chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(moving_bullet->position));
 
+	v2 relative_target_pos = get_position_difference(target_pos, reference_chunk);
+
+	r32 collision_closest_distance = R32_MAX_VALUE;
+	entity* hit_entity = NULL;
+	b32 hit_wall = false;
+
 	if (false == is_zero(movement_delta))
-	{
-		r32 movement_apron = 0.001f;
-
-		collision closest_collision = {};
-		closest_collision.collided_wall = direction::NONE;
-		closest_collision.possible_movement_perc = 1.0f;
-		entity* collided_entity = NULL;
-
+	{		
 		// collision with tiles
 		{
 			rect area_to_check = get_tiles_area_to_check_for_collision(moving_bullet, target_pos);
@@ -891,20 +890,18 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 					tile_x_to_check <= area_to_check.max_corner.x;
 					tile_x_to_check++)
 				{
-					tile_position tile_to_check_pos = get_tile_position(tile_x_to_check, tile_y_to_check);
 					u32 tile_value = get_tile_value(level->current_map, tile_x_to_check, tile_y_to_check);
 					if (is_tile_colliding(level->static_data->collision_reference, tile_value))
 					{
-						collision new_collision = check_minkowski_collision(
-							get_bullet_collision_data(reference_chunk, moving_bullet),
-							get_tile_collision_data(reference_chunk, tile_to_check_pos),
-							movement_delta, closest_collision.possible_movement_perc);
-
-						if (new_collision.collided_wall != direction::NONE)
+						rect tile_colliding_rect = get_tile_colliding_rect(reference_chunk, tile_x_to_check, tile_y_to_check);
+						if (is_point_inside_rect(tile_colliding_rect, relative_target_pos))
 						{
-							if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
+							r32 distance = length(get_position_difference(
+								get_tile_position(tile_x_to_check, tile_y_to_check), moving_bullet->position));
+							if (distance < collision_closest_distance)
 							{
-								closest_collision = new_collision;
+								collision_closest_distance = distance;
+								hit_wall = true;
 							}
 						}
 					}
@@ -917,24 +914,30 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 			for (u32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 			{
 				entity* entity_to_check = level->entities + entity_index;
-				if (are_entity_flags_set(entity_to_check, entity_flags::BLOCKS_MOVEMENT))
+				if (are_entity_flags_set(entity_to_check, entity_flags::BLOCKS_MOVEMENT)
+					&& is_in_neighbouring_chunk(reference_chunk, entity_to_check->position))
 				{
-					collision new_collision = check_minkowski_collision(
-						get_bullet_collision_data(reference_chunk, moving_bullet),
-						get_entity_collision_data(reference_chunk, entity_to_check),
-						movement_delta, closest_collision.possible_movement_perc);
-
-					if (new_collision.collided_wall != direction::NONE)
+					rect entity_colliding_rect = get_entity_colliding_rect(get_entity_collision_data(reference_chunk, entity_to_check));
+					if (is_point_inside_rect(entity_colliding_rect, relative_target_pos))
 					{
+						r32 distance = length(get_position_difference(entity_to_check->position, moving_bullet->position));
+
+						if (are_entity_flags_set(entity_to_check, entity_flags::SWITCH)
+							|| are_entity_flags_set(entity_to_check, entity_flags::GATE))
+						{
+							collision_closest_distance = distance;
+							hit_wall = true;
+						}
+
 						if (are_flags_set(&moving_bullet->type->flags, entity_flags::DAMAGES_PLAYER))
 						{
 							if (entity_index == 0)
 							{
 								// mamy gracza							
-								if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
+								if (distance < collision_closest_distance)
 								{
-									closest_collision = new_collision;
-									collided_entity = entity_to_check;
+									collision_closest_distance = distance;
+									hit_entity = entity_to_check;
 								}
 							}
 						}
@@ -943,52 +946,47 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 							if (entity_index != 0)
 							{
 								// mamy przeciwnika
-								if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
+								if (distance < collision_closest_distance)
 								{
-									closest_collision = new_collision;
-									collided_entity = entity_to_check;
+									collision_closest_distance = distance;
+									hit_entity = entity_to_check;
 								}
 							}
-						}
+						}						
 					}
 				}
 			}
 		}
 
-		was_collision = (closest_collision.collided_wall != direction::NONE);
-
-		if ((closest_collision.possible_movement_perc - movement_apron) > 0.0f)
+		if (hit_entity)
 		{
-			v2 possible_movement = movement_delta * (closest_collision.possible_movement_perc - movement_apron);
-			moving_bullet->position = add_to_position(moving_bullet->position, possible_movement);
-			movement_delta -= possible_movement;
-		}
-
-		if (collided_entity)
-		{
-			if (are_entity_flags_set(collided_entity, entity_flags::PLAYER))
+			if (are_entity_flags_set(hit_entity, entity_flags::PLAYER))
 			{
 				damage_player(level, moving_bullet->type->damage_on_contact);
 			}
 			else
 			{
-				if (false == are_entity_flags_set(collided_entity, entity_flags::INDESTRUCTIBLE))
+				if (false == are_entity_flags_set(hit_entity, entity_flags::INDESTRUCTIBLE))
 				{
-					start_visual_effect(level, collided_entity, 1, false);
-					collided_entity->health -= moving_bullet->type->damage_on_contact;
+					start_visual_effect(level, hit_entity, 1, false);
+					hit_entity->health -= moving_bullet->type->damage_on_contact;
 					printf("pocisk trafil w entity, %.2f obrazen, zostalo %.2f\n",
-						moving_bullet->type->damage_on_contact, collided_entity->health);
+						moving_bullet->type->damage_on_contact, hit_entity->health);
 				}
-			}
+			}		
+		}
+		else if (false == hit_wall)
+		{
+			moving_bullet->position = add_to_position(moving_bullet->position, movement_delta);
 		}
 
-		if (was_collision)
+		if (hit_entity || hit_wall)
 		{
 			remove_bullet(level, bullet_index);
 		}
 	}
 
-	return was_collision;
+	return (hit_entity || hit_wall);
 }
 
 b32 is_standing_on_ground(level_state* level, entity* entity_to_check)
