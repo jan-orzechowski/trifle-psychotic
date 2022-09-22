@@ -931,10 +931,9 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 		break;
 	}
 
-	// alokujemy na samym końcu, ponieważ lista nowych entities jest "dynamiczna"
 	if (next_level_name.string_size)
 	{
-		level->next_map = copy_string(permanent_arena, next_level_name);
+		level->next_map = copy_string(transient_arena, next_level_name);
 	}
 }
 
@@ -1050,6 +1049,12 @@ map read_map_from_tmx_file(memory_arena* permanent_arena, memory_arena* transien
 						}
 					}
 				}
+			}
+
+			if (level.next_map.string_size > 0)
+			{
+				// kopiujemy do permanent arena na samym końcu, ponieważ lista nowych entities jest "dynamiczna"
+				level.next_map = copy_string(permanent_arena, level.next_map);
 			}
 		}
 	}
