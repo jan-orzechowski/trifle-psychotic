@@ -175,6 +175,7 @@ u32 get_tile_value(map level, i32 x_coord, i32 y_coord)
 		&& y_coord < (i32)level.height)
 	{
 		u32 tile_index = x_coord + (level.width * y_coord);
+		assert(tile_index < level.tiles_count);
 		result = level.tiles[tile_index];
 	}
 	return result;
@@ -188,27 +189,31 @@ u32 get_tile_value(map level, tile_position tile)
 
 b32 is_tile_colliding(map collision_ref, u32 tile_value)
 {
-	u32 x_coord = (tile_value - 1) % collision_ref.width;
-	u32 y_coord = (tile_value - 1) / collision_ref.width;
-
-	debug_breakpoint;
-
-	b32 collides = false;
-	u32 collision_tile_value = get_tile_value(collision_ref, x_coord, y_coord);
-	//u32 first_gid = 1; // tymczasowe, potrzebna jest obsługa GID w tmx
-	//collision_tile_value -= first_gid;
-	//collision_tile_value++;
-
-	switch (collision_tile_value)
+	b32 result = false;
+	if (tile_value == 0)
 	{
-		case 2:
-		case 3:
-		{
-			collides = true;
-		}
-		break;
+		result = true;
 	}
-	return collides;
+	else
+	{
+		u32 x_coord = (tile_value - 1) % collision_ref.width;
+		u32 y_coord = (tile_value - 1) / collision_ref.width;
+		u32 collision_tile_value = get_tile_value(collision_ref, x_coord, y_coord);
+		//u32 first_gid = 1; // tymczasowe, potrzebna jest obsługa GID w tmx
+		//collision_tile_value -= first_gid;
+		//collision_tile_value++;
+		switch (collision_tile_value)
+		{
+			case 2:
+			case 3:
+			{
+				result = true;
+			}
+			break;
+		}
+	}
+
+	return result;
 }
 
 b32 is_tile_colliding(map level, map collision_ref, u32 tile_x, u32 tile_y)
