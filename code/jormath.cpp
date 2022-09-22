@@ -660,7 +660,7 @@ rect get_rect_from_corners(v2 min_corner, v2 max_corner)
     return result;
 }
 
-rect get_rect_from_dimensions(v2 min_corner, v2 dimensions)
+rect get_rect_from_min_corner(v2 min_corner, v2 dimensions)
 {
     rect result = {};
     result.min_corner = min_corner;
@@ -668,7 +668,7 @@ rect get_rect_from_dimensions(v2 min_corner, v2 dimensions)
     return result;
 }
 
-rect get_rect_from_dimensions(r32 min_corner_x, r32 min_corner_y, r32 dimension_x, r32 dimension_y)
+rect get_rect_from_min_corner(r32 min_corner_x, r32 min_corner_y, r32 dimension_x, r32 dimension_y)
 {
     rect result = {};
     result.min_corner = get_v2(min_corner_x, min_corner_y);

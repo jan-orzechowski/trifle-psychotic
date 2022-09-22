@@ -130,19 +130,19 @@ void render_hitpoint_bar(render_group* render, entity* player, b32 draw_white_ba
 	v2 icon_dim = get_v2(8, 8);
 	v2 bar_dim = get_v2(4, 8);
 
-	rect icon_texture_rect = get_rect_from_dimensions(get_v2(0, 0), icon_dim);
-	rect icon_screen_rect = get_rect_from_dimensions(get_v2(10, 10), icon_dim);
+	rect icon_texture_rect = get_rect_from_min_corner(get_v2(0, 0), icon_dim);
+	rect icon_screen_rect = get_rect_from_min_corner(get_v2(10, 10), icon_dim);
 	
 	render_bitmap(render, temp_texture_enum::UI_TEXTURE, icon_texture_rect, icon_screen_rect);
 	
-	rect bar_texture_rect = get_rect_from_dimensions(get_v2(4, 16), bar_dim);
+	rect bar_texture_rect = get_rect_from_min_corner(get_v2(4, 16), bar_dim);
 
 	if (draw_white_bars)
 	{
-		bar_texture_rect = get_rect_from_dimensions(get_v2(0, 16), bar_dim);
+		bar_texture_rect = get_rect_from_min_corner(get_v2(0, 16), bar_dim);
 	}
 
-	rect bar_screen_rect = get_rect_from_dimensions(get_v2(18, 10), bar_dim);
+	rect bar_screen_rect = get_rect_from_min_corner(get_v2(18, 10), bar_dim);
 	for (u32 health_bar_index = 0;
 		health_bar_index < filled_health_bars;
 		health_bar_index++)
@@ -151,7 +151,7 @@ void render_hitpoint_bar(render_group* render, entity* player, b32 draw_white_ba
 		render_bitmap(render, temp_texture_enum::UI_TEXTURE, bar_texture_rect, bar_screen_rect);
 	}
 
-	bar_texture_rect = get_rect_from_dimensions(get_v2(0, 8), bar_dim);
+	bar_texture_rect = get_rect_from_min_corner(get_v2(0, 8), bar_dim);
 
 	for (u32 health_bar_index = filled_health_bars;
 		health_bar_index < max_health_bars;
@@ -178,7 +178,7 @@ rect get_tile_rect(u32 tile_id)
 		u32 x = column * TILE_SIDE_IN_PIXELS;
 		u32 y = row * TILE_SIDE_IN_PIXELS;
 
-		result = get_rect_from_dimensions(get_v2(x, y), get_v2(TILE_SIDE_IN_PIXELS, TILE_SIDE_IN_PIXELS));
+		result = get_rect_from_min_corner(get_v2(x, y), get_v2(TILE_SIDE_IN_PIXELS, TILE_SIDE_IN_PIXELS));
 	}
 	
 	return result;
@@ -530,7 +530,7 @@ b32 damage_player(level_state* level, r32 damage_amount)
 		damaged = true;
 		level->entities[0].health -= damage_amount;
 		start_visual_effect(level, &level->entities[0], 1, false);
-		printf("gracz dostaje %.02f obrazen, zostalo %.02f zdrowia\n", damage_amount, level->entities[0].health);
+		//printf("gracz dostaje %.02f obrazen, zostalo %.02f zdrowia\n", damage_amount, level->entities[0].health);
 		if (level->entities[0].health < 0.0f)
 		{
 			// przegrywamy
@@ -661,7 +661,50 @@ rect get_tiles_area_to_check_for_collision(bullet* bullet, world_position target
 	return result;
 }
 
+rect get_tile_colliding_rect(chunk_position reference_chunk, i32 tile_x, i32 tile_y)
+{
+	v2 position = get_position_difference(get_tile_position(tile_x, tile_y), reference_chunk);
+	v2 dimensions = get_v2(1.0f, 1.0f);
+	rect result = get_rect_from_min_corner(position, dimensions);
+	return result;
+}
 
+rect get_entity_colliding_rect(entity_collision_data collision_data)
+{
+	v2 position = collision_data.position + collision_data.collision_rect_offset;
+	v2 dimensions = collision_data.collision_rect_dim;
+	rect result = get_rect_from_center(position, dimensions);
+	return result;
+}
+
+b32 check_if_sight_line_is_obstructed(level_state* level, world_position start, world_position end)
+{
+	v2 movement_delta = get_position_difference(start, end);
+	chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(start));
+	b32 path_obstructed = false;
+
+	rect area_to_check = get_tiles_area_to_check_for_collision(start, get_zero_v2(), get_zero_v2(), end);
+	for (i32 tile_y_to_check = area_to_check.min_corner.y;
+		tile_y_to_check <= area_to_check.max_corner.y;
+		tile_y_to_check++)
+	{
+		// zmiana o 1 dla uniknięcia sytuacji w której stoimy dokładnie na granicy pola, które jest niedostępne
+		for (i32 tile_x_to_check = area_to_check.min_corner.x + 1;
+			tile_x_to_check <= area_to_check.max_corner.x - 1;
+			tile_x_to_check++)
+		{
+			u32 tile_value = get_tile_value(level->current_map, tile_x_to_check, tile_y_to_check);
+			if (is_tile_colliding(level->static_data->collision_reference, tile_value))
+			{
+				path_obstructed = true;
+				goto check_sight_line_end;
+			}
+		}
+	}
+
+	check_sight_line_end:
+	return path_obstructed;	
+}
 
 collision_result move(level_state* level, entity* moving_entity, world_position target_pos)
 {
@@ -1272,7 +1315,7 @@ rect get_render_rect(v2 position_relative_to_camera, v2 rect_size)
 	r32 y = SCREEN_CENTER_IN_PIXELS.y + (position_relative_to_camera.y * TILE_SIDE_IN_PIXELS)
 		- (rect_size.y / 2);
 	
-	rect result = get_rect_from_dimensions(x, y, w, h);
+	rect result = get_rect_from_min_corner(x, y, w, h);
 	return result;
 }
 
@@ -1285,7 +1328,7 @@ rect get_tile_render_rect(v2 position_relative_to_camera)
 	r32 y = SCREEN_CENTER_IN_PIXELS.y + (position_relative_to_camera.y * TILE_SIDE_IN_PIXELS)
 		- (TILE_SIDE_IN_PIXELS / 2);
 
-	rect result = get_rect_from_dimensions(x, y, w, h);
+	rect result = get_rect_from_min_corner(x, y, w, h);
 	return result;
 }
 
@@ -1460,6 +1503,76 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
 		change_movement_mode(&level->player_movement, movement_mode::RECOIL);
 	}
 }
+
+// domyślnie trójkąt jest zwrócony podstawą w prawo
+// można podać x i y odwrotnie dla trójkątów zwróconych podstawą w górę lub w dół
+b32 is_point_within_right_triangle(r32 triangle_height, r32 relative_x, r32 relative_y, b32 invert_sign)
+{
+	b32 result = false;
+	relative_x = (invert_sign ? -relative_x : relative_x);
+	if (relative_x < triangle_height)
+	{
+		// trzeba pamiętać, że y idą do dołu ekranu
+		r32 max_y = relative_x; // bok wyrażony f(x) = x
+		r32 min_y = -relative_x; // bok wyrażony f(x) = -x
+		if (relative_y <= max_y && relative_y >= min_y)
+		{
+			// znajdujemy się w trójkącie
+			result = true;
+		}
+	}
+
+	return result;
+}
+
+b32 is_point_visible_from_point(world_position looking_point, direction looking_direction, r32 max_looking_distance, world_position point_to_check)
+{
+	assert(looking_direction != direction::NONE);
+	
+	// sprawdzamy trójkąt z wierzchołkiem umiejscowionym w patrzącym entity
+	// kąt przy tym wierzchołku jest prosty
+	// a więc boki trójkąta można określić funkcjami f(x)=x, f(x)=-1
+	b32 result = false;
+	r32 triangle_height = max_looking_distance;
+
+	v2 relative_pos = get_position_difference(point_to_check, looking_point);
+	if (looking_direction == direction::E && relative_pos.x > 0.0f)
+	{
+		result = is_point_within_right_triangle(triangle_height, relative_pos.x, relative_pos.y, false);
+	}
+	else 
+	if (looking_direction == direction::W && relative_pos.x < 0.0f)
+	{
+		result = is_point_within_right_triangle(triangle_height, relative_pos.x, relative_pos.y, true);
+	}
+	else // odwracamy x i y
+	if (looking_direction == direction::N && relative_pos.y > 0.0f)
+	{
+		result = is_point_within_right_triangle(triangle_height, relative_pos.y, relative_pos.x, false);
+	}
+	else
+	if (looking_direction == direction::S && relative_pos.y < 0.0f)
+	{
+		result = is_point_within_right_triangle(triangle_height, relative_pos.y, relative_pos.x, true);
+	}
+
+	return result;
+}
+
+b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, world_position point, r32 max_distance)
+{
+	b32 result = is_point_visible_from_point(looking_entity->position, looking_entity->direction, max_distance, point);
+
+	if (result)
+	{
+		if (check_if_sight_line_is_obstructed(level, looking_entity->position, point))
+		{
+			result = false;
+		}
+	}
+
+	return result;
+};
 
 scene_change game_update_and_render(game_state* game, level_state* level, r32 delta_time)
 {
@@ -1669,12 +1782,17 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		{
 			if (entity->attack_cooldown <= 0)
 			{
-				v2 player_relative_pos = get_position_difference(player->position, entity->position);
-				r32 distance_to_player = length(player_relative_pos);
-				if (distance_to_player < entity->type->player_detecting_distance)
+				// trochę wyżej niż środek bohatera, wygląda to naturalniej
+				world_position player_target_position = add_to_position(player->position, get_v2(0, -0.5f));
+
+				v2 player_relative_pos = get_position_difference(player_target_position, entity->position);
+				v2 direction_to_player = get_unit_vector(player_relative_pos);
+				entity->direction = direction_to_player.x < 0 ? direction::W : direction::E;
+
+				if (is_point_visible_for_entity(level, entity, player_target_position, entity->type->player_detecting_distance))
 				{
-					v2 direction_to_player = get_unit_vector(player_relative_pos);
-					entity->direction = direction_to_player.x < 0 ? direction::W : direction::E;
+					tile_position tile_pos = get_tile_position(entity->position);
+					printf("widoczny przez entity o wspolrzednych (%d,%d)\n", tile_pos.x, tile_pos.y);
 					fire_bullet(level, entity->type->fired_bullet_type, entity->position, get_zero_v2(),
 						direction_to_player * entity->type->fired_bullet_type->constant_velocity);
 					entity->attack_cooldown = entity->type->default_attack_cooldown;
@@ -1746,7 +1864,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				rect screen_rect = get_tile_render_rect(position);
 				render_bitmap(&game->render, temp_texture_enum::TILESET_TEXTURE, tile_bitmap, screen_rect);
 
-#if 1
+#if 0
 				if (is_tile_colliding(level->static_data->collision_reference, tile_value))
 				{
 					tile_position tile_pos = get_tile_position(x_coord_in_world, y_coord_in_world);
@@ -1794,9 +1912,9 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		// draw collision debug info
 		{
 #if 1
-			for (u32 entity_index = 0; entity_index < level->entities_count; entity_index++)
+			for (u32 entity_index = 0; entity_index < level->bullets_count; entity_index++)
 			{
-				entity* entity = level->entities + entity_index;
+				bullet* entity = level->bullets + entity_index;
 				if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
 				{
 					if (false == is_zero(entity->type->color))
@@ -1962,8 +2080,8 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	u32 indicator_y = first_option_y + (menu_index * option_spacing) - 4;
 	u32 indicator_x = options_x - 20;
 
-	rect indicator_screen_rect = get_rect_from_dimensions(indicator_x, indicator_y, 16, 16);
-	rect bitmap_rect = get_rect_from_dimensions(16, 0, 16, 16);
+	rect indicator_screen_rect = get_rect_from_min_corner(indicator_x, indicator_y, 16, 16);
+	rect bitmap_rect = get_rect_from_min_corner(16, 0, 16, 16);
 
 	render_bitmap(&game->render, temp_texture_enum::MISC_TEXTURE, bitmap_rect, indicator_screen_rect);
 
