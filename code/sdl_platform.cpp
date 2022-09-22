@@ -466,6 +466,16 @@ void render_group_to_output(render_group* render_group)
 			{
 				render_group_entry_fade* entry = (render_group_entry_fade*)data;
 
+				v4 sdl_color = entry->color * 255;
+				sdl_color.a = entry->percentage * 255;
+
+				SDL_Rect fullscreen = { 0,0, SCREEN_WIDTH, SCREEN_HEIGHT };
+				SDL_SetRenderDrawBlendMode(GLOBAL_SDL_DATA.renderer, SDL_BlendMode::SDL_BLENDMODE_BLEND);
+				SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, sdl_color.r, sdl_color.g, sdl_color.b, sdl_color.a);
+				SDL_RenderFillRect(GLOBAL_SDL_DATA.renderer, &fullscreen);
+				SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, 255, 255, 255, 0);
+				SDL_SetRenderDrawBlendMode(GLOBAL_SDL_DATA.renderer, SDL_BlendMode::SDL_BLENDMODE_NONE);
+
 				base_address += sizeof(render_group_entry_fade);
 			}
 			break;

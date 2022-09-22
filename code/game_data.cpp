@@ -226,24 +226,26 @@ map load_map(string_ref map_name, memory_arena* arena, memory_arena* transient_a
 	return result;
 }
 
-void initialize_level_state(level_state* state, static_game_data* static_data, input_buffer* input_buffer, string_ref map_name, memory_arena* arena)
+void initialize_level_state(level_state* level, static_game_data* static_data, input_buffer* input_buffer, string_ref map_name, memory_arena* arena)
 {
-	*state = {};
+	*level = {};
 
-	state->current_map_name = copy_string(arena, map_name);
-	state->input = *input_buffer;
+	level->current_map_name = copy_string(arena, map_name);
+	level->input = *input_buffer;
 
-	state->static_data = static_data;
+	level->static_data = static_data;
 	
-	state->entities_count = 0;
-	state->entities_max_count = 1000;
-	state->entities = push_array(arena, state->entities_max_count, entity);
+	level->entities_count = 0;
+	level->entities_max_count = 1000;
+	level->entities = push_array(arena, level->entities_max_count, entity);
 
-	state->bullets_count = 0;
-	state->bullets_max_count = 5000;
-	state->bullets = push_array(arena, state->bullets_max_count, bullet);
+	level->bullets_count = 0;
+	level->bullets_max_count = 5000;
+	level->bullets = push_array(arena, level->bullets_max_count, bullet);
 
-	state->player_movement.current_mode = movement_mode::WALK;
+	level->player_movement.current_mode = movement_mode::WALK;
+
+	level->fade_in_perc = 1.0f;
 }
 
 void load_static_game_data(static_game_data* data, memory_arena* arena, memory_arena* transient_arena)

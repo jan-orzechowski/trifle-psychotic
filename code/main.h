@@ -378,6 +378,22 @@ struct static_game_data
 	string_ref menu_exit_str;
 };
 
+enum class scene
+{
+	GAME,
+	MAIN_MENU,
+	DEATH,
+	CREDITS,
+	EXIT
+};
+
+struct scene_change
+{
+	b32 change_scene;
+	scene new_scene;
+	string_ref map_to_load;
+};
+
 struct level_state
 {
 	string_ref current_map_name;
@@ -402,6 +418,10 @@ struct level_state
 	static_game_data* static_data;
 
 	power_ups power_ups;
+
+	scene_change active_scene_change;
+	r32 scene_fade_perc;
+	r32 fade_in_perc;
 };
 
 struct save
@@ -409,33 +429,6 @@ struct save
 	string_ref map_name;
 	u32 granades_count;
 	u32 player_max_health;
-};
-
-enum class scene
-{
-	GAME,
-	MAIN_MENU,
-	DEATH,
-	CREDITS,
-	EXIT
-};
-
-struct scene_change
-{
-	b32 change_scene;
-	scene new_scene;
-	string_ref map_to_load;
-};
-
-struct render_piece
-{
-
-};
-
-struct render_buffer
-{
-	render_piece* pieces;
-	u32 pieces_count;
 };
 
 struct render_group

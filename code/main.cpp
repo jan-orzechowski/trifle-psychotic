@@ -49,7 +49,7 @@ void render_rectangle(render_group* group, rect screen_rect_to_fill, v4 color, b
 	entry->render_outline_only = render_outline_only;
 }
 
-void sdl_render_draw_point_replacement(render_group* group, v2 point, v4 color)
+void render_point(render_group* group, v2 point, v4 color)
 {
 	rect screen_rect = get_rect_from_center(point, get_v2(2.0f, 2.0f));
 	render_rectangle(group, screen_rect, color, false);
@@ -1463,8 +1463,6 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
 
 scene_change game_update_and_render(game_state* game, level_state* level, r32 delta_time)
 {
-	scene_change change_to_other_scene = {};
-
 	if (false == level->current_map_initialized)
 	{
 		initialize_current_map(game, level);
@@ -1513,11 +1511,13 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			open_gates_with_given_color(level, color);
 		}
 
-		if (collision.collided_transition)
+		if (collision.collided_transition 
+			&& false == level->active_scene_change.change_scene)
 		{
-			change_to_other_scene.change_scene = true;
-			change_to_other_scene.new_scene = scene::GAME;
-			change_to_other_scene.map_to_load = level->current_map.next_map;
+			level->active_scene_change.change_scene = true;
+			level->active_scene_change.new_scene = scene::GAME;
+			level->active_scene_change.map_to_load = level->current_map.next_map;
+			level->scene_fade_perc = 0.0f;
 		}
 
 		v2 player_direction_v2 = get_unit_vector(player->velocity);
@@ -1815,7 +1815,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					render_rectangle(&game->render, collision_rect, { 0, 0, 0, 0 }, true);
 
 					v2 entity_position = SCREEN_CENTER_IN_PIXELS + relative_position * TILE_SIDE_IN_PIXELS;
-					sdl_render_draw_point_replacement(&game->render, entity_position, get_v4(1, 0, 0, 0));
+					render_point(&game->render, entity_position, get_v4(1, 0, 0, 0));
 				}
 			}
 #endif
@@ -1825,8 +1825,38 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		render_hitpoint_bar(&game->render, player, is_power_up_active(level->power_ups.invincibility));
 	}
+	
+	if (level->active_scene_change.change_scene)
+	{
+		level->scene_fade_perc += (delta_time * 1.5f);
+		if (level->scene_fade_perc > 1.0f)
+		{
+			level->scene_fade_perc = 1.0f;
+		}
 
-	return change_to_other_scene;
+		v4 fade_color = get_zero_v4();
+		render_fade(&game->render, fade_color, level->scene_fade_perc);
+	}
+
+	scene_change scene_change = {}; 
+	if (level->scene_fade_perc >= 1.0f)
+	{
+		scene_change = level->active_scene_change;
+	}
+
+	if (level->fade_in_perc > 0.0f)
+	{
+		level->fade_in_perc -= (delta_time * 1.5f);
+		if (level->fade_in_perc < 0.0f)
+		{
+			level->fade_in_perc = 0.0f;
+		}
+
+		v4 fade_color = get_zero_v4();
+		render_fade(&game->render, fade_color, level->fade_in_perc);
+	}
+
+	return scene_change;
 }
 
 void render_menu_option(game_state* game, u32 x_coord, u32 y_coord, string_ref title)
