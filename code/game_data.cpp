@@ -57,11 +57,14 @@ sprite_effect_stage* add_constant_tint_sprite_effect_stage(sprite_effect* effect
 	return new_stage;
 }
 
-void fill_animation_frame(animation* animation, u32 frame_index, u32 part_index, sprite_part part, r32 duration)
+void fill_animation_frame(animation* animation, u32 frame_index, u32 part_index, sprite_part part, r32* duration = NULL)
 {
 	animation->frames[frame_index].sprite.parts[part_index] = part;
-	animation->frames[frame_index].duration = duration;
-	animation->total_duration += duration;
+	if (duration)
+	{
+		animation->frames[frame_index].duration = *duration;
+		animation->total_duration += *duration;
+	}
 }
 
 sprite_part get_sprite_part(temp_texture_enum texture, rect texture_rect, v2 offset = get_zero_v2(),
@@ -78,9 +81,8 @@ sprite_part get_sprite_part(temp_texture_enum texture, rect texture_rect, v2 off
 animation* get_player_walk_animation(memory_arena* arena)
 {
 	animation* new_animation = push_struct(arena, animation);
-	new_animation->frames_count = 4;
+	new_animation->frames_count = 3;
 	new_animation->frames = push_array(arena, new_animation->frames_count, animation_frame);
-
 
 	rect legs_rect = get_rect_from_min_corner(0, 24, 24, 24);
 	rect head_rect = get_rect_from_min_corner(0, 0, 24, 24);
@@ -94,24 +96,22 @@ animation* get_player_walk_animation(memory_arena* arena)
 	new_animation->frames[0].sprite.parts = push_array(arena, 2, sprite_part);
 	new_animation->frames[1].sprite.parts = push_array(arena, 2, sprite_part);
 	new_animation->frames[2].sprite.parts = push_array(arena, 2, sprite_part);
-	new_animation->frames[3].sprite.parts = push_array(arena, 2, sprite_part);
 
 	new_animation->frames[0].sprite.parts_count = 2;
 	new_animation->frames[1].sprite.parts_count = 2;
 	new_animation->frames[2].sprite.parts_count = 2;
-	new_animation->frames[3].sprite.parts_count = 2;
 
 	legs_rect = get_rect_from_min_corner(24, 24, 24, 24);
-	fill_animation_frame(new_animation, 0, 0, get_sprite_part(texture, legs_rect, legs_offset), frame_duration);
-	fill_animation_frame(new_animation, 0, 1, get_sprite_part(texture, head_rect, head_offset), frame_duration);
+	fill_animation_frame(new_animation, 0, 0, get_sprite_part(texture, legs_rect, legs_offset), &frame_duration);
+	fill_animation_frame(new_animation, 0, 1, get_sprite_part(texture, head_rect, head_offset));
 	head_offset.x += 1;
-	fill_animation_frame(new_animation, 1, 0, get_sprite_part(texture, legs_rect, legs_offset), frame_duration);
-	fill_animation_frame(new_animation, 1, 1, get_sprite_part(texture, head_rect, head_offset), frame_duration);
-	fill_animation_frame(new_animation, 2, 0, get_sprite_part(texture, legs_rect, legs_offset), frame_duration);
-	fill_animation_frame(new_animation, 2, 1, get_sprite_part(texture, head_rect, head_offset), frame_duration);
-	head_offset.x -= 1;	
-	fill_animation_frame(new_animation, 3, 0, get_sprite_part(texture, legs_rect, legs_offset), frame_duration);
-	fill_animation_frame(new_animation, 3, 1, get_sprite_part(texture, head_rect, head_offset), frame_duration);
+	legs_rect = move_rect(legs_rect, get_v2(24, 0));
+	fill_animation_frame(new_animation, 1, 0, get_sprite_part(texture, legs_rect, legs_offset), &frame_duration);
+	fill_animation_frame(new_animation, 1, 1, get_sprite_part(texture, head_rect, head_offset));
+	head_offset.x -= 1;
+	legs_rect = move_rect(legs_rect, get_v2(24, 0));
+	fill_animation_frame(new_animation, 2, 0, get_sprite_part(texture, legs_rect, legs_offset), &frame_duration);
+	fill_animation_frame(new_animation, 2, 1, get_sprite_part(texture, head_rect, head_offset));
 	
 	return new_animation;
 }
