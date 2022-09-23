@@ -221,7 +221,7 @@ int main(int argc, char* args[])
 		static_game_data* static_data = push_struct(&permanent_arena, static_game_data);
 
 		load_static_game_data(static_data, &permanent_arena, &transient_arena);
-		input_buffer input_buffer = initialize_input_buffer(&permanent_arena);
+		game.input_buffer = initialize_input_buffer(&permanent_arena);
 
 		u32 frame_counter = 0;
 
@@ -265,9 +265,9 @@ int main(int argc, char* args[])
 					new_input.is_left_mouse_key_held = true;
 				}
 
-				write_to_input_buffer(&input_buffer, &new_input);
+				write_to_input_buffer(&game.input_buffer, &new_input);
 
-				main_game_loop(&game, static_data, &input_buffer, delta_time);
+				main_game_loop(&game, static_data, delta_time);
 			}
 
 			u32 end_work_counter = SDL_GetPerformanceCounter();

@@ -1125,9 +1125,9 @@ void change_movement_mode(player_movement* movement, movement_mode mode)
 	}
 }
 
-world_position process_input(level_state* level, entity* player, r32 delta_time)
+world_position process_input(level_state* level, input_buffer* input_buffer, entity* player, r32 delta_time)
 {
-	game_input* input = get_last_frame_input(&level->input);
+	game_input* input = get_last_frame_input(input_buffer);
 
 	b32 is_standing_at_frame_beginning = is_standing_on_ground(level, player);
 
@@ -1195,7 +1195,7 @@ world_position process_input(level_state* level, entity* player, r32 delta_time)
 				if (is_standing_at_frame_beginning
 					&& level->player_movement.previous_mode == movement_mode::JUMP)
 				{
-					if (was_up_key_pressed_in_last_frames(&level->input, 3))
+					if (was_up_key_pressed_in_last_frames(input_buffer, 3))
 					{
 						player->acceleration += get_v2(0, -30);
 						change_movement_mode(&level->player_movement, movement_mode::JUMP);
@@ -1603,7 +1603,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		animate_entity(&level->player_movement, player, delta_time);
 
-		world_position target_pos = process_input(level, player, delta_time);
+		world_position target_pos = process_input(level, &game->input_buffer, player, delta_time);
 
 		collision_result collision = move(level, player, target_pos);
 		if (collision.collided_power_up)
@@ -1987,11 +1987,11 @@ void render_menu_option(game_state* game, u32 x_coord, u32 y_coord, string_ref t
 	render_text(&game->render, game->transient_arena, font, textbox_area, title);
 }
 
-scene_change menu_update_and_render(game_state* game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
+scene_change menu_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
 {
 	scene_change change_to_other_scene = {};
 
-	game_input* input = get_last_frame_input(input_buffer);
+	game_input* input = get_last_frame_input(&game->input_buffer);
 
 	local_persist i32 menu_index = 0;
 	local_persist i32 menu_max_index = 3;
@@ -2103,7 +2103,7 @@ void restore_player_state(level_state* level, save* save)
 	level->entities[0].type->max_health = save->player_max_health;
 }
 
-void main_game_loop(game_state* game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time)
+void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_time)
 {		
 	scene_change scene_change = {};
 	switch (game->current_scene)
@@ -2116,20 +2116,18 @@ void main_game_loop(game_state* game, static_game_data* static_data, input_buffe
 
 				game->game_level_memory = begin_temporary_memory(game->arena);
 				string_ref level_name = copy_c_string_to_memory_arena(game->arena, "map_01");
-				initialize_level_state(game->level_state, static_data, input_buffer, level_name, game->arena);
+				initialize_level_state(game->level_state, static_data, level_name, game->arena);
 				game->level_state->current_map = load_map(level_name, game->arena, game->transient_arena);
 
 				game->first_game_run_initialized = true;
 			}
 						
-			game->level_state->input = *(input_buffer);
 			scene_change = game_update_and_render(game, game->level_state, delta_time);
-
 		};
 		break;
 		case scene::MAIN_MENU:
 		{
-			scene_change = menu_update_and_render(game, static_data, input_buffer, delta_time);
+			scene_change = menu_update_and_render(game, static_data, delta_time);
 		};
 		break;
 		case scene::DEATH:
@@ -2158,7 +2156,7 @@ void main_game_loop(game_state* game, static_game_data* static_data, input_buffe
 					end_temporary_memory(game->game_level_memory, true);
 
 					game->game_level_memory = begin_temporary_memory(game->arena);
-					initialize_level_state(game->level_state, static_data, input_buffer, level_name, game->arena);
+					initialize_level_state(game->level_state, static_data, level_name, game->arena);
 					game->level_state->current_map = load_map(level_name, game->arena, game->transient_arena);
 					initialize_current_map(game, game->level_state);
 					restore_player_state(game->level_state, save);

@@ -226,12 +226,11 @@ map load_map(string_ref map_name, memory_arena* arena, memory_arena* transient_a
 	return result;
 }
 
-void initialize_level_state(level_state* level, static_game_data* static_data, input_buffer* input_buffer, string_ref map_name, memory_arena* arena)
+void initialize_level_state(level_state* level, static_game_data* static_data, string_ref map_name, memory_arena* arena)
 {
 	*level = {};
 
 	level->current_map_name = copy_string(arena, map_name);
-	level->input = *input_buffer;
 
 	level->static_data = static_data;
 	

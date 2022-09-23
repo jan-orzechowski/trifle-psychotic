@@ -400,7 +400,6 @@ struct level_state
 	b32 current_map_initialized;
 	map current_map;
 	
-	input_buffer input;
 	player_movement player_movement;
 	r32 player_invincibility_cooldown;
 	
@@ -450,6 +449,8 @@ struct game_state
 	memory_arena* arena;
 	memory_arena* transient_arena;	
 	
+	input_buffer input_buffer;
+
 	temporary_memory game_level_memory;	
 
 	render_group render;
@@ -473,7 +474,7 @@ tile_range find_horizontal_range_of_free_tiles(map level, map collision_ref, til
 tile_range find_vertical_range_of_free_tiles(map level, map collision_ref, tile_position starting_tile, u32 length_limit);
 
 void write_to_input_buffer(input_buffer* buffer, game_input* new_input);
-void main_game_loop(game_state* game, static_game_data* static_data, input_buffer* input_buffer, r32 delta_time);
+void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_time);
 
 enum class render_group_entry_type
 {
