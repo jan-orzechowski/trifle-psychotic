@@ -257,9 +257,9 @@ int main(int argc, char* args[])
 				if (state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A]) new_input.left.number_of_presses++;
 				if (state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D]) new_input.right.number_of_presses++;
 
-				int mouse_x = -1;
-				int mouse_y = -1;
-				Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+				new_input.mouse_x = -1;
+				new_input.mouse_y = -1;
+				Uint32 mouse_buttons = SDL_GetMouseState(&new_input.mouse_x, &new_input.mouse_y);
 				if (mouse_buttons & SDL_BUTTON_LMASK)
 				{
 					new_input.is_left_mouse_key_held = true;

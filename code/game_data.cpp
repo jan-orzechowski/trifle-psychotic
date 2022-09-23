@@ -6,21 +6,43 @@
 #define ENTITY_TYPES_MAX_COUNT 20
 #define BULLET_TYPES_MAX_COUNT 10
 
-sprite_part get_16x16_sprite_part(temp_texture_enum texture, u32 tile_x, u32 tile_y)
+sprite_part get_square_sprite_part(u32 square_side, temp_texture_enum texture, u32 tile_x, u32 tile_y)
 {
 	sprite_part result = {};
 	result.texture = texture;
-	result.texture_rect = get_rect_from_min_corner((i32)tile_x * 16, (i32)tile_y * 16, 16, 16);
+	result.texture_rect = get_rect_from_min_corner((i32)tile_x * square_side, (i32)tile_y * square_side, square_side, square_side);
 	return result;
 }
 
-animation_frame get_16x16_animation_frame(memory_arena* arena, temp_texture_enum texture, u32 tile_x, u32 tile_y)
+animation_frame get_square_animation_frame(u32 square_side, memory_arena* arena, temp_texture_enum texture, u32 tile_x, u32 tile_y)
 {
 	animation_frame result = {};
 	result.sprite.parts_count = 1;
 	result.sprite.parts = push_array(arena, result.sprite.parts_count, sprite_part);
 	result.sprite.parts[0].texture = texture;
-	result.sprite.parts[0].texture_rect = get_rect_from_min_corner((i32)tile_x * 16, (i32)tile_y * 16, 16, 16);
+	result.sprite.parts[0].texture_rect = get_rect_from_min_corner((i32)tile_x * square_side, (i32)tile_y * square_side, square_side, square_side);
+	return result;
+}
+
+sprite_part get_16x16_sprite_part(temp_texture_enum texture, u32 tile_x, u32 tile_y)
+{
+	sprite_part result = get_square_sprite_part(16, texture, tile_x, tile_y);
+	return result;
+}
+
+animation_frame get_16x16_animation_frame(memory_arena* arena, temp_texture_enum texture, u32 tile_x, u32 tile_y)
+{
+	animation_frame result = get_square_animation_frame(16, arena, texture, tile_x, tile_y);
+	return result;
+}
+
+sprite get_square_sprite(memory_arena* arena, u32 square_side, temp_texture_enum texture, u32 tile_x, u32 tile_y, v2 offset = get_zero_v2())
+{
+	sprite result = {};
+	result.parts_count = 1;
+	result.parts = push_array(arena, result.parts_count, sprite_part);
+	result.parts[0] = get_square_sprite_part(square_side, texture, tile_x, tile_y);
+	result.parts[0].offset_in_pixels = offset;
 	return result;
 }
 
@@ -85,34 +107,26 @@ animation* get_player_walk_animation(memory_arena* arena)
 	new_animation->frames = push_array(arena, new_animation->frames_count, animation_frame);
 
 	rect legs_rect = get_rect_from_min_corner(0, 24, 24, 24);
-	rect head_rect = get_rect_from_min_corner(0, 0, 24, 24);
-	
 	v2 legs_offset = get_v2(0.0f, 0.0f);
-	v2 head_offset = get_v2(5.0f, -16.0f);
 
 	r32 frame_duration = 0.2f;
 	temp_texture_enum texture = temp_texture_enum::PLAYER_TEXTURE;
 
-	new_animation->frames[0].sprite.parts = push_array(arena, 2, sprite_part);
-	new_animation->frames[1].sprite.parts = push_array(arena, 2, sprite_part);
-	new_animation->frames[2].sprite.parts = push_array(arena, 2, sprite_part);
+	new_animation->frames[0].sprite.parts_count = 1;
+	new_animation->frames[1].sprite.parts_count = 1;
+	new_animation->frames[2].sprite.parts_count = 1;
+	new_animation->frames[0].sprite.parts = push_array(arena, 1, sprite_part);
+	new_animation->frames[1].sprite.parts = push_array(arena, 1, sprite_part);
+	new_animation->frames[2].sprite.parts = push_array(arena, 1, sprite_part);
 
-	new_animation->frames[0].sprite.parts_count = 2;
-	new_animation->frames[1].sprite.parts_count = 2;
-	new_animation->frames[2].sprite.parts_count = 2;
 
 	legs_rect = get_rect_from_min_corner(24, 24, 24, 24);
 	fill_animation_frame(new_animation, 0, 0, get_sprite_part(texture, legs_rect, legs_offset), &frame_duration);
-	fill_animation_frame(new_animation, 0, 1, get_sprite_part(texture, head_rect, head_offset));
-	head_offset.x += 1;
 	legs_rect = move_rect(legs_rect, get_v2(24, 0));
 	fill_animation_frame(new_animation, 1, 0, get_sprite_part(texture, legs_rect, legs_offset), &frame_duration);
-	fill_animation_frame(new_animation, 1, 1, get_sprite_part(texture, head_rect, head_offset));
-	head_offset.x -= 1;
 	legs_rect = move_rect(legs_rect, get_v2(24, 0));
 	fill_animation_frame(new_animation, 2, 0, get_sprite_part(texture, legs_rect, legs_offset), &frame_duration);
-	fill_animation_frame(new_animation, 2, 1, get_sprite_part(texture, head_rect, head_offset));
-	
+
 	return new_animation;
 }
 
@@ -120,23 +134,16 @@ animation_frame get_player_idle_pose(memory_arena* arena)
 {
 	animation_frame result = {};	
 
-	rect player_head_rect = get_rect_from_min_corner(0, 0, 24, 24);
-	rect player_legs_rect = get_rect_from_min_corner(0, 24, 24, 24);
-	
+	rect legs_rect = get_rect_from_min_corner(0, 24, 24, 24);
 	v2 legs_offset = get_v2(0.0f, 0.0f);
-	v2 head_offset = get_v2(5.0f, -16.0f);
 
-	result.sprite.parts_count = 2;
+	result.sprite.parts_count = 1;
 	result.sprite.parts = push_array(arena, result.sprite.parts_count, sprite_part);
-	result.sprite.parts[0].texture = temp_texture_enum::PLAYER_TEXTURE;
-	result.sprite.parts[0].texture_rect = player_head_rect;
-	result.sprite.parts[0].offset_in_pixels = head_offset;
-	result.sprite.parts[0].default_direction = direction::E;
 
-	result.sprite.parts[1].texture = temp_texture_enum::PLAYER_TEXTURE;
-	result.sprite.parts[1].texture_rect = player_legs_rect;
-	result.sprite.parts[1].offset_in_pixels = legs_offset;
-	result.sprite.parts[1].default_direction = direction::E;
+	result.sprite.parts[0].texture = temp_texture_enum::PLAYER_TEXTURE;
+	result.sprite.parts[0].texture_rect = legs_rect;
+	result.sprite.parts[0].offset_in_pixels = legs_offset;
+	result.sprite.parts[0].default_direction = direction::E;
 
 	return result;
 }
@@ -243,6 +250,8 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
 	level->bullets = push_array(arena, level->bullets_max_count, bullet);
 
 	level->player_movement.current_mode = movement_mode::WALK;
+	level->current_player_torso = level->static_data->player_shooting_right;
+	level->flip_player_torso_horizontally = false;
 
 	level->fade_in_perc = 1.0f;
 }
@@ -273,6 +282,26 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->switch_display_middle_sprite = get_16x16_sprite_part(temp_texture_enum::GATES_TEXTURE, 4, 0);
 	data->switch_display_right_sprite = get_16x16_sprite_part(temp_texture_enum::GATES_TEXTURE, 5, 0);
 
+	data->player_shooting_up = get_square_sprite(arena, 24, 
+		temp_texture_enum::PLAYER_TEXTURE, 4, 0, get_v2(3.0f, -16.0f));
+	data->player_shooting_up_bullet_offset = get_v2(0.2f, -1.4f);
+
+	data->player_shooting_right_up = get_square_sprite(arena, 24, 
+		temp_texture_enum::PLAYER_TEXTURE, 1, 0, get_v2(5.0f, -16.0f));
+	data->player_shooting_right_up_bullet_offset = get_v2(0.65f, -1.1f);
+
+	data->player_shooting_right = get_square_sprite(arena, 24, 
+		temp_texture_enum::PLAYER_TEXTURE, 0, 0, get_v2(5.0f, -16.0f));	
+	data->player_shooting_right_bullet_offset = get_v2(0.85f, -0.60f);
+	
+	data->player_shooting_right_down = get_square_sprite(arena, 24, 
+		temp_texture_enum::PLAYER_TEXTURE, 2, 0, get_v2(4.0f, -10.0f));
+	data->player_shooting_right_down_bullet_offset = get_v2(0.65f, -0.15f);
+
+	data->player_shooting_down = get_square_sprite(arena, 24, 
+		temp_texture_enum::PLAYER_TEXTURE, 3, 0, get_v2(2.0f, -6.0f));
+	data->player_shooting_down_bullet_offset = get_v2(0.25f, 0.15f);
+
 	data->entity_types = push_array(arena, BULLET_TYPES_MAX_COUNT, entity_type);
 	data->entity_types_count = 0;
 
@@ -288,7 +317,6 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	player_entity_type->slowdown_multiplier = 0.80f;
 	player_entity_type->default_attack_cooldown = 0.2f;
 	player_entity_type->walk_animation = get_player_walk_animation(arena);
-	player_entity_type->fired_bullet_offset = get_v2(0.85f, -0.60f); // nie w pikselach!
 	player_entity_type->collision_rect_dim = get_v2(0.35f, 1.6f);
 
 	entity_type* static_enemy_type = add_entity_type(data, entity_type_enum::STATIC_ENEMY);

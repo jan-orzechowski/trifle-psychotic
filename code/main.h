@@ -64,6 +64,8 @@ struct key_press
 struct game_input
 {
 	b32 is_left_mouse_key_held;
+	i32 mouse_x;
+	i32 mouse_y;
 	key_press up;
 	key_press down;
 	key_press left;
@@ -74,10 +76,14 @@ struct game_input
 enum class direction
 {
 	NONE = 0,
-	N = (1 << 0),
-	E = (1 << 1),
-	W = (1 << 3),
-	S = (1 << 4)
+	E = 1,
+	SE = 2,
+	S = 3,
+	SW = 4,
+	W = 5,
+	NW = 6,
+	N = 7,
+	NE = 8
 };
 
 struct tile_range
@@ -176,6 +182,7 @@ struct sprite
 {
 	sprite_part* parts;
 	u32 parts_count;
+	b32 flip_horizontally;
 };
 
 struct animation_frame
@@ -372,6 +379,17 @@ struct static_game_data
 	sprite_part switch_display_middle_sprite;
 	sprite_part switch_display_right_sprite;
 
+	sprite player_shooting_up;
+	v2 player_shooting_up_bullet_offset;
+	sprite player_shooting_right_up;
+	v2 player_shooting_right_up_bullet_offset;
+	sprite player_shooting_right;
+	v2 player_shooting_right_bullet_offset;
+	sprite player_shooting_right_down;
+	v2 player_shooting_right_down_bullet_offset;
+	sprite player_shooting_down;
+	v2 player_shooting_down_bullet_offset;
+	
 	string_ref menu_new_game_str;
 	string_ref menu_continue_str;
 	string_ref menu_credits_str;
@@ -417,6 +435,8 @@ struct level_state
 	static_game_data* static_data;
 
 	power_ups power_ups;
+	sprite current_player_torso;
+	b32 flip_player_torso_horizontally;
 
 	scene_change active_scene_change;
 	r32 scene_fade_perc;

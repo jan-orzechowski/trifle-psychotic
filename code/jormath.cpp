@@ -612,6 +612,30 @@ v4 normalize(v4 a)
     return result;
 }
 
+v2 get_rotated_unit_vector(r32 angle, b32 radians)
+{
+    v2 result = {};
+    if (false == radians)
+    {
+        angle = (angle * (pi32 / 180.0f));
+    }
+    result.x = cos(angle);
+    result.y = sin(angle);
+    return result;
+}
+
+v2 reflection_over_x_axis(v2 a)
+{
+    v2 result = get_v2(a.x, -a.y);
+    return result;
+}
+
+v2 reflection_over_y_axis(v2 a)
+{
+    v2 result = get_v2(-a.x, a.y);
+    return result;
+}
+
 // arytmetyka
 
 r32 square(r32 a)

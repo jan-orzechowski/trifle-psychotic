@@ -1125,6 +1125,115 @@ void change_movement_mode(player_movement* movement, movement_mode mode)
 	}
 }
 
+void player_fire_bullet(level_state* level, game_input* input, world_position player_position, entity_type* bullet_type)
+{	
+	v2 relative_mouse_pos = (get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR) - SCREEN_CENTER_IN_PIXELS;
+
+	r32 angle = atan2(relative_mouse_pos.y, relative_mouse_pos.x) * (180 / pi32);
+	angle += 45.0f / 2.0f;
+
+	if (angle > 180)
+	{
+		angle = -360.0f + angle;
+	}
+
+	if (angle < -180)
+	{
+		angle = 360.0f + angle;
+	}
+
+	// przypomnienie: N jest w dół ekranu!
+
+	direction direction = direction::NONE;
+	if      (0.0f    <  angle && angle <= 45.0f)   direction = direction::E;
+	else if (45.0f   <  angle && angle <= 90.0f)   direction = direction::NE;
+	else if (90.0f   <  angle && angle <= 135.0f)  direction = direction::N;
+	else if (135.0f  <  angle && angle <= 180.0f)  direction = direction::NW;
+	else if (-45.0f  <  angle && angle <= 0.0f)    direction = direction::SE;
+	else if (-90.0f  <  angle && angle <= -45.0f)  direction = direction::S;
+	else if (-135.0f <  angle && angle <= -90.0f)  direction = direction::SW;
+	else if (-180.0f <  angle && angle <= -135.0f) direction = direction::W;
+
+	//printf("direction: %d\n", (i32)direction);
+
+	v2 bullet_direction = get_v2(1.0f, 0.0f);;
+	v2 bullet_offset = level->static_data->player_shooting_right_bullet_offset;
+	sprite player_torso_graphics = level->static_data->player_shooting_right;
+	b32 flip_graphics_horizontally = false;
+
+	switch (direction)
+	{
+		case direction::E: 
+		{ 
+			bullet_direction = get_v2(1.0f, 0.0f); 
+			bullet_offset = level->static_data->player_shooting_right_bullet_offset;
+			player_torso_graphics = level->static_data->player_shooting_right;
+		} 
+		break;
+		case direction::NE: 
+		{ 
+			bullet_direction = get_rotated_unit_vector(45.0f); 
+			bullet_offset = level->static_data->player_shooting_right_down_bullet_offset;
+			player_torso_graphics = level->static_data->player_shooting_right_down;
+		} 
+		break;
+		case direction::N: 
+		{
+			bullet_direction = get_v2(0.0f, 1.0f); 
+			bullet_offset = level->static_data->player_shooting_down_bullet_offset;
+			player_torso_graphics = level->static_data->player_shooting_down;
+		} 
+		break;	
+		case direction::NW:
+		{
+			bullet_direction = get_rotated_unit_vector(135.0f); 
+			bullet_offset = reflection_over_y_axis(
+				level->static_data->player_shooting_right_down_bullet_offset);
+			player_torso_graphics = level->static_data->player_shooting_right_down;
+			flip_graphics_horizontally = true;
+		} 
+		break;			
+		case direction::W: 
+		{
+			bullet_direction = get_v2(-1.0f, 0.0f);
+			bullet_offset = reflection_over_y_axis(
+				level->static_data->player_shooting_right_bullet_offset);
+			player_torso_graphics = level->static_data->player_shooting_right;
+			flip_graphics_horizontally = true;
+		}
+		break;	
+		case direction::SW:
+		{
+			bullet_direction = get_rotated_unit_vector(-135.0f);
+			bullet_offset = reflection_over_y_axis(
+				level->static_data->player_shooting_right_up_bullet_offset);
+			player_torso_graphics = level->static_data->player_shooting_right_up;	
+			flip_graphics_horizontally = true;
+		} 
+		break;	
+		case direction::S: 
+		{
+			bullet_direction = get_v2(0.0f, -1.0f);
+			bullet_offset = level->static_data->player_shooting_up_bullet_offset;
+			player_torso_graphics = level->static_data->player_shooting_up;
+		} 
+		break;
+		case direction::SE:
+		{ 
+			bullet_direction = get_rotated_unit_vector(-45.0f);
+			bullet_offset = level->static_data->player_shooting_right_up_bullet_offset;
+			player_torso_graphics = level->static_data->player_shooting_right_up;
+		} 
+		break;
+		invalid_default_case;
+	}
+
+	fire_bullet(level, bullet_type, player_position, bullet_offset, bullet_direction * bullet_type->constant_velocity);
+
+	level->current_player_torso = player_torso_graphics;
+	level->flip_player_torso_horizontally = flip_graphics_horizontally;
+}
+
 world_position process_input(level_state* level, input_buffer* input_buffer, entity* player, r32 delta_time)
 {
 	game_input* input = get_last_frame_input(input_buffer);
@@ -1209,7 +1318,8 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 			{
 				if (player->attack_cooldown <= 0)
 				{
-					fire_bullet(level, player, true);
+					player_fire_bullet(level, input, player->position, player->type->fired_bullet_type);
+					player->attack_cooldown = player->type->default_attack_cooldown;
 				}
 			}
 
@@ -1254,7 +1364,8 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 			{
 				if (player->attack_cooldown <= 0)
 				{
-					fire_bullet(level, player, true);
+					player_fire_bullet(level, input, player->position, player->type->fired_bullet_type);
+					player->attack_cooldown = player->type->default_attack_cooldown;
 				}
 			}
 
@@ -1364,10 +1475,16 @@ void render_entity_sprite(render_group* render, world_position camera_position, 
 		v2 offset = part->offset_in_pixels;
 
 		b32 flip = false;
-		if (entity_direction != part->default_direction)
+		if (part->default_direction != direction::NONE && entity_direction != part->default_direction)
 		{
-			flip = true;
-			offset = get_v2(-part->offset_in_pixels.x, part->offset_in_pixels.y);
+			flip = !flip;
+			offset = reflection_over_y_axis(part->offset_in_pixels);
+		}
+
+		if (sprite.flip_horizontally)
+		{
+			flip = !flip;
+			offset = reflection_over_y_axis(part->offset_in_pixels);
 		}
 
 		v2 position = get_position_difference(entity_position, camera_position);
@@ -1873,7 +1990,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					rect collision_rect = get_rect_from_center(
 						SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS),
 						(size * TILE_SIDE_IN_PIXELS));
-					
+
 					render_rectangle(&game->render, collision_rect, { 0,0,0,0 }, true);
 				}
 #endif
@@ -1883,10 +2000,29 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		if (debug_entity_to_render_path)
 		{
 			render_debug_path_ends(&game->render, debug_entity_to_render_path, player->position);
+				
+		}
+
+		// draw player 
+		{
+			// nogi
+			render_entity_animation_frame(&game->render, player->position, player);
+		
+			// tułów - zależny od kierunku strzelania
+			sprite sprite = level->current_player_torso;
+			direction sprite_direction = direction::E;
+			if (level->flip_player_torso_horizontally)
+			{
+				sprite_direction = direction::W;
+				sprite.flip_horizontally = true;
+			}
+
+			render_entity_sprite(&game->render, player->position, player->position, player->direction,
+				player->visual_effect, player->visual_effect_duration, sprite);
 		}
 
 		// draw entities
-		for (u32 entity_index = 0; entity_index < level->entities_count; entity_index++)
+		for (u32 entity_index = 1; entity_index < level->entities_count; entity_index++)
 		{
 			entity* entity = level->entities + entity_index;
 			if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
@@ -1909,7 +2045,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		// draw collision debug info
 		{
-#if 1
+#if 0
 			for (u32 entity_index = 0; entity_index < level->bullets_count; entity_index++)
 			{
 				bullet* entity = level->bullets + entity_index;
