@@ -665,7 +665,7 @@ rect get_tile_colliding_rect(chunk_position reference_chunk, i32 tile_x, i32 til
 {
 	v2 position = get_position_difference(get_tile_position(tile_x, tile_y), reference_chunk);
 	v2 dimensions = get_v2(1.0f, 1.0f);
-	rect result = get_rect_from_min_corner(position, dimensions);
+	rect result = get_rect_from_center(position, dimensions);
 	return result;
 }
 
@@ -882,12 +882,12 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 		// collision with tiles
 		{
 			rect area_to_check = get_tiles_area_to_check_for_collision(moving_bullet, target_pos);
-			for (i32 tile_y_to_check = area_to_check.min_corner.y;
-				tile_y_to_check <= area_to_check.max_corner.y;
+			for (i32 tile_y_to_check = area_to_check.min_corner.y - 1;
+				tile_y_to_check <= area_to_check.max_corner.y + 1;
 				tile_y_to_check++)
 			{
-				for (i32 tile_x_to_check = area_to_check.min_corner.x;
-					tile_x_to_check <= area_to_check.max_corner.x;
+				for (i32 tile_x_to_check = area_to_check.min_corner.x - 1;
+					tile_x_to_check <= area_to_check.max_corner.x + 1;
 					tile_x_to_check++)
 				{
 					u32 tile_value = get_tile_value(level->current_map, tile_x_to_check, tile_y_to_check);
