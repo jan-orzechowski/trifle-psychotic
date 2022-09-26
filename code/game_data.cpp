@@ -407,14 +407,14 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	power_up_speed_type->collision_rect_dim = power_up_size;
 
 	entity_type* power_up_damage_type = add_entity_type(data, entity_type_enum::POWER_UP_DAMAGE);
-	power_up_damage_type->idle_pose = get_tile_graphics(arena, 964);
+	power_up_damage_type->idle_pose = get_16x16_animation_frame(arena, temp_texture_enum::MISC_TEXTURE, 3, 0);
 	power_up_damage_type->flags = power_up_flags;
 	power_up_damage_type->collision_rect_dim = power_up_size;
 
-	entity_type* power_up_granades_type = add_entity_type(data, entity_type_enum::POWER_UP_GRANADES);
-	power_up_granades_type->idle_pose = get_tile_graphics(arena, 965);
-	power_up_granades_type->flags = power_up_flags;
-	power_up_granades_type->collision_rect_dim = power_up_size;
+	entity_type* power_up_spread_type = add_entity_type(data, entity_type_enum::POWER_UP_SPREAD);
+	power_up_spread_type->idle_pose = get_16x16_animation_frame(arena, temp_texture_enum::MISC_TEXTURE, 4, 0);
+	power_up_spread_type->flags = power_up_flags;
+	power_up_spread_type->collision_rect_dim = power_up_size;
 
 	end_temporary_memory(transient_memory, true);
 }

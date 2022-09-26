@@ -800,7 +800,7 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 			case 962: type = entity_type_enum::POWER_UP_HEALTH; break;
 			case 963: type = entity_type_enum::POWER_UP_SPEED; break;
 			case 964: type = entity_type_enum::POWER_UP_DAMAGE; break;
-			case 965: type = entity_type_enum::POWER_UP_GRANADES; break;
+			case 965: type = entity_type_enum::POWER_UP_SPREAD; break;
 			case 906: type = entity_type_enum::NEXT_LEVEL_TRANSITION; break;
 			case 132: type = entity_type_enum::PLAYER; break;			
 		}

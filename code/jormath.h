@@ -161,6 +161,7 @@ v2 normalize(v2);
 v3 normalize(v3);
 v4 normalize(v4);
 v2 get_rotated_unit_vector(r32, b32 radians = false);
+v2 rotate_vector(v2, r32, b32 radians = false);
 v2 reflection_over_x_axis(v2);
 v2 reflection_over_y_axis(v2);
 r32 square(r32);

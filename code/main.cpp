@@ -417,9 +417,9 @@ void apply_power_up(level_state* level, entity* player, entity* power_up)
 			level->power_ups.damage.time_remaining += 20.0f;
 		} 
 		break;
-		case entity_type_enum::POWER_UP_GRANADES:
+		case entity_type_enum::POWER_UP_SPREAD:
 		{
-			printf("granaty\n");
+			level->power_ups.spread.time_remaining += 20.0f;
 		} 
 		break;
 	}
@@ -1256,8 +1256,20 @@ void player_fire_bullet(level_state* level, game_input* input, world_position pl
 		break;
 		invalid_default_case;
 	}
-
-	fire_bullet(level, bullet_type, player_position, bullet_offset, bullet_direction * bullet_type->constant_velocity);
+	
+	if (is_power_up_active(level->power_ups.spread))
+	{
+		fire_bullet(level, bullet_type, player_position, bullet_offset, 
+			bullet_direction * bullet_type->constant_velocity);
+		fire_bullet(level, bullet_type, player_position, bullet_offset, 
+			rotate_vector(bullet_direction, 15, false) * bullet_type->constant_velocity);
+		fire_bullet(level, bullet_type, player_position, bullet_offset, 
+			rotate_vector(bullet_direction, -15, false) * bullet_type->constant_velocity);
+	}
+	else
+	{
+		fire_bullet(level, bullet_type, player_position, bullet_offset, bullet_direction * bullet_type->constant_velocity);
+	}
 
 	level->current_player_torso = player_torso_graphics;
 	level->flip_player_torso_horizontally = flip_graphics_horizontally;
@@ -2256,7 +2268,6 @@ save* save_player_state(memory_arena* arena, level_state* level)
 	assert(level->entities[0].type);
 	save* result = push_struct(arena, save);
 	result->map_name = copy_string(arena, level->current_map_name);
-	result->granades_count = 0;
 	result->player_max_health = level->entities[0].type->max_health;
 	return result;
 }

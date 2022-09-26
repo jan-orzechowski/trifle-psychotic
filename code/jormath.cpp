@@ -624,6 +624,18 @@ v2 get_rotated_unit_vector(r32 angle, b32 radians)
     return result;
 }
 
+v2 rotate_vector(v2 vec, r32 angle, b32 radians)
+{
+    v2 result = {};
+    if (false == radians)
+    {
+        angle = (angle * (pi32 / 180.0f));
+    }
+    result.x = (cos(angle) * vec.x) - (sin(angle) * vec.y);
+    result.y = (sin(angle) * vec.x) + (cos(angle)* vec.y);
+    return result;
+}
+
 v2 reflection_over_x_axis(v2 a)
 {
     v2 result = get_v2(a.x, -a.y);

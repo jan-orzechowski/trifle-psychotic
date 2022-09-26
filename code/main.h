@@ -107,7 +107,7 @@ enum class entity_type_enum
 	POWER_UP_HEALTH,
 	POWER_UP_SPEED,
 	POWER_UP_DAMAGE,
-	POWER_UP_GRANADES,
+	POWER_UP_SPREAD,
 	NEXT_LEVEL_TRANSITION,
 	_LAST
 };
@@ -209,12 +209,11 @@ union power_ups
 	struct
 	{
 		power_up_state invincibility;
-		//power_up_state health;
 		power_up_state speed;
 		power_up_state damage;
-		//power_up_state granades;
+		power_up_state spread;
 	};	 
-	power_up_state states[3];
+	power_up_state states[4];
 };
 
 struct entity_type
@@ -446,7 +445,6 @@ struct level_state
 struct save
 {
 	string_ref map_name;
-	u32 granades_count;
 	u32 player_max_health;
 };
 
