@@ -1819,8 +1819,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			continue;
 		}
 
-		animate_entity(NULL, entity, delta_time);
-
 		if (entity->health < 0)
 		{
 			remove_entity(level, entity_index);
@@ -1883,6 +1881,16 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 						velocity *= ((distance_to_start_length + fudge) / slowdown_threshold);
 					}
 
+					entity->velocity = direction * velocity;
+					if (entity->velocity.x < 0.0f)
+					{
+						entity->direction = direction::W;
+					}
+					else
+					{
+						entity->direction = direction::E;
+					}
+
 					world_position new_position = add_to_position(entity->position, (direction * velocity * delta_time));
 					v2 movement_delta = get_position_difference(new_position, entity->position);
 					entity->position = new_position;
@@ -1931,6 +1939,26 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					entity->position = get_world_position(new_position);
 				}
 			}
+
+			tile_position tile_pos = get_tile_position(entity->position);
+			printf("enemy %d,%d x velocity: %.02f\n", tile_pos.x, tile_pos.y, entity->velocity.x);
+			r32 frame_duration_modifier = 0.75f + (1.0f / length(entity->velocity));
+
+			if (length(entity->velocity) <= 0.5f)
+			{
+				entity->current_animation = NULL;
+				entity->animation_duration = 0.0f;
+			}
+			else
+			{
+				if (entity->current_animation != entity->type->walk_animation)
+				{
+					entity->current_animation = entity->type->walk_animation;
+					entity->animation_duration = 0.0f;
+				}
+			}
+
+			animate_entity(NULL, entity, delta_time, frame_duration_modifier);
 		}
 
 		if (are_entity_flags_set(entity, entity_flags::ENEMY)

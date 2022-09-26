@@ -118,21 +118,23 @@ void start_visual_effect(level_state* level, entity* entity, u32 sprite_effect_i
 	start_visual_effect(entity, effect, override_current);
 }
 
-u32 get_current_animation_frame_index(animation* animation, r32 elapsed_time)
+u32 get_current_animation_frame_index(animation* animation, r32 elapsed_time, r32 frame_duration_modifier)
 {
 	b32 result = 0;
-	while (elapsed_time > animation->total_duration)
+	r32 modified_total_duration = (animation->total_duration * frame_duration_modifier);
+	while (elapsed_time > modified_total_duration)
 	{
-		elapsed_time -= animation->total_duration;
+		elapsed_time -= modified_total_duration;
 	}
 
 	r32 time_within_frame = elapsed_time;
 	for (u32 frame_index = 0; frame_index < animation->frames_count; frame_index++)
 	{
 		animation_frame* frame = animation->frames + frame_index;
-		if (time_within_frame > frame->duration)
+		r32 modified_frame_duration = frame->duration * frame_duration_modifier;
+		if (time_within_frame > modified_frame_duration)
 		{
-			time_within_frame -= frame->duration;
+			time_within_frame -= modified_frame_duration;
 			continue;
 		}
 		else
@@ -156,7 +158,7 @@ animation_frame* get_current_animation_frame(entity* entity)
 	return result;
 }
 
-void animate_entity(player_movement* movement, entity* entity, r32 delta_time)
+void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r32 frame_duration_modifier)
 {
 	if (entity->visual_effect)
 	{
@@ -194,13 +196,14 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time)
 	if (entity->current_animation)
 	{
 		entity->animation_duration += delta_time;
-		while (entity->animation_duration > entity->current_animation->total_duration)
+		r32 modified_total_duration = entity->current_animation->total_duration * frame_duration_modifier;
+		while (entity->animation_duration > modified_total_duration)
 		{
-			entity->animation_duration -= entity->current_animation->total_duration;
+			entity->animation_duration -= modified_total_duration;
 		}
 
 		entity->current_animation->current_frame_index =
-			get_current_animation_frame_index(entity->current_animation, entity->animation_duration);
+			get_current_animation_frame_index(entity->current_animation, entity->animation_duration, frame_duration_modifier);
 	}
 
 	if (movement)

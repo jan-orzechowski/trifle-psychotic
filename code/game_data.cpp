@@ -100,34 +100,68 @@ sprite_part get_sprite_part(temp_texture_enum texture, rect texture_rect, v2 off
 	return result;
 }
 
-animation* get_player_walk_animation(memory_arena* arena)
+animation* get_walk_animation(memory_arena* arena, v2 offset, b32 add_head)
 {
 	animation* new_animation = push_struct(arena, animation);
 	new_animation->frames_count = 3;
 	new_animation->frames = push_array(arena, new_animation->frames_count, animation_frame);
 
-	rect legs_rect = get_rect_from_min_corner(0, 24, 24, 24);
-	v2 legs_offset = get_v2(0.0f, 0.0f);
-
 	r32 frame_duration = 0.2f;
 	temp_texture_enum texture = temp_texture_enum::PLAYER_TEXTURE;
 
-	new_animation->frames[0].sprite.parts_count = 1;
-	new_animation->frames[1].sprite.parts_count = 1;
-	new_animation->frames[2].sprite.parts_count = 1;
-	new_animation->frames[0].sprite.parts = push_array(arena, 1, sprite_part);
-	new_animation->frames[1].sprite.parts = push_array(arena, 1, sprite_part);
-	new_animation->frames[2].sprite.parts = push_array(arena, 1, sprite_part);
+	r32 parts_count = add_head ? 2 : 1;
 
+	new_animation->frames[0].sprite.parts_count = parts_count;
+	new_animation->frames[1].sprite.parts_count = parts_count;
+	new_animation->frames[2].sprite.parts_count = parts_count;
+	new_animation->frames[0].sprite.parts = push_array(arena, parts_count, sprite_part);
+	new_animation->frames[1].sprite.parts = push_array(arena, parts_count, sprite_part);
+	new_animation->frames[2].sprite.parts = push_array(arena, parts_count, sprite_part);
 
-	legs_rect = get_rect_from_min_corner(24, 24, 24, 24);
-	fill_animation_frame(new_animation, 0, 0, get_sprite_part(texture, legs_rect, legs_offset), &frame_duration);
+	rect legs_rect = get_rect_from_min_corner(offset.x + 24, offset.y + 24, 24, 24);
+	fill_animation_frame(new_animation, 0, 0, get_sprite_part(texture, legs_rect), &frame_duration);
 	legs_rect = move_rect(legs_rect, get_v2(24, 0));
-	fill_animation_frame(new_animation, 1, 0, get_sprite_part(texture, legs_rect, legs_offset), &frame_duration);
+	fill_animation_frame(new_animation, 1, 0, get_sprite_part(texture, legs_rect), &frame_duration);
 	legs_rect = move_rect(legs_rect, get_v2(24, 0));
-	fill_animation_frame(new_animation, 2, 0, get_sprite_part(texture, legs_rect, legs_offset), &frame_duration);
+	fill_animation_frame(new_animation, 2, 0, get_sprite_part(texture, legs_rect), &frame_duration);
+
+	if (add_head) 
+	{
+		new_animation->frames[0].sprite.parts[0].offset_in_pixels = get_v2(0.0f, -5.0f);
+		new_animation->frames[1].sprite.parts[0].offset_in_pixels = get_v2(0.0f, -5.0f);
+		new_animation->frames[2].sprite.parts[0].offset_in_pixels = get_v2(0.0f, -5.0f);
+
+		rect head_rect = get_rect_from_min_corner(offset.x, offset.y, 24, 24);
+		v2 head_offset = get_v2(5, -19);
+		fill_animation_frame(new_animation, 0, 1, get_sprite_part(texture, head_rect, head_offset), NULL);	
+		fill_animation_frame(new_animation, 1, 1, get_sprite_part(texture, head_rect, head_offset), NULL);
+		fill_animation_frame(new_animation, 2, 1, get_sprite_part(texture, head_rect, head_offset), NULL);
+	}
 
 	return new_animation;
+}
+
+animation_frame get_walk_idle_pose(memory_arena* arena, v2 offset, b32 add_head)
+{
+	animation_frame result = {};
+
+	r32 parts_count = add_head ? 2 : 1;
+
+	result.sprite.parts_count = parts_count;
+	result.sprite.parts = push_array(arena, parts_count, sprite_part);
+
+	rect legs_rect = get_rect_from_min_corner(offset.x, offset.y + 24, 24, 24);
+	result.sprite.parts[0] = get_sprite_part(temp_texture_enum::PLAYER_TEXTURE, legs_rect);
+
+	if (add_head)
+	{
+		result.sprite.parts[0].offset_in_pixels = get_v2(0.0f, -5.0f);
+		rect head_rect = get_rect_from_min_corner(offset.x, offset.y, 24, 24);
+		v2 head_offset = get_v2(5, -19);
+		result.sprite.parts[1] = get_sprite_part(temp_texture_enum::PLAYER_TEXTURE, head_rect, head_offset);
+	}
+
+	return result;
 }
 
 animation_frame get_player_idle_pose(memory_arena* arena)
@@ -316,7 +350,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	player_entity_type->velocity_multiplier = 40.0f;
 	player_entity_type->slowdown_multiplier = 0.80f;
 	player_entity_type->default_attack_cooldown = 0.2f;
-	player_entity_type->walk_animation = get_player_walk_animation(arena);
+	player_entity_type->walk_animation = get_walk_animation(arena, get_zero_v2(), false);
 	player_entity_type->collision_rect_dim = get_v2(0.35f, 1.6f);
 
 	entity_type* static_enemy_type = add_entity_type(data, entity_type_enum::STATIC_ENEMY);
@@ -330,14 +364,17 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	static_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 
 	entity_type* moving_enemy_type = add_entity_type(data, entity_type_enum::MOVING_ENEMY);
-	moving_enemy_type->idle_pose = get_tile_graphics(arena, 1992);
+	//moving_enemy_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 3 * 24), true);
+	moving_enemy_type->idle_pose = get_walk_idle_pose(arena, get_v2(4 * 24, 3 * 24), true);
 	moving_enemy_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT
 		| (u32)entity_flags::WALKS_HORIZONTALLY
 		| (u32)entity_flags::ENEMY);
 	moving_enemy_type->max_health = 10;
 	moving_enemy_type->damage_on_contact = 10;
+	//moving_enemy_type->walk_animation = get_walk_animation(arena, get_v2(0, 3 * 24), true);
+	moving_enemy_type->walk_animation = get_walk_animation(arena, get_v2(4 * 24, 3 * 24), true);
 	moving_enemy_type->default_attack_cooldown = 0.2f;
-	moving_enemy_type->velocity_multiplier = 5.0f;
+	moving_enemy_type->velocity_multiplier = 4.0f;
 	moving_enemy_type->player_acceleration_on_collision = 3.0f;
 	moving_enemy_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 
