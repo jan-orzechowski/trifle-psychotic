@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.9" tiledversion="1.9.1" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="3" nextobjectid="73">
+<map version="1.9" tiledversion="1.9.1" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="3" nextobjectid="88">
  <tileset firstgid="1" source="../_dev_files/tileset.tsx"/>
  <layer id="1" name="map" width="50" height="50">
   <data encoding="csv">
@@ -57,19 +57,6 @@
  </layer>
  <objectgroup id="2" name="entities" tintcolor="#0055ff">
   <object id="16" gid="132" x="0" y="80" width="16" height="16"/>
-  <object id="21" gid="131" x="176" y="464.25" width="16" height="16"/>
-  <object id="34" gid="66" x="128" y="336" width="16" height="16"/>
-  <object id="35" gid="131" x="222.5" y="336" width="16" height="16"/>
-  <object id="36" gid="131" x="176" y="400.25" width="16" height="16"/>
-  <object id="37" gid="131" x="240" y="416.25" width="16" height="16"/>
-  <object id="38" gid="131" x="206.5" y="368" width="16" height="16"/>
-  <object id="39" gid="131" x="240" y="464.25" width="16" height="16"/>
-  <object id="40" gid="66" x="464" y="208.091" width="16" height="16"/>
-  <object id="41" gid="66" x="497.421" y="208" width="16" height="16"/>
-  <object id="42" gid="66" x="528" y="224.091" width="16" height="16"/>
-  <object id="43" gid="66" x="560" y="224.091" width="16" height="16"/>
-  <object id="44" gid="66" x="448" y="80" width="16" height="16"/>
-  <object id="45" gid="66" x="576" y="240.091" width="16" height="16"/>
   <object id="48" gid="1601" x="240" y="80" width="16" height="16">
    <properties>
     <property name="color" type="color" value="#6aff0000"/>
@@ -121,6 +108,13 @@
   <object id="72" gid="906" x="368" y="192" width="16" height="16">
    <properties>
     <property name="next_level" value="map_02"/>
+   </properties>
+  </object>
+  <object id="78" gid="66" x="320" y="64" width="16" height="16"/>
+  <object id="84" gid="131" x="176" y="192" width="16" height="16"/>
+  <object id="87" gid="1928" x="48" y="80" width="16" height="16">
+   <properties>
+    <property name="message" value="Dzien dobry, to jest bardzo dluga wiadomosc, ktora bedzie wyswietlona w okienku"/>
    </properties>
   </object>
  </objectgroup>
