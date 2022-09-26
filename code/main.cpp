@@ -1182,10 +1182,7 @@ void player_fire_bullet(level_state* level, game_input* input, world_position pl
 	else if (-90.0f  <  angle && angle <= -45.0f)  direction = direction::S;
 	else if (-135.0f <  angle && angle <= -90.0f)  direction = direction::SW;
 	else if (-180.0f <  angle && angle <= -135.0f) direction = direction::W;
-
-	//printf("direction: %d\n", (i32)direction);
-
-	v2 bullet_direction = get_v2(1.0f, 0.0f);;
+	
 	v2 bullet_offset = level->static_data->player_shooting_right_bullet_offset;
 	sprite player_torso_graphics = level->static_data->player_shooting_right;
 	b32 flip_graphics_horizontally = false;
@@ -1194,28 +1191,24 @@ void player_fire_bullet(level_state* level, game_input* input, world_position pl
 	{
 		case direction::E: 
 		{ 
-			bullet_direction = get_v2(1.0f, 0.0f); 
 			bullet_offset = level->static_data->player_shooting_right_bullet_offset;
 			player_torso_graphics = level->static_data->player_shooting_right;
 		} 
 		break;
 		case direction::NE: 
 		{ 
-			bullet_direction = get_rotated_unit_vector(45.0f); 
 			bullet_offset = level->static_data->player_shooting_right_down_bullet_offset;
 			player_torso_graphics = level->static_data->player_shooting_right_down;
 		} 
 		break;
 		case direction::N: 
 		{
-			bullet_direction = get_v2(0.0f, 1.0f); 
 			bullet_offset = level->static_data->player_shooting_down_bullet_offset;
 			player_torso_graphics = level->static_data->player_shooting_down;
 		} 
 		break;	
 		case direction::NW:
 		{
-			bullet_direction = get_rotated_unit_vector(135.0f); 
 			bullet_offset = reflection_over_y_axis(
 				level->static_data->player_shooting_right_down_bullet_offset);
 			player_torso_graphics = level->static_data->player_shooting_right_down;
@@ -1224,7 +1217,6 @@ void player_fire_bullet(level_state* level, game_input* input, world_position pl
 		break;			
 		case direction::W: 
 		{
-			bullet_direction = get_v2(-1.0f, 0.0f);
 			bullet_offset = reflection_over_y_axis(
 				level->static_data->player_shooting_right_bullet_offset);
 			player_torso_graphics = level->static_data->player_shooting_right;
@@ -1233,7 +1225,6 @@ void player_fire_bullet(level_state* level, game_input* input, world_position pl
 		break;	
 		case direction::SW:
 		{
-			bullet_direction = get_rotated_unit_vector(-135.0f);
 			bullet_offset = reflection_over_y_axis(
 				level->static_data->player_shooting_right_up_bullet_offset);
 			player_torso_graphics = level->static_data->player_shooting_right_up;	
@@ -1242,21 +1233,21 @@ void player_fire_bullet(level_state* level, game_input* input, world_position pl
 		break;	
 		case direction::S: 
 		{
-			bullet_direction = get_v2(0.0f, -1.0f);
 			bullet_offset = level->static_data->player_shooting_up_bullet_offset;
 			player_torso_graphics = level->static_data->player_shooting_up;
 		} 
 		break;
 		case direction::SE:
 		{ 
-			bullet_direction = get_rotated_unit_vector(-45.0f);
 			bullet_offset = level->static_data->player_shooting_right_up_bullet_offset;
 			player_torso_graphics = level->static_data->player_shooting_right_up;
 		} 
 		break;
 		invalid_default_case;
 	}
-	
+
+	v2 bullet_direction = get_unit_vector(relative_mouse_pos);
+
 	if (is_power_up_active(level->power_ups.spread))
 	{
 		fire_bullet(level, bullet_type, player_position, bullet_offset, 
