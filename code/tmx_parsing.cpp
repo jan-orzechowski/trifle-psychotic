@@ -748,7 +748,7 @@ xml_node_search_result* find_all_nodes_with_tag(memory_arena* arena, xml_node* r
 	return result;
 }
 
-void add_read_entity(map* level, memory_arena* arena, entity_type_enum type, tile_position position, v4 gate_color = get_zero_v4())
+entity_to_spawn* add_read_entity(map* level, memory_arena* arena, entity_type_enum type, tile_position position, v4 gate_color = get_zero_v4())
 {
 	entity_to_spawn* new_entity = push_struct(arena, entity_to_spawn);
 	new_entity->type = type;
@@ -760,12 +760,13 @@ void add_read_entity(map* level, memory_arena* arena, entity_type_enum type, til
 	{
 		level->entities_to_spawn = new_entity;
 	}
+
+	return new_entity;
 }
 
 void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, map* level, xml_node* node)
 {
 	string_ref gid_str = get_attribute_value(node, "gid");
-	//string_ref class_str = get_attribute_value(node, "class");
 	string_ref x_str = get_attribute_value(node, "x");
 	string_ref y_str = get_attribute_value(node, "y");
 
@@ -803,6 +804,7 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 			case 965: type = entity_type_enum::POWER_UP_SPREAD; break;
 			case 906: type = entity_type_enum::NEXT_LEVEL_TRANSITION; break;
 			case 132: type = entity_type_enum::PLAYER; break;			
+			case 1928: type = entity_type_enum::MESSAGE_DISPLAY; break;
 		}
 	}
 
@@ -885,7 +887,7 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 		{
 			if (next_level_transition_point_is_set)
 			{
-				// na razie nie wspieram tego
+				// na razie nie wspieram więcej niż jednego przejścia do następnego poziomu
 				invalid_code_path;
 			}
 
@@ -921,6 +923,41 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 			{
 				add_read_entity(level, permanent_arena, type, position);
 				next_level_transition_point_is_set = true;
+				level->next_map = next_level_name;
+			}
+		}
+		break;
+		case entity_type_enum::MESSAGE_DISPLAY:
+		{
+			xml_node* properties_parent_node = find_tag_in_children(node, "properties");
+			if (properties_parent_node)
+			{
+				xml_node_search_result* properties = find_all_nodes_with_tag(
+					transient_arena, properties_parent_node, "property");
+
+				for (u32 property_index = 0;
+					property_index < properties->found_nodes_count;
+					property_index++)
+				{
+					xml_node* prop = properties->found_nodes[property_index];
+					string_ref name = get_attribute_value(prop, "name");
+					if (compare_to_c_string(name, "message"))
+					{
+						string_ref message_str = get_attribute_value(prop, "value");
+						if (message_str.string_size)
+						{
+							if (message_str.string_size < 1000)
+							{							
+								entity_to_spawn* message_entity = add_read_entity(level, permanent_arena, type, position);									
+								message_entity->message = message_str;
+							}
+							else
+							{
+								// osiągniety max string size
+							}
+						}
+					}
+				}
 			}
 		}
 		break;
@@ -929,11 +966,6 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 			add_read_entity(level, permanent_arena, type, position);
 		}
 		break;
-	}
-
-	if (next_level_name.string_size)
-	{
-		level->next_map = copy_string(transient_arena, next_level_name);
 	}
 }
 
@@ -1055,6 +1087,19 @@ map read_map_from_tmx_file(memory_arena* permanent_arena, memory_arena* transien
 			{
 				// kopiujemy do permanent arena na samym końcu, ponieważ lista nowych entities jest "dynamiczna"
 				level.next_map = copy_string(permanent_arena, level.next_map);
+			}
+
+			for (u32 entity_index = 0;
+				entity_index < level.entities_to_spawn_count;
+				entity_index++)
+			{
+				entity_to_spawn* entity_to_spawn = level.entities_to_spawn + entity_index;
+				if (entity_to_spawn->type == entity_type_enum::MESSAGE_DISPLAY)
+				{
+					// tak samo jak z nazwą następnego poziomu
+					entity_to_spawn->message = copy_string(permanent_arena, entity_to_spawn->message);
+					printf(entity_to_spawn->message.ptr);
+				}
 			}
 		}
 	}

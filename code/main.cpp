@@ -487,6 +487,7 @@ b32 check_segment_intersection(r32 movement_start_x, r32 movement_start_y,
 
 entity* add_entity(level_state* level, world_position position, entity_type* type)
 {
+	assert(type);
 	assert(level->entities_count + 1 < level->entities_max_count);
 
 	entity* new_entity = &level->entities[level->entities_count];
@@ -838,15 +839,20 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 									{
 										result.collided_switch = entity_to_check;
 									}
+						
+									if (are_entity_flags_set(entity_to_check, entity_flags::POWER_UP))
+									{
+										result.collided_power_up = entity_to_check;
+									}
 
 									if (entity_to_check->type->type_enum == entity_type_enum::NEXT_LEVEL_TRANSITION)
 									{
 										result.collided_transition = entity_to_check;
 									}
 
-									if (are_entity_flags_set(entity_to_check, entity_flags::POWER_UP))
+									if (are_entity_flags_set(entity_to_check, entity_flags::MESSAGE_DISPLAY))
 									{
-										result.collided_power_up = entity_to_check;
+										result.collided_message_display = entity_to_check;
 									}
 								}
 							}
@@ -1567,6 +1573,29 @@ void add_next_level_transition(level_state* level, memory_arena* arena, entity_t
 	add_entity(level, new_position, transition_type);
 }
 
+void add_message_display_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+{
+	entity_type* new_type = push_struct(arena, entity_type);
+
+	u32 max_size = 10;
+
+	tile_range occupied_tiles = find_vertical_range_of_free_tiles(
+		level->current_map, level->static_data->collision_reference, new_entity_to_spawn->position, max_size);
+	v2 collision_rect_dim = get_length_from_tile_range(occupied_tiles);
+
+	new_type->collision_rect_dim = collision_rect_dim;
+	new_type->message = new_entity_to_spawn->message;
+
+	world_position new_position = add_to_position(
+		get_world_position(occupied_tiles.start),
+		get_position_difference(occupied_tiles.end, occupied_tiles.start) / 2);
+
+	set_flags(&new_type->flags, entity_flags::INDESTRUCTIBLE);
+	set_flags(&new_type->flags, entity_flags::MESSAGE_DISPLAY);
+
+	entity* new_entity = add_entity(level, new_position, new_type);
+}
+
 void initialize_current_map(game_state* game, level_state* level)
 {
 	assert(false == level->current_map_initialized);
@@ -1603,6 +1632,11 @@ void initialize_current_map(game_state* game, level_state* level)
 			case entity_type_enum::NEXT_LEVEL_TRANSITION:
 			{
 				add_next_level_transition(level, game->arena, new_entity);
+			}
+			break;
+			case entity_type_enum::MESSAGE_DISPLAY:
+			{
+				add_message_display_entity(level, game->arena, new_entity);
 			}
 			break;
 			case entity_type_enum::UNKNOWN:
@@ -1769,6 +1803,16 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		{
 			v4 color = collision.collided_switch->type->color;
 			open_gates_with_given_color(level, color);
+		}
+
+		if (collision.collided_message_display)
+		{
+			string_ref message = collision.collided_message_display->type->message;
+			if (message.string_size)
+			{
+				printf(message.ptr); printf("\n");	
+				collision.collided_message_display->type->message = {};
+			}
 		}
 
 		if (collision.collided_transition 
@@ -2105,17 +2149,12 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		// draw collision debug info
 		{
-#if 0
-			for (u32 entity_index = 0; entity_index < level->bullets_count; entity_index++)
+#if 1
+			for (u32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 			{
-				bullet* entity = level->bullets + entity_index;
+				entity* entity = level->entities + entity_index;
 				if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
 				{
-					if (false == is_zero(entity->type->color))
-					{
-						debug_breakpoint;
-					}
-
 					// istotne - offset sprite'a nie ma tu znaczenia
 					v2 relative_position = get_position_difference(entity->position, player->position);
 					v2 center = relative_position + entity->type->collision_rect_offset;

@@ -109,6 +109,7 @@ enum class entity_type_enum
 	POWER_UP_DAMAGE,
 	POWER_UP_SPREAD,
 	NEXT_LEVEL_TRANSITION,
+	MESSAGE_DISPLAY,
 	_LAST
 };
 
@@ -123,7 +124,8 @@ enum class entity_flags
 	GATE			       = (1 << 6),
 	SWITCH                 = (1 << 7),
 	TINTED_DISPLAY         = (1 << 8),
-	POWER_UP               = (1 << 9)
+	POWER_UP               = (1 << 9),
+	MESSAGE_DISPLAY        = (1 << 10)
 };
 
 struct entity_to_spawn
@@ -131,6 +133,7 @@ struct entity_to_spawn
 	tile_position position;
 	entity_type_enum type;
 	v4 color;
+	string_ref message;
 };
 
 struct map
@@ -242,6 +245,7 @@ struct entity_type
 	entity_type* fired_bullet_type;
 
 	v4 color; // używane w przypadku bram i przełączników
+	string_ref message;
 };
 
 struct entity_type_dictionary
@@ -296,6 +300,7 @@ struct collision_result
 	entity* collided_switch;
 	entity* collided_transition;
 	entity* collided_power_up;
+	entity* collided_message_display;
 };
 
 struct entity_collision_data
