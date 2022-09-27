@@ -29,7 +29,7 @@ void* push_render_element(render_group* group, u32 size, render_group_entry_type
 	return result;
 }
 
-void render_bitmap(render_group* group, temp_texture_enum texture, rect source_rect, rect destination_rect)
+void render_bitmap(render_group* group, textures texture, rect source_rect, rect destination_rect)
 {
 	render_group_entry_bitmap* entry = (render_group_entry_bitmap*)push_render_element(
 		group, sizeof(render_group_entry_bitmap), render_group_entry_type::BITMAP);
@@ -56,7 +56,7 @@ void render_point(render_group* group, v2 point, v4 color)
 }
 
 void render_bitmap_with_effects(render_group* group,
-	temp_texture_enum texture, rect source_rect, rect destination_rect, v4 tint_color, b32 render_in_additive_mode, b32 flip_horizontally)
+	textures texture, rect source_rect, rect destination_rect, v4 tint_color, b32 render_in_additive_mode, b32 flip_horizontally)
 {
 	render_group_entry_bitmap_with_effects* entry = (render_group_entry_bitmap_with_effects*)push_render_element(
 		group, sizeof(render_group_entry_bitmap_with_effects), render_group_entry_type::BITMAP_WITH_EFFECTS);
@@ -116,7 +116,7 @@ b32 are_entity_flags_set(entity* entity, entity_flags flag_values)
 	return result;
 }
 
-void render_hitpoint_bar(render_group* render, entity* player, b32 draw_white_bars)
+void render_hitpoint_bar(static_game_data* static_data, render_group* render, entity* player, b32 draw_white_bars)
 {
 	// zabezpieczenie na uint wrapping
 	if (player->health < 0.0f)
@@ -126,39 +126,33 @@ void render_hitpoint_bar(render_group* render, entity* player, b32 draw_white_ba
 
 	u32 filled_health_bars = (u32)(player->health / 10);
 	u32 max_health_bars = (u32)(player->type->max_health / 10);
-
-	v2 icon_dim = get_v2(8, 8);
-	v2 bar_dim = get_v2(4, 8);
-
-	rect icon_texture_rect = get_rect_from_min_corner(get_v2(0, 0), icon_dim);
-	rect icon_screen_rect = get_rect_from_min_corner(get_v2(10, 10), icon_dim);
 	
-	render_bitmap(render, temp_texture_enum::UI_TEXTURE, icon_texture_rect, icon_screen_rect);
+	rect icon_screen_rect = get_rect_from_min_corner(get_v2(10, 10), get_v2(10, 10));
+	rect bar_screen_rect = get_rect_from_min_corner(get_v2(18, 10), get_v2(4, 8));
 	
-	rect bar_texture_rect = get_rect_from_min_corner(get_v2(4, 16), bar_dim);
-
+	rect bar_texture_rect = static_data->ui_gfx.healthbar_red_bar;
 	if (draw_white_bars)
 	{
-		bar_texture_rect = get_rect_from_min_corner(get_v2(0, 16), bar_dim);
+		bar_texture_rect = static_data->ui_gfx.healthbar_white_bar;
 	}
 
-	rect bar_screen_rect = get_rect_from_min_corner(get_v2(18, 10), bar_dim);
+	render_bitmap(render, textures::CHARSET, static_data->ui_gfx.healthbar_icon, icon_screen_rect);
+
 	for (u32 health_bar_index = 0;
 		health_bar_index < filled_health_bars;
 		health_bar_index++)
 	{
 		bar_screen_rect = move_rect(bar_screen_rect, get_v2(4, 0));
-		render_bitmap(render, temp_texture_enum::UI_TEXTURE, bar_texture_rect, bar_screen_rect);
+		render_bitmap(render, textures::CHARSET, bar_texture_rect, bar_screen_rect);
 	}
 
-	bar_texture_rect = get_rect_from_min_corner(get_v2(0, 8), bar_dim);
-
+	bar_texture_rect = static_data->ui_gfx.healthbar_empty_bar;
 	for (u32 health_bar_index = filled_health_bars;
 		health_bar_index < max_health_bars;
 		health_bar_index++)
 	{
 		bar_screen_rect = move_rect(bar_screen_rect, get_v2(4, 0));
-		render_bitmap(render, temp_texture_enum::UI_TEXTURE, bar_texture_rect, bar_screen_rect);
+		render_bitmap(render, textures::CHARSET, bar_texture_rect, bar_screen_rect);
 	}
 }
 
@@ -1545,11 +1539,6 @@ void render_entity_sprite(render_group* render, world_position camera_position, 
 		}
 		else
 		{
-			if (part->texture == temp_texture_enum::BULLETS_TEXTURE)
-			{
-				debug_breakpoint;
-			}
-
 			render_bitmap_with_effects(render, part->texture, part->texture_rect, screen_rect, get_zero_v4(), false, flip);
 		}
 	}
@@ -2081,7 +2070,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 				v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - player_offset_in_tile;
 				rect screen_rect = get_tile_render_rect(position);
-				render_bitmap(&game->render, temp_texture_enum::TILESET_TEXTURE, tile_bitmap, screen_rect);
+				render_bitmap(&game->render, textures::TILESET, tile_bitmap, screen_rect);
 
 #if 0
 				if (is_tile_colliding(level->static_data->collision_reference, tile_value))
@@ -2149,7 +2138,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		// draw collision debug info
 		{
-#if 1
+#if 0
 			for (u32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 			{
 				entity* entity = level->entities + entity_index;
@@ -2174,7 +2163,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		
 		render_debug_information(game, level);
 
-		render_hitpoint_bar(&game->render, player, is_power_up_active(level->power_ups.invincibility));
+		render_hitpoint_bar(level->static_data, &game->render, player, is_power_up_active(level->power_ups.invincibility));
 	}
 	
 	if (level->active_scene_change.change_scene)
@@ -2316,7 +2305,7 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	rect indicator_screen_rect = get_rect_from_min_corner(indicator_x, indicator_y, 16, 16);
 	rect bitmap_rect = get_rect_from_min_corner(16, 0, 16, 16);
 
-	render_bitmap(&game->render, temp_texture_enum::MISC_TEXTURE, bitmap_rect, indicator_screen_rect);
+	render_bitmap(&game->render, textures::CHARSET, bitmap_rect, indicator_screen_rect);
 
 	return change_to_other_scene;
 };

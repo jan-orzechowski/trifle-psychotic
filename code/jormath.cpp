@@ -762,6 +762,13 @@ rect move_rect(rect rect_to_move, v2 distance)
     return result;
 }
 
+rect move_rect(rect* rect_to_move, v2 distance)
+{
+    rect_to_move->min_corner += distance;
+    rect_to_move->max_corner += distance;
+    return *rect_to_move;
+}
+
 v2 get_rect_dimensions(rect rect)
 {
     v2 result = {};

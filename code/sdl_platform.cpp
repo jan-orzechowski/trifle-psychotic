@@ -149,12 +149,8 @@ sdl_data init_sdl()
 				if (IMG_Init(img_flags) & img_flags)
 				{
 					load_image(sdl_game.renderer, &sdl_game.tileset_texture, "gfx/tileset.png", &success);
-					load_image(sdl_game.renderer, &sdl_game.player_texture, "gfx/player.png", &success);
-					load_image(sdl_game.renderer, &sdl_game.bullets_texture, "gfx/bullets.png", &success);
-					load_image(sdl_game.renderer, &sdl_game.gates_texture, "gfx/gates.png", &success);
-					load_image(sdl_game.renderer, &sdl_game.misc_texture, "gfx/misc.png", &success);
-					load_image(sdl_game.renderer, &sdl_game.ui_texture, "gfx/interface.png", &success);
-					load_image(sdl_game.renderer, &sdl_game.font_texture, "gfx/font.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.font_texture, "gfx/font1.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.charset_texture, "gfx/charset.png", &success);
 				}
 				else
 				{
@@ -302,13 +298,9 @@ int main(int argc, char* args[])
 		invalid_code_path;
 	}
 	
+	SDL_DestroyTexture(sdl.charset_texture);
 	SDL_DestroyTexture(sdl.tileset_texture);
-	SDL_DestroyTexture(sdl.bullets_texture);
-	SDL_DestroyTexture(sdl.ui_texture);
 	SDL_DestroyTexture(sdl.font_texture);
-	SDL_DestroyTexture(sdl.player_texture);
-	SDL_DestroyTexture(sdl.misc_texture);
-	SDL_DestroyTexture(sdl.gates_texture);
 
 	SDL_DestroyRenderer(sdl.renderer);
 	SDL_DestroyWindow(sdl.window);
@@ -336,19 +328,15 @@ void render_rect(sdl_data* sdl, rect rectangle)
 		rectangle.min_corner.x, rectangle.max_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
 }
 
-internal SDL_Texture* get_texture(sdl_data sdl, temp_texture_enum type)
+internal SDL_Texture* get_texture(sdl_data sdl, textures type)
 {
 	SDL_Texture* result = NULL;
 	switch (type)
 	{
-		case temp_texture_enum::NONE: { result = NULL; }; break;
-		case temp_texture_enum::TILESET_TEXTURE: { result = sdl.tileset_texture;  }; break;
-		case temp_texture_enum::BULLETS_TEXTURE: { result = sdl.bullets_texture; }; break;
-		case temp_texture_enum::UI_TEXTURE: { result = sdl.ui_texture; }; break;
-		case temp_texture_enum::FONT_TEXTURE: { result = sdl.font_texture; }; break;
-		case temp_texture_enum::PLAYER_TEXTURE: { result = sdl.player_texture; }; break;
-		case temp_texture_enum::MISC_TEXTURE: { result = sdl.misc_texture; }; break;
-		case temp_texture_enum::GATES_TEXTURE: { result = sdl.gates_texture; }; break;
+		case textures::NONE: { result = NULL; }; break;
+		case textures::TILESET: { result = sdl.tileset_texture;  }; break;
+		case textures::FONT: { result = sdl.font_texture; }; break;
+		case textures::CHARSET: { result = sdl.charset_texture; }; break;
 		invalid_default_case;
 	}
 	return result;

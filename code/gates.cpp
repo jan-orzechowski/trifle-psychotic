@@ -93,7 +93,7 @@ void open_gates_with_given_color(level_state* level, v4 color)
 					sprite* sprite = &entry->entity->type->idle_pose.sprite;
 					for (u32 sprite_index = 1; sprite_index < sprite->parts_count - 1; sprite_index++)
 					{
-						sprite->parts[sprite_index].texture = temp_texture_enum::NONE;
+						sprite->parts[sprite_index].texture = textures::NONE;
 					}
 
 					printf("brama na pozycji (%d,%d)\n", pos.x, pos.y);
@@ -114,6 +114,10 @@ void open_gates_with_given_color(level_state* level, v4 color)
 
 void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn, b32 is_switch)
 {
+	gate_graphics gate_gfx = level->static_data->blue_gate_graphics;
+	switch_graphics switch_gfx = level->static_data->blue_switch_graphics;
+	display_graphics display_gfx = level->static_data->gate_switch_displays;
+
 	entity_type* new_type = push_struct(arena, entity_type);
 
 	u32 max_size = 10;
@@ -153,15 +157,15 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 			sprite_part* part = &frame.sprite.parts[distance];
 			if (distance == 0)
 			{
-				*part = level->static_data->switch_frame_left_sprite;
+				*part = switch_gfx.frame_left;
 			}
 			else if (distance == tiles_count - 1)
 			{
-				*part = level->static_data->switch_frame_right_sprite;
+				*part = switch_gfx.frame_right;
 			}
 			else
 			{
-				*part = level->static_data->switch_frame_middle_sprite;
+				*part = switch_gfx.frame_middle;
 			}
 			part->offset_in_pixels = get_position_difference(
 				get_tile_position(occupied_tiles.start.x + distance, occupied_tiles.start.y), new_position)
@@ -183,15 +187,15 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 			sprite_part* part = &frame.sprite.parts[distance];
 			if (distance == 0)
 			{
-				*part = level->static_data->gate_frame_lower_sprite;
+				*part = gate_gfx.frame_upper;
 			}
 			else if (distance == tiles_count - 1)
 			{
-				*part = level->static_data->gate_frame_upper_sprite;
+				*part = gate_gfx.frame_lower;
 			}
 			else
 			{
-				*part = level->static_data->gate_sprite;
+				*part = gate_gfx.gate;
 			}
 
 			part->offset_in_pixels = get_position_difference(
@@ -228,15 +232,15 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 			sprite_part* part = &frame.sprite.parts[distance];
 			if (distance == 0)
 			{
-				*part = level->static_data->switch_display_left_sprite;
+				*part = display_gfx.switch_left_display;
 			}
 			else if (distance == tiles_count - 1)
 			{
-				*part = level->static_data->switch_display_right_sprite;
+				*part = display_gfx.switch_right_display;
 			}
 			else
 			{
-				*part = level->static_data->switch_display_middle_sprite;
+				*part = display_gfx.switch_middle_display;
 			}
 			part->offset_in_pixels = get_position_difference(
 				get_tile_position(occupied_tiles.start.x + distance, occupied_tiles.start.y), new_position)
@@ -251,11 +255,11 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 		frame.sprite.parts_count = 2;
 		frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
 
-		frame.sprite.parts[0] = level->static_data->gate_display_upper_sprite;
+		frame.sprite.parts[0] = display_gfx.gate_upper_display;
 		frame.sprite.parts[0].offset_in_pixels = get_position_difference(
 			get_tile_position(occupied_tiles.start.x, occupied_tiles.start.y - 1), new_position)
 			* TILE_SIDE_IN_PIXELS;
-		frame.sprite.parts[1] = level->static_data->gate_display_lower_sprite;
+		frame.sprite.parts[1] = display_gfx.gate_lower_display;
 		frame.sprite.parts[1].offset_in_pixels = get_position_difference(
 			get_tile_position(occupied_tiles.start.x, occupied_tiles.end.y + 1), new_position)
 			* TILE_SIDE_IN_PIXELS;

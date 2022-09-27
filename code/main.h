@@ -25,17 +25,12 @@
 
 #define CHUNK_SIDE_IN_TILES 16
 
-// do usunięcia - ostatecznie mamy mieć jedną teksturę
-enum class temp_texture_enum
+enum class textures
 {
-	NONE, // to był głównie trik przy bramach - trzeba to czymś zastąpić
-	TILESET_TEXTURE,
-	BULLETS_TEXTURE,
-	UI_TEXTURE,
-	FONT_TEXTURE,
-	PLAYER_TEXTURE,
-	MISC_TEXTURE,
-	GATES_TEXTURE
+	NONE,
+	TILESET,
+	FONT,
+	CHARSET
 };
 
 struct tile_position
@@ -175,7 +170,7 @@ struct sprite_effect
 
 struct sprite_part
 {
-	temp_texture_enum texture;
+	textures texture;
 	rect texture_rect;
 	v2 offset_in_pixels;
 	direction default_direction;
@@ -355,6 +350,46 @@ struct sprite_effect_dictionary
 	u32 probing_jump;
 };
 
+struct gate_graphics
+{
+	sprite_part gate;
+	sprite_part frame_upper;
+	sprite_part frame_lower;
+};
+
+struct display_graphics
+{
+	sprite_part gate_upper_display;
+	sprite_part gate_lower_display;
+	sprite_part switch_left_display;
+	sprite_part switch_middle_display;
+	sprite_part switch_right_display;
+};
+
+struct switch_graphics
+{
+	sprite_part frame_left;
+	sprite_part frame_middle;
+	sprite_part frame_right;
+};
+
+struct ui_graphics
+{
+	rect healthbar_icon;
+	rect healthbar_empty_bar;
+	rect healthbar_red_bar;
+	rect healthbar_white_bar;
+	rect msgbox_frame_upper_left; 
+	rect msgbox_frame_upper;
+	rect msgbox_frame_upper_right;
+	rect msgbox_frame_right;
+	rect msgbox_frame_lower_right;
+	rect msgbox_frame_lower;
+	rect msgbox_frame_lower_left;
+	rect msgbox_frame_left;
+	rect msgbox_frame_background;
+};
+
 struct static_game_data
 {
 	map collision_reference;
@@ -371,17 +406,17 @@ struct static_game_data
 	sprite_effect* visual_effects;
 	u32 visual_effects_count;
 
-	sprite_part gate_sprite;
-	sprite_part gate_frame_upper_sprite;
-	sprite_part gate_frame_lower_sprite;
-	sprite_part gate_display_upper_sprite;
-	sprite_part gate_display_lower_sprite;
-	sprite_part switch_frame_left_sprite;
-	sprite_part switch_frame_middle_sprite;
-	sprite_part switch_frame_right_sprite;
-	sprite_part switch_display_left_sprite;
-	sprite_part switch_display_middle_sprite;
-	sprite_part switch_display_right_sprite;
+	gate_graphics blue_gate_graphics;
+	gate_graphics grey_gate_graphics;
+	gate_graphics red_gate_graphics;
+	gate_graphics green_gate_graphics;
+	switch_graphics blue_switch_graphics;
+	switch_graphics grey_switch_graphics;
+	switch_graphics red_switch_graphics;
+	switch_graphics green_switch_graphics;
+	display_graphics gate_switch_displays;
+
+	ui_graphics ui_gfx;
 
 	sprite player_shooting_up;
 	v2 player_shooting_up_bullet_offset;
@@ -528,14 +563,14 @@ struct render_group_entry_bitmap
 {
 	rect source_rect;
 	rect destination_rect;
-	temp_texture_enum texture;
+	textures texture;
 };
 
 struct render_group_entry_bitmap_with_effects
 {
 	rect source_rect;
 	rect destination_rect;
-	temp_texture_enum texture;
+	textures texture;
 
 	v4 tint_color;
 	b32 render_in_additive_mode;
@@ -549,4 +584,4 @@ struct render_group_entry_debug_rectangle
 	rect destination_rect;
 };
 
-void render_bitmap(render_group* group, temp_texture_enum texture, rect source_rect, rect destination_rect);
+void render_bitmap(render_group* group, textures texture, rect source_rect, rect destination_rect);

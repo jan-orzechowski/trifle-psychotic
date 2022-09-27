@@ -69,7 +69,7 @@ void render_text_line(render_group* render, font font, rect area, string_ref lin
         {
             rect src_rect = get_glyph_rect(font, (u32)char_to_render);
             rect dst_rect = get_rect_from_min_corner(get_v2(x, y), get_v2(font.pixel_width, font.pixel_height));
-            render_bitmap(render, temp_texture_enum::FONT_TEXTURE, src_rect, dst_rect);
+            render_bitmap(render, textures::FONT, src_rect, dst_rect);
         }
         x += font.pixel_width + letter_spacing;
     }
@@ -98,7 +98,7 @@ void render_text_lines(render_group* render, font font, rect area, lines_to_rend
             {
                 rect src_rect = get_glyph_rect(font, (u32)char_to_render);
                 rect dst_rect = get_rect_from_min_corner(get_v2(x, y), get_v2(font.pixel_width, font.pixel_height));
-                render_bitmap(render, temp_texture_enum::FONT_TEXTURE, src_rect, dst_rect);
+                render_bitmap(render, textures::FONT, src_rect, dst_rect);
             }
             x += font.pixel_width + letter_spacing;
         }

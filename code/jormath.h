@@ -178,6 +178,7 @@ rect get_rect_from_center(v2, r32);
 b32 is_point_inside_rect(rect, v2);
 rect add_side_length(rect, v2);
 rect move_rect(rect, v2);
+rect move_rect(rect*, v2);
 v2 get_rect_dimensions(rect);
 v2 get_rect_center(rect);
 b32 are_intersecting(rect, rect);

@@ -13,13 +13,10 @@ struct sdl_data
 
 	SDL_Window* window;
 	SDL_Renderer* renderer;
+
 	SDL_Texture* tileset_texture;
-	SDL_Texture* bullets_texture;
-	SDL_Texture* ui_texture;
 	SDL_Texture* font_texture;
-	SDL_Texture* player_texture;
-	SDL_Texture* misc_texture;
-	SDL_Texture* gates_texture;
+	SDL_Texture* charset_texture;
 };
 
 read_file_result read_file(std::string path);
