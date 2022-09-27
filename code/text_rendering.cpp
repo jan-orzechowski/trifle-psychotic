@@ -48,8 +48,8 @@ rect get_glyph_rect(font font, u32 code)
 {
     assert(is_letter(code));
     u32 index = code - 33;
-    v2 position = get_v2(1 + (index * (font.pixel_width + 1)), 1);
-    v2 dimensions = get_v2(font.pixel_width, font.pixel_height);
+    v2 position = get_v2(1 + (index * (font.width_in_pixels + 1)), 1);
+    v2 dimensions = get_v2(font.width_in_pixels, font.height_in_pixels);
     rect result = get_rect_from_min_corner(position, dimensions);
     return result;
 }
@@ -68,10 +68,10 @@ void render_text_line(render_group* render, font font, rect area, string_ref lin
         if (is_letter(char_to_render))
         {
             rect src_rect = get_glyph_rect(font, (u32)char_to_render);
-            rect dst_rect = get_rect_from_min_corner(get_v2(x, y), get_v2(font.pixel_width, font.pixel_height));
-            render_bitmap(render, textures::FONT, src_rect, dst_rect);
+            rect dst_rect = get_rect_from_min_corner(get_v2(x, y), get_v2(font.width_in_pixels, font.height_in_pixels));
+            render_bitmap(render, font.texture, src_rect, dst_rect);
         }
-        x += font.pixel_width + letter_spacing;
+        x += font.width_in_pixels + letter_spacing;
     }
 }
 
@@ -79,9 +79,6 @@ void render_text_lines(render_group* render, font font, rect area, lines_to_rend
 {
     u32 x = 0;
     u32 y = 0;
-
-    i32 letter_spacing = -1;
-    i32 line_spacing = 4;
 
     y = area.min_corner.y;
     for (u32 line_index = 0; line_index < lines.used_lines_count; line_index++)
@@ -97,13 +94,13 @@ void render_text_lines(render_group* render, font font, rect area, lines_to_rend
             if (is_letter(char_to_render))
             {
                 rect src_rect = get_glyph_rect(font, (u32)char_to_render);
-                rect dst_rect = get_rect_from_min_corner(get_v2(x, y), get_v2(font.pixel_width, font.pixel_height));
-                render_bitmap(render, textures::FONT, src_rect, dst_rect);
+                rect dst_rect = get_rect_from_min_corner(get_v2(x, y), get_v2(font.width_in_pixels, font.height_in_pixels));
+                render_bitmap(render, font.texture, src_rect, dst_rect);
             }
-            x += font.pixel_width + letter_spacing;
+            x += font.width_in_pixels + font.letter_spacing;
         }
 
-        y += font.pixel_height + line_spacing;
+        y += font.height_in_pixels + font.line_spacing;
     }
 }
 
@@ -129,14 +126,14 @@ void render_text(render_group* render, memory_arena* transient_arena, font font,
     temporary_memory writing_memory = begin_temporary_memory(transient_arena);
 
     v2 area_dim = get_rect_dimensions(writing_area);
-    u32 max_line_length = area_dim.x / font.pixel_width;
+    u32 max_line_length = area_dim.x / (font.width_in_pixels + font.letter_spacing);
 
     if (wrap) 
     {        
         lines_to_render text_lines = {};
 
         // tutaj znowu możemy mieć uint wrap jeśli area dim y z jakiegoś powodu wyjdzie ujemne
-        text_lines.max_lines_count = (area_dim.y / font.pixel_height);
+        text_lines.max_lines_count = (area_dim.y / (font.height_in_pixels + font.line_spacing));
         text_lines.lines = push_array(transient_arena, text_lines.max_lines_count, string_ref);
 
         string_ref* current_line = get_next_line(&text_lines);
@@ -206,7 +203,7 @@ void render_text(render_group* render, memory_arena* transient_arena, font font,
     end_temporary_memory(writing_memory);
 }
 
-void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, char* buffer, u32 buffer_size, b32 wrap)
+void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, const char* buffer, u32 buffer_size, b32 wrap)
 {
     u32 string_length = get_c_string_length(buffer, buffer_size);
     string_ref str_to_render = get_string_ref(buffer, string_length);

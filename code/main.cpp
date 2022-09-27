@@ -175,11 +175,8 @@ void render_debug_information(game_state* game, level_state* level)
 		get_v2(10, 200), get_v2((SCREEN_WIDTH / 2) - 10, 260)
 	);
 
-	font font = {};
-	font.pixel_height = 8;
-	font.pixel_width = 8;
-
-	render_text(&game->render, game->transient_arena, font, area, buffer, 200, true);
+	render_text(&game->render, game->transient_arena, 
+		game->level_state->static_data->ui_font, area, buffer, 200, true);
 }
 
 void write_to_input_buffer(input_buffer* buffer, game_input* new_input)
@@ -352,6 +349,80 @@ void render_entity_sprite(render_group* render, world_position camera_position, 
 	}
 }
 
+void render_textbox(static_game_data* static_data, render_group* group, rect textbox_rect)
+{
+	v2 dimensions = get_rect_dimensions(textbox_rect);
+
+	v4 background_color = get_v4(255, 255, 255, 255);
+	render_rectangle(group, textbox_rect, background_color, false);
+	
+	v2 tile_dimensions = get_v2(4, 4);
+	u32 tile_x_count = ceil(dimensions.x / tile_dimensions.x);
+	u32 tile_y_count = ceil(dimensions.y / tile_dimensions.y);
+
+	rect first_destination_rect = get_rect_from_min_corner(
+		textbox_rect.min_corner - tile_dimensions, 
+		tile_dimensions);
+	rect destination_rect = first_destination_rect;
+
+	for (u32 y = 0; y <= tile_y_count + 1; y++)
+	{
+		destination_rect = move_rect(first_destination_rect, get_v2(0, y * tile_dimensions.y));
+
+		if (y == 0)
+		{
+			for (u32 x = 0; x <= tile_x_count + 1; x++)
+			{
+				rect source_bitmap;
+				if (x == 0)
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_upper_left;
+				}
+				else if (x == tile_x_count + 1)
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_upper_right;
+				}
+				else
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_upper;
+				}
+
+				render_bitmap(group, textures::CHARSET, source_bitmap, destination_rect);
+				move_rect(&destination_rect, get_v2(tile_dimensions.x, 0));
+			}
+		}
+		else if (y == tile_y_count + 1)
+		{
+			for (u32 x = 0; x <= tile_x_count + 1; x++)
+			{
+				rect source_bitmap;
+				if (x == 0)
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_lower_left;
+				}
+				else if (x == tile_x_count + 1)
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_lower_right;
+				}
+				else
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_lower;
+				}
+
+				render_bitmap(group, textures::CHARSET, source_bitmap, destination_rect);
+				move_rect(&destination_rect, get_v2(tile_dimensions.x, 0));
+			}
+		}
+		else
+		{
+			render_bitmap(group, textures::CHARSET, static_data->ui_gfx.msgbox_frame_left, destination_rect);
+
+			destination_rect = move_rect(destination_rect, get_v2((tile_x_count + 1) * tile_dimensions.x, 0));
+			render_bitmap(group, textures::CHARSET, static_data->ui_gfx.msgbox_frame_right, destination_rect);
+		}
+	}
+}
+
 scene_change game_update_and_render(game_state* game, level_state* level, r32 delta_time)
 {
 	if (false == level->current_map_initialized)
@@ -363,7 +434,29 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 	entity* debug_entity_to_render_path = 0;
 
+	local_persist b32 update = true;
+	local_persist r32 min_message_time = 2.0f;
+
+	local_persist string_ref text_to_show = {};
+
+	if (false == update)
+	{
+		if (min_message_time < 0.0f)
+		{
+			game_input* input = get_last_frame_input(&game->input_buffer);
+			if (input->fire.number_of_presses > 0)
+			{
+				update = true;
+			}
+		}
+		else
+		{
+			min_message_time -= delta_time;
+		}
+	}
+
 	// update player
+	if (update) 
 	{
 		if (level->player_invincibility_cooldown > 0.0f)
 		{
@@ -408,6 +501,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			if (message.string_size)
 			{
 				printf(message.ptr); printf("\n");	
+				update = false;
+				text_to_show = collision.collided_message_display->type->message;
 				collision.collided_message_display->type->message = {};
 			}
 		}
@@ -442,6 +537,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	}
 
 	// update entities
+	if (update)
 	{
 		for (u32 entity_index = 1; entity_index < level->entities_count; entity_index++)
 		{
@@ -702,8 +798,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		if (debug_entity_to_render_path)
 		{
-			render_debug_path_ends(&game->render, debug_entity_to_render_path, player->position);
-				
+			render_debug_path_ends(&game->render, debug_entity_to_render_path, player->position);				
 		}
 
 		// draw player 
@@ -776,6 +871,16 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		render_hitpoint_bar(level->static_data, &game->render, player, is_power_up_active(level->power_ups.invincibility));
 	}
 	
+	if (update == false && text_to_show.string_size)
+	{
+		rect text_area = get_rect_from_center(SCREEN_CENTER_IN_PIXELS, get_v2(100, 100));
+
+		v2 margin = get_v2(4, 4);
+		render_textbox(level->static_data, &game->render, add_side_length(text_area, margin));
+
+		render_text(&game->render, game->transient_arena, level->static_data->ui_font, text_area, text_to_show, true);
+	}
+
 	if (level->active_scene_change.change_scene)
 	{
 		level->scene_fade_perc += (delta_time * 1.5f);
@@ -809,15 +914,12 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	return scene_change;
 }
 
-void render_menu_option(game_state* game, u32 x_coord, u32 y_coord, string_ref title)
+void render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, string_ref title)
 {
 	rect textbox_area = get_rect_from_corners(
 		get_v2(x_coord, y_coord),
 		get_v2(x_coord + 100, y_coord + 20));
-
-	font font = {};
-	font.pixel_height = 8;
-	font.pixel_width = 8;
+	
 	render_text(&game->render, game->transient_arena, font, textbox_area, title);
 }
 
@@ -904,10 +1006,14 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	u32 options_x = 140;
 	u32 first_option_y = 140;
 
-	render_menu_option(game, options_x, first_option_y, static_data->menu_new_game_str);
-	render_menu_option(game, options_x, first_option_y + option_spacing, static_data->menu_continue_str);
-	render_menu_option(game, options_x, first_option_y + 2 * option_spacing, static_data->menu_credits_str);
-	render_menu_option(game, options_x, first_option_y + 3 * option_spacing, static_data->menu_exit_str);
+	render_menu_option(static_data->menu_font, game, 
+		options_x, first_option_y, static_data->menu_new_game_str);
+	render_menu_option(static_data->menu_font, game, 
+		options_x, first_option_y + option_spacing, static_data->menu_continue_str);
+	render_menu_option(static_data->menu_font, game, 
+		options_x, first_option_y + 2 * option_spacing, static_data->menu_credits_str);
+	render_menu_option(static_data->menu_font, game, 
+		options_x, first_option_y + 3 * option_spacing, static_data->menu_exit_str);
 
 	u32 indicator_y = first_option_y + (menu_index * option_spacing) - 4;
 	u32 indicator_x = options_x - 20;

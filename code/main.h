@@ -390,6 +390,15 @@ struct ui_graphics
 	rect msgbox_frame_background;
 };
 
+struct font
+{
+	u32 width_in_pixels;
+	u32 height_in_pixels;
+	i32 letter_spacing;
+	i32 line_spacing;
+	textures texture;
+};
+
 struct static_game_data
 {
 	map collision_reference;
@@ -416,6 +425,8 @@ struct static_game_data
 	switch_graphics green_switch_graphics;
 	display_graphics gate_switch_displays;
 
+	font ui_font;
+	font menu_font;
 	ui_graphics ui_gfx;
 
 	sprite player_shooting_up;
