@@ -59,7 +59,13 @@
     <ClCompile Include="code\sdl_platform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\movement.cpp">
+    <ClCompile Include="code\collision.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\entities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -92,6 +98,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="code\map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\sdl_platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\collision.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\entities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\player.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

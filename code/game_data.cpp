@@ -2,6 +2,7 @@
 #include "tmx_parsing.h"
 #include "jorutils.h"
 #include "sdl_platform.h"
+#include "entities.h"
 
 #define ENTITY_TYPES_MAX_COUNT 20
 #define BULLET_TYPES_MAX_COUNT 10
@@ -206,28 +207,6 @@ animation_frame get_bullet_graphics(memory_arena* arena, u32 x, u32 y)
 	result.sprite.parts = push_array(arena, result.sprite.parts_count, sprite_part);
 	result.sprite.parts[0].texture = textures::CHARSET;
 	result.sprite.parts[0].texture_rect = texture_rect;
-	return result;
-}
-
-entity_type_dictionary create_entity_types_dictionary(memory_arena* arena)
-{
-	entity_type_dictionary result = {};
-	result.type_ptrs_count = (i32)entity_type_enum::_LAST + 1;
-	result.type_ptrs = push_array(arena, result.type_ptrs_count, entity_type*);
-	return result;
-}
-
-void set_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum type, entity_type* enity_type_ptr)
-{
-	assert((i32)type < dictionary.type_ptrs_count);
-	assert(dictionary.type_ptrs[(i32)type] == NULL);
-	dictionary.type_ptrs[(i32)type] = enity_type_ptr;
-}
-
-entity_type* get_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum type)
-{
-	assert((i32)type < dictionary.type_ptrs_count);
-	entity_type* result = dictionary.type_ptrs[(i32)type];
 	return result;
 }
 

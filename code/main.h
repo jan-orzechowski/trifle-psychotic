@@ -518,18 +518,12 @@ rect get_tile_rect(u32 tile_id);
 tile_position get_tile_position(i32 tile_x, i32 tile_y);
 
 input_buffer initialize_input_buffer(memory_arena* arena);
-b32 are_flags_set(entity_flags*	 flags, entity_flags flag_values_to_check);
-void set_flags(entity_flags* flags, entity_flags flag_values_to_check);
-void unset_flags(entity_flags* flags, entity_flags flag_values_to_check);
-b32 are_entity_flags_set(entity* entity, entity_flags flag_values);
-entity* add_entity(level_state* level, world_position position, entity_type* type);
-entity* add_entity(level_state* level, tile_position position, entity_type* type);
+game_input* get_past_input(input_buffer* buffer, u32 how_many_frames_backwards);
+game_input* get_last_frame_input(input_buffer* buffer);
+b32 was_up_key_pressed_in_last_frames(input_buffer* buffer, u32 number_of_frames);
 
 void render_entity_sprite(render_group* render, world_position camera_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite);
-
-tile_range find_horizontal_range_of_free_tiles(map level, map collision_ref, tile_position starting_tile, u32 length_limit);
-tile_range find_vertical_range_of_free_tiles(map level, map collision_ref, tile_position starting_tile, u32 length_limit);
 
 void write_to_input_buffer(input_buffer* buffer, game_input* new_input);
 void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_time);

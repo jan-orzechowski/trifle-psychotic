@@ -3,6 +3,7 @@
 #include "main.h"
 #include "animation.h"
 #include "map.h"
+#include "entities.h"
 
 u32 get_hash_from_color(v4 color)
 {

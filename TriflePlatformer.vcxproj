@@ -119,6 +119,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>-wd26812 %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -134,6 +135,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -156,11 +158,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="code\animation.cpp" />
+    <ClCompile Include="code\entities.cpp" />
     <ClCompile Include="code\gates.cpp" />
     <ClCompile Include="code\jormath.cpp" />
     <ClCompile Include="code\jorstring.cpp" />
     <ClCompile Include="code\main.cpp" />
     <ClCompile Include="code\map.cpp" />
+    <ClCompile Include="code\collision.cpp" />
+    <ClCompile Include="code\player.cpp" />
     <ClCompile Include="code\sdl_platform.cpp" />
     <ClCompile Include="code\text_rendering.cpp" />
     <ClCompile Include="code\tmx_parsing.cpp" />
@@ -168,11 +173,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\animation.h" />
+    <ClInclude Include="code\entities.h" />
     <ClInclude Include="code\gates.h" />
     <ClInclude Include="code\jormath.h" />
     <ClInclude Include="code\jorutils.h" />
     <ClInclude Include="code\main.h" />
     <ClInclude Include="code\map.h" />
+    <ClInclude Include="code\collision.h" />
+    <ClInclude Include="code\player.h" />
     <ClInclude Include="code\sdl_platform.h" />
     <ClInclude Include="code\text_rendering.h" />
     <ClInclude Include="code\tmx_parsing.h" />
