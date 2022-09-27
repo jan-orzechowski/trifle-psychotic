@@ -1273,6 +1273,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 	b32 is_standing_at_frame_beginning = is_standing_on_ground(level, player);
 
 	v2 gravity = get_v2(0, 1.0f);
+	v2 jump_acceleration = get_v2(0, -33.0f);
 
 	// zmiana statusu
 	switch (level->player_movement.current_mode)
@@ -1338,7 +1339,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 				{
 					if (was_up_key_pressed_in_last_frames(input_buffer, 3))
 					{
-						player->acceleration += get_v2(0, -30);
+						player->acceleration += jump_acceleration;
 						change_movement_mode(&level->player_movement, movement_mode::JUMP);
 						printf("ulatwienie!\n");
 						break;
@@ -1359,7 +1360,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 			{
 				if (is_standing_at_frame_beginning)
 				{
-					player->acceleration += get_v2(0, -30);
+					player->acceleration += jump_acceleration;
 					change_movement_mode(&level->player_movement, movement_mode::JUMP);
 					break;
 				}
@@ -1435,7 +1436,8 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 	if (is_power_up_active(level->power_ups.speed))
 	{
-		player->acceleration.x *= 2.0f;
+		player->acceleration.x *= 1.7f;
+		player->acceleration.y *= 1.3f;
 	}
 
 	player->velocity = player->type->slowdown_multiplier *
