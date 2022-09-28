@@ -195,7 +195,6 @@ struct animation
 	animation_frame* frames;
 	u32 frames_count;
 	r32 total_duration;
-	u32 current_frame_index;
 };
 
 struct power_up_state
@@ -258,16 +257,21 @@ struct world_position
 
 struct entity
 {
+	entity_type* type;
+	
 	world_position position;
 	v2 velocity;
 	v2 acceleration;
+	
 	r32 health;
-	entity_type* type;
 	r32 attack_cooldown;
+	
 	sprite_effect* visual_effect;
 	r32 visual_effect_duration;
 	direction direction;
+
 	animation* current_animation;
+	u32 current_frame_index;
 	r32 animation_duration;
 
 	b32 has_walking_path;

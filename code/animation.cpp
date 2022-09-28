@@ -1,6 +1,7 @@
 ﻿#include "jorutils.h"
 #include "jormath.h"
 #include "main.h"
+#include "map.h"
 
 b32 are_flags_set(sprite_effect_flags* flags, sprite_effect_flags flag_values_to_check)
 {
@@ -151,9 +152,9 @@ animation_frame* get_current_animation_frame(entity* entity)
 {
 	animation_frame* result = NULL;
 	if (entity->current_animation
-		&& entity->current_animation->current_frame_index < entity->current_animation->frames_count)
+		&& entity->current_frame_index < entity->current_animation->frames_count)
 	{
-		result = &entity->current_animation->frames[entity->current_animation->current_frame_index];
+		result = &entity->current_animation->frames[entity->current_frame_index];
 	}
 	return result;
 }
@@ -202,7 +203,7 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r
 			entity->animation_duration -= modified_total_duration;
 		}
 
-		entity->current_animation->current_frame_index =
+		entity->current_frame_index =
 			get_current_animation_frame_index(entity->current_animation, entity->animation_duration, frame_duration_modifier);
 	}
 
@@ -248,7 +249,7 @@ void render_entity_animation_frame(render_group* render, world_position camera_p
 	sprite* sprite_to_render = NULL;
 	if (entity->current_animation && entity->current_animation->frames)
 	{
-		sprite_to_render = &entity->current_animation->frames[entity->current_animation->current_frame_index].sprite;
+		sprite_to_render = &entity->current_animation->frames[entity->current_frame_index].sprite;
 	}
 
 	if (sprite_to_render == NULL || sprite_to_render->parts == NULL)
