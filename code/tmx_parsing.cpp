@@ -792,9 +792,9 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 		i32 gid = parse_i32(gid_str);
 		switch (gid)
 		{
-			case 66: type = entity_type_enum::STATIC_ENEMY; break;
-			case 131: type = entity_type_enum::MOVING_ENEMY; break;
-			case 48: type = entity_type_enum::MOVING_ENEMY; break;
+			case 66: type = entity_type_enum::ENEMY_SENTRY; break;
+			case 131: type = entity_type_enum::ENEMY_CULTIST; break;
+			case 48: type = entity_type_enum::ENEMY_ROBOT; break;
 			case 1601: type = entity_type_enum::GATE; break;
 			case 1606: type = entity_type_enum::SWITCH; break;
 			case 961: type = entity_type_enum::POWER_UP_INVINCIBILITY; break;

@@ -64,7 +64,11 @@ b32 damage_player(level_state* level, r32 damage_amount)
 		if (player->health < 0.0f)
 		{
 			// przegrywamy
-			add_explosion(level, player->position, level->static_data->explosion_animations.size_48x48);
+			if (player->type->death_animation)
+			{
+				add_explosion(level, add_to_position(player->position, player->type->death_animation_offset),
+					player->type->death_animation);
+			}
 			debug_breakpoint;
 		}
 		else
@@ -110,116 +114,36 @@ void change_player_movement_mode(player_movement* movement, movement_mode mode)
 	}
 }
 
-void player_fire_bullet(level_state* level, game_input* input, world_position player_position, entity_type* bullet_type)
+void player_fire_bullet(level_state* level, game_input* input, entity* player)
 {
-	v2 relative_mouse_pos = (get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR) - SCREEN_CENTER_IN_PIXELS;
-
-	r32 angle = atan2(relative_mouse_pos.y, relative_mouse_pos.x) * (180 / pi32);
-	angle += 45.0f / 2.0f;
-
-	if (angle > 180)
+	if (player->attack_cooldown <= 0)
 	{
-		angle = -360.0f + angle;
-	}
+		v2 relative_mouse_pos = (get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR) - SCREEN_CENTER_IN_PIXELS;
+		v2 shooting_direction = get_unit_vector(relative_mouse_pos);
 
-	if (angle < -180)
-	{
-		angle = 360.0f + angle;
-	}
+		shooting_sprite_result rotation = get_shooting_sprite_based_on_direction(player->type->rotation_sprites, shooting_direction);
 
-	// przypomnienie: N jest w dół ekranu!
+		entity_type* bullet_type = player->type->fired_bullet_type;
 
-	direction direction = direction::NONE;
-	if      (0.0f    < angle && angle <= 45.0f)   direction = direction::E;
-	else if (45.0f   < angle && angle <= 90.0f)   direction = direction::NE;
-	else if (90.0f   < angle && angle <= 135.0f)  direction = direction::N;
-	else if (135.0f  < angle && angle <= 180.0f)  direction = direction::NW;
-	else if (-45.0f  < angle && angle <= 0.0f)	  direction = direction::SE;
-	else if (-90.0f  < angle && angle <= -45.0f)  direction = direction::S;
-	else if (-135.0f < angle && angle <= -90.0f)  direction = direction::SW;
-	else if (-180.0f < angle && angle <= -135.0f) direction = direction::W;
+		if (is_power_up_active(level->power_ups.spread))
+		{
+			fire_bullet(level, bullet_type, player->position, rotation.bullet_offset,
+				shooting_direction * bullet_type->constant_velocity);
+			fire_bullet(level, bullet_type, player->position, rotation.bullet_offset,
+				rotate_vector(shooting_direction, 15, false) * bullet_type->constant_velocity);
+			fire_bullet(level, bullet_type, player->position, rotation.bullet_offset,
+				rotate_vector(shooting_direction, -15, false) * bullet_type->constant_velocity);
+		}
+		else
+		{
+			fire_bullet(level, bullet_type, player->position, rotation.bullet_offset, shooting_direction * bullet_type->constant_velocity);
+		}
 
-	v2 bullet_offset = level->static_data->player_shooting_right_bullet_offset;
-	sprite player_torso_graphics = level->static_data->player_shooting_right;
-	b32 flip_graphics_horizontally = false;
+		player->attack_cooldown = player->type->default_attack_cooldown;
 
-	switch (direction)
-	{
-		case direction::E:
-		{
-			bullet_offset = level->static_data->player_shooting_right_bullet_offset;
-			player_torso_graphics = level->static_data->player_shooting_right;
-		}
-		break;
-		case direction::NE:
-		{
-			bullet_offset = level->static_data->player_shooting_right_down_bullet_offset;
-			player_torso_graphics = level->static_data->player_shooting_right_down;
-		}
-		break;
-		case direction::N:
-		{
-			bullet_offset = level->static_data->player_shooting_down_bullet_offset;
-			player_torso_graphics = level->static_data->player_shooting_down;
-		}
-		break;
-		case direction::NW:
-		{
-			bullet_offset = reflection_over_y_axis(
-				level->static_data->player_shooting_right_down_bullet_offset);
-			player_torso_graphics = level->static_data->player_shooting_right_down;
-			flip_graphics_horizontally = true;
-		}
-		break;
-		case direction::W:
-		{
-			bullet_offset = reflection_over_y_axis(
-				level->static_data->player_shooting_right_bullet_offset);
-			player_torso_graphics = level->static_data->player_shooting_right;
-			flip_graphics_horizontally = true;
-		}
-		break;
-		case direction::SW:
-		{
-			bullet_offset = reflection_over_y_axis(
-				level->static_data->player_shooting_right_up_bullet_offset);
-			player_torso_graphics = level->static_data->player_shooting_right_up;
-			flip_graphics_horizontally = true;
-		}
-		break;
-		case direction::S:
-		{
-			bullet_offset = level->static_data->player_shooting_up_bullet_offset;
-			player_torso_graphics = level->static_data->player_shooting_up;
-		}
-		break;
-		case direction::SE:
-		{
-			bullet_offset = level->static_data->player_shooting_right_up_bullet_offset;
-			player_torso_graphics = level->static_data->player_shooting_right_up;
-		}
-		break;
-		invalid_default_case;
-	}
-
-	v2 bullet_direction = get_unit_vector(relative_mouse_pos);
-
-	if (is_power_up_active(level->power_ups.spread))
-	{
-		fire_bullet(level, bullet_type, player_position, bullet_offset,
-			bullet_direction * bullet_type->constant_velocity);
-		fire_bullet(level, bullet_type, player_position, bullet_offset,
-			rotate_vector(bullet_direction, 15, false) * bullet_type->constant_velocity);
-		fire_bullet(level, bullet_type, player_position, bullet_offset,
-			rotate_vector(bullet_direction, -15, false) * bullet_type->constant_velocity);
-	}
-	else
-	{
-		fire_bullet(level, bullet_type, player_position, bullet_offset, bullet_direction * bullet_type->constant_velocity);
-	}
-
-	level->current_player_torso = player_torso_graphics;
-	level->flip_player_torso_horizontally = flip_graphics_horizontally;
+		player->shooting_sprite = rotation.rotated_sprite;
+		player->shooting_sprite.flip_horizontally = rotation.flip_horizontally;
+	}	
 }
 
 world_position process_input(level_state* level, input_buffer* input_buffer, entity* player, r32 delta_time)
@@ -305,11 +229,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 			if (input->is_left_mouse_key_held)
 			{
-				if (player->attack_cooldown <= 0)
-				{
-					player_fire_bullet(level, input, player->position, player->type->fired_bullet_type);
-					player->attack_cooldown = player->type->default_attack_cooldown;
-				}
+				player_fire_bullet(level, input, player);
 			}
 
 			if (input->up.number_of_presses > 0)
@@ -351,11 +271,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 			if (input->is_left_mouse_key_held)
 			{
-				if (player->attack_cooldown <= 0)
-				{
-					player_fire_bullet(level, input, player->position, player->type->fired_bullet_type);
-					player->attack_cooldown = player->type->default_attack_cooldown;
-				}
+				player_fire_bullet(level, input, player);
 			}
 
 			if (input->left.number_of_presses > 0)

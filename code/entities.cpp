@@ -1,4 +1,5 @@
 ﻿#include "main.h"
+#include "entities.h"
 #include "map.h"
 #include "gates.h"
 #include "collision.h"
@@ -37,6 +38,7 @@ entity* add_entity(level_state* level, world_position position, entity_type* typ
 		new_entity->position = renormalize_position(position);
 		new_entity->type = type;
 		new_entity->health = type->max_health;
+		new_entity->direction = direction::W;
 	}
 	
 	return new_entity;
@@ -409,6 +411,140 @@ void remove_explosion(level_state* level, i32* explosion_index)
 		if (*explosion_index > 0)
 		{
 			(*explosion_index)--;
+		}
+	}
+}
+
+shooting_sprite_result get_shooting_sprite_based_on_direction(shooting_rotation_sprites* rotation_sprites, v2 shooting_direction)
+{
+	assert(rotation_sprites);
+	shooting_sprite_result result = {};
+
+	r32 angle = atan2(shooting_direction.y, shooting_direction.x) * (180 / pi32);
+	angle += 45.0f / 2.0f;
+	
+	if (angle > 180)
+	{
+		angle = -360.0f + angle;
+	}
+
+	if (angle < -180)
+	{
+		angle = 360.0f + angle;
+	}
+
+	// przypomnienie: N jest w dół ekranu!
+
+	direction direction = direction::NONE;
+	if      (0.0f    < angle && angle <= 45.0f)   direction = direction::E;
+	else if (45.0f   < angle && angle <= 90.0f)   direction = direction::NE;
+	else if (90.0f   < angle && angle <= 135.0f)  direction = direction::N;
+	else if (135.0f  < angle && angle <= 180.0f)  direction = direction::NW;
+	else if (-45.0f  < angle && angle <= 0.0f)	  direction = direction::SE;
+	else if (-90.0f  < angle && angle <= -45.0f)  direction = direction::S;
+	else if (-135.0f < angle && angle <= -90.0f)  direction = direction::SW;
+	else if (-180.0f < angle && angle <= -135.0f) direction = direction::W;
+
+	result.bullet_offset = rotation_sprites->right_bullet_offset;
+	result.rotated_sprite = rotation_sprites->right;
+	result.flip_horizontally = false;
+
+	switch (direction)
+	{
+		case direction::E:
+		{
+			result.bullet_offset = rotation_sprites->right_bullet_offset;
+			result.rotated_sprite = rotation_sprites->right;
+		}
+		break;
+		case direction::NE:
+		{
+			result.bullet_offset = rotation_sprites->right_down_bullet_offset;
+			result.rotated_sprite = rotation_sprites->right_down;
+		}
+		break;
+		case direction::N:
+		{
+			result.bullet_offset = rotation_sprites->down_bullet_offset;
+			result.rotated_sprite = rotation_sprites->down;
+		}
+		break;
+		case direction::NW:
+		{
+			result.bullet_offset = reflection_over_y_axis(
+				rotation_sprites->right_down_bullet_offset);
+			result.rotated_sprite = rotation_sprites->right_down;
+			result.flip_horizontally = true;
+		}
+		break;
+		case direction::W:
+		{
+			result.bullet_offset = reflection_over_y_axis(
+				rotation_sprites->right_bullet_offset);
+			result.rotated_sprite = rotation_sprites->right;
+			result.flip_horizontally = true;
+		}
+		break;
+		case direction::SW:
+		{
+			result.bullet_offset = reflection_over_y_axis(
+				rotation_sprites->right_up_bullet_offset);
+			result.rotated_sprite = rotation_sprites->right_up;
+			result.flip_horizontally = true;
+		}
+		break;
+		case direction::S:
+		{
+			result.bullet_offset = rotation_sprites->up_bullet_offset;
+			result.rotated_sprite = rotation_sprites->up;
+		}
+		break;
+		case direction::SE:
+		{
+			result.bullet_offset = rotation_sprites->right_up_bullet_offset;
+			result.rotated_sprite = rotation_sprites->right_up;
+		}
+		break;
+		invalid_default_case;
+	}
+
+	return result;
+}
+
+void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 target_offset)
+{
+	if (enemy->attack_cooldown <= 0)
+	{
+		// trochę wyżej niż środek bohatera, wygląda to naturalniej
+		world_position target_position = add_to_position(target->position, target_offset);
+
+		v2 player_relative_pos = get_position_difference(target_position, enemy->position);
+		v2 direction_to_player = get_unit_vector(player_relative_pos);
+
+		// potrzebne do sprawdzenia, z której strony punkt jest widoczny
+		// może dać explicite do argumentów funkcji?
+		enemy->direction = direction_to_player.x < 0 ? direction::W : direction::E;
+
+
+		if (are_entity_flags_set(enemy, entity_flags::VISION_360)
+			|| is_point_visible_for_entity(level, enemy, target_position, enemy->type->player_detecting_distance))
+		{
+			//tile_position tile_pos = get_tile_position(enemy->position);
+			//printf("widoczny przez entity o wspolrzednych (%d,%d)\n", tile_pos.x, tile_pos.y);
+
+			v2 bullet_offset = get_zero_v2();
+			if (enemy->type->rotation_sprites)
+			{
+				shooting_sprite_result rotation = get_shooting_sprite_based_on_direction(enemy->type->rotation_sprites, direction_to_player);
+				enemy->shooting_sprite = rotation.rotated_sprite;
+				enemy->shooting_sprite.flip_horizontally = rotation.flip_horizontally;
+				bullet_offset = rotation.bullet_offset;
+			}
+
+			fire_bullet(level, enemy->type->fired_bullet_type, enemy->position, bullet_offset,
+				direction_to_player * enemy->type->fired_bullet_type->constant_velocity);
+
+			enemy->attack_cooldown = enemy->type->default_attack_cooldown;
 		}
 	}
 }

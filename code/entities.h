@@ -5,6 +5,13 @@
 #include "gates.h"
 #include "collision.h"
 
+struct shooting_sprite_result
+{
+	v2 bullet_offset;
+	sprite rotated_sprite;
+	b32 flip_horizontally;
+};
+
 b32 are_flags_set(entity_flags* flags, entity_flags flag_values_to_check);
 void set_flags(entity_flags* flags, entity_flags flag_values_to_check);
 void unset_flags(entity_flags* flags, entity_flags flag_values_to_check);
@@ -32,3 +39,6 @@ b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, worl
 //void add_next_level_transition(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn);
 //void add_message_display_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn);
 void initialize_current_map(game_state* game, level_state* level);
+
+shooting_sprite_result get_shooting_sprite_based_on_direction(shooting_rotation_sprites* rotation_sprites, v2 shooting_direction);
+void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 target_offset);

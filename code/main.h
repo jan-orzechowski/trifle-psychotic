@@ -95,8 +95,11 @@ enum class entity_type_enum
 {
 	UNKNOWN,
 	PLAYER,
-	STATIC_ENEMY,
-	MOVING_ENEMY,
+	ENEMY_SENTRY,
+	ENEMY_GUARDIAN,
+	ENEMY_FLYING_BOMB,
+	ENEMY_ROBOT,
+	ENEMY_CULTIST,
 	GATE,
 	SWITCH,
 	POWER_UP_INVINCIBILITY,
@@ -121,7 +124,8 @@ enum class entity_flags
 	SWITCH                 = (1 << 7),
 	TINTED_DISPLAY         = (1 << 8),
 	POWER_UP               = (1 << 9),
-	MESSAGE_DISPLAY        = (1 << 10)
+	MESSAGE_DISPLAY        = (1 << 10),
+	VISION_360             = (1 << 11),
 };
 
 struct entity_to_spawn
@@ -214,6 +218,20 @@ union power_ups
 	power_up_state states[4];
 };
 
+struct shooting_rotation_sprites
+{
+	sprite up;
+	v2 up_bullet_offset;
+	sprite right_up;
+	v2 right_up_bullet_offset;
+	sprite right;
+	v2 right_bullet_offset;
+	sprite right_down;
+	v2 right_down_bullet_offset;
+	sprite down;
+	v2 down_bullet_offset;
+};
+
 struct entity_type
 {
 	entity_type_enum type_enum;
@@ -235,7 +253,10 @@ struct entity_type
 	animation_frame idle_pose;
 	entity_flags flags;
 
+	shooting_rotation_sprites* rotation_sprites;
 	animation* walk_animation;
+	animation* death_animation;
+	v2 death_animation_offset;
 
 	entity_type* fired_bullet_type;
 
@@ -273,6 +294,7 @@ struct entity
 	animation* current_animation;
 	u32 current_frame_index;
 	r32 animation_duration;
+	sprite shooting_sprite;
 
 	b32 has_walking_path;
 	tile_range path;
@@ -452,17 +474,6 @@ struct static_game_data
 	font menu_font;
 	ui_graphics ui_gfx;
 
-	sprite player_shooting_up;
-	v2 player_shooting_up_bullet_offset;
-	sprite player_shooting_right_up;
-	v2 player_shooting_right_up_bullet_offset;
-	sprite player_shooting_right;
-	v2 player_shooting_right_bullet_offset;
-	sprite player_shooting_right_down;
-	v2 player_shooting_right_down_bullet_offset;
-	sprite player_shooting_down;
-	v2 player_shooting_down_bullet_offset;
-	
 	string_ref menu_new_game_str;
 	string_ref menu_continue_str;
 	string_ref menu_credits_str;
@@ -514,8 +525,6 @@ struct level_state
 	static_game_data* static_data;
 
 	power_ups power_ups;
-	sprite current_player_torso;
-	b32 flip_player_torso_horizontally;
 
 	scene_change active_scene_change;
 	r32 scene_fade_perc;

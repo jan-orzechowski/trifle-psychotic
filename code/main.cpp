@@ -495,6 +495,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			open_gates_with_given_color(level, color);
 		}
 
+#if 0
 		if (collision.collided_message_display)
 		{
 			string_ref message = collision.collided_message_display->type->message;
@@ -506,6 +507,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				collision.collided_message_display->type->message = {};
 			}
 		}
+#endif
 
 		if (collision.collided_transition 
 			&& false == level->active_scene_change.change_scene)
@@ -550,7 +552,12 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 			if (entity->health < 0)
 			{
-				add_explosion(level, entity->position, level->static_data->explosion_animations.size_48x48);
+				if (entity->type->death_animation)
+				{
+					add_explosion(level, add_to_position(entity->position, entity->type->death_animation_offset),
+						entity->type->death_animation);
+				}
+
 				remove_entity(level, &entity_index);
 				continue;
 			}
@@ -694,24 +701,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			if (are_entity_flags_set(entity, entity_flags::ENEMY)
 				&& entity->type->fired_bullet_type)
 			{
-				if (entity->attack_cooldown <= 0)
-				{
-					// trochę wyżej niż środek bohatera, wygląda to naturalniej
-					world_position player_target_position = add_to_position(player->position, get_v2(0, -0.5f));
-
-					v2 player_relative_pos = get_position_difference(player_target_position, entity->position);
-					v2 direction_to_player = get_unit_vector(player_relative_pos);
-					entity->direction = direction_to_player.x < 0 ? direction::W : direction::E;
-
-					if (is_point_visible_for_entity(level, entity, player_target_position, entity->type->player_detecting_distance))
-					{
-						tile_position tile_pos = get_tile_position(entity->position);
-						printf("widoczny przez entity o wspolrzednych (%d,%d)\n", tile_pos.x, tile_pos.y);
-						fire_bullet(level, entity->type->fired_bullet_type, entity->position, get_zero_v2(),
-							direction_to_player * entity->type->fired_bullet_type->constant_velocity);
-						entity->attack_cooldown = entity->type->default_attack_cooldown;
-					}
-				}
+				enemy_fire_bullet(level, entity, player, get_v2(0, -0.5f));
 			}
 		}
 
@@ -814,31 +804,19 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			render_debug_path_ends(&game->render, debug_entity_to_render_path, player->position);				
 		}
 
-		// draw player 
-		{
-			// nogi
-			render_entity_animation_frame(&game->render, player->position, player);
-		
-			// tułów - zależny od kierunku strzelania
-			sprite sprite = level->current_player_torso;
-			direction sprite_direction = direction::E;
-			if (level->flip_player_torso_horizontally)
-			{
-				sprite_direction = direction::W;
-				sprite.flip_horizontally = true;
-			}
-
-			render_entity_sprite(&game->render, player->position, player->position, player->direction,
-				player->visual_effect, player->visual_effect_duration, sprite);
-		}
-
 		// draw entities
-		for (i32 entity_index = 1; entity_index < level->entities_count; entity_index++)
+		for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 		{
 			entity* entity = level->entities + entity_index;
 			if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
 			{
 				render_entity_animation_frame(&game->render, player->position, entity);
+
+				if (entity->shooting_sprite.parts_count)
+				{
+					render_entity_sprite(&game->render, player->position, entity->position, entity->direction,
+						entity->visual_effect, entity->visual_effect_duration, entity->shooting_sprite);
+				}		
 			}
 		}
 
