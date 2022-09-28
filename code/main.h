@@ -112,6 +112,15 @@ enum class entity_type_enum
 	_LAST
 };
 
+enum class detection_type
+{
+	DETECT_NOTHING = 0,
+	DETECT_180_DEGREES_IN_FRONT,
+	DETECT_90_DEGREES_IN_FRONT,
+	DETECT_360_DEGREES,
+	DETECT_180_DEGREES_BELOW
+};
+
 enum class entity_flags
 {
 	PLAYER   		       = (1 << 0),
@@ -125,7 +134,8 @@ enum class entity_flags
 	TINTED_DISPLAY         = (1 << 8),
 	POWER_UP               = (1 << 9),
 	MESSAGE_DISPLAY        = (1 << 10),
-	VISION_360             = (1 << 11),
+	PLAYER_RECOIL_ON_CONTACT = (1 << 11),
+	DESTRUCTION_ON_PLAYER_CONTACT = (1 << 12),
 };
 
 struct entity_to_spawn
@@ -244,7 +254,11 @@ struct entity_type
 	r32 velocity_multiplier;
 	r32 slowdown_multiplier;
 
-	r32 player_detecting_distance;
+	detection_type detection_type;
+	r32 detection_distance;
+	r32 stop_movement_distance;
+	r32 forget_detection_distance;
+
 	r32 damage_on_contact;
 	r32 max_health;
 	r32 default_attack_cooldown;
@@ -296,6 +310,7 @@ struct entity
 	r32 animation_duration;
 	sprite shooting_sprite;
 
+	b32 player_detected;
 	b32 has_walking_path;
 	tile_range path;
 	u32 goal_path_point;
@@ -459,6 +474,9 @@ struct static_game_data
 
 	sprite_effect* visual_effects;
 	u32 visual_effects_count;
+
+	entity_type* player_normal_bullet_type;
+	entity_type* player_power_up_bullet_type;
 
 	gate_graphics blue_gate_graphics;
 	gate_graphics grey_gate_graphics;

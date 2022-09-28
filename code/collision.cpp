@@ -209,8 +209,8 @@ b32 check_if_sight_line_is_obstructed(level_state* level, world_position start, 
 			tile_y_to_check++)
 		{
 			// zmiana o 1 dla uniknięcia sytuacji w której stoimy dokładnie na granicy pola, które jest niedostępne
-			for (i32 tile_x_to_check = area_to_check.min_corner.x + 1;
-				tile_x_to_check <= area_to_check.max_corner.x - 1;
+			for (i32 tile_x_to_check = area_to_check.min_corner.x/* + 1*/;
+				tile_x_to_check <= area_to_check.max_corner.x/* - 1*/;
 				tile_x_to_check++)
 			{
 				u32 tile_value = get_tile_value(level->current_map, tile_x_to_check, tile_y_to_check);
@@ -236,7 +236,8 @@ b32 check_if_sight_line_is_obstructed(level_state* level, world_position start, 
 		{
 			entity* entity = level->entities + entity_index;
 			if ((are_entity_flags_set(entity, entity_flags::GATE)
-				|| are_entity_flags_set(entity, entity_flags::SWITCH))
+					|| are_entity_flags_set(entity, entity_flags::SWITCH))
+				&& are_entity_flags_set(entity, entity_flags::BLOCKS_MOVEMENT)
 				&& is_in_neighbouring_chunk(reference_chunk, entity->position))
 			{
 				entity_collision_data entity_collision = get_entity_collision_data(reference_chunk, entity);
@@ -513,20 +514,7 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 
 		if (hit_entity)
 		{
-			if (are_entity_flags_set(hit_entity, entity_flags::PLAYER))
-			{
-				damage_player(level, moving_bullet->type->damage_on_contact);
-			}
-			else
-			{
-				if (false == are_entity_flags_set(hit_entity, entity_flags::INDESTRUCTIBLE))
-				{
-					start_visual_effect(level, hit_entity, 1, false);
-					hit_entity->health -= moving_bullet->type->damage_on_contact;
-					printf("pocisk trafil w entity, %.2f obrazen, zostalo %.2f\n",
-						moving_bullet->type->damage_on_contact, hit_entity->health);
-				}
-			}
+			handle_entity_and_bullet_collision(level, moving_bullet, hit_entity);
 		}
 		else if (false == hit_wall)
 		{

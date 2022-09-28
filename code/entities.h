@@ -32,13 +32,15 @@ entity_type_dictionary create_entity_types_dictionary(memory_arena* arena);
 void set_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum type, entity_type* enity_type_ptr);
 entity_type* get_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum type);
 
-tile_range find_walking_path_for_enemy(map level, map collision_ref, tile_position start_tile);
+void find_path_for_entity(level_state* level, entity* entity);
 
-b32 is_point_visible_from_point(world_position looking_point, direction looking_direction, r32 max_looking_distance, world_position point_to_check);
-b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, world_position point, r32 max_distance);
+b32 is_point_visible_within_90_degrees(world_position looking_point, direction looking_direction, r32 max_looking_distance, world_position point_to_check);
+b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, world_position point);
 //void add_next_level_transition(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn);
 //void add_message_display_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn);
 void initialize_current_map(game_state* game, level_state* level);
 
+void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bullet, entity* hit_entity);
 shooting_sprite_result get_shooting_sprite_based_on_direction(shooting_rotation_sprites* rotation_sprites, v2 shooting_direction);
+void move_entity(level_state* level, entity* entity_to_move, tile_position current_start, tile_position current_goal, entity* player, r32 delta_time);
 void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 target_offset);

@@ -119,11 +119,16 @@ void player_fire_bullet(level_state* level, game_input* input, entity* player)
 	if (player->attack_cooldown <= 0)
 	{
 		v2 relative_mouse_pos = (get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR) - SCREEN_CENTER_IN_PIXELS;
+		//printf("relative mouse pos: %.03f,%.03f\n", relative_mouse_pos.x, relative_mouse_pos.y);
 		v2 shooting_direction = get_unit_vector(relative_mouse_pos);
 
 		shooting_sprite_result rotation = get_shooting_sprite_based_on_direction(player->type->rotation_sprites, shooting_direction);
 
-		entity_type* bullet_type = player->type->fired_bullet_type;
+		entity_type* bullet_type = level->static_data->player_normal_bullet_type;
+		if (is_power_up_active(level->power_ups.damage))
+		{
+			bullet_type = level->static_data->player_power_up_bullet_type;
+		}
 
 		if (is_power_up_active(level->power_ups.spread))
 		{
@@ -329,22 +334,30 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
 	}
 	else
 	{
-		damage_player(level, enemy->type->damage_on_contact);
+		if (are_entity_flags_set(enemy, entity_flags::DESTRUCTION_ON_PLAYER_CONTACT))
+		{
+			damage_player(level, enemy->type->damage_on_contact);
+			enemy->health = -1.0f;
+		}
+		else if (are_entity_flags_set(enemy, entity_flags::PLAYER_RECOIL_ON_CONTACT))
+		{
+			damage_player(level, enemy->type->damage_on_contact);
 
-		v2 direction = get_unit_vector(
-			get_position_difference(player->position, enemy->position));
+			v2 direction = get_unit_vector(
+				get_position_difference(player->position, enemy->position));
 
-		r32 acceleration = enemy->type->player_acceleration_on_collision;
+			r32 acceleration = enemy->type->player_acceleration_on_collision;
 
-		level->player_movement.recoil_timer = 2.0f;
-		level->player_movement.recoil_acceleration_timer = 1.0f;
-		level->player_movement.recoil_acceleration = (direction * acceleration);
+			level->player_movement.recoil_timer = 2.0f;
+			level->player_movement.recoil_acceleration_timer = 1.0f;
+			level->player_movement.recoil_acceleration = (direction * acceleration);
 
-		printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
-			level->player_movement.recoil_acceleration.x,
-			level->player_movement.recoil_acceleration.y);
+			printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
+				level->player_movement.recoil_acceleration.x,
+				level->player_movement.recoil_acceleration.y);
 
-		change_player_movement_mode(&level->player_movement, movement_mode::RECOIL);
+			change_player_movement_mode(&level->player_movement, movement_mode::RECOIL);
+		}		
 	}
 }
 

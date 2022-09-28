@@ -530,18 +530,22 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	power_up_bullet_type->constant_velocity = 16.0f;
 	power_up_bullet_type->idle_pose = get_bullet_graphics(arena, 3, 1);
 
+	data->player_normal_bullet_type = player_bullet_type;
+	data->player_power_up_bullet_type = power_up_bullet_type;
+
 	entity_type* sentry_type = add_entity_type(data, entity_type_enum::ENEMY_SENTRY);
 	//sentry_type->idle_pose = get_tile_graphics(arena, 837);
 	sentry_type->flags = (entity_flags)(
 		(u32)entity_flags::BLOCKS_MOVEMENT 
 		| (u32)entity_flags::ENEMY
-		| (u32)entity_flags::VISION_360);
+		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
+	sentry_type->detection_type = detection_type::DETECT_360_DEGREES;
+	sentry_type->detection_distance = 10.0f;
 	sentry_type->max_health = 10;
 	sentry_type->damage_on_contact = 10;
 	sentry_type->default_attack_cooldown = 0.5f;
-	sentry_type->player_detecting_distance = 10.0f;
 	sentry_type->player_acceleration_on_collision = 3.0f;
-	sentry_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+	sentry_type->collision_rect_dim = get_v2(0.75f, 0.75f);
 	sentry_type->death_animation = data->explosion_animations.size_32x32;
 	sentry_type->rotation_sprites = load_shooting_rotation_sprites(arena, 6);
 
@@ -556,11 +560,16 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	entity_type* guardian_type = add_entity_type(data, entity_type_enum::ENEMY_GUARDIAN);
 	guardian_type->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 1, 7));
 	guardian_type->walk_animation = get_animation_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 2, 7));
-	guardian_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT | (u32)entity_flags::ENEMY);
+	guardian_type->flags = (entity_flags)(
+		(u32)entity_flags::BLOCKS_MOVEMENT 
+		| (u32)entity_flags::ENEMY
+		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
+	guardian_type->detection_type = detection_type::DETECT_180_DEGREES_BELOW;
+	guardian_type->detection_distance = 10.0f;
+	
 	guardian_type->max_health = 10;
 	guardian_type->damage_on_contact = 10;
 	guardian_type->default_attack_cooldown = 0.5f;
-	guardian_type->player_detecting_distance = 10.0f;
 	guardian_type->player_acceleration_on_collision = 3.0f;
 	guardian_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 	guardian_type->death_animation = data->explosion_animations.size_32x32;
@@ -575,11 +584,16 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	entity_type* flying_bomb_type = add_entity_type(data, entity_type_enum::ENEMY_FLYING_BOMB);
 	flying_bomb_type->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 0, 7));
-	flying_bomb_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT | (u32)entity_flags::ENEMY);
+	flying_bomb_type->flags = (entity_flags)(
+		(u32)entity_flags::BLOCKS_MOVEMENT 
+		| (u32)entity_flags::ENEMY
+		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
+	flying_bomb_type->detection_type = detection_type::DETECT_180_DEGREES_BELOW;
+	flying_bomb_type->detection_distance = 10.0f;
+	
 	flying_bomb_type->max_health = 10;
-	flying_bomb_type->damage_on_contact = 10;
+	flying_bomb_type->damage_on_contact = 100.0f;
 	flying_bomb_type->default_attack_cooldown = 0.5f;
-	flying_bomb_type->player_detecting_distance = 10.0f;
 	flying_bomb_type->player_acceleration_on_collision = 3.0f;
 	flying_bomb_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 	flying_bomb_type->death_animation = data->explosion_animations.size_32x32;
@@ -588,14 +602,21 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	robot_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 2 * 24), true);
 	robot_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT
 		| (u32)entity_flags::WALKS_HORIZONTALLY
-		| (u32)entity_flags::ENEMY);
+		| (u32)entity_flags::ENEMY
+		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
+
+	robot_type->detection_type = detection_type::DETECT_90_DEGREES_IN_FRONT;
+	robot_type->detection_distance = 10.0f;
+	robot_type->stop_movement_distance = 5.0f;
+	robot_type->forget_detection_distance = 15.0f;
+	
 	robot_type->max_health = 10;
 	robot_type->damage_on_contact = 10;
 	robot_type->walk_animation = get_walk_animation(arena, get_v2(0, 2 * 24), true);
 	robot_type->default_attack_cooldown = 0.2f;
 	robot_type->velocity_multiplier = 4.0f;
 	robot_type->player_acceleration_on_collision = 3.0f;
-	robot_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+	robot_type->collision_rect_dim = get_v2(0.35f, 1.6f);
 	robot_type->death_animation = data->explosion_animations.size_48x48;
 	robot_type->death_animation_offset = get_v2(0.0f, -0.75f);
 
@@ -608,18 +629,23 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	robot_type->fired_bullet_type = robot_bullet_type;
 
 	entity_type* cultist_type = add_entity_type(data, entity_type_enum::ENEMY_CULTIST);
-	cultist_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 4 * 24), false);
+	cultist_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 4 * 24), true);
 	cultist_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT
 		| (u32)entity_flags::WALKS_HORIZONTALLY
-		| (u32)entity_flags::VISION_360
-		| (u32)entity_flags::ENEMY);
+		| (u32)entity_flags::ENEMY
+		| (u32)entity_flags::PLAYER_RECOIL_ON_CONTACT);
+	cultist_type->detection_type = detection_type::DETECT_180_DEGREES_IN_FRONT;
+	cultist_type->detection_distance = 8.0f;
+	cultist_type->stop_movement_distance = 4.0f;
+	cultist_type->forget_detection_distance = 10.0f;
+
 	cultist_type->max_health = 10;
 	cultist_type->damage_on_contact = 10;
-	cultist_type->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), false);
+	cultist_type->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), true);
 	cultist_type->default_attack_cooldown = 0.2f;
 	cultist_type->velocity_multiplier = 4.0f;
 	cultist_type->player_acceleration_on_collision = 3.0f;
-	cultist_type->collision_rect_dim = get_v2(1.0f, 1.0f);
+	cultist_type->collision_rect_dim = get_v2(0.35f, 1.6f);
 	cultist_type->death_animation = data->explosion_animations.size_48x48;
 	cultist_type->death_animation_offset = get_v2(0.0f, -0.75f);
 	cultist_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 4);

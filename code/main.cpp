@@ -465,15 +465,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		}
 
 		update_power_up_timers(level, delta_time);
-		if (is_power_up_active(level->power_ups.damage))
-		{
-			player->type->fired_bullet_type = &level->static_data->bullet_types[2];
-		}
-		else
-		{
-			player->type->fired_bullet_type = &level->static_data->bullet_types[0];
-		}
-
 		animate_entity(&level->player_movement, player, delta_time);
 
 		world_position target_pos = process_input(level, &game->input_buffer, player, delta_time);
@@ -566,120 +557,86 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			{
 				entity->attack_cooldown -= delta_time;
 			}
+			
+			v2 distance_to_player = get_position_difference(player->position, entity->position);
+			r32 distance_to_player_length = length(distance_to_player);
 
+			// chodzenie
 			if (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY))
 			{
-				if (entity->has_walking_path)
+				if (false == entity->has_walking_path)
 				{
-					tile_position current_goal;
-					tile_position current_start;
+					find_path_for_entity(level, entity);
+				}
 
-					if (entity->goal_path_point == 0)
-					{
-						current_goal = entity->path.start;
-						current_start = entity->path.end;
-					}
-					else if (entity->goal_path_point == 1)
-					{
-						current_goal = entity->path.end;
-						current_start = entity->path.start;
-					}
-					else
-					{
-						// wracamy na początek
-						entity->goal_path_point = 0;
-						current_goal = entity->path.start;
-						current_start = entity->path.end;
-					}
+				tile_position current_goal;
+				tile_position current_start;
 
-					if (current_goal != current_start)
-					{
-						v2 distance = get_position_difference(current_goal, entity->position);
-						r32 distance_length = length(distance);
-						v2 distance_to_start = get_position_difference(current_start, entity->position);
-						r32 distance_to_start_length = length(distance_to_start);
-
-						v2 direction = get_zero_v2();
-						if (distance_length != 0)
-						{
-							direction = get_unit_vector(distance);
-						}
-
-						r32 velocity = entity->type->velocity_multiplier;
-
-						r32 slowdown_threshold = 2.0f;
-						r32 fudge = 0.1f;
-						if (distance_length < slowdown_threshold)
-						{
-							velocity *= ((distance_length + fudge) / slowdown_threshold);
-						}
-						else if (distance_to_start_length < slowdown_threshold)
-						{
-							velocity *= ((distance_to_start_length + fudge) / slowdown_threshold);
-						}
-
-						entity->velocity = direction * velocity;
-						if (entity->velocity.x < 0.0f)
-						{
-							entity->direction = direction::W;
-						}
-						else
-						{
-							entity->direction = direction::E;
-						}
-
-						world_position new_position = add_to_position(entity->position, (direction * velocity * delta_time));
-						v2 movement_delta = get_position_difference(new_position, entity->position);
-						entity->position = new_position;
-
-						// sprawdzenie kolizji z graczem
-						chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(entity->position));
-						collision new_collision = check_minkowski_collision(
-							get_entity_collision_data(reference_chunk, entity),
-							get_entity_collision_data(reference_chunk, player),
-							movement_delta, 1.0f);
-						if (new_collision.collided_wall != direction::NONE)
-						{
-							handle_player_and_enemy_collision(level, player, entity);
-						}
-
-						if (length(get_position_difference(current_goal, entity->position)) < 0.01f)
-						{
-							//entity->position = goal_pos;
-
-							if (entity->goal_path_point == 0)
-							{
-								//printf("dotarliśmy do 0\n");
-								entity->goal_path_point = 1;
-							}
-							else if (entity->goal_path_point == 1)
-							{
-								//printf("dotarliśmy do 1\n");
-								entity->goal_path_point = 0;
-							}
-						}
-					}
-					debug_entity_to_render_path = entity;
+				if (entity->goal_path_point == 0)
+				{
+					current_goal = entity->path.start;
+					current_start = entity->path.end;
+				}
+				else if (entity->goal_path_point == 1)
+				{
+					current_goal = entity->path.end;
+					current_start = entity->path.start;
 				}
 				else
 				{
-					tile_range new_path = find_walking_path_for_enemy(
-						level->current_map, level->static_data->collision_reference, get_tile_position(entity->position));
-					entity->path = new_path;
-					entity->has_walking_path = true;
-
-					// zabezpieczenie na wypadek nierównego ustawienia entity w edytorze 
-					tile_position current_position = get_tile_position(entity->position);
-					if (current_position.y != entity->path.start.y)
+					// wracamy na początek
+					entity->goal_path_point = 0;
+					current_goal = entity->path.start;
+					current_start = entity->path.end;
+				}
+					
+				// czy zauważamy gracza?
+				if (false == entity->player_detected)
+				{
+					if (is_point_visible_for_entity(level, entity, player->position))
 					{
-						tile_position new_position = get_tile_position(current_position.x, entity->path.start.y);
-						entity->position = get_world_position(new_position);
+						entity->player_detected = true;
 					}
 				}
 
-				tile_position tile_pos = get_tile_position(entity->position);
-				//printf("enemy %d,%d x velocity: %.02f\n", tile_pos.x, tile_pos.y, entity->velocity.x);
-				r32 frame_duration_modifier = 0.75f + (1.0f / length(entity->velocity));
+				// zatrzymywanie się lub podchodzenie w zależności od pozycji gracza				
+				if (entity->player_detected)
+				{
+					if (distance_to_player_length > entity->type->forget_detection_distance)
+					{
+						entity->player_detected = false;
+					}
+					else
+					{
+						if (distance_to_player_length < entity->type->stop_movement_distance)
+						{
+							tile_position entity_position = get_tile_position(entity->position);
+							current_goal = entity_position;
+							current_start = entity_position;
+
+							if (distance_to_player.x < 0)
+							{
+								entity->direction = direction::W;
+							}
+							else
+							{
+								entity->direction = direction::E;
+							}						
+						}
+						else
+						{
+							tile_position closest_end = get_closest_end_from_tile_range(entity->path, player->position);
+							current_goal = closest_end;
+							/*printf("path closest end (%d,%d), current start: (%d,%d)\n", 
+								closest_end.x, closest_end.y, current_start.x, current_start.y);*/
+						}
+					}
+				}
+
+				move_entity(level, entity, current_start, current_goal, player, delta_time);
+					
+				//debug_entity_to_render_path = entity;
+				
 
 				if (length(entity->velocity) <= 0.5f)
 				{
@@ -695,13 +652,17 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					}
 				}
 
+				r32 frame_duration_modifier = 0.75f + (1.0f / length(entity->velocity));
 				animate_entity(NULL, entity, delta_time, frame_duration_modifier);
 			}
-
-			if (are_entity_flags_set(entity, entity_flags::ENEMY)
-				&& entity->type->fired_bullet_type)
+			
+			if (distance_to_player_length < entity->type->detection_distance)
 			{
-				enemy_fire_bullet(level, entity, player, get_v2(0, -0.5f));
+				if (are_entity_flags_set(entity, entity_flags::ENEMY)
+					&& entity->type->fired_bullet_type)
+				{
+					enemy_fire_bullet(level, entity, player, get_v2(0, -0.5f));
+				}
 			}
 		}
 
@@ -799,10 +760,10 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			}
 		}
 
-		if (debug_entity_to_render_path)
+		/*if (debug_entity_to_render_path)
 		{
 			render_debug_path_ends(&game->render, debug_entity_to_render_path, player->position);				
-		}
+		}*/
 
 		// draw entities
 		for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)

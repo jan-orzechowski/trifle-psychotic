@@ -3,6 +3,7 @@
 #include "map.h"
 #include "gates.h"
 #include "collision.h"
+#include "player.h"
 
 b32 are_flags_set(entity_flags* flags, entity_flags flag_values_to_check)
 {
@@ -206,6 +207,22 @@ tile_range find_walking_path_for_enemy(map level, map collision_ref, tile_positi
 	return result;
 }
 
+void find_path_for_entity(level_state* level, entity* entity)
+{
+	tile_range new_path = find_walking_path_for_enemy(
+		level->current_map, level->static_data->collision_reference, get_tile_position(entity->position));
+	entity->path = new_path;
+	entity->has_walking_path = true;
+
+	// zabezpieczenie na wypadek nierównego ustawienia entity w edytorze 
+	tile_position current_position = get_tile_position(entity->position);
+	if (current_position.y != entity->path.start.y)
+	{
+		tile_position new_position = get_tile_position(current_position.x, entity->path.start.y);
+		entity->position = get_world_position(new_position);
+	}
+}
+
 // domyślnie trójkąt jest zwrócony podstawą w prawo
 // można podać x i y odwrotnie dla trójkątów zwróconych podstawą w górę lub w dół
 b32 is_point_within_right_triangle(r32 triangle_height, r32 relative_x, r32 relative_y, b32 invert_sign)
@@ -227,7 +244,7 @@ b32 is_point_within_right_triangle(r32 triangle_height, r32 relative_x, r32 rela
 	return result;
 }
 
-b32 is_point_visible_from_point(world_position looking_point, direction looking_direction, r32 max_looking_distance, world_position point_to_check)
+b32 is_point_visible_within_90_degrees(world_position looking_point, direction looking_direction, r32 max_looking_distance, world_position point_to_check)
 {
 	assert(looking_direction != direction::NONE);
 
@@ -245,12 +262,12 @@ b32 is_point_visible_from_point(world_position looking_point, direction looking_
 	else
 	if (looking_direction == direction::W && relative_pos.x < 0.0f)
 	{
-	result = is_point_within_right_triangle(triangle_height, relative_pos.x, relative_pos.y, true);
+		result = is_point_within_right_triangle(triangle_height, relative_pos.x, relative_pos.y, true);
 	}
 	else // odwracamy x i y
 	if (looking_direction == direction::N && relative_pos.y > 0.0f)
 	{
-	result = is_point_within_right_triangle(triangle_height, relative_pos.y, relative_pos.x, false);
+		result = is_point_within_right_triangle(triangle_height, relative_pos.y, relative_pos.x, false);
 	}
 	else
 	if (looking_direction == direction::S && relative_pos.y < 0.0f)
@@ -261,15 +278,62 @@ b32 is_point_visible_from_point(world_position looking_point, direction looking_
 	return result;
 }
 
-b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, world_position point, r32 max_distance)
+b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, world_position point)
 {
-	b32 result = is_point_visible_from_point(looking_entity->position, looking_entity->direction, max_distance, point);
-
-	if (result)
+	b32 result = false;
+	if (looking_entity->type->detection_type != detection_type::DETECT_NOTHING)
 	{
-		if (check_if_sight_line_is_obstructed(level, looking_entity->position, point))
+		v2 distance_to_point = get_position_difference(point, looking_entity->position);
+		if (length(distance_to_point) <= looking_entity->type->detection_distance)
 		{
-			result = false;
+			switch (looking_entity->type->detection_type)
+			{
+				case detection_type::DETECT_180_DEGREES_BELOW:
+				{
+					if (distance_to_point.y < 0)
+					{
+						result = true;
+					}
+				}
+				break;
+				case detection_type::DETECT_180_DEGREES_IN_FRONT:
+				{
+					if (looking_entity->direction == direction::W)
+					{
+						if (distance_to_point.x <= 0)
+						{
+							result = true;
+						}
+					}
+					else
+					{
+						if (distance_to_point.x >= 0)
+						{
+							result = true;
+						}
+					}					
+				}
+				break;
+				case detection_type::DETECT_360_DEGREES:
+				{
+					result = true;
+				}
+				break;
+				case detection_type::DETECT_90_DEGREES_IN_FRONT:
+				{
+					result = is_point_visible_within_90_degrees(looking_entity->position, looking_entity->direction, 
+						looking_entity->type->detection_distance, point);
+				}
+				break;
+			}
+		}
+
+		if (result)
+		{
+			if (check_if_sight_line_is_obstructed(level, looking_entity->position, point))
+			{
+				result = false;
+			}
 		}
 	}
 
@@ -511,6 +575,117 @@ shooting_sprite_result get_shooting_sprite_based_on_direction(shooting_rotation_
 	return result;
 }
 
+void move_entity(level_state* level, entity* entity_to_move, tile_position current_start, tile_position current_goal, 
+	entity* player, r32 delta_time)
+{
+	if (current_goal != current_start)
+	{
+		v2 distance = get_position_difference(current_goal, entity_to_move->position);
+		r32 distance_length = length(distance);
+		v2 distance_to_start = get_position_difference(current_start, entity_to_move->position);
+		r32 distance_to_start_length = length(distance_to_start);
+
+		v2 direction = get_zero_v2();
+		if (distance_length != 0)
+		{
+			direction = get_unit_vector(distance);
+		}
+
+		r32 velocity = entity_to_move->type->velocity_multiplier;
+
+		r32 slowdown_threshold = 2.0f;
+		r32 fudge = 0.1f;
+		if (distance_length < slowdown_threshold)
+		{
+			velocity *= ((distance_length + fudge) / slowdown_threshold);
+		}
+		else if (distance_to_start_length < slowdown_threshold)
+		{
+			velocity *= ((distance_to_start_length + fudge) / slowdown_threshold);
+		}
+
+		entity_to_move->velocity = direction * velocity;
+		// ten kod gryzie się z kodem odpowiedzialnym za strzelanie
+		if (entity_to_move->velocity.x < 0.0f)
+		{
+			entity_to_move->direction = direction::W;
+		}
+		else
+		{
+			entity_to_move->direction = direction::E;
+		}
+
+		world_position new_position = add_to_position(entity_to_move->position, (direction * velocity * delta_time));
+		v2 movement_delta = get_position_difference(new_position, entity_to_move->position);
+		entity_to_move->position = new_position;
+
+		// sprawdzenie kolizji z graczem
+		chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(entity_to_move->position));
+		collision new_collision = check_minkowski_collision(
+			get_entity_collision_data(reference_chunk, entity_to_move),
+			get_entity_collision_data(reference_chunk, player),
+			movement_delta, 1.0f);
+
+		if (new_collision.collided_wall != direction::NONE)
+		{
+			handle_player_and_enemy_collision(level, player, entity_to_move);
+		}
+
+		if (length(get_position_difference(current_goal, entity_to_move->position)) < 0.01f)
+		{
+			//entity_to_move->position = goal_pos;
+
+			if (entity_to_move->goal_path_point == 0)
+			{
+				//printf("dotarliśmy do 0\n");
+				entity_to_move->goal_path_point = 1;
+			}
+			else if (entity_to_move->goal_path_point == 1)
+			{
+				//printf("dotarliśmy do 1\n");
+				entity_to_move->goal_path_point = 0;
+			}
+		}
+	}
+	else
+	{
+		entity_to_move->velocity = get_zero_v2();
+	}
+}
+
+void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bullet, entity* hit_entity)
+{
+	if (are_entity_flags_set(hit_entity, entity_flags::PLAYER))
+	{
+		damage_player(level, moving_bullet->type->damage_on_contact);
+	}
+	else
+	{
+
+		if (false == are_entity_flags_set(hit_entity, entity_flags::INDESTRUCTIBLE))
+		{
+			start_visual_effect(level, hit_entity, 1, false);
+			hit_entity->health -= moving_bullet->type->damage_on_contact;
+			printf("pocisk trafil w entity, %.2f obrazen, zostalo %.2f\n",
+				moving_bullet->type->damage_on_contact, hit_entity->health);
+
+			v2 bullet_direction = get_position_difference(moving_bullet->position, hit_entity->position);
+
+			// to gówno robi, powinniśmy tutaj dać player detection
+			if (bullet_direction.x < 0)
+			{
+				hit_entity->direction = direction::W;
+				printf("uderzenie z prawej\n");
+			}
+			else
+			{
+				hit_entity->direction = direction::E;
+				printf("uderzenie z lewej\n");
+			}
+		}
+	}
+}
+
 void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 target_offset)
 {
 	if (enemy->attack_cooldown <= 0)
@@ -521,13 +696,9 @@ void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 tar
 		v2 player_relative_pos = get_position_difference(target_position, enemy->position);
 		v2 direction_to_player = get_unit_vector(player_relative_pos);
 
-		// potrzebne do sprawdzenia, z której strony punkt jest widoczny
-		// może dać explicite do argumentów funkcji?
 		enemy->direction = direction_to_player.x < 0 ? direction::W : direction::E;
 
-
-		if (are_entity_flags_set(enemy, entity_flags::VISION_360)
-			|| is_point_visible_for_entity(level, enemy, target_position, enemy->type->player_detecting_distance))
+		if (is_point_visible_for_entity(level, enemy, target_position))
 		{
 			//tile_position tile_pos = get_tile_position(enemy->position);
 			//printf("widoczny przez entity o wspolrzednych (%d,%d)\n", tile_pos.x, tile_pos.y);

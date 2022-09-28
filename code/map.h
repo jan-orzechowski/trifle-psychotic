@@ -32,3 +32,4 @@ v2 get_length_from_tile_range(tile_range path);
 tile_range find_horizontal_range_of_free_tiles(map level, map collision_ref, tile_position starting_tile, u32 length_limit);
 tile_range find_vertical_range_of_free_tiles(map level, map collision_ref, tile_position starting_tile, u32 length_limit);
 b32 is_good_for_walk_path(map level, map collision_ref, u32 tile_x, u32 tile_y);
+tile_position get_closest_end_from_tile_range(tile_range range, world_position position);

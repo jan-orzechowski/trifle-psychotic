@@ -324,3 +324,11 @@ b32 is_good_for_walk_path(map level, map collision_ref, u32 tile_x, u32 tile_y)
 		&& is_tile_colliding(level, collision_ref, tile_x, tile_y + 1));
 	return result;
 }
+
+tile_position get_closest_end_from_tile_range(tile_range range, world_position position)
+{
+	r32 end_distance = length(get_position_difference(range.end, position));
+	r32 start_distance = length(get_position_difference(range.start, position));
+	tile_position result = end_distance < start_distance ? range.end : range.start;
+	return result;
+}
