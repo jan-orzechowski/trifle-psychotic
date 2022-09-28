@@ -28,13 +28,17 @@ b32 are_entity_flags_set(entity* entity, entity_flags flag_values)
 entity* add_entity(level_state* level, world_position position, entity_type* type)
 {
 	assert(type);
-	assert(level->entities_count + 1 < level->entities_max_count);
 
-	entity* new_entity = &level->entities[level->entities_count];
-	level->entities_count++;
-	new_entity->position = renormalize_position(position);
-	new_entity->type = type;
-	new_entity->health = type->max_health;
+	entity* new_entity = NULL;
+	if (level->entities_count < level->entities_max_count)
+	{
+		new_entity = &level->entities[level->entities_count];
+		level->entities_count++;
+		new_entity->position = renormalize_position(position);
+		new_entity->type = type;
+		new_entity->health = type->max_health;
+	}
+	
 	return new_entity;
 }
 
@@ -44,16 +48,24 @@ entity* add_entity(level_state* level, tile_position position, entity_type* type
 	return result;
 }
 
-void remove_entity(level_state* level, u32 entity_index)
+void remove_entity(level_state* level, i32* entity_index)
 {
-	assert(level->entities_count > 1);
-	assert(entity_index != 0);
-	assert(entity_index < level->entities_max_count);
+	if (level->entities_count > 0)
+	{
+		assert(*entity_index >= 0);
+		assert(*entity_index < level->entities_max_count);
 
-	// compact array - działa też w przypadku entity_index == entities_count - 1
-	entity last_entity = level->entities[level->entities_count - 1];
-	level->entities[entity_index] = last_entity;
-	level->entities_count--;
+		// compact array - działa też w przypadku entity_index == entities_count - 1
+		entity* last_entity = &level->entities[level->entities_count - 1];
+		level->entities[*entity_index] = *last_entity;
+		level->entities_count--;
+		*last_entity = {}; // czyszczenie
+
+		if (*entity_index > 0)
+		{
+			(*entity_index)--;
+		}
+	}
 }
 
 entity_type_dictionary create_entity_types_dictionary(memory_arena* arena)
@@ -112,15 +124,24 @@ void fire_bullet(level_state* level, entity* entity, b32 cooldown)
 	}
 }
 
-void remove_bullet(level_state* level, u32 bullet_index)
+void remove_bullet(level_state* level, i32* bullet_index)
 {
-	assert(level->bullets_count > 0);
-	assert(bullet_index < level->bullets_max_count);
+	if (level->bullets_count > 0)
+	{
+		assert(*bullet_index >= 0);
+		assert(*bullet_index < level->bullets_max_count);
 
-	// compact array - działa też w przypadku bullet_index == bullets_count - 1
-	bullet last_bullet = level->bullets[level->bullets_count - 1];
-	level->bullets[bullet_index] = last_bullet;
-	level->bullets_count--;
+		// compact array
+		bullet* last_bullet = &level->bullets[level->bullets_count - 1];
+		level->bullets[*bullet_index] = *last_bullet;
+		level->bullets_count--;
+		*last_bullet = {}; // czyszczenie
+
+		if (*bullet_index > 0)
+		{
+			(*bullet_index)--;
+		}
+	}
 }
 
 tile_range find_walking_path_for_enemy(map level, map collision_ref, tile_position start_tile)

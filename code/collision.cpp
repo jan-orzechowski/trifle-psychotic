@@ -532,11 +532,6 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 		{
 			moving_bullet->position = add_to_position(moving_bullet->position, movement_delta);
 		}
-
-		if (hit_entity || hit_wall)
-		{
-			remove_bullet(level, bullet_index);
-		}
 	}
 
 	return (hit_entity || hit_wall);

@@ -539,7 +539,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	// update entities
 	if (update)
 	{
-		for (u32 entity_index = 1; entity_index < level->entities_count; entity_index++)
+		for (i32 entity_index = 1; entity_index < level->entities_count; entity_index++)
 		{
 			entity* entity = level->entities + entity_index;
 
@@ -550,9 +550,9 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 			if (entity->health < 0)
 			{
-				remove_entity(level, entity_index);
-				entity_index--; // ze względu na działanie compact array
 				add_explosion(level, entity->position, level->static_data->explosion_animations.size_48x48);
+				remove_entity(level, &entity_index);
+				continue;
 			}
 
 			if (entity->attack_cooldown > 0)
@@ -716,7 +716,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		}
 
 		// update bullets
-		for (u32 bullet_index = 0; bullet_index < level->bullets_count; bullet_index++)
+		for (i32 bullet_index = 0; bullet_index < level->bullets_count; bullet_index++)
 		{
 			bullet* bullet = level->bullets + bullet_index;
 
@@ -728,20 +728,20 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					b32 hit = move_bullet(level, bullet, bullet_index, bullet_target_pos);
 					if (hit)
 					{
-						bullet_index--; // ze względu na compact array - został usunięty bullet, ale nowy został wstawiony na jego miejsce
+						remove_bullet(level, &bullet_index);
 					}
 				}
 
 				if (is_zero(bullet->velocity))
 				{
-					remove_bullet(level, bullet_index);
-					bullet_index--;
+					remove_bullet(level, &bullet_index);
 				}
 			}
 			else
 			{
-				remove_bullet(level, bullet_index);
-				bullet_index--;
+				remove_bullet(level, &bullet_index);
+			}
+		}
 
 		// update explosions
 		for (i32 explosion_index = 0; explosion_index < level->explosions_count; explosion_index++)
@@ -833,7 +833,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		}
 
 		// draw entities
-		for (u32 entity_index = 1; entity_index < level->entities_count; entity_index++)
+		for (i32 entity_index = 1; entity_index < level->entities_count; entity_index++)
 		{
 			entity* entity = level->entities + entity_index;
 			if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
@@ -843,14 +843,16 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		}
 
 		// draw bullets
-		for (u32 bullet_index = 0; bullet_index < level->bullets_count; bullet_index++)
+		for (i32 bullet_index = 0; bullet_index < level->bullets_count; bullet_index++)
 		{
 			bullet* bullet = level->bullets + bullet_index;
 			if (is_in_neighbouring_chunk(player->position.chunk_pos, bullet->position))
 			{
 				render_entity_sprite(&game->render,
 					player->position, bullet->position, direction::NONE,
-					NULL, 0, bullet->type->idle_pose.sprite);
+					NULL, 0, bullet->type->idle_pose.sprite);				
+			}
+		}
 
 		// draw explosions
 		for (i32 explosion_index = 0; explosion_index < level->explosions_count; explosion_index++)
@@ -865,7 +867,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		// draw collision debug info
 		{
 #if 0
-			for (u32 entity_index = 0; entity_index < level->entities_count; entity_index++)
+			for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 			{
 				entity* entity = level->entities + entity_index;
 				if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
