@@ -355,3 +355,39 @@ void initialize_current_map(game_state* game, level_state* level)
 
 	level->current_map_initialized = true;
 }
+
+entity* add_explosion(level_state* level, world_position position, animation* explosion_animation)
+{
+	assert(explosion_animation);
+	
+	entity* new_explosion = NULL;
+	if (level->explosions_count < level->explosions_max_count)
+	{
+		new_explosion = &level->explosions[level->explosions_count];
+		level->explosions_count++;
+		new_explosion->position = renormalize_position(position);
+		new_explosion->current_animation = explosion_animation;
+		new_explosion->animation_duration = 0.0f;
+	}
+	return new_explosion;
+}
+
+void remove_explosion(level_state* level, i32* explosion_index)
+{
+	if (level->explosions_count > 0)
+	{
+		assert(*explosion_index >= 0);
+		assert(*explosion_index < level->explosions_max_count);
+
+		// compact array - działa też w przypadku explosion_index == explosions_count - 1
+		entity* last_explosion = &level->explosions[level->explosions_count - 1];
+		level->explosions[*explosion_index] = *last_explosion;
+		level->explosions_count--;
+		*last_explosion = {}; // czyszczenie
+
+		if (*explosion_index > 0)
+		{
+			(*explosion_index)--;
+		}
+	}
+}

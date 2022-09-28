@@ -17,6 +17,7 @@ struct sdl_data
 	SDL_Texture* tileset_texture;
 	SDL_Texture* font_texture;
 	SDL_Texture* charset_texture;
+	SDL_Texture* explosion_texture;
 };
 
 read_file_result read_file(std::string path);

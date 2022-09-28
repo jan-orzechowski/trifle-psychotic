@@ -52,17 +52,19 @@ void apply_power_up(level_state* level, entity* player, entity* power_up)
 
 b32 damage_player(level_state* level, r32 damage_amount)
 {
+	entity* player = get_player(level);
 	b32 damaged = false;
 	if (level->player_invincibility_cooldown <= 0.0f
 		&& false == is_power_up_active(level->power_ups.invincibility))
-	{
+	{	
 		damaged = true;
-		level->entities[0].health -= damage_amount;
-		start_visual_effect(level, &level->entities[0], 1, false);
-		//printf("gracz dostaje %.02f obrazen, zostalo %.02f zdrowia\n", damage_amount, level->entities[0].health);
-		if (level->entities[0].health < 0.0f)
+		player->health -= damage_amount;
+		start_visual_effect(level, player, 1, false);
+		//printf("gracz dostaje %.02f obrazen, zostalo %.02f zdrowia\n", damage_amount, player->health);
+		if (player->health < 0.0f)
 		{
 			// przegrywamy
+			add_explosion(level, player->position, level->static_data->explosion_animations.size_48x48);
 			debug_breakpoint;
 		}
 		else

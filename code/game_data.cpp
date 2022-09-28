@@ -276,6 +276,10 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
 	level->bullets_max_count = 5000;
 	level->bullets = push_array(arena, level->bullets_max_count, bullet);
 
+	level->explosions_count = 0;
+	level->explosions_max_count = 500;
+	level->explosions = push_array(arena, level->explosions_max_count, entity);
+
 	level->player_movement.current_mode = movement_mode::WALK;
 	level->current_player_torso = level->static_data->player_shooting_right;
 	level->flip_player_torso_horizontally = false;
@@ -368,6 +372,26 @@ ui_graphics load_ui_graphics()
 	return result;
 }
 
+animation* load_explosion_animation(memory_arena* arena, v2 offset, u32 tile_side, u32 frames_count, r32 single_frame_duration)
+{
+	animation* new_animation = push_struct(arena, animation);
+	new_animation->frames_count = frames_count;
+	new_animation->frames = push_array(arena, new_animation->frames_count, animation_frame);
+
+	textures texture = textures::EXPLOSION;
+	rect frame_rect = get_rect_from_min_corner(offset, get_v2(tile_side, tile_side));
+
+	for (u32 frame_index = 0; frame_index < frames_count; frame_index++)
+	{
+		new_animation->frames[frame_index].sprite.parts_count = 1;
+		new_animation->frames[frame_index].sprite.parts = push_array(arena, 1, sprite_part);
+		fill_animation_frame(new_animation, frame_index, 0, get_sprite_part(texture, frame_rect), &single_frame_duration);
+		move_rect(&frame_rect, get_v2(tile_side, 0));
+	}
+
+	return new_animation;
+}
+
 void load_static_game_data(static_game_data* data, memory_arena* arena, memory_arena* transient_arena)
 {	
 	temporary_memory transient_memory = begin_temporary_memory(transient_arena);
@@ -406,6 +430,13 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->red_switch_graphics = load_switch_graphics(2);
 	data->green_switch_graphics = load_switch_graphics(3);
 	data->gate_switch_displays = load_gate_switch_displays();
+
+	data->explosion_animations.size_16x16_variant_1 = load_explosion_animation(arena, get_v2(464, 0), 16, 7, 0.2f);
+	data->explosion_animations.size_16x16_variant_2 = load_explosion_animation(arena, get_v2(464, 16), 16, 7, 0.2f);
+	data->explosion_animations.size_16x16_variant_3 = load_explosion_animation(arena, get_v2(464, 32), 16, 7, 0.2f);
+	data->explosion_animations.size_24x24 = load_explosion_animation(arena, get_v2(0, 0), 24, 12, 0.2f);
+	data->explosion_animations.size_32x32 = load_explosion_animation(arena, get_v2(0, 24), 32, 12, 0.2f);
+	data->explosion_animations.size_48x48 = load_explosion_animation(arena, get_v2(0, 24 + 32), 48, 12, 0.2f);
 
 	data->player_shooting_up = get_square_sprite(arena, 24, 
 		textures::CHARSET, 4, 0, get_v2(3.0f, -16.0f));

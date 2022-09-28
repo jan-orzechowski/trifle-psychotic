@@ -18,6 +18,9 @@ void fire_bullet(level_state* level, entity_type* bullet_type, world_position bu
 void fire_bullet(level_state* level, entity* entity, b32 cooldown);
 void remove_bullet(level_state* level, u32 bullet_index);
 
+entity* add_explosion(level_state* level, world_position position, animation* explosion_animation);
+void remove_explosion(level_state* level, i32* explosion_index);
+
 entity_type_dictionary create_entity_types_dictionary(memory_arena* arena);
 void set_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum type, entity_type* enity_type_ptr);
 entity_type* get_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum type);

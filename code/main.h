@@ -30,7 +30,8 @@ enum class textures
 	NONE,
 	TILESET,
 	FONT,
-	CHARSET
+	CHARSET,
+	EXPLOSION
 };
 
 struct tile_position
@@ -274,6 +275,14 @@ struct entity
 	u32 goal_path_point;
 };
 
+struct explosion
+{
+	world_position position;
+	animation* animation;
+	r32 animation_duration;
+	sprite_effect* visual_effect;
+};
+
 struct bullet
 {
 	world_position position;
@@ -399,6 +408,16 @@ struct font
 	textures texture;
 };
 
+struct explosions
+{
+	animation* size_16x16_variant_1;
+	animation* size_16x16_variant_2;
+	animation* size_16x16_variant_3;
+	animation* size_24x24;
+	animation* size_32x32;
+	animation* size_48x48;
+};
+
 struct static_game_data
 {
 	map collision_reference;
@@ -444,6 +463,8 @@ struct static_game_data
 	string_ref menu_continue_str;
 	string_ref menu_credits_str;
 	string_ref menu_exit_str;
+
+	explosions explosion_animations;
 };
 
 enum class scene
@@ -478,6 +499,10 @@ struct level_state
 	bullet* bullets; // compact array
 	u32 bullets_max_count;
 	u32 bullets_count;
+
+	entity* explosions; // compact array
+	u32 explosions_max_count;
+	u32 explosions_count;
 
 	gate_dictionary gates_dict;
 	sprite_effect_dictionary gate_tints_dict;

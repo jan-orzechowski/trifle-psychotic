@@ -151,6 +151,7 @@ sdl_data init_sdl()
 					load_image(sdl_game.renderer, &sdl_game.tileset_texture, "gfx/tileset.png", &success);
 					load_image(sdl_game.renderer, &sdl_game.font_texture, "gfx/font1.png", &success);
 					load_image(sdl_game.renderer, &sdl_game.charset_texture, "gfx/charset.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.explosion_texture, "gfx/explosions.png", &success);
 				}
 				else
 				{
@@ -301,6 +302,7 @@ int main(int argc, char* args[])
 	SDL_DestroyTexture(sdl.charset_texture);
 	SDL_DestroyTexture(sdl.tileset_texture);
 	SDL_DestroyTexture(sdl.font_texture);
+	SDL_DestroyTexture(sdl.explosion_texture);
 
 	SDL_DestroyRenderer(sdl.renderer);
 	SDL_DestroyWindow(sdl.window);
@@ -337,6 +339,7 @@ internal SDL_Texture* get_texture(sdl_data sdl, textures type)
 		case textures::TILESET: { result = sdl.tileset_texture;  }; break;
 		case textures::FONT: { result = sdl.font_texture; }; break;
 		case textures::CHARSET: { result = sdl.charset_texture; }; break;
+		case textures::EXPLOSION: { result = sdl.explosion_texture; }; break;
 		invalid_default_case;
 	}
 	return result;

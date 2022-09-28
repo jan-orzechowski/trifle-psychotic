@@ -552,6 +552,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			{
 				remove_entity(level, entity_index);
 				entity_index--; // ze względu na działanie compact array
+				add_explosion(level, entity->position, level->static_data->explosion_animations.size_48x48);
 			}
 
 			if (entity->attack_cooldown > 0)
@@ -741,6 +742,18 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			{
 				remove_bullet(level, bullet_index);
 				bullet_index--;
+
+		// update explosions
+		for (i32 explosion_index = 0; explosion_index < level->explosions_count; explosion_index++)
+		{
+			entity* explosion = level->explosions + explosion_index;		
+			if ((explosion->animation_duration + delta_time) > explosion->current_animation->total_duration)
+			{
+				remove_explosion(level, &explosion_index);
+			}
+			else
+			{
+				animate_entity(NULL, explosion, delta_time);
 			}
 		}
 	}
@@ -838,6 +851,14 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				render_entity_sprite(&game->render,
 					player->position, bullet->position, direction::NONE,
 					NULL, 0, bullet->type->idle_pose.sprite);
+
+		// draw explosions
+		for (i32 explosion_index = 0; explosion_index < level->explosions_count; explosion_index++)
+		{
+			entity* explosion = level->explosions + explosion_index;
+			if (is_in_neighbouring_chunk(player->position.chunk_pos, explosion->position))
+			{
+				render_entity_animation_frame(&game->render, player->position, explosion);
 			}
 		}
 
