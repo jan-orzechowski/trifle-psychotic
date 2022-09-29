@@ -7,6 +7,7 @@
 #include "collision.h"
 #include "entities.h"
 #include "player.h"
+#include "tmx_parsing.h"
 
 #include "sdl_platform.h"
 
@@ -962,7 +963,7 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 		}
 	}
 	
-	render_clear(&game->render, get_zero_v4());
+	//render_clear(&game->render, get_zero_v4());
 
 	i32 option_spacing = 20;
 	u32 options_x = 140;
@@ -988,8 +989,53 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	return change_to_other_scene;
 };
 
+rect get_text_area_for_parsing_errors_message()
+{
+	r32 window_border = 4.0f * 2;
+	rect result = get_rect_from_corners(
+		get_v2(window_border, window_border),
+		get_v2((SCREEN_WIDTH - window_border) / SCALING_FACTOR, (SCREEN_HEIGHT - window_border) / SCALING_FACTOR));
+	return result;
+}
+
+string_ref get_parsing_errors_message(render_group* render, font font, memory_arena* transient_arena, tmx_parsing_error_report* errors)
+{	
+	rect textbox_area = get_text_area_for_parsing_errors_message();
+	text_area_limits limits = get_text_area_limits(font, textbox_area);
+
+	string_builder builder = get_string_builder(transient_arena, limits.max_character_count);
+	push_string(&builder, "Unable to read a level from the TMX file! Errors:\n");
+
+	char counter_buffer[10];
+	u32 printed_errors_count = 0;
+	u32 max_printer_errors_count = 100;
+
+	tmx_parsing_error* error = errors->first_error;
+	while (error && (printed_errors_count < max_printer_errors_count))
+	{
+		snprintf(counter_buffer, 10, "%d. ", printed_errors_count + 1);
+
+		push_string(&builder, counter_buffer);
+		push_string(&builder, error->message);
+		push_string(&builder, "\n");
+
+		printed_errors_count++;
+		error = error->next;
+	}
+
+	i32 remaining_errors = (errors->errors_count - printed_errors_count);
+	if (remaining_errors > 0)
+	{
+		snprintf(counter_buffer, 10, "And %d more errors", remaining_errors);
+		push_string(&builder, counter_buffer);
+	}
+
+	string_ref result = get_string_from_string_builder(&builder);
+	return result;
+}
+
 void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_time)
-{		
+{
 	scene_change scene_change = {};
 	switch (game->current_scene)
 	{
@@ -997,14 +1043,29 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 		{
 			if (false == game->first_game_run_initialized)
 			{
+				temporary_memory auxillary_memory_for_loading = begin_temporary_memory(game->transient_arena);
+				
 				game->level_state = push_struct(game->arena, level_state);
-
 				game->game_level_memory = begin_temporary_memory(game->arena);
 				string_ref level_name = copy_c_string_to_memory_arena(game->arena, "map_01");
 				initialize_level_state(game->level_state, static_data, level_name, game->arena);
-				game->level_state->current_map = load_map(level_name, game->arena, game->transient_arena);
+
+				tmx_map_parsing_result parsing_result = load_map(level_name, game->arena, game->transient_arena);
+				game->level_state->current_map = parsing_result.parsed_map;
+
+				if (parsing_result.errors->errors_count > 0)
+				{
+					scene_change.change_scene = true;
+					scene_change.new_scene = scene::MAP_ERRORS;
+					game->map_errors = get_parsing_errors_message(&game->render, static_data->ui_font,
+						game->arena, parsing_result.errors);
+
+					end_temporary_memory(auxillary_memory_for_loading, true);
+					break;
+				}
 
 				game->first_game_run_initialized = true;
+				end_temporary_memory(auxillary_memory_for_loading, true);
 			}
 						
 			scene_change = game_update_and_render(game, game->level_state, delta_time);
@@ -1013,6 +1074,27 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 		case scene::MAIN_MENU:
 		{
 			scene_change = menu_update_and_render(game, static_data, delta_time);
+		};
+		break;
+		case scene::MAP_ERRORS:
+		{
+			if (game->map_errors.string_size > 0)
+			{			
+				render_text(&game->render, game->transient_arena, static_data->ui_font, 
+					get_text_area_for_parsing_errors_message(), game->map_errors);
+
+				game_input* input = get_last_frame_input(&game->input_buffer);
+				if (input->is_left_mouse_key_held || input->fire.number_of_presses > 0)
+				{
+					scene_change.change_scene = true;
+					scene_change.new_scene = scene::MAIN_MENU;
+				}
+			}
+			else
+			{
+				scene_change.change_scene = true;
+				scene_change.new_scene = scene::MAIN_MENU;
+			}
 		};
 		break;
 		case scene::DEATH:
@@ -1030,6 +1112,7 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 
 	if (scene_change.change_scene)
 	{
+		game->current_scene = scene_change.new_scene;
 		switch (scene_change.new_scene)
 		{
 			case scene::GAME:
@@ -1042,7 +1125,10 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 
 					game->game_level_memory = begin_temporary_memory(game->arena);
 					initialize_level_state(game->level_state, static_data, level_name, game->arena);
-					game->level_state->current_map = load_map(level_name, game->arena, game->transient_arena);
+
+					tmx_map_parsing_result parsing_result = load_map(level_name, game->arena, game->transient_arena);
+					game->level_state->current_map = parsing_result.parsed_map;
+
 					initialize_current_map(game, game->level_state);
 					restore_player_state(game->level_state, save);
 				}
@@ -1052,10 +1138,17 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 			{
 				
 			}
+			break;
+			case scene::MAP_ERRORS:
+			{
+				
+			}
+			break;
 			case scene::DEATH:
 			{
 
 			}
+			break;
 			case scene::CREDITS:
 			{
 

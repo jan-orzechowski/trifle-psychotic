@@ -506,6 +506,7 @@ enum class scene
 	MAIN_MENU,
 	DEATH,
 	CREDITS,
+	MAP_ERRORS,
 	EXIT
 };
 
@@ -557,8 +558,6 @@ struct save
 
 struct render_group
 {
-	uint32 piece_count;
-
 	u32 max_push_buffer_size;
 	u32 push_buffer_size;
 	u8* push_buffer_base;
@@ -576,6 +575,7 @@ struct game_state
 	
 	input_buffer input_buffer;
 
+	string_ref map_errors;
 	temporary_memory game_level_memory;	
 
 	render_group render;

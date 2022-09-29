@@ -175,13 +175,38 @@ string_ref copy_c_string_to_memory_arena(memory_arena* arena, const char* str)
 	return result;
 }
 
+string_ref copy_c_string_buffer_to_memory_arena(memory_arena* arena, const char* str, u32 buffer_size)
+{
+	u32 actual_str_size = 0;
+	const char* str_temp = str;
+	while (*str_temp && actual_str_size < buffer_size)
+	{
+		str_temp++;
+		actual_str_size++;
+	}
+
+	string_ref result = {};
+	result.string_size = actual_str_size;
+	result.ptr = (char*)push_size(arena, actual_str_size + 1);
+
+	for (u32 index = 0;
+		index < actual_str_size;
+		index++)
+	{
+		*(result.ptr + index) = *(str + index);
+	}
+	*(result.ptr + actual_str_size) = '\0';
+
+	return result;
+}
+
 b32 ends_with(string_ref str, const char* suffix)
 {
 	b32 result = false;	
 	if (str.string_size > 0)
 	{
 		u32 suffix_length = get_c_string_length(suffix, str.string_size);
-		if (suffix_length < str.string_size)
+		if (suffix_length <= str.string_size)
 		{
 			result = true;				
 			for (i32 char_index_from_end = 0;
@@ -661,6 +686,48 @@ void string_function_test(memory_arena* test_arena)
 	assert(hex2_parsed == get_v4(60.0f, 255.0f, 106.0f, 106.0f));
 
 	end_temporary_memory(test);
+}
+
+string_builder get_string_builder(memory_arena* arena, u32 max_size)
+{
+	string_builder result = {};
+	result.max_size = max_size;
+	result.ptr = (char*)push_size(arena, result.max_size);
+	result.current_size = 0;
+	return result;
+}
+
+void push_string(string_builder* builder, string_ref str)
+{
+	if (str.string_size > 0)
+	{
+		for (u32 char_index = 0; 
+			(char_index < str.string_size && builder->current_size < builder->max_size);
+			char_index++)
+		{
+			char* c = str.ptr + char_index;
+			*(builder->ptr + builder->current_size) = *c;
+			builder->current_size++;
+		}	
+	}
+}
+
+void push_string(string_builder* builder, const char* str)
+{
+	while (*str && builder->current_size < builder->max_size)
+	{
+		*(builder->ptr + builder->current_size) = *str;
+		str++;
+		builder->current_size++;
+	}
+}
+
+string_ref get_string_from_string_builder(string_builder* builder)
+{
+	string_ref result = {};
+	result.ptr = builder->ptr;
+	result.string_size = builder->current_size;
+	return result;
 }
 
 #define JORSTRING

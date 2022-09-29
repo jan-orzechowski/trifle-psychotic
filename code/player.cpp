@@ -363,10 +363,13 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
 
 save* save_player_state(memory_arena* arena, level_state* level)
 {
-	assert(level->entities[0].type);
 	save* result = push_struct(arena, save);
-	result->map_name = copy_string(arena, level->current_map_name);
-	result->player_max_health = level->entities[0].type->max_health;
+	entity* player = get_player(level);
+	if (player->type)
+	{
+		result->map_name = copy_string(arena, level->current_map_name);
+		result->player_max_health = level->entities[0].type->max_health;
+	}
 	return result;
 }
 
@@ -374,5 +377,9 @@ void restore_player_state(level_state* level, save* save)
 {
 	assert(level->current_map_initialized);
 	assert(level && save);
-	level->entities[0].type->max_health = save->player_max_health;
+	entity* player = get_player(level);
+	if (player->type)
+	{
+		player->type->max_health = save->player_max_health;
+	}
 }

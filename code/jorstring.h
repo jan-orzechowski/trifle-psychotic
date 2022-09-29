@@ -9,6 +9,13 @@ struct string_ref
 	char* ptr;
 };
 
+struct string_builder
+{
+	char* ptr;
+	u32 current_size;
+	u32 max_size;
+};
+
 string_ref get_string_ref(const char*, u32);
 string_ref get_string_ref(const char*);
 b32 is_empty_string(string_ref);
@@ -20,6 +27,7 @@ u32 get_c_string_length(const char*, u32);
 u32 get_c_string_length(const char*);
 string_ref copy_c_string_to_memory_arena(memory_arena*, const char*, u32);
 string_ref copy_c_string_to_memory_arena(memory_arena*, const char*);
+string_ref copy_c_string_buffer_to_memory_arena(memory_arena*, const char*, u32);
 b32 ends_with(string_ref, const char*);
 inline b32 is_whitespace(char);
 b32 is_digit(char);
@@ -34,6 +42,11 @@ r32 parse_r32(string_ref, char);
 i32* parse_array_of_i32(memory_arena*, u32, string_ref, char);
 v4 parse_color_from_hexadecimal(string_ref);
 void string_function_test(memory_arena*);
+
+string_builder get_string_builder(memory_arena* arena, u32 max_size);
+void push_string(string_builder* builder, string_ref str);
+void push_string(string_builder* builder, const char* str);
+string_ref get_string_from_string_builder(string_builder* builder);
 
 #define JORSTRING
 #endif

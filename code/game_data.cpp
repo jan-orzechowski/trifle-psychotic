@@ -262,16 +262,16 @@ entity_type* add_bullet_type(static_game_data* data)
 	return result;
 }
 
-map load_map(string_ref map_name, memory_arena* arena, memory_arena* transient_arena)
+tmx_map_parsing_result load_map(string_ref map_name, memory_arena* arena, memory_arena* transient_arena)
 {
-	map result = {};
+	tmx_map_parsing_result result = {};
 	
 	std::string map_file_path = "data/";
 	map_file_path.append(map_name.ptr, map_name.string_size);
 	map_file_path.append(".tmx");
 
 	read_file_result map_file = read_file(map_file_path);
-	result = read_map_from_tmx_file(arena, transient_arena, map_file, "map");
+	result = read_map_from_tmx_file(arena, transient_arena, map_file, "map", false);
 	delete map_file.contents;
 
 	return result;
@@ -473,7 +473,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	std::string collision_file_path = "data/collision_map.tmx";
 	read_file_result collision_file = read_file(collision_file_path);
-	data->collision_reference = read_map_from_tmx_file(arena, transient_arena, collision_file, "collision");
+	data->collision_reference = read_map_from_tmx_file(arena, transient_arena, collision_file, "collision", true).parsed_map;
 	delete collision_file.contents;
 
 	data->blue_gate_graphics = load_gate_graphics(0);

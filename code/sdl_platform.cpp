@@ -373,7 +373,6 @@ void render_group_to_output(render_group* render_group)
 					&src, &dst);
 
 				base_address += sizeof(render_group_entry_bitmap);
-
 			}
 			break;
 			case render_group_entry_type::BITMAP_WITH_EFFECTS:

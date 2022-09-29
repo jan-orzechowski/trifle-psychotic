@@ -115,25 +115,38 @@ string_ref* get_next_line(lines_to_render* lines)
     return result;
 }
 
+text_area_limits get_text_area_limits(font font, rect writing_area)
+{
+    assert(font.width_in_pixels);
+    assert(font.height_in_pixels);
+
+    text_area_limits result = {};
+
+    v2 area_dim = get_rect_dimensions(writing_area);
+    if (area_dim.x < 0) { area_dim.x = -area_dim.x; }
+    if (area_dim.y < 0) { area_dim.y = -area_dim.y; }
+
+    result.max_line_length = area_dim.x / (font.width_in_pixels + font.letter_spacing);
+    result.max_lines_count = area_dim.y / (font.height_in_pixels + font.line_spacing);
+    result.max_character_count = result.max_line_length * result.max_lines_count;
+    
+    return result;
+}
+
 void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, string_ref text, b32 wrap)
 {
-    u32 max_text_length = 1000;
-    if (text.string_size > max_text_length)
+    text_area_limits limits = get_text_area_limits(font, writing_area);
+    if (text.string_size > limits.max_character_count)
     {
-        text.string_size = max_text_length;
+        text.string_size = limits.max_character_count;
     }
 
     temporary_memory writing_memory = begin_temporary_memory(transient_arena);
 
-    v2 area_dim = get_rect_dimensions(writing_area);
-    u32 max_line_length = area_dim.x / (font.width_in_pixels + font.letter_spacing);
-
     if (wrap) 
     {        
         lines_to_render text_lines = {};
-
-        // tutaj znowu możemy mieć uint wrap jeśli area dim y z jakiegoś powodu wyjdzie ujemne
-        text_lines.max_lines_count = (area_dim.y / (font.height_in_pixels + font.line_spacing));
+        text_lines.max_lines_count = limits.max_lines_count;
         text_lines.lines = push_array(transient_arena, text_lines.max_lines_count, string_ref);
 
         string_ref* current_line = get_next_line(&text_lines);
@@ -148,7 +161,7 @@ void render_text(render_group* render, memory_arena* transient_arena, font font,
             if (next_word.string_size)
             {
                 // mamy słowo            
-                if (next_word.string_size > (max_line_length - current_line->string_size))
+                if (next_word.string_size > (limits.max_line_length - current_line->string_size))
                 {
                     // nowa linia
                     current_line = get_next_line(&text_lines);
@@ -171,14 +184,41 @@ void render_text(render_group* render, memory_arena* transient_arena, font font,
             }
             else
             {
-                // spacja
-                if (max_line_length - current_line->string_size < 1)
+                if (letter == '\n')
                 {
-                    // koniec linii - pomijamy
+                    if (limits.max_line_length - current_line->string_size < 1)
+                    {
+                        // koniec linii - pomijamy
+                    }
+                    else
+                    {
+                        // nowa linia
+                        char* last_char = current_line->ptr + current_line->string_size;
+
+                        current_line = get_next_line(&text_lines);
+                        if (current_line)
+                        {
+                            current_line->ptr = last_char + 1;
+                            current_line->string_size = 0;
+                        }
+                        else
+                        {
+                            // skończyło nam się miejsce - nie czytamy dalej
+                            break;
+                        }
+                    }                 
                 }
                 else
                 {
-                    current_line->string_size++;
+                    // spacja
+                    if (limits.max_line_length - current_line->string_size < 1)
+                    {
+                        // koniec linii - pomijamy
+                    }
+                    else
+                    {
+                        current_line->string_size++;
+                    }
                 }
                 char_index++;
             }
@@ -192,9 +232,9 @@ void render_text(render_group* render, memory_arena* transient_arena, font font,
         line_to_render.ptr = text.ptr;
         line_to_render.string_size = text.string_size;
 
-        if (line_to_render.string_size > max_line_length)
+        if (line_to_render.string_size > limits.max_line_length)
         {
-            line_to_render.string_size = max_line_length;
+            line_to_render.string_size = limits.max_line_length;
         }
 
         render_text_line(render, font, writing_area, line_to_render);
