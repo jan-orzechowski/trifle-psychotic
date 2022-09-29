@@ -473,7 +473,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	std::string collision_file_path = "data/collision_map.tmx";
 	read_file_result collision_file = read_file(collision_file_path);
-	data->collision_reference = read_map_from_tmx_file(arena, transient_arena, collision_file, "collision", true).parsed_map;
+	data->collision_reference = read_collision_map(arena, transient_arena, collision_file);
 	delete collision_file.contents;
 
 	data->blue_gate_graphics = load_gate_graphics(0);

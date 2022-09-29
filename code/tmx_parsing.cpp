@@ -1102,7 +1102,7 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 				if (layer_width_str.ptr && layer_height_str.ptr)
 				{
 					i32 layer_width = parse_i32(layer_width_str);
-					i32 layer_height = parse_i32(height);
+					i32 layer_height = parse_i32(layer_height_str);
 					if (layer_width == map_width && layer_height == map_height)
 					{
 						level.width = map_width;
@@ -1239,19 +1239,72 @@ end_of_read_map_from_tmx_file_function:
 
 	return result;
 }
+
+map read_collision_map(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file)
+{
+	map result = {};
+
+	temporary_memory memory_for_parsing = begin_temporary_memory(transient_arena);
+
+	xml_node* root = scan_and_parse_tmx(transient_arena, file);
+	if (root)
+	{
+		i32 collision_tileset_first_gid = -1;
+		xml_node_search_result* tilesets = find_all_nodes_with_tag(transient_arena, root, "tileset");
+		for (u32 tileset_node_index = 0;
+			tileset_node_index < tilesets->found_nodes_count;
+			tileset_node_index++)
+		{
+			xml_node* tileset_node = tilesets->found_nodes[tileset_node_index];
+			string_ref firstgid_attr = get_attribute_value(tileset_node, "firstgid");
+			string_ref source_attr = get_attribute_value(tileset_node, "source");
+
+			if (ends_with(source_attr, "collision_tileset.tsx"))
 			{
-				entity_to_spawn* entity_to_spawn = level.entities_to_spawn + entity_index;
-				if (entity_to_spawn->type == entity_type_enum::MESSAGE_DISPLAY)
+				if (firstgid_attr.string_size)
 				{
-					// tak samo jak z nazwą następnego poziomu
-					entity_to_spawn->message = copy_string(permanent_arena, entity_to_spawn->message);
-					printf(entity_to_spawn->message.ptr);
+					collision_tileset_first_gid = parse_i32(firstgid_attr);
+				}
+			}
+		}
+
+		xml_node* layer_node = find_tag_with_attribute_in_children(root, "layer", "name", "collision");
+		if (layer_node)
+		{
+			string_ref layer_width_str = get_attribute_value(layer_node, "width");
+			string_ref layer_height_str = get_attribute_value(layer_node, "height");
+			if (layer_width_str.ptr && layer_height_str.ptr)
+			{
+				i32 layer_width = parse_i32(layer_width_str);
+				i32 layer_height = parse_i32(layer_height_str);
+				result.width = layer_width;
+				result.height = layer_height;
+			}
+
+			xml_node* data_node = find_tag_in_children(layer_node, "data");
+			if (data_node)
+			{	
+				string_ref encoding_str = get_attribute_value(data_node, "encoding");
+				if (compare_to_c_string(encoding_str, "csv"))
+				{
+					string_ref data = data_node->inner_text;
+					result.tiles_count = result.width * result.height;
+					result.tiles = parse_array_of_i32(permanent_arena, result.tiles_count, data, ',');
+
+					if (collision_tileset_first_gid != -1 && collision_tileset_first_gid != 1)
+					{
+						for (u32 tile_index = 0; tile_index < result.tiles_count; tile_index++)
+						{
+							i32 original_gid = result.tiles[tile_index];
+							result.tiles[tile_index] -= (collision_tileset_first_gid - 1);
+						}
+					}
 				}
 			}
 		}
 	}
 
-	//end_temporary_memory(memory_for_parsing, true);
-	
-	return level;
+	end_temporary_memory(memory_for_parsing, true);
+
+	return result;
 }

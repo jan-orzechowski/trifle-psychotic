@@ -197,20 +197,9 @@ b32 is_tile_colliding(map collision_ref, u32 tile_value)
 	else
 	{
 		u32 x_coord = (tile_value - 1) % collision_ref.width;
-		u32 y_coord = (tile_value - 1) / collision_ref.width;
+		u32 y_coord = (tile_value - 1) / collision_ref.height;
 		u32 collision_tile_value = get_tile_value(collision_ref, x_coord, y_coord);
-		//u32 first_gid = 1; // tymczasowe, potrzebna jest obsługa GID w tmx
-		//collision_tile_value -= first_gid;
-		//collision_tile_value++;
-		switch (collision_tile_value)
-		{
-			case 2:
-			case 3:
-			{
-				result = true;
-			}
-			break;
-		}
+		result = (collision_tile_value == 2);
 	}
 
 	return result;
