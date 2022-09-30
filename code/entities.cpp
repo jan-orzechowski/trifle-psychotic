@@ -211,6 +211,37 @@ void find_walking_path_for_enemy(level_state* level, entity* entity)
 	entity->has_walking_path = true;
 }
 
+void find_flying_path_for_enemy(level_state* level, entity* entity, b32 vertical)
+{
+	u32 length_limit = 15;
+	tile_position starting_position = get_tile_position(entity->position);
+	tile_range new_path;
+	
+	if (vertical)
+	{
+		new_path = find_vertical_range_of_free_tiles(
+			level->current_map, level->static_data->collision_reference, starting_position, length_limit);
+	}
+	else
+	{
+		new_path = find_horizontal_range_of_free_tiles(
+			level->current_map, level->static_data->collision_reference, starting_position, length_limit);
+	}
+	
+	tile_range first_part = get_tile_range(starting_position, new_path.start);
+	tile_range second_part = get_tile_range(starting_position, new_path.end);
+	first_part = find_path_fragment_not_blocked_by_entities(level, first_part);
+	second_part = find_path_fragment_not_blocked_by_entities(level, second_part);
+
+	new_path = get_tile_range(first_part.end, second_part.end);
+
+	entity->path = new_path;
+	entity->has_walking_path = true;
+
+	printf("nowe latanie: od (%d, %d) do (%d, %d)\n",
+		new_path.start.x, new_path.start.y, new_path.end.x, new_path.end.y);
+}
+
 // domyślnie trójkąt jest zwrócony podstawą w prawo
 // można podać x i y odwrotnie dla trójkątów zwróconych podstawą w górę lub w dół
 b32 is_point_within_right_triangle(r32 triangle_height, r32 relative_x, r32 relative_y, b32 invert_sign)
@@ -585,6 +616,7 @@ void move_entity(level_state* level, entity* entity_to_move, tile_position curre
 			direction = get_unit_vector(distance);
 		}
 
+		assert(entity_to_move->type->velocity_multiplier != 0.0f);
 		r32 velocity = entity_to_move->type->velocity_multiplier;
 
 		r32 slowdown_threshold = 2.0f;

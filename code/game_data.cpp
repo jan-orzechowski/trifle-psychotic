@@ -500,8 +500,6 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	data->entity_types_dict = create_entity_types_dictionary(arena);
 
-
-
 	data->bullet_types = push_array(arena, BULLET_TYPES_MAX_COUNT, entity_type);
 	data->bullet_types_count = 0;
 
@@ -538,11 +536,14 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	sentry_type->flags = (entity_flags)(
 		(u32)entity_flags::BLOCKS_MOVEMENT 
 		| (u32)entity_flags::ENEMY
-		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
+		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT
+		| (u32)entity_flags::FLIES_HORIZONTALLY);
 	sentry_type->detection_type = detection_type::DETECT_360_DEGREES;
 	sentry_type->detection_distance = 10.0f;
+
 	sentry_type->max_health = 10;
 	sentry_type->damage_on_contact = 10;
+	sentry_type->velocity_multiplier = 2.0f;
 	sentry_type->default_attack_cooldown = 0.5f;
 	sentry_type->player_acceleration_on_collision = 3.0f;
 	sentry_type->collision_rect_dim = get_v2(0.75f, 0.75f);
@@ -563,12 +564,16 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	guardian_type->flags = (entity_flags)(
 		(u32)entity_flags::BLOCKS_MOVEMENT 
 		| (u32)entity_flags::ENEMY
-		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
+		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT
+		| (u32)entity_flags::FLIES_VERTICALLY);
 	guardian_type->detection_type = detection_type::DETECT_180_DEGREES_BELOW;
 	guardian_type->detection_distance = 10.0f;
-	
+	guardian_type->stop_movement_distance = 4.0f;
+	guardian_type->forget_detection_distance = 7.0f;
+
 	guardian_type->max_health = 10;
 	guardian_type->damage_on_contact = 10;
+	guardian_type->velocity_multiplier = 3.0f;
 	guardian_type->default_attack_cooldown = 0.5f;
 	guardian_type->player_acceleration_on_collision = 3.0f;
 	guardian_type->collision_rect_dim = get_v2(1.0f, 1.0f);
@@ -593,6 +598,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	
 	flying_bomb_type->max_health = 10;
 	flying_bomb_type->damage_on_contact = 100.0f;
+	flying_bomb_type->velocity_multiplier = 5.0f;
 	flying_bomb_type->default_attack_cooldown = 0.5f;
 	flying_bomb_type->player_acceleration_on_collision = 3.0f;
 	flying_bomb_type->collision_rect_dim = get_v2(1.0f, 1.0f);
@@ -606,15 +612,15 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
 
 	robot_type->detection_type = detection_type::DETECT_90_DEGREES_IN_FRONT;
-	robot_type->detection_distance = 10.0f;
-	robot_type->stop_movement_distance = 5.0f;
-	robot_type->forget_detection_distance = 15.0f;
+	robot_type->detection_distance = 7.0f;
+	robot_type->stop_movement_distance = 4.0f;
+	robot_type->forget_detection_distance = 7.0f;
 	
 	robot_type->max_health = 10;
 	robot_type->damage_on_contact = 10;
 	robot_type->walk_animation = get_walk_animation(arena, get_v2(0, 2 * 24), true);
 	robot_type->default_attack_cooldown = 0.2f;
-	robot_type->velocity_multiplier = 4.0f;
+	robot_type->velocity_multiplier = 3.0f;
 	robot_type->player_acceleration_on_collision = 3.0f;
 	robot_type->collision_rect_dim = get_v2(0.35f, 1.6f);
 	robot_type->death_animation = data->explosion_animations.size_48x48;

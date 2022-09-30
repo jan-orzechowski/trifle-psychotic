@@ -33,6 +33,7 @@ void set_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum typ
 entity_type* get_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum type);
 
 void find_walking_path_for_enemy(level_state* level, entity* entity);
+void find_flying_path_for_enemy(level_state* level, entity* entity, b32 vertical);
 
 b32 is_point_visible_within_90_degrees(world_position looking_point, direction looking_direction, r32 max_looking_distance, world_position point_to_check);
 b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, world_position point);

@@ -142,6 +142,9 @@ enum class entity_flags
 	MESSAGE_DISPLAY        = (1 << 10),
 	PLAYER_RECOIL_ON_CONTACT = (1 << 11),
 	DESTRUCTION_ON_PLAYER_CONTACT = (1 << 12),
+	FLIES_HORIZONTALLY = (1 << 13),
+	FLIES_VERTICALLY = (1 << 14),
+	FLIES_TOWARDS_PLAYER = (1 << 15),
 };
 
 struct entity_to_spawn

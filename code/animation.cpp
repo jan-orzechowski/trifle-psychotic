@@ -123,11 +123,14 @@ u32 get_current_animation_frame_index(animation* animation, r32 elapsed_time, r3
 {
 	b32 result = 0;
 	r32 modified_total_duration = (animation->total_duration * frame_duration_modifier);
-	while (elapsed_time > modified_total_duration)
+	if (modified_total_duration > 0.0f)
 	{
-		elapsed_time -= modified_total_duration;
+		while (elapsed_time > modified_total_duration)
+		{
+			elapsed_time -= modified_total_duration;
+		}
 	}
-
+	
 	r32 time_within_frame = elapsed_time;
 	for (u32 frame_index = 0; frame_index < animation->frames_count; frame_index++)
 	{
@@ -198,11 +201,14 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r
 	{
 		entity->animation_duration += delta_time;
 		r32 modified_total_duration = entity->current_animation->total_duration * frame_duration_modifier;
-		while (entity->animation_duration > modified_total_duration)
+		if (modified_total_duration > 0.0f)
 		{
-			entity->animation_duration -= modified_total_duration;
+			while (entity->animation_duration > modified_total_duration)
+			{
+				entity->animation_duration -= modified_total_duration;
+			}
 		}
-
+	
 		entity->current_frame_index =
 			get_current_animation_frame_index(entity->current_animation, entity->animation_duration, frame_duration_modifier);
 	}

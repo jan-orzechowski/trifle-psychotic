@@ -567,12 +567,27 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			v2 distance_to_player = get_position_difference(player->position, entity->position);
 			r32 distance_to_player_length = length(distance_to_player);
 
-			// chodzenie
-			if (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY))
-			{
+			// poruszanie się
+			if (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY)
+				|| are_entity_flags_set(entity, entity_flags::FLIES_HORIZONTALLY)
+				|| are_entity_flags_set(entity, entity_flags::FLIES_VERTICALLY))
+			{				
 				if (false == entity->has_walking_path)
 				{
-					find_walking_path_for_enemy(level, entity);
+					if (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY))
+					{
+						find_walking_path_for_enemy(level, entity);
+					}
+
+					if (are_entity_flags_set(entity, entity_flags::FLIES_HORIZONTALLY))
+					{
+						find_flying_path_for_enemy(level, entity, false);
+					}
+
+					if (are_entity_flags_set(entity, entity_flags::FLIES_VERTICALLY))
+					{
+						find_flying_path_for_enemy(level, entity, true);
+					}
 				}
 
 				tile_position current_goal;
