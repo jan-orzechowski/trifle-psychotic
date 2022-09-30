@@ -72,6 +72,21 @@ void set_sprite_effect_for_color(sprite_effect_dictionary dict, sprite_effect* e
 	}
 }
 
+void invalidate_paths_in_neighbouring_chunks(level_state* level, world_position position)
+{
+	for (i32 entity_index = 1; entity_index < level->entities_count; entity_index++)
+	{
+		entity* entity = level->entities + entity_index;
+		if (false == entity->used)
+		{
+			continue;
+		}
+
+		entity->has_walking_path = false;
+		printf("invalidate paths\n");
+	}
+}
+
 void open_gates_with_given_color(level_state* level, v4 color)
 {
 	u32 index = get_hash_from_color(color) % level->gates_dict.entries_count;
@@ -86,7 +101,7 @@ void open_gates_with_given_color(level_state* level, v4 color)
 				tile_position pos = get_tile_position(entry->entity->position);
 				if (are_entity_flags_set(entry->entity, entity_flags::SWITCH))
 				{
-					printf("switch na pozycji (%d,%d)\n", pos.x, pos.y);
+					//printf("switch na pozycji (%d,%d)\n", pos.x, pos.y);
 				}
 				else if (are_entity_flags_set(entry->entity, entity_flags::GATE))
 				{
@@ -97,7 +112,8 @@ void open_gates_with_given_color(level_state* level, v4 color)
 						sprite->parts[sprite_index].texture = textures::NONE;
 					}
 
-					printf("brama na pozycji (%d,%d)\n", pos.x, pos.y);
+					//printf("brama na pozycji (%d,%d)\n", pos.x, pos.y);					
+					invalidate_paths_in_neighbouring_chunks(level, entry->entity->position);
 				}
 				else if (are_entity_flags_set(entry->entity, entity_flags::TINTED_DISPLAY))
 				{
