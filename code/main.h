@@ -6,7 +6,7 @@
 #include "jormath.h"
 #include "jorstring.h"
 
-#define TILESET_WIDTH 64
+#define TILESET_WIDTH 47
 #define TILE_SIDE_IN_PIXELS 16
 
 #define SCALING_FACTOR 2
