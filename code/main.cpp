@@ -572,7 +572,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			{
 				if (false == entity->has_walking_path)
 				{
-					find_path_for_entity(level, entity);
+					find_walking_path_for_enemy(level, entity);
 				}
 
 				tile_position current_goal;

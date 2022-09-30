@@ -62,7 +62,6 @@ b32 check_segment_intersection(r32 movement_start_x, r32 movement_start_y,
 	return result;
 }
 
-
 entity_collision_data get_entity_collision_data(chunk_position reference_chunk, entity* entity)
 {
 	entity_collision_data result = {};
@@ -86,6 +85,33 @@ entity_collision_data get_tile_collision_data(chunk_position reference_chunk, ti
 	entity_collision_data result = {};
 	result.position = get_position_difference(tile_pos, reference_chunk);
 	result.collision_rect_dim = get_v2(1.0f, 1.0f);
+	return result;
+}
+
+entity_collision_data get_point_collision_data(chunk_position reference_chunk, world_position point)
+{
+	entity_collision_data result = {};
+	result.position = get_position_difference(point, reference_chunk);
+	result.collision_rect_dim = get_v2(0.01f, 0.01f);
+	return result;
+}
+
+v2 get_collision_dim_from_tile_range(tile_range path)
+{
+	v2 result = {};
+	v2 distance = get_position_difference(path.end, path.start);
+	if (distance.x > 0)
+	{
+		// pozioma
+		result.x = distance.x + 1.0f;
+		result.y = 1.0f;
+	}
+	else
+	{
+		// pionowa
+		result.x = 1.0f;
+		result.y = distance.y + 1.0f;
+	}
 	return result;
 }
 
@@ -260,6 +286,90 @@ check_sight_line_end:
 	return path_obstructed;
 }
 
+// uwaga - zakładamy, że początkowe i końcowe pole leżą na linii równoległej do jednej z osi układu współrzędnych
+tile_range find_path_fragment_not_blocked_by_entities(level_state* level, tile_range path)
+{
+	tile_range result = get_invalid_tile_range();
+
+	world_position start_pos = get_world_position(path.start);
+	world_position end_pos = get_world_position(path.end);
+	chunk_position reference_chunk = get_tile_chunk_position(path.start);
+
+	v2 movement_delta = get_position_difference(path.end, path.start);
+	if (false == is_zero(movement_delta))
+	{
+		collision closest_collision = {};
+		closest_collision.collided_wall = direction::NONE;
+		closest_collision.possible_movement_perc = 1.0f;
+
+		entity_collision_data point_collision = get_point_collision_data(reference_chunk, start_pos);
+		for (u32 entity_index = 1; entity_index < level->entities_count; entity_index++)
+		{
+			entity* entity = level->entities + entity_index;
+			if (false == entity->used)
+			{
+				continue;
+			}
+
+			if ((are_entity_flags_set(entity, entity_flags::GATE)
+				|| are_entity_flags_set(entity, entity_flags::SWITCH))
+				&& are_entity_flags_set(entity, entity_flags::BLOCKS_MOVEMENT)
+				&& is_in_neighbouring_chunk(reference_chunk, entity->position))
+			{
+				entity_collision_data entity_collision = get_entity_collision_data(reference_chunk, entity);
+				collision new_collision = check_minkowski_collision(point_collision, entity_collision,
+					movement_delta, closest_collision.possible_movement_perc);
+
+				if (new_collision.collided_wall != direction::NONE)
+				{
+					if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
+					{
+						closest_collision = new_collision;
+					}
+				}
+			}
+		}
+				
+		if (closest_collision.possible_movement_perc < 1.0f)
+		{
+			result.start = path.start;
+
+			world_position collided_pos = add_to_position(start_pos, 
+				movement_delta * closest_collision.possible_movement_perc);
+			tile_position collided_tile_pos = get_tile_position(collided_pos);
+
+			if (movement_delta.x > 0)
+			{
+				result.end = collided_tile_pos;
+			}
+			else if (movement_delta.x < 0)
+			{
+				result.end = add_to_tile_position(collided_tile_pos, 1, 0);
+			}
+			else if (movement_delta.y > 0)
+			{
+				result.end = collided_tile_pos;
+			}
+			else if (movement_delta.y < 0)
+			{
+				result.end = add_to_tile_position(collided_tile_pos, 0, 1);
+			}
+		}
+		else
+		{
+			result.start = path.start;
+			result.end = path.end;
+		}
+	}
+	else
+	{
+		result.start = path.start;
+		result.end = path.end;
+	}
+
+	return result;
+}
+
 collision_result move(level_state* level, entity* moving_entity, world_position target_pos)
 {
 	collision_result result = {};
@@ -303,24 +413,7 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 								movement_delta, closest_collision.possible_movement_perc);
 
 							if (new_collision.collided_wall != direction::NONE)
-							{
-								// paskudny hack rozwiązujący problem blokowania się na ścianie, jeśli kolidujemy z nią podczas spadania
-								/*if (new_collision.collided_wall == direction::S)
-								{
-									u32 upper_tile_value = get_tile_value(level->current_map, tile_x_to_check, tile_y_to_check - 1);
-									if (is_tile_colliding(level->collision_reference, upper_tile_value))
-									{
-										if ((moving_entity->position - tile_to_check_pos.x > 0)
-										{
-											new_collision.collided_wall_normal = get_v2(-1, 0);
-										}
-										else
-										{
-											new_collision.collided_wall_normal = get_v2(1, 0);
-										}
-									}
-								}*/
-
+							{								
 								if (new_collision.possible_movement_perc < closest_collision.possible_movement_perc)
 								{
 									closest_collision = new_collision;
@@ -401,7 +494,6 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 				moving_entity->position = add_to_position(moving_entity->position, possible_movement);
 				// pozostałą deltę zmniejszamy o tyle, o ile się poruszyliśmy
 				movement_delta -= possible_movement;
-				//printf("przesuniecie o (%.04f, %.04f)\n", possible_movement.x, possible_movement.y);
 			}
 
 			result.collision_data = closest_collision;

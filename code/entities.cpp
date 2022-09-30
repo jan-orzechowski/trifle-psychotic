@@ -133,7 +133,7 @@ void remove_bullet(level_state* level, i32* bullet_index)
 	}
 }
 
-tile_range find_walking_path_for_enemy(map level, map collision_ref, tile_position start_tile)
+tile_range find_walking_path(map level, map collision_ref, tile_position start_tile)
 {
 	b32 found_good_start_pos = false;
 	tile_position good_start_tile = {};
@@ -193,20 +193,22 @@ tile_range find_walking_path_for_enemy(map level, map collision_ref, tile_positi
 	return result;
 }
 
-void find_path_for_entity(level_state* level, entity* entity)
+void find_walking_path_for_enemy(level_state* level, entity* entity)
 {
-	tile_range new_path = find_walking_path_for_enemy(
-		level->current_map, level->static_data->collision_reference, get_tile_position(entity->position));
+	tile_position starting_position = get_tile_position(entity->position);
+	tile_range new_path = find_walking_path(
+		level->current_map, level->static_data->collision_reference, starting_position);
+
+	// na razie sprawdziliśmy same pola - powinniśmy sprawdzić jeszcze kolizję z bramami i przełącznikami
+	tile_range first_part = get_tile_range(starting_position, new_path.start);
+	tile_range second_part = get_tile_range(starting_position, new_path.end);
+	first_part = find_path_fragment_not_blocked_by_entities(level, first_part);
+	second_part = find_path_fragment_not_blocked_by_entities(level, second_part);
+
+	new_path = get_tile_range(first_part.end, second_part.end);
+
 	entity->path = new_path;
 	entity->has_walking_path = true;
-
-	// zabezpieczenie na wypadek nierównego ustawienia entity w edytorze 
-	tile_position current_position = get_tile_position(entity->position);
-	if (current_position.y != entity->path.start.y)
-	{
-		tile_position new_position = get_tile_position(current_position.x, entity->path.start.y);
-		entity->position = get_world_position(new_position);
-	}
 }
 
 // domyślnie trójkąt jest zwrócony podstawą w prawo
@@ -333,7 +335,7 @@ void add_next_level_transition(level_state* level, memory_arena* arena, entity_t
 
 	tile_range occupied_tiles = find_vertical_range_of_free_tiles(
 		level->current_map, level->static_data->collision_reference, new_entity_to_spawn->position, 20);
-	transition_type->collision_rect_dim = get_length_from_tile_range(occupied_tiles);
+	transition_type->collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
 
 	world_position new_position = add_to_position(
 		get_world_position(occupied_tiles.start),
@@ -352,7 +354,7 @@ void add_message_display_entity(level_state* level, memory_arena* arena, entity_
 
 	tile_range occupied_tiles = find_vertical_range_of_free_tiles(
 		level->current_map, level->static_data->collision_reference, new_entity_to_spawn->position, max_size);
-	v2 collision_rect_dim = get_length_from_tile_range(occupied_tiles);
+	v2 collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
 
 	new_type->collision_rect_dim = collision_rect_dim;
 	new_type->message = new_entity_to_spawn->message;

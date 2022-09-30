@@ -124,13 +124,13 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 	{
 		occupied_tiles = find_horizontal_range_of_free_tiles(
 			level->current_map, level->static_data->collision_reference, new_entity_to_spawn->position, max_size);
-		collision_rect_dim = get_length_from_tile_range(occupied_tiles);
+		collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
 	}
 	else
 	{
 		occupied_tiles = find_vertical_range_of_free_tiles(
 			level->current_map, level->static_data->collision_reference, new_entity_to_spawn->position, max_size);
-		collision_rect_dim = get_length_from_tile_range(occupied_tiles);
+		collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
 	}
 
 	new_type->collision_rect_dim = collision_rect_dim;

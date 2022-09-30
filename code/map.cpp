@@ -150,6 +150,12 @@ world_position add_to_position(world_position pos, v2 offset)
 	return pos;
 }
 
+tile_position add_to_tile_position(tile_position tile_pos, i32 x_offset, i32 y_offset)
+{
+	tile_position result = get_tile_position(tile_pos.x + x_offset, tile_pos.y + y_offset);
+	return result;;
+}
+
 v2 get_tile_offset_in_chunk(chunk_position chunk_pos, tile_position tile_pos)
 {
 	tile_position chunk_origin_tile = get_tile_position(chunk_pos.x * CHUNK_SIDE_IN_TILES, chunk_pos.y * CHUNK_SIDE_IN_TILES);
@@ -212,22 +218,11 @@ b32 is_tile_colliding(map level, map collision_ref, u32 tile_x, u32 tile_y)
 	return result;
 }
 
-v2 get_length_from_tile_range(tile_range path)
+tile_range get_tile_range(tile_position start, tile_position end)
 {
-	v2 result = {};
-	v2 distance = get_position_difference(path.end, path.start);
-	if (distance.x > 0)
-	{
-		// pozioma
-		result.x = distance.x + 1.0f;
-		result.y = 1.0f;
-	}
-	else
-	{
-		// pionowa
-		result.x = 1.0f;
-		result.y = distance.y + 1.0f;
-	}
+	tile_range result = {};
+	result.start = start;
+	result.end = end;
 	return result;
 }
 
@@ -319,5 +314,24 @@ tile_position get_closest_end_from_tile_range(tile_range range, world_position p
 	r32 end_distance = length(get_position_difference(range.end, position));
 	r32 start_distance = length(get_position_difference(range.start, position));
 	tile_position result = end_distance < start_distance ? range.end : range.start;
+	return result;
+}
+
+tile_range get_invalid_tile_range()
+{
+	tile_range result = {};
+	result.start = get_tile_position(-1, -1);
+	result.end = get_tile_position(-1, -1);
+	return result;
+}
+
+b32 is_tile_range_valid(tile_range range)
+{
+	b32 result = true;
+	if (range.start.x < 0 || range.start.y < 0
+		|| range.end.x < 0 || range.end.y < 0)
+	{
+		result = false;
+	}
 	return result;
 }
