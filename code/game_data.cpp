@@ -476,15 +476,15 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->collision_reference = read_collision_map(arena, transient_arena, collision_file);
 	delete collision_file.contents;
 
-	data->blue_gate_graphics = load_gate_graphics(0);
-	data->grey_gate_graphics = load_gate_graphics(1);
-	data->red_gate_graphics = load_gate_graphics(2);
-	data->green_gate_graphics = load_gate_graphics(3);
-	data->blue_switch_graphics = load_switch_graphics(0);
-	data->grey_switch_graphics = load_switch_graphics(1);
-	data->red_switch_graphics = load_switch_graphics(2);
-	data->green_switch_graphics = load_switch_graphics(3);
-	data->gate_switch_displays = load_gate_switch_displays();
+	data->gates_gfx.blue = load_gate_graphics(0);
+	data->gates_gfx.grey = load_gate_graphics(1);
+	data->gates_gfx.red = load_gate_graphics(2);
+	data->gates_gfx.green = load_gate_graphics(3);
+	data->switches_gfx.blue = load_switch_graphics(0);
+	data->switches_gfx.grey = load_switch_graphics(1);
+	data->switches_gfx.red = load_switch_graphics(2);
+	data->switches_gfx.green = load_switch_graphics(3);
+	data->display_gfx = load_gate_switch_displays();
 
 	data->explosion_animations.size_16x16_variant_1 = load_explosion_animation(arena, get_v2(464, 0), 16, 7, 0.1f);
 	data->explosion_animations.size_16x16_variant_2 = load_explosion_animation(arena, get_v2(464, 16), 16, 7, 0.1f);

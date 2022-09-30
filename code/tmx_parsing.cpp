@@ -823,6 +823,7 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 	{
 		r32 x = parse_r32(x_str, '.');
 		r32 y = parse_r32(y_str, '.');
+
 		// przesunięcie dodane, ponieważ Tiled trakuje lewy dolny róg jako origin pola
 		// znacznie bardziej intuicyjne jest w edytorze traktowanie tak środka
 		i32 tile_x = (i32)((x / TILE_SIDE_IN_PIXELS) + 0.5f);
@@ -837,32 +838,47 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 	string_ref next_level_name = {};
 
 	entity_type_enum type = entity_type_enum::UNKNOWN;
+	i32 gid = -1;
 	if (gid_str.string_size)
 	{
-		i32 gid = parse_i32(gid_str);
+		gid = parse_i32(gid_str);
 		gid -= (entity_tileset_first_gid - 1);
 		switch (gid)
 		{
-			case 66: type = entity_type_enum::ENEMY_SENTRY; break;
-			case 131: type = entity_type_enum::ENEMY_CULTIST; break;
-			case 48: type = entity_type_enum::ENEMY_ROBOT; break;
-			case 1601: type = entity_type_enum::GATE; break;
-			case 1606: type = entity_type_enum::SWITCH; break;
-			case 961: type = entity_type_enum::POWER_UP_INVINCIBILITY; break;
-			case 962: type = entity_type_enum::POWER_UP_HEALTH; break;
-			case 963: type = entity_type_enum::POWER_UP_SPEED; break;
-			case 964: type = entity_type_enum::POWER_UP_DAMAGE; break;
-			case 965: type = entity_type_enum::POWER_UP_SPREAD; break;
-			case 906: type = entity_type_enum::NEXT_LEVEL_TRANSITION; break;
-			case 1: type = entity_type_enum::PLAYER; break;			
-			case 1928: type = entity_type_enum::MESSAGE_DISPLAY; break;
+			case 7:  type = entity_type_enum::ENEMY_ROBOT; break;
+			case 8:  type = entity_type_enum::ENEMY_CULTIST; break;
+			case 9:  type = entity_type_enum::ENEMY_FLYING_BOMB; break;
+			case 10:  type = entity_type_enum::ENEMY_GUARDIAN; break;
+			case 11: type = entity_type_enum::ENEMY_SENTRY; break;
+			case 13: type = entity_type_enum::POWER_UP_HEALTH; break;
+			case 14: type = entity_type_enum::POWER_UP_INVINCIBILITY; break;
+			case 15: type = entity_type_enum::POWER_UP_SPEED; break;
+			case 16: type = entity_type_enum::POWER_UP_DAMAGE; break;
+			case 17: type = entity_type_enum::POWER_UP_SPREAD; break;
+			case 19: type = entity_type_enum::GATE_BLUE; break;
+			case 20: type = entity_type_enum::GATE_GREY; break;
+			case 21: type = entity_type_enum::GATE_RED; break;
+			case 22: type = entity_type_enum::GATE_GREEN; break;
+			case 25: type = entity_type_enum::SWITCH_BLUE; break;
+			case 26: type = entity_type_enum::SWITCH_GREY; break;
+			case 27: type = entity_type_enum::SWITCH_RED; break;
+			case 28: type = entity_type_enum::SWITCH_GREEN; break;
+			case 1:  type = entity_type_enum::PLAYER; break;			
+			case 2:  type = entity_type_enum::NEXT_LEVEL_TRANSITION; break;
+			case 3:  type = entity_type_enum::MESSAGE_DISPLAY; break;
 		}
 	}
 
 	switch (type)
 	{
-		case entity_type_enum::GATE:
-		case entity_type_enum::SWITCH:
+		case entity_type_enum::GATE_BLUE:
+		case entity_type_enum::GATE_GREY:
+		case entity_type_enum::GATE_RED:
+		case entity_type_enum::GATE_GREEN:
+		case entity_type_enum::SWITCH_BLUE:
+		case entity_type_enum::SWITCH_GREY:
+		case entity_type_enum::SWITCH_RED:
+		case entity_type_enum::SWITCH_GREEN:
 		{
 			v4 gate_color = get_zero_v4();
 			xml_node* properties_parent_node = find_tag_in_children(node, "properties");

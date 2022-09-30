@@ -115,16 +115,11 @@ void open_gates_with_given_color(level_state* level, v4 color)
 
 void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn, b32 is_switch)
 {
-	gate_graphics gate_gfx = level->static_data->blue_gate_graphics;
-	switch_graphics switch_gfx = level->static_data->blue_switch_graphics;
-	display_graphics display_gfx = level->static_data->gate_switch_displays;
-
 	entity_type* new_type = push_struct(arena, entity_type);
-
-	u32 max_size = 10;
 
 	v2 collision_rect_dim;
 	tile_range occupied_tiles;
+	u32 max_size = 15;
 	if (is_switch)
 	{
 		occupied_tiles = find_horizontal_range_of_free_tiles(
@@ -144,9 +139,17 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 	world_position new_position = add_to_position(
 		get_world_position(occupied_tiles.start),
 		get_position_difference(occupied_tiles.end, occupied_tiles.start) / 2);
-
 	if (is_switch)
 	{
+		switch_graphics switch_gfx = level->static_data->switches_gfx.blue;
+		switch (new_entity_to_spawn->type)
+		{
+			case entity_type_enum::SWITCH_BLUE:  switch_gfx = level->static_data->switches_gfx.blue; break;
+			case entity_type_enum::SWITCH_GREY:  switch_gfx = level->static_data->switches_gfx.grey; break;
+			case entity_type_enum::SWITCH_RED:   switch_gfx = level->static_data->switches_gfx.red; break;
+			case entity_type_enum::SWITCH_GREEN: switch_gfx = level->static_data->switches_gfx.green; break;
+		}
+
 		u32 tiles_count = occupied_tiles.end.x - occupied_tiles.start.x + 1;
 
 		animation_frame frame = {};
@@ -177,6 +180,15 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 	}
 	else
 	{
+		gate_graphics gate_gfx = level->static_data->gates_gfx.blue;
+		switch (new_entity_to_spawn->type)
+		{
+			case entity_type_enum::GATE_BLUE:  gate_gfx = level->static_data->gates_gfx.blue; break;
+			case entity_type_enum::GATE_GREY:  gate_gfx = level->static_data->gates_gfx.grey; break;
+			case entity_type_enum::GATE_RED:   gate_gfx = level->static_data->gates_gfx.red; break;
+			case entity_type_enum::GATE_GREEN: gate_gfx = level->static_data->gates_gfx.green; break;
+		}
+
 		u32 tiles_count = occupied_tiles.end.y - occupied_tiles.start.y + 3;
 
 		animation_frame frame = {};
@@ -220,6 +232,7 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 	set_flags(&new_display_type->flags, entity_flags::TINTED_DISPLAY);
 	new_display_type->color = new_entity_to_spawn->color;
 
+	display_graphics display_gfx = level->static_data->display_gfx;
 	if (is_switch)
 	{
 		u32 tiles_count = occupied_tiles.end.x - occupied_tiles.start.x + 1;

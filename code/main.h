@@ -100,8 +100,14 @@ enum class entity_type_enum
 	ENEMY_FLYING_BOMB,
 	ENEMY_ROBOT,
 	ENEMY_CULTIST,
-	GATE,
-	SWITCH,
+	GATE_BLUE,
+	GATE_GREY,
+	GATE_RED,
+	GATE_GREEN,
+	SWITCH_BLUE,
+	SWITCH_GREY,
+	SWITCH_RED,
+	SWITCH_GREEN,
 	POWER_UP_INVINCIBILITY,
 	POWER_UP_HEALTH,
 	POWER_UP_SPEED,
@@ -440,6 +446,23 @@ struct ui_graphics
 	rect msgbox_frame_background;
 };
 
+struct gates_graphics
+{
+	gate_graphics blue;
+	gate_graphics grey;
+	gate_graphics red;
+	gate_graphics green;
+};
+
+struct switches_graphics
+{
+	switch_graphics blue;
+	switch_graphics grey;
+	switch_graphics red;
+	switch_graphics green;	
+};
+
+
 struct font
 {
 	u32 width_in_pixels;
@@ -478,19 +501,12 @@ struct static_game_data
 	entity_type* player_normal_bullet_type;
 	entity_type* player_power_up_bullet_type;
 
-	gate_graphics blue_gate_graphics;
-	gate_graphics grey_gate_graphics;
-	gate_graphics red_gate_graphics;
-	gate_graphics green_gate_graphics;
-	switch_graphics blue_switch_graphics;
-	switch_graphics grey_switch_graphics;
-	switch_graphics red_switch_graphics;
-	switch_graphics green_switch_graphics;
-	display_graphics gate_switch_displays;
-
 	font ui_font;
 	font menu_font;
 	ui_graphics ui_gfx;
+	gates_graphics gates_gfx;
+	switches_graphics switches_gfx;
+	display_graphics display_gfx;
 
 	string_ref menu_new_game_str;
 	string_ref menu_continue_str;

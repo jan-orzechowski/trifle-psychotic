@@ -404,12 +404,18 @@ void initialize_current_map(game_state* game, level_state* level)
 		entity_to_spawn* new_entity = level->current_map.entities_to_spawn + entity_index;
 		switch (new_entity->type)
 		{
-			case entity_type_enum::GATE:
+			case entity_type_enum::GATE_BLUE:
+			case entity_type_enum::GATE_GREY:
+			case entity_type_enum::GATE_RED:
+			case entity_type_enum::GATE_GREEN:
 			{
 				add_gate_entity(level, game->arena, new_entity, false);
 			}
 			break;
-			case entity_type_enum::SWITCH:
+			case entity_type_enum::SWITCH_BLUE:
+			case entity_type_enum::SWITCH_GREY:
+			case entity_type_enum::SWITCH_RED:
+			case entity_type_enum::SWITCH_GREEN:
 			{
 				add_gate_entity(level, game->arena, new_entity, true);
 			}
