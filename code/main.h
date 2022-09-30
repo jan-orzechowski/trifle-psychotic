@@ -298,6 +298,7 @@ struct world_position
 
 struct entity
 {
+	b32 used;
 	entity_type* type;
 	
 	world_position position;
@@ -542,7 +543,7 @@ struct level_state
 	player_movement player_movement;
 	r32 player_invincibility_cooldown;
 	
-	entity* entities; // compact array
+	entity* entities;
 	u32 entities_max_count;
 	u32 entities_count;
 

@@ -537,6 +537,11 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		{
 			entity* entity = level->entities + entity_index;
 
+			if (false == entity->used)
+			{
+				continue;
+			}
+		
 			if (false == is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
 			{
 				continue;
@@ -550,7 +555,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 						entity->type->death_animation);
 				}
 
-				remove_entity(level, &entity_index);
+				remove_entity(entity);
 				continue;
 			}
 
@@ -770,6 +775,11 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 		{
 			entity* entity = level->entities + entity_index;
+			if (false == entity->used)
+			{
+				continue;
+			}
+			
 			if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
 			{
 				render_entity_animation_frame(&game->render, player->position, entity);
@@ -810,6 +820,11 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 			{
 				entity* entity = level->entities + entity_index;
+				if (false == entity->used)
+				{
+					continue;
+				}
+
 				if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
 				{
 					// istotne - offset sprite'a nie ma tu znaczenia

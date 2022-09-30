@@ -19,7 +19,7 @@ b32 are_entity_flags_set(entity* entity, entity_flags flag_values);
 
 entity* add_entity(level_state* level, world_position position, entity_type* type);
 entity* add_entity(level_state* level, tile_position position, entity_type* type);
-void remove_entity(level_state* level, i32* entity_index);
+void remove_entity(entity* entity_to_remove);
 
 void fire_bullet(level_state* level, entity_type* bullet_type, world_position bullet_starting_position, v2 bullet_offset, v2 velocity);
 void fire_bullet(level_state* level, entity* entity, b32 cooldown);

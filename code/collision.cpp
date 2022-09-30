@@ -235,6 +235,11 @@ b32 check_if_sight_line_is_obstructed(level_state* level, world_position start, 
 		for (u32 entity_index = 1; entity_index < level->entities_count; entity_index++)
 		{
 			entity* entity = level->entities + entity_index;
+			if (false == entity->used)
+			{
+				continue;
+			}
+
 			if ((are_entity_flags_set(entity, entity_flags::GATE)
 					|| are_entity_flags_set(entity, entity_flags::SWITCH))
 				&& are_entity_flags_set(entity, entity_flags::BLOCKS_MOVEMENT)
@@ -333,6 +338,10 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 				for (u32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 				{
 					entity* entity_to_check = level->entities + entity_index;
+					if (false == entity_to_check->used)
+					{
+						continue;
+					}
 
 					if (entity_to_check != moving_entity
 						&& is_in_neighbouring_chunk(reference_chunk, entity_to_check->position))
@@ -468,6 +477,11 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 			for (u32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 			{
 				entity* entity_to_check = level->entities + entity_index;
+				if (false == entity_to_check->used)
+				{
+					continue;
+				}
+
 				if (are_entity_flags_set(entity_to_check, entity_flags::BLOCKS_MOVEMENT)
 					&& is_in_neighbouring_chunk(reference_chunk, entity_to_check->position))
 				{

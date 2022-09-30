@@ -40,6 +40,7 @@ entity* add_entity(level_state* level, world_position position, entity_type* typ
 		new_entity->type = type;
 		new_entity->health = type->max_health;
 		new_entity->direction = direction::W;
+		new_entity->used = true;
 	}
 	
 	return new_entity;
@@ -51,24 +52,9 @@ entity* add_entity(level_state* level, tile_position position, entity_type* type
 	return result;
 }
 
-void remove_entity(level_state* level, i32* entity_index)
+void remove_entity(entity* entity_to_remove)
 {
-	if (level->entities_count > 0)
-	{
-		assert(*entity_index >= 0);
-		assert(*entity_index < level->entities_max_count);
-
-		// compact array - działa też w przypadku entity_index == entities_count - 1
-		entity* last_entity = &level->entities[level->entities_count - 1];
-		level->entities[*entity_index] = *last_entity;
-		level->entities_count--;
-		*last_entity = {}; // czyszczenie
-
-		if (*entity_index > 0)
-		{
-			(*entity_index)--;
-		}
-	}
+	*entity_to_remove = {};
 }
 
 entity_type_dictionary create_entity_types_dictionary(memory_arena* arena)
