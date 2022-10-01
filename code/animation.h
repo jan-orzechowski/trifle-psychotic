@@ -16,3 +16,4 @@ u32 get_current_animation_frame_index(animation* animation, r32 elapsed_time, r3
 animation_frame* get_current_animation_frame(entity* entity);
 void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r32 frame_duration_modifier = 1.0f);
 void render_entity_animation_frame(render_group* render, world_position camera_position, entity* entity);
+void start_screen_shake(level_state* level, r32 duration_in_seconds, r32 strength);

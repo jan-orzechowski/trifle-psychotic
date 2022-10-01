@@ -268,3 +268,10 @@ void render_entity_animation_frame(render_group* render, world_position camera_p
 	render_entity_sprite(render, camera_position, entity->position, entity->direction,
 		entity->visual_effect, entity->visual_effect_duration, *sprite_to_render);
 }
+
+// strength 20 jest ok, 30 jest mocne, 40 - chyba zbyt
+void start_screen_shake(level_state* level, r32 duration_in_seconds, r32 strength)
+{
+	level->screen_shake_duration = duration_in_seconds;
+	level->screen_shake_multiplier = strength;
+}

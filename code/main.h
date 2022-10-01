@@ -566,6 +566,9 @@ struct level_state
 
 	power_ups power_ups;
 
+	r32 screen_shake_duration;
+	r32 screen_shake_multiplier;
+
 	scene_change active_scene_change;
 	r32 scene_fade_perc;
 	r32 fade_in_perc;

@@ -428,6 +428,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 {
 	if (false == level->current_map_initialized)
 	{
+		start_screen_shake(level, 0.6f, 30.0f);
+
 		initialize_current_map(game, level);
 	}
 
@@ -732,11 +734,20 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 	// rendering
 	{		
-		chunk_position reference_chunk = player->position.chunk_pos;
-		tile_position player_tile_pos = get_tile_position(player->position);
-		v2 player_tile_offset_in_chunk = get_tile_offset_in_chunk(reference_chunk, player_tile_pos);
-		v2 player_offset_in_chunk = get_position_difference(player->position, reference_chunk);
-		v2 player_offset_in_tile = player_offset_in_chunk - player_tile_offset_in_chunk;
+		world_position camera_position = player->position;
+
+		if (level->screen_shake_duration > 0.0f)
+		{
+			level->screen_shake_duration -= delta_time;
+			r32 vertical_shake = sin(level->screen_shake_duration * level->screen_shake_multiplier) / 2;
+			camera_position = add_to_position(camera_position, get_v2(vertical_shake, 0.0f));
+		}
+
+		chunk_position reference_chunk = camera_position.chunk_pos;
+		tile_position camera_tile_pos = get_tile_position(camera_position);
+		v2 camera_tile_offset_in_chunk = get_tile_offset_in_chunk(reference_chunk, camera_tile_pos);
+		v2 camera_offset_in_chunk = get_position_difference(camera_position, reference_chunk);
+		v2 camera_offset_in_tile = camera_offset_in_chunk - camera_tile_offset_in_chunk;
 	
 		i32 screen_half_width = ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
 		i32 screen_half_height = ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
@@ -747,19 +758,19 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			y_coord_relative++)
 		{
 			i32 y_coord_on_screen = y_coord_relative;
-			i32 y_coord_in_world = player_tile_pos.y + y_coord_relative;
+			i32 y_coord_in_world = camera_tile_pos.y + y_coord_relative;
 
 			for (i32 x_coord_relative = -screen_half_width;
 				x_coord_relative < screen_half_width;
 				x_coord_relative++)
 			{
 				i32 x_coord_on_screen = x_coord_relative;
-				i32 x_coord_in_world = player_tile_pos.x + x_coord_relative;
+				i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
 
 				u32 tile_value = get_tile_value(level->current_map, x_coord_in_world, y_coord_in_world);
 				rect tile_bitmap = get_tile_rect(tile_value);
 
-				v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - player_offset_in_tile;
+				v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - camera_offset_in_tile;
 				rect screen_rect = get_tile_render_rect(position);
 				render_bitmap(&game->render, textures::TILESET, tile_bitmap, screen_rect);
 
@@ -767,8 +778,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				if (is_tile_colliding(level->static_data->collision_reference, tile_value))
 				{
 					tile_position tile_pos = get_tile_position(x_coord_in_world, y_coord_in_world);
-					entity_collision_data tile_collision = get_tile_collision_data(player->position.chunk_pos, tile_pos);
-					v2 relative_position = get_position_difference(tile_pos, player->position);
+					entity_collision_data tile_collision = get_tile_collision_data(camera_position.chunk_pos, tile_pos);
+					v2 relative_position = get_position_difference(tile_pos, camera_position);
 					v2 center = relative_position + tile_collision.collision_rect_offset;
 					v2 size = tile_collision.collision_rect_dim;
 					rect collision_rect = get_rect_from_center(
@@ -783,7 +794,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		/*if (debug_entity_to_render_path)
 		{
-			render_debug_path_ends(&game->render, debug_entity_to_render_path, player->position);				
+			render_debug_path_ends(&game->render, debug_entity_to_render_path, camera_position);
 		}*/
 
 		// draw entities
@@ -794,16 +805,16 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			{
 				continue;
 			}
-			
-			if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
+
+			if (is_in_neighbouring_chunk(camera_position.chunk_pos, entity->position))
 			{
-				render_entity_animation_frame(&game->render, player->position, entity);
+				render_entity_animation_frame(&game->render, camera_position, entity);
 
 				if (entity->shooting_sprite.parts_count)
 				{
-					render_entity_sprite(&game->render, player->position, entity->position, entity->direction,
+					render_entity_sprite(&game->render, camera_position, entity->position, entity->direction,
 						entity->visual_effect, entity->visual_effect_duration, entity->shooting_sprite);
-				}		
+				}
 			}
 		}
 
@@ -811,11 +822,11 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		for (i32 bullet_index = 0; bullet_index < level->bullets_count; bullet_index++)
 		{
 			bullet* bullet = level->bullets + bullet_index;
-			if (is_in_neighbouring_chunk(player->position.chunk_pos, bullet->position))
+			if (is_in_neighbouring_chunk(camera_position.chunk_pos, bullet->position))
 			{
 				render_entity_sprite(&game->render,
-					player->position, bullet->position, direction::NONE,
-					NULL, 0, bullet->type->idle_pose.sprite);				
+					camera_position, bullet->position, direction::NONE,
+					NULL, 0, bullet->type->idle_pose.sprite);
 			}
 		}
 
@@ -823,9 +834,9 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		for (i32 explosion_index = 0; explosion_index < level->explosions_count; explosion_index++)
 		{
 			entity* explosion = level->explosions + explosion_index;
-			if (is_in_neighbouring_chunk(player->position.chunk_pos, explosion->position))
+			if (is_in_neighbouring_chunk(camera_position.chunk_pos, explosion->position))
 			{
-				render_entity_animation_frame(&game->render, player->position, explosion);
+				render_entity_animation_frame(&game->render, camera_position, explosion);
 			}
 		}
 
@@ -840,16 +851,16 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					continue;
 				}
 
-				if (is_in_neighbouring_chunk(player->position.chunk_pos, entity->position))
+				if (is_in_neighbouring_chunk(camera_position.chunk_pos, entity->position))
 				{
 					// istotne - offset sprite'a nie ma tu znaczenia
-					v2 relative_position = get_position_difference(entity->position, player->position);
+					v2 relative_position = get_position_difference(entity->position, camera_position);
 					v2 center = relative_position + entity->type->collision_rect_offset;
 					v2 size = entity->type->collision_rect_dim;
 					rect collision_rect = get_rect_from_center(
-						SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS), 
+						SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS),
 						size * TILE_SIDE_IN_PIXELS);
-					
+
 					render_rectangle(&game->render, collision_rect, { 0, 0, 0, 0 }, true);
 
 					v2 entity_position = SCREEN_CENTER_IN_PIXELS + relative_position * TILE_SIDE_IN_PIXELS;
@@ -858,7 +869,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			}
 #endif
 		}
-		
+
 		render_debug_information(game, level);
 
 		render_hitpoint_bar(level->static_data, &game->render, player, is_power_up_active(level->power_ups.invincibility));
