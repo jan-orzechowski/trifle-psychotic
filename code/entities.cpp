@@ -300,9 +300,10 @@ b32 is_point_visible_within_90_degrees(world_position looking_point, direction l
 b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, world_position point)
 {
 	b32 result = false;
+	world_position looking_point = add_to_position(looking_entity->position, looking_entity->type->looking_position_offset);
 	if (looking_entity->type->detection_type != detection_type::DETECT_NOTHING)
 	{
-		v2 distance_to_point = get_position_difference(point, looking_entity->position);
+		v2 distance_to_point = get_position_difference(point, looking_point);
 		if (length(distance_to_point) <= looking_entity->type->detection_distance)
 		{
 			switch (looking_entity->type->detection_type)
@@ -340,7 +341,7 @@ b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, worl
 				break;
 				case detection_type::DETECT_90_DEGREES_IN_FRONT:
 				{
-					result = is_point_visible_within_90_degrees(looking_entity->position, looking_entity->direction, 
+					result = is_point_visible_within_90_degrees(looking_point, looking_entity->direction,
 						looking_entity->type->detection_distance, point);
 				}
 				break;
@@ -349,7 +350,7 @@ b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, worl
 
 		if (result)
 		{
-			if (check_if_sight_line_is_obstructed(level, looking_entity->position, point))
+			if (check_if_sight_line_is_obstructed(level, looking_point, point))
 			{
 				result = false;
 			}
@@ -709,7 +710,6 @@ void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bulle
 	}
 	else
 	{
-
 		if (false == are_entity_flags_set(hit_entity, entity_flags::INDESTRUCTIBLE))
 		{
 			start_visual_effect(level, hit_entity, 1, false);
@@ -718,18 +718,29 @@ void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bulle
 				moving_bullet->type->damage_on_contact, hit_entity->health);
 
 			v2 bullet_direction = get_position_difference(moving_bullet->position, hit_entity->position);
+			
+			if (false == hit_entity->player_detected)
+			{
+				direction previous_direction = hit_entity->direction;
+				if (bullet_direction.x < 0)
+				{
+					hit_entity->direction = direction::W;
+				}
+				else
+				{
+					hit_entity->direction = direction::E;
+				}
 
-			// to gówno robi, powinniśmy tutaj dać player detection
-			if (bullet_direction.x < 0)
-			{
-				hit_entity->direction = direction::W;
-				printf("uderzenie z prawej\n");
-			}
-			else
-			{
-				hit_entity->direction = direction::E;
-				printf("uderzenie z lewej\n");
-			}
+				entity* player = get_player(level);
+				if (is_point_visible_for_entity(level, hit_entity, player->position))
+				{
+					hit_entity->player_detected = true;					
+				}
+				else
+				{
+					hit_entity->direction = previous_direction;
+				}
+			}	
 		}
 	}
 }

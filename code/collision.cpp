@@ -227,52 +227,31 @@ b32 check_if_sight_line_is_obstructed(level_state* level, world_position start, 
 	b32 path_obstructed = false;
 	chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(start));
 
+	v2 movement_delta = get_position_difference(end, start);
+
+	entity_collision_data photon_collision = {};
+	photon_collision.position = get_position_difference(start, reference_chunk);
+	photon_collision.collision_rect_dim = get_v2(0.01f, 0.01f);
+	photon_collision.collision_rect_offset = get_zero_v2();
+
 	// collision with tiles
+	rect area_to_check = get_tiles_area_to_check_for_collision(start, get_zero_v2(), get_zero_v2(), end);
+	for (i32 tile_y_to_check = area_to_check.min_corner.y;
+		tile_y_to_check <= area_to_check.max_corner.y;
+		tile_y_to_check++)
 	{
-		rect area_to_check = get_tiles_area_to_check_for_collision(start, get_zero_v2(), get_zero_v2(), end);
-		for (i32 tile_y_to_check = area_to_check.min_corner.y;
-			tile_y_to_check <= area_to_check.max_corner.y;
-			tile_y_to_check++)
+		for (i32 tile_x_to_check = area_to_check.min_corner.x;
+			tile_x_to_check <= area_to_check.max_corner.x;
+			tile_x_to_check++)
 		{
-			// zmiana o 1 dla uniknięcia sytuacji w której stoimy dokładnie na granicy pola, które jest niedostępne
-			for (i32 tile_x_to_check = area_to_check.min_corner.x/* + 1*/;
-				tile_x_to_check <= area_to_check.max_corner.x/* - 1*/;
-				tile_x_to_check++)
+			u32 tile_value = get_tile_value(level->current_map, tile_x_to_check, tile_y_to_check);
+			if (is_tile_colliding(level->static_data->collision_reference, tile_value))
 			{
-				u32 tile_value = get_tile_value(level->current_map, tile_x_to_check, tile_y_to_check);
-				if (is_tile_colliding(level->static_data->collision_reference, tile_value))
-				{
-					path_obstructed = true;
-					goto check_sight_line_end;
-				}
-			}
-		}
-	}
-
-	// collision with entities
-	{
-		v2 movement_delta = get_position_difference(end, start);
-
-		entity_collision_data photon_collision = {};
-		photon_collision.position = get_position_difference(start, reference_chunk);
-		photon_collision.collision_rect_dim = get_v2(0.01f, 0.01f);
-		photon_collision.collision_rect_offset = get_zero_v2();
-
-		for (u32 entity_index = 1; entity_index < level->entities_count; entity_index++)
-		{
-			entity* entity = level->entities + entity_index;
-			if (false == entity->used)
-			{
-				continue;
-			}
-
-			if ((are_entity_flags_set(entity, entity_flags::GATE)
-					|| are_entity_flags_set(entity, entity_flags::SWITCH))
-				&& are_entity_flags_set(entity, entity_flags::BLOCKS_MOVEMENT)
-				&& is_in_neighbouring_chunk(reference_chunk, entity->position))
-			{
-				entity_collision_data entity_collision = get_entity_collision_data(reference_chunk, entity);
-				collision collision = check_minkowski_collision(photon_collision, entity_collision, movement_delta, 1.0f);
+				entity_collision_data entity_collision = get_tile_collision_data(
+					reference_chunk, get_tile_position(tile_x_to_check, tile_y_to_check));
+				collision collision = check_minkowski_collision(
+					photon_collision, entity_collision, movement_delta, 1.0f);
+				
 				if (collision.collided_wall != direction::NONE)
 				{
 					path_obstructed = true;
@@ -280,7 +259,34 @@ b32 check_if_sight_line_is_obstructed(level_state* level, world_position start, 
 				}
 			}
 		}
+	}	
+
+	// collision with entities
+	for (u32 entity_index = 1; entity_index < level->entities_count; entity_index++)
+	{
+		entity* entity = level->entities + entity_index;
+		if (false == entity->used)
+		{
+			continue;
+		}
+
+		if ((are_entity_flags_set(entity, entity_flags::GATE)
+				|| are_entity_flags_set(entity, entity_flags::SWITCH))
+			&& are_entity_flags_set(entity, entity_flags::BLOCKS_MOVEMENT)
+			&& is_in_neighbouring_chunk(reference_chunk, entity->position))
+		{
+			entity_collision_data entity_collision = get_entity_collision_data(reference_chunk, entity);
+			collision collision = check_minkowski_collision(
+				photon_collision, entity_collision, movement_delta, 1.0f);
+			
+			if (collision.collided_wall != direction::NONE)
+			{
+				path_obstructed = true;
+				goto check_sight_line_end;
+			}
+		}
 	}
+	
 
 check_sight_line_end:
 	return path_obstructed;

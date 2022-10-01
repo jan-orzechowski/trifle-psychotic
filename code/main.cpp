@@ -597,8 +597,10 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					current_goal = entity->path.start;
 					current_start = entity->path.end;
 				}
-					
-				if (is_point_visible_for_entity(level, entity, player->position))
+				
+				v2 player_target_offset = get_v2(0.0f, -0.3f);
+				world_position player_as_target = add_to_position(player->position, get_v2(0.0f, -0.3f));
+				if (is_point_visible_for_entity(level, entity, player_as_target))
 				{
 					entity->player_detected = true;
 

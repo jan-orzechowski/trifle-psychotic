@@ -617,7 +617,8 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	robot_type->detection_distance = 7.0f;
 	robot_type->stop_movement_distance = 4.0f;
 	robot_type->forget_detection_distance = 7.0f;
-	
+	robot_type->looking_position_offset = get_v2(0.0f, -1.0f);
+
 	robot_type->max_health = 10;
 	robot_type->damage_on_contact = 10;
 	robot_type->walk_animation = get_walk_animation(arena, get_v2(0, 2 * 24), true);
@@ -643,9 +644,10 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 		| (u32)entity_flags::ENEMY
 		| (u32)entity_flags::PLAYER_RECOIL_ON_CONTACT);
 	cultist_type->detection_type = detection_type::DETECT_180_DEGREES_IN_FRONT;
-	cultist_type->detection_distance = 9.0f;
+	cultist_type->detection_distance = 12.0f;
 	cultist_type->stop_movement_distance = 6.0f;
-	cultist_type->forget_detection_distance = 12.0f;
+	cultist_type->forget_detection_distance = 15.0f;
+	cultist_type->looking_position_offset = get_v2(0.0f, -1.2f);
 
 	cultist_type->max_health = 10;
 	cultist_type->damage_on_contact = 10;

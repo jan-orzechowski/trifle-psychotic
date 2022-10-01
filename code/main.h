@@ -267,6 +267,7 @@ struct entity_type
 	r32 detection_distance;
 	r32 stop_movement_distance;
 	r32 forget_detection_distance;
+	v2 looking_position_offset;
 
 	r32 damage_on_contact;
 	r32 max_health;
