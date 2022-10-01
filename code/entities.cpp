@@ -504,10 +504,10 @@ void remove_explosion(level_state* level, i32* explosion_index)
 	}
 }
 
-shooting_sprite_result get_shooting_sprite_based_on_direction(shooting_rotation_sprites* rotation_sprites, v2 shooting_direction)
+shooting_rotation get_entity_shooting_rotation(shooting_rotation_sprites* rotation_sprites, v2 shooting_direction)
 {
 	assert(rotation_sprites);
-	shooting_sprite_result result = {};
+	shooting_rotation result = {};
 
 	r32 angle = atan2(shooting_direction.y, shooting_direction.x) * (180 / pi32);
 	angle += 45.0f / 2.0f;
@@ -732,10 +732,13 @@ void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 tar
 			v2 bullet_offset = get_zero_v2();
 			if (enemy->type->rotation_sprites)
 			{
-				shooting_sprite_result rotation = get_shooting_sprite_based_on_direction(enemy->type->rotation_sprites, direction_to_player);
+				shooting_rotation rotation = get_entity_shooting_rotation(enemy->type->rotation_sprites, direction_to_player);
 				enemy->shooting_sprite = rotation.rotated_sprite;
 				enemy->shooting_sprite.flip_horizontally = rotation.flip_horizontally;
 				bullet_offset = rotation.bullet_offset;
+				
+				direction_to_player = get_unit_vector(get_position_difference(
+					target_position, add_to_position(enemy->position, rotation.bullet_offset)));
 			}
 
 			fire_bullet(level, enemy->type->fired_bullet_type, enemy->position, bullet_offset,

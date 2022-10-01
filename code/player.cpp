@@ -118,10 +118,9 @@ void player_fire_bullet(level_state* level, game_input* input, entity* player)
 	if (player->attack_cooldown <= 0)
 	{
 		v2 relative_mouse_pos = (get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR) - SCREEN_CENTER_IN_PIXELS;
-		//printf("relative mouse pos: %.03f,%.03f\n", relative_mouse_pos.x, relative_mouse_pos.y);
 		v2 shooting_direction = get_unit_vector(relative_mouse_pos);
 
-		shooting_sprite_result rotation = get_shooting_sprite_based_on_direction(player->type->rotation_sprites, shooting_direction);
+		shooting_rotation rotation = get_entity_shooting_rotation(player->type->rotation_sprites, shooting_direction);
 
 		entity_type* bullet_type = level->static_data->player_normal_bullet_type;
 		if (is_power_up_active(level->power_ups.damage))
@@ -148,16 +147,26 @@ void player_fire_bullet(level_state* level, game_input* input, entity* player)
 				adjusted_shooting_direction * bullet_type->constant_velocity);
 		}
 
-		player->attack_cooldown = player->type->default_attack_cooldown;
-
-		player->shooting_sprite = rotation.rotated_sprite;
-		player->shooting_sprite.flip_horizontally = rotation.flip_horizontally;
+		player->attack_cooldown = player->type->default_attack_cooldown;	
 	}	
+}
+
+void set_player_rotated_graphics_based_on_mouse_position(game_input* input, entity* player)
+{
+	v2 relative_mouse_pos = (get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR) - SCREEN_CENTER_IN_PIXELS;
+	v2 shooting_direction = get_unit_vector(relative_mouse_pos);
+
+	shooting_rotation rotation = get_entity_shooting_rotation(player->type->rotation_sprites, shooting_direction);
+
+	player->shooting_sprite = rotation.rotated_sprite;
+	player->shooting_sprite.flip_horizontally = rotation.flip_horizontally;
 }
 
 world_position process_input(level_state* level, input_buffer* input_buffer, entity* player, r32 delta_time)
 {
 	game_input* input = get_last_frame_input(input_buffer);
+
+	set_player_rotated_graphics_based_on_mouse_position(input, player);
 
 	b32 is_standing_at_frame_beginning = is_standing_on_ground(level, player);
 

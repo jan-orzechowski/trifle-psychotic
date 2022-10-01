@@ -5,7 +5,7 @@
 #include "gates.h"
 #include "collision.h"
 
-struct shooting_sprite_result
+struct shooting_rotation
 {
 	v2 bullet_offset;
 	sprite rotated_sprite;
@@ -42,6 +42,6 @@ b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, worl
 void initialize_current_map(game_state* game, level_state* level);
 
 void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bullet, entity* hit_entity);
-shooting_sprite_result get_shooting_sprite_based_on_direction(shooting_rotation_sprites* rotation_sprites, v2 shooting_direction);
+shooting_rotation get_entity_shooting_rotation(shooting_rotation_sprites* rotation_sprites, v2 shooting_direction);
 void move_entity(level_state* level, entity* entity_to_move, tile_position current_start, tile_position current_goal, entity* player, r32 delta_time);
 void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 target_offset);
