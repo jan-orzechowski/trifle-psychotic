@@ -2,6 +2,7 @@
 
 #include "main.h"
 
+entity_collision_data get_tile_collision_data(chunk_position reference_chunk, tile_position tile_pos);
 entity_collision_data get_entity_collision_data(chunk_position reference_chunk, entity* entity);
 v2 get_collision_dim_from_tile_range(tile_range path);
 b32 is_standing_on_ground(level_state* level, entity* entity_to_check);

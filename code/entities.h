@@ -43,5 +43,7 @@ void initialize_current_map(game_state* game, level_state* level);
 
 void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bullet, entity* hit_entity);
 shooting_rotation get_entity_shooting_rotation(shooting_rotation_sprites* rotation_sprites, v2 shooting_direction);
+void set_entity_rotated_graphics(entity* entity, world_position* target);
+
 void move_entity(level_state* level, entity* entity_to_move, tile_position current_start, tile_position current_goal, entity* player, r32 delta_time);
 void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 target_offset);

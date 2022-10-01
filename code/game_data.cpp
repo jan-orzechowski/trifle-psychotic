@@ -109,7 +109,7 @@ sprite_part get_sprite_part(textures texture, rect texture_rect, v2 sprite_offse
 	return result;
 }
 
-animation* get_walk_animation(memory_arena* arena, v2 offset, b32 add_head)
+animation* get_walk_animation(memory_arena* arena, v2 bitmap_offset, b32 add_head, v2 display_offset = get_zero_v2())
 {
 	animation* new_animation = push_struct(arena, animation);
 	new_animation->frames_count = 3;
@@ -127,12 +127,12 @@ animation* get_walk_animation(memory_arena* arena, v2 offset, b32 add_head)
 	new_animation->frames[1].sprite.parts = push_array(arena, parts_count, sprite_part);
 	new_animation->frames[2].sprite.parts = push_array(arena, parts_count, sprite_part);
 
-	rect legs_rect = get_rect_from_min_corner(offset.x + 24, offset.y + 24, 24, 24);
-	fill_animation_frame(new_animation, 0, 0, get_sprite_part(texture, legs_rect), &frame_duration);
+	rect legs_rect = get_rect_from_min_corner(bitmap_offset.x + 24, bitmap_offset.y + 24, 24, 24);
+	fill_animation_frame(new_animation, 0, 0, get_sprite_part(texture, legs_rect, display_offset), &frame_duration);
 	legs_rect = move_rect(legs_rect, get_v2(24, 0));
-	fill_animation_frame(new_animation, 1, 0, get_sprite_part(texture, legs_rect), &frame_duration);
+	fill_animation_frame(new_animation, 1, 0, get_sprite_part(texture, legs_rect, display_offset), &frame_duration);
 	legs_rect = move_rect(legs_rect, get_v2(24, 0));
-	fill_animation_frame(new_animation, 2, 0, get_sprite_part(texture, legs_rect), &frame_duration);
+	fill_animation_frame(new_animation, 2, 0, get_sprite_part(texture, legs_rect, display_offset), &frame_duration);
 
 	if (add_head) 
 	{
@@ -140,8 +140,8 @@ animation* get_walk_animation(memory_arena* arena, v2 offset, b32 add_head)
 		new_animation->frames[1].sprite.parts[0].offset_in_pixels = get_v2(0.0f, -5.0f);
 		new_animation->frames[2].sprite.parts[0].offset_in_pixels = get_v2(0.0f, -5.0f);
 
-		rect head_rect = get_rect_from_min_corner(offset.x, offset.y, 24, 24);
-		v2 head_offset = get_v2(5, -19);
+		rect head_rect = get_rect_from_min_corner(bitmap_offset.x, bitmap_offset.y, 24, 24);
+		v2 head_offset = get_v2(5, -19) + display_offset;
 		fill_animation_frame(new_animation, 0, 1, get_sprite_part(texture, head_rect, head_offset), NULL);	
 		fill_animation_frame(new_animation, 1, 1, get_sprite_part(texture, head_rect, head_offset), NULL);
 		fill_animation_frame(new_animation, 2, 1, get_sprite_part(texture, head_rect, head_offset), NULL);
@@ -150,7 +150,7 @@ animation* get_walk_animation(memory_arena* arena, v2 offset, b32 add_head)
 	return new_animation;
 }
 
-animation_frame get_walk_idle_pose(memory_arena* arena, v2 offset, b32 add_head)
+animation_frame get_walk_idle_pose(memory_arena* arena, v2 bitmap_offset, b32 add_head, v2 display_offset = get_zero_v2())
 {
 	animation_frame result = {};
 
@@ -159,14 +159,14 @@ animation_frame get_walk_idle_pose(memory_arena* arena, v2 offset, b32 add_head)
 	result.sprite.parts_count = parts_count;
 	result.sprite.parts = push_array(arena, parts_count, sprite_part);
 
-	rect legs_rect = get_rect_from_min_corner(offset.x, offset.y + 24, 24, 24);
-	result.sprite.parts[0] = get_sprite_part(textures::CHARSET, legs_rect);
+	rect legs_rect = get_rect_from_min_corner(bitmap_offset.x, bitmap_offset.y + 24, 24, 24);
+	result.sprite.parts[0] = get_sprite_part(textures::CHARSET, legs_rect, display_offset);
 
 	if (add_head)
 	{
 		result.sprite.parts[0].offset_in_pixels = get_v2(0.0f, -5.0f);
-		rect head_rect = get_rect_from_min_corner(offset.x, offset.y, 24, 24);
-		v2 head_offset = get_v2(5, -19);
+		rect head_rect = get_rect_from_min_corner(bitmap_offset.x, bitmap_offset.y, 24, 24);
+		v2 head_offset = get_v2(5, -19) + display_offset;
 		result.sprite.parts[1] = get_sprite_part(textures::CHARSET, head_rect, head_offset);
 	}
 
@@ -407,29 +407,30 @@ animation* load_explosion_animation(memory_arena* arena, v2 offset, u32 tile_sid
 	return new_animation;
 }
 
-shooting_rotation_sprites* load_shooting_rotation_sprites_with_offset(memory_arena* arena, u32 tile_y)
+shooting_rotation_sprites* load_shooting_rotation_sprites_with_offset(memory_arena* arena, u32 tile_y, v2 offset_in_pixels = get_zero_v2())
 {
 	shooting_rotation_sprites* result = push_struct(arena, shooting_rotation_sprites);
+	v2 offset_in_tiles = offset_in_pixels / TILE_SIDE_IN_PIXELS;
 
 	result->up = get_square_sprite(arena, 24,
-		textures::CHARSET, 4, tile_y, get_v2(3.0f, -16.0f));
-	result->up_bullet_offset = get_v2(0.2f, -1.4f);
+		textures::CHARSET, 4, tile_y, get_v2(3.0f, -16.0f) + offset_in_pixels);
+	result->up_bullet_offset = get_v2(0.2f, -1.4f) + offset_in_tiles;
 
 	result->right_up = get_square_sprite(arena, 24,
-		textures::CHARSET, 1, tile_y, get_v2(5.0f, -16.0f));
-	result->right_up_bullet_offset = get_v2(0.65f, -1.1f);
+		textures::CHARSET, 1, tile_y, get_v2(5.0f, -16.0f) + offset_in_pixels);
+	result->right_up_bullet_offset = get_v2(0.65f, -1.1f) + offset_in_tiles;
 
 	result->right = get_square_sprite(arena, 24,
-		textures::CHARSET, 0, tile_y, get_v2(5.0f, -16.0f));
-	result->right_bullet_offset = get_v2(0.85f, -0.60f);
+		textures::CHARSET, 0, tile_y, get_v2(5.0f, -16.0f) + offset_in_pixels);
+	result->right_bullet_offset = get_v2(0.85f, -0.60f) + offset_in_tiles;
 
 	result->right_down = get_square_sprite(arena, 24,
-		textures::CHARSET, 2, tile_y, get_v2(4.0f, -10.0f));
-	result->right_down_bullet_offset = get_v2(0.65f, -0.15f);
+		textures::CHARSET, 2, tile_y, get_v2(4.0f, -10.0f) + offset_in_pixels);
+	result->right_down_bullet_offset = get_v2(0.65f, -0.15f) + offset_in_tiles;
 
 	result->down = get_square_sprite(arena, 24,
-		textures::CHARSET, 3, tile_y, get_v2(2.0f, -6.0f));
-	result->down_bullet_offset = get_v2(0.25f, 0.15f);
+		textures::CHARSET, 3, tile_y, get_v2(2.0f, -6.0f) + offset_in_pixels);
+	result->down_bullet_offset = get_v2(0.25f, 0.15f) + offset_in_tiles;
 
 	return result;
 }
@@ -636,26 +637,28 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	robot_type->fired_bullet_type = robot_bullet_type;
 
 	entity_type* cultist_type = add_entity_type(data, entity_type_enum::ENEMY_CULTIST);
-	cultist_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 4 * 24), true);
+	cultist_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
 	cultist_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT
 		| (u32)entity_flags::WALKS_HORIZONTALLY
 		| (u32)entity_flags::ENEMY
 		| (u32)entity_flags::PLAYER_RECOIL_ON_CONTACT);
 	cultist_type->detection_type = detection_type::DETECT_180_DEGREES_IN_FRONT;
-	cultist_type->detection_distance = 8.0f;
-	cultist_type->stop_movement_distance = 4.0f;
-	cultist_type->forget_detection_distance = 10.0f;
+	cultist_type->detection_distance = 9.0f;
+	cultist_type->stop_movement_distance = 6.0f;
+	cultist_type->forget_detection_distance = 12.0f;
 
 	cultist_type->max_health = 10;
 	cultist_type->damage_on_contact = 10;
-	cultist_type->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), true);
+	cultist_type->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -5.0f));
 	cultist_type->default_attack_cooldown = 0.2f;
 	cultist_type->velocity_multiplier = 4.0f;
 	cultist_type->player_acceleration_on_collision = 3.0f;
-	cultist_type->collision_rect_dim = get_v2(0.35f, 1.6f);
+	cultist_type->collision_rect_dim = get_v2(0.4f, 1.7f);
+	cultist_type->collision_rect_offset = get_v2(0.0f, -0.4f);
+
 	cultist_type->death_animation = data->explosion_animations.size_48x48;
 	cultist_type->death_animation_offset = get_v2(0.0f, -0.75f);
-	cultist_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 4);
+	cultist_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 4, get_v2(0, -4));
 
 	entity_type* cultist_bullet_type = add_bullet_type(data);
 	cultist_bullet_type->damage_on_contact = 5;

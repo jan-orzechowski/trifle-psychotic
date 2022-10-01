@@ -600,6 +600,28 @@ shooting_rotation get_entity_shooting_rotation(shooting_rotation_sprites* rotati
 	return result;
 }
 
+void set_entity_rotated_graphics(entity* entity, world_position* target)
+{
+	if (entity->type->rotation_sprites)
+	{
+		if (target)
+		{
+			v2 shooting_direction = get_unit_vector(get_position_difference(*target, entity->position));
+			shooting_rotation rotation = get_entity_shooting_rotation(entity->type->rotation_sprites, shooting_direction);
+			entity->shooting_sprite = rotation.rotated_sprite;
+			entity->shooting_sprite.flip_horizontally = rotation.flip_horizontally;
+		}
+		else
+		{
+			entity->shooting_sprite = entity->type->rotation_sprites->right;
+			if (entity->direction == direction::W)
+			{
+				entity->shooting_sprite.flip_horizontally = true;
+			}
+		}
+	}
+}
+
 void move_entity(level_state* level, entity* entity_to_move, tile_position current_start, tile_position current_goal, 
 	entity* player, r32 delta_time)
 {
@@ -716,33 +738,23 @@ void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 tar
 {
 	if (enemy->attack_cooldown <= 0)
 	{
-		// trochę wyżej niż środek bohatera, wygląda to naturalniej
 		world_position target_position = add_to_position(target->position, target_offset);
-
-		v2 player_relative_pos = get_position_difference(target_position, enemy->position);
-		v2 direction_to_player = get_unit_vector(player_relative_pos);
-
-		enemy->direction = direction_to_player.x < 0 ? direction::W : direction::E;
+		v2 target_relative_pos = get_position_difference(target_position, enemy->position);
+		v2 direction_to_target = get_unit_vector(target_relative_pos);
 
 		if (is_point_visible_for_entity(level, enemy, target_position))
 		{
-			//tile_position tile_pos = get_tile_position(enemy->position);
-			//printf("widoczny przez entity o wspolrzednych (%d,%d)\n", tile_pos.x, tile_pos.y);
-
 			v2 bullet_offset = get_zero_v2();
 			if (enemy->type->rotation_sprites)
 			{
-				shooting_rotation rotation = get_entity_shooting_rotation(enemy->type->rotation_sprites, direction_to_player);
-				enemy->shooting_sprite = rotation.rotated_sprite;
-				enemy->shooting_sprite.flip_horizontally = rotation.flip_horizontally;
-				bullet_offset = rotation.bullet_offset;
-				
-				direction_to_player = get_unit_vector(get_position_difference(
+				shooting_rotation rotation = get_entity_shooting_rotation(enemy->type->rotation_sprites, direction_to_target);
+				bullet_offset = rotation.bullet_offset;				
+				direction_to_target = get_unit_vector(get_position_difference(
 					target_position, add_to_position(enemy->position, rotation.bullet_offset)));
 			}
 
 			fire_bullet(level, enemy->type->fired_bullet_type, enemy->position, bullet_offset,
-				direction_to_player * enemy->type->fired_bullet_type->constant_velocity);
+				direction_to_target * enemy->type->fired_bullet_type->constant_velocity);
 
 			enemy->attack_cooldown = enemy->type->default_attack_cooldown;
 		}

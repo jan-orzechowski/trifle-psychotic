@@ -286,15 +286,6 @@ void debug_render_tile(render_group* render, tile_position tile_pos, v4 color, w
 	render_rectangle(render, screen_rect, color, false);
 }
 
-void render_debug_path_ends(render_group* render, entity* entity, world_position camera_pos)
-{
-	if (entity->has_walking_path)
-	{
-		debug_render_tile(render, entity->path.start, { 1, 1, 0, 1 }, camera_pos);
-		debug_render_tile(render, entity->path.end, { 0, 0, 1, 1 }, camera_pos);
-	}
-}
-
 void render_entity_sprite(render_group* render, world_position camera_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite)
 {	
@@ -435,8 +426,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 	entity* player = get_player(level);
 
-	entity* debug_entity_to_render_path = 0;
-
 	local_persist b32 update = true;
 	local_persist r32 min_message_time = 2.0f;
 
@@ -516,10 +505,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		if (false == is_zero(player->velocity))
 		{
 			player->direction = player->velocity.x < 0 ? direction::W : direction::E;
-		}
-		else
-		{
-			// zostawiamy stary
 		}
 
 		if (is_power_up_active(level->power_ups.invincibility))
@@ -613,18 +598,26 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					current_start = entity->path.end;
 				}
 					
-				// czy zauważamy gracza?
-				if (false == entity->player_detected)
+				if (is_point_visible_for_entity(level, entity, player->position))
 				{
-					if (is_point_visible_for_entity(level, entity, player->position))
+					entity->player_detected = true;
+
+					if (are_entity_flags_set(entity, entity_flags::ENEMY)
+						&& entity->type->fired_bullet_type)
 					{
-						entity->player_detected = true;
+						enemy_fire_bullet(level, entity, player, get_v2(0.0f, -0.3f));
 					}
 				}
+				else
+				{
+					entity->player_detected = false;
+				}				
 
 				// zatrzymywanie się lub podchodzenie w zależności od pozycji gracza				
 				if (entity->player_detected)
 				{
+					set_entity_rotated_graphics(entity, &player->position);
+
 					if (distance_to_player_length > entity->type->forget_detection_distance)
 					{
 						entity->player_detected = false;
@@ -635,31 +628,21 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 						{
 							tile_position entity_position = get_tile_position(entity->position);
 							current_goal = entity_position;
-							current_start = entity_position;
-
-							if (distance_to_player.x < 0)
-							{
-								entity->direction = direction::W;
-							}
-							else
-							{
-								entity->direction = direction::E;
-							}						
+							current_start = entity_position;										
 						}
 						else
 						{
 							tile_position closest_end = get_closest_end_from_tile_range(entity->path, player->position);
 							current_goal = closest_end;
-							/*printf("path closest end (%d,%d), current start: (%d,%d)\n", 
-								closest_end.x, closest_end.y, current_start.x, current_start.y);*/
 						}
 					}
 				}
+				else
+				{
+					set_entity_rotated_graphics(entity, NULL);
+				}
 
 				move_entity(level, entity, current_start, current_goal, player, delta_time);
-					
-				//debug_entity_to_render_path = entity;
-				
 
 				if (length(entity->velocity) <= 0.5f)
 				{
@@ -677,15 +660,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 				r32 frame_duration_modifier = 0.75f + (1.0f / length(entity->velocity));
 				animate_entity(NULL, entity, delta_time, frame_duration_modifier);
-			}
-			
-			if (distance_to_player_length < entity->type->detection_distance)
-			{
-				if (are_entity_flags_set(entity, entity_flags::ENEMY)
-					&& entity->type->fired_bullet_type)
-				{
-					enemy_fire_bullet(level, entity, player, get_v2(0, -0.5f));
-				}
 			}
 		}
 
@@ -791,11 +765,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 #endif
 			}
 		}
-
-		/*if (debug_entity_to_render_path)
-		{
-			render_debug_path_ends(&game->render, debug_entity_to_render_path, camera_position);
-		}*/
 
 		// draw entities
 		for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
