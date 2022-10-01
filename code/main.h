@@ -272,7 +272,9 @@ struct entity_type
 	r32 damage_on_contact;
 	r32 max_health;
 	r32 default_attack_cooldown;
-	
+	r32 default_attack_series_duration;
+	r32 default_attack_bullet_interval_duration;
+
 	v2 fired_bullet_offset;
 	animation_frame idle_pose;
 	entity_flags flags;
@@ -311,6 +313,8 @@ struct entity
 	
 	r32 health;
 	r32 attack_cooldown;
+	r32 attack_series_duration;
+	r32 attack_bullet_interval_duration;
 	
 	sprite_effect* visual_effect;
 	r32 visual_effect_duration;

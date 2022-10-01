@@ -534,7 +534,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				continue;
 			}
 
-			if (entity->health < 0)
+			if (entity->health < 0.0f)
 			{
 				if (entity->type->death_animation)
 				{
@@ -544,11 +544,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 				remove_entity(entity);
 				continue;
-			}
-
-			if (entity->attack_cooldown > 0)
-			{
-				entity->attack_cooldown -= delta_time;
 			}
 			
 			v2 distance_to_player = get_position_difference(player->position, entity->position);
@@ -607,12 +602,51 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					if (are_entity_flags_set(entity, entity_flags::ENEMY)
 						&& entity->type->fired_bullet_type)
 					{
-						enemy_fire_bullet(level, entity, player, get_v2(0.0f, -0.3f));
+						if (entity->attack_cooldown > 0.0f)
+						{
+							// nie robimy nic
+							entity->attack_cooldown -= delta_time;
+
+							if (entity->attack_cooldown <= 0.0f)
+							{
+								entity->attack_series_duration = entity->type->default_attack_series_duration;
+							}
+						}
+						else
+						{
+							// problem jest tylko taki, jeśli series duration jest 0, 
+							// to nie wiemy, czy już skończyliśmy, czy właśnie mamy zacząć
+							if (entity->attack_series_duration > 0.0f)
+							{
+								entity->attack_series_duration -= delta_time;
+
+								if (entity->attack_bullet_interval_duration > 0.0f)
+								{
+									// przerwa, nic nie robimy
+									entity->attack_bullet_interval_duration -= delta_time;
+								}
+								else
+								{
+									// wystrzeliwujemy jeden pocisk
+									enemy_fire_bullet(level, entity, player, get_v2(0.0f, -0.3f));
+									entity->attack_bullet_interval_duration =
+										entity->type->default_attack_bullet_interval_duration;
+								}
+							}
+							else
+							{
+								// przywracamy cooldown
+								entity->attack_cooldown = entity->type->default_attack_cooldown;
+							}
+						}
 					}
 				}
 				else
 				{
 					entity->player_detected = false;
+					entity->attack_cooldown = 0.0f;
+					entity->attack_series_duration = 0.0f;
+					entity->attack_bullet_interval_duration = 0.0f;
 				}				
 
 				// zatrzymywanie się lub podchodzenie w zależności od pozycji gracza				

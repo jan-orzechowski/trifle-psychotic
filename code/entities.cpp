@@ -747,27 +747,19 @@ void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bulle
 
 void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 target_offset)
 {
-	if (enemy->attack_cooldown <= 0)
+	world_position target_position = add_to_position(target->position, target_offset);
+	v2 target_relative_pos = get_position_difference(target_position, enemy->position);
+	v2 direction_to_target = get_unit_vector(target_relative_pos);
+
+	v2 bullet_offset = get_zero_v2();
+	if (enemy->type->rotation_sprites)
 	{
-		world_position target_position = add_to_position(target->position, target_offset);
-		v2 target_relative_pos = get_position_difference(target_position, enemy->position);
-		v2 direction_to_target = get_unit_vector(target_relative_pos);
-
-		if (is_point_visible_for_entity(level, enemy, target_position))
-		{
-			v2 bullet_offset = get_zero_v2();
-			if (enemy->type->rotation_sprites)
-			{
-				shooting_rotation rotation = get_entity_shooting_rotation(enemy->type->rotation_sprites, direction_to_target);
-				bullet_offset = rotation.bullet_offset;				
-				direction_to_target = get_unit_vector(get_position_difference(
-					target_position, add_to_position(enemy->position, rotation.bullet_offset)));
-			}
-
-			fire_bullet(level, enemy->type->fired_bullet_type, enemy->position, bullet_offset,
-				direction_to_target * enemy->type->fired_bullet_type->constant_velocity);
-
-			enemy->attack_cooldown = enemy->type->default_attack_cooldown;
-		}
+		shooting_rotation rotation = get_entity_shooting_rotation(enemy->type->rotation_sprites, direction_to_target);
+		bullet_offset = rotation.bullet_offset;				
+		direction_to_target = get_unit_vector(get_position_difference(
+			target_position, add_to_position(enemy->position, rotation.bullet_offset)));
 	}
+
+	fire_bullet(level, enemy->type->fired_bullet_type, enemy->position, bullet_offset,
+		direction_to_target * enemy->type->fired_bullet_type->constant_velocity);				
 }

@@ -498,7 +498,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->entity_types = push_array(arena, ENTITY_TYPES_MAX_COUNT, entity_type);
 	data->entity_types_count = 0;
 
-	data->default_player_invincibility_cooldown = 2.0f;
+	data->default_player_invincibility_cooldown = 0.2f;
 
 	data->entity_types_dict = create_entity_types_dictionary(arena);
 
@@ -534,7 +534,6 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->player_power_up_bullet_type = power_up_bullet_type;
 
 	entity_type* sentry_type = add_entity_type(data, entity_type_enum::ENEMY_SENTRY);
-	//sentry_type->idle_pose = get_tile_graphics(arena, 837);
 	sentry_type->flags = (entity_flags)(
 		(u32)entity_flags::BLOCKS_MOVEMENT 
 		| (u32)entity_flags::ENEMY
@@ -652,7 +651,10 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	cultist_type->max_health = 10;
 	cultist_type->damage_on_contact = 10;
 	cultist_type->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -5.0f));
-	cultist_type->default_attack_cooldown = 0.2f;
+	cultist_type->default_attack_cooldown = 0.5f;
+	cultist_type->default_attack_series_duration = 0.4f;
+	cultist_type->default_attack_bullet_interval_duration = 0.05f;
+		
 	cultist_type->velocity_multiplier = 4.0f;
 	cultist_type->player_acceleration_on_collision = 3.0f;
 	cultist_type->collision_rect_dim = get_v2(0.4f, 1.7f);
