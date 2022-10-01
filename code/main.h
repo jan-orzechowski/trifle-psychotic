@@ -511,6 +511,7 @@ struct static_game_data
 	gates_graphics gates_gfx;
 	switches_graphics switches_gfx;
 	display_graphics display_gfx;
+	rect cursor;
 
 	string_ref menu_new_game_str;
 	string_ref menu_continue_str;

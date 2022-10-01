@@ -863,7 +863,15 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		render_hitpoint_bar(level->static_data, &game->render, player, is_power_up_active(level->power_ups.invincibility));
 	}
-	
+
+	// render crosshair
+	{
+		game_input* input = get_last_frame_input(&game->input_buffer);
+		v2 relative_mouse_pos = get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR;
+		rect screen_rect = get_rect_from_center(relative_mouse_pos, get_v2(13, 13));
+		render_bitmap(&game->render, textures::CHARSET, level->static_data->cursor, screen_rect);
+	}
+
 	if (update == false && text_to_show.string_size)
 	{
 		rect text_area = get_rect_from_center(SCREEN_CENTER_IN_PIXELS, get_v2(100, 100));

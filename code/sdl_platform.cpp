@@ -132,6 +132,11 @@ sdl_data init_sdl()
 			print_sdl_error();
 		}
 
+		if (false == SDL_ShowCursor(SDL_DISABLE))
+		{
+			print_sdl_error();
+		}
+
 		sdl_game.window = SDL_CreateWindow("Trifle Psychotic",
 			SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 			SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
