@@ -69,7 +69,6 @@ b32 damage_player(level_state* level, r32 damage_amount)
 				add_explosion(level, add_to_position(player->position, player->type->death_animation_offset),
 					player->type->death_animation);
 			}
-			debug_breakpoint;
 		}
 		else
 		{
@@ -130,18 +129,23 @@ void player_fire_bullet(level_state* level, game_input* input, entity* player)
 			bullet_type = level->static_data->player_power_up_bullet_type;
 		}
 
+		// bez tego mamy rozjazd - kierunek lotu pocisku jest obliczany na podstawie położenia myszy względem środka ekranu
+		// ale pocisk nie jest wystrzeliwany ze środka, tylko z rotation.bullet_offset
+		v2 adjusted_shooting_direction = get_unit_vector(relative_mouse_pos - (rotation.bullet_offset * TILE_SIDE_IN_PIXELS));
+
 		if (is_power_up_active(level->power_ups.spread))
 		{
 			fire_bullet(level, bullet_type, player->position, rotation.bullet_offset,
-				shooting_direction * bullet_type->constant_velocity);
+				adjusted_shooting_direction * bullet_type->constant_velocity);
 			fire_bullet(level, bullet_type, player->position, rotation.bullet_offset,
-				rotate_vector(shooting_direction, 15, false) * bullet_type->constant_velocity);
+				rotate_vector(adjusted_shooting_direction, 15, false) * bullet_type->constant_velocity);
 			fire_bullet(level, bullet_type, player->position, rotation.bullet_offset,
-				rotate_vector(shooting_direction, -15, false) * bullet_type->constant_velocity);
+				rotate_vector(adjusted_shooting_direction, -15, false) * bullet_type->constant_velocity);
 		}
 		else
 		{
-			fire_bullet(level, bullet_type, player->position, rotation.bullet_offset, shooting_direction * bullet_type->constant_velocity);
+			fire_bullet(level, bullet_type, player->position, rotation.bullet_offset, 
+				adjusted_shooting_direction * bullet_type->constant_velocity);
 		}
 
 		player->attack_cooldown = player->type->default_attack_cooldown;
