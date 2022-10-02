@@ -47,3 +47,5 @@ void set_entity_rotated_graphics(entity* entity, world_position* target);
 
 void move_entity(level_state* level, entity* entity_to_move, tile_position current_start, tile_position current_goal, entity* player, r32 delta_time);
 void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 target_offset);
+
+void process_entity_movement(level_state* level, entity* entity_to_move, entity* player, r32 delta_time);

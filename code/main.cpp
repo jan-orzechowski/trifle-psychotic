@@ -172,10 +172,10 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			stop_visual_effect(player, &level->static_data->visual_effects[2]);
 		}
 	}
-
-	// update entities
+	
 	if (false == level->show_message)
 	{
+		// update entities
 		for (i32 entity_index = 1; entity_index < level->entities_count; entity_index++)
 		{
 			entity* entity = level->entities + entity_index;
@@ -202,151 +202,11 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				continue;
 			}
 			
-			v2 distance_to_player = get_position_difference(player->position, entity->position);
-			r32 distance_to_player_length = length(distance_to_player);
-
-			// poruszanie się
 			if (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY)
 				|| are_entity_flags_set(entity, entity_flags::FLIES_HORIZONTALLY)
 				|| are_entity_flags_set(entity, entity_flags::FLIES_VERTICALLY))
 			{				
-				if (false == entity->has_walking_path)
-				{
-					if (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY))
-					{
-						find_walking_path_for_enemy(level, entity);
-					}
-
-					if (are_entity_flags_set(entity, entity_flags::FLIES_HORIZONTALLY))
-					{
-						find_flying_path_for_enemy(level, entity, false);
-					}
-
-					if (are_entity_flags_set(entity, entity_flags::FLIES_VERTICALLY))
-					{
-						find_flying_path_for_enemy(level, entity, true);
-					}
-				}
-
-				tile_position current_goal;
-				tile_position current_start;
-
-				if (entity->goal_path_point == 0)
-				{
-					current_goal = entity->path.start;
-					current_start = entity->path.end;
-				}
-				else if (entity->goal_path_point == 1)
-				{
-					current_goal = entity->path.end;
-					current_start = entity->path.start;
-				}
-				else
-				{
-					// wracamy na początek
-					entity->goal_path_point = 0;
-					current_goal = entity->path.start;
-					current_start = entity->path.end;
-				}
-				
-				v2 player_target_offset = get_v2(0.0f, -0.3f);
-				world_position player_as_target = add_to_position(player->position, get_v2(0.0f, -0.3f));
-				if (is_point_visible_for_entity(level, entity, player_as_target))
-				{
-					entity->player_detected = true;
-
-					if (are_entity_flags_set(entity, entity_flags::ENEMY)
-						&& entity->type->fired_bullet_type)
-					{
-						if (entity->attack_cooldown > 0.0f)
-						{
-							// nie robimy nic
-							entity->attack_cooldown -= delta_time;
-
-							if (entity->attack_cooldown <= 0.0f)
-							{
-								entity->attack_series_duration = entity->type->default_attack_series_duration;
-							}
-						}
-						else
-						{
-							if (entity->attack_series_duration > 0.0f)
-							{
-								entity->attack_series_duration -= delta_time;
-
-								if (entity->attack_bullet_interval_duration > 0.0f)
-								{
-									// przerwa, nic nie robimy
-									entity->attack_bullet_interval_duration -= delta_time;
-								}
-								else
-								{
-									// wystrzeliwujemy jeden pocisk
-									enemy_fire_bullet(level, entity, player, get_v2(0.0f, -0.3f));
-									entity->attack_bullet_interval_duration =
-										entity->type->default_attack_bullet_interval_duration;
-								}
-							}
-							else
-							{
-								// przywracamy cooldown
-								entity->attack_cooldown = entity->type->default_attack_cooldown;
-							}
-						}
-					}
-				}
-				else
-				{
-					entity->player_detected = false;
-					entity->attack_cooldown = 0.0f;
-					entity->attack_series_duration = 0.0f;
-					entity->attack_bullet_interval_duration = 0.0f;
-				}				
-
-				// zatrzymywanie się lub podchodzenie w zależności od pozycji gracza				
-				if (entity->player_detected)
-				{
-					set_entity_rotated_graphics(entity, &player->position);
-
-					if (distance_to_player_length > entity->type->forget_detection_distance)
-					{
-						entity->player_detected = false;
-					}
-					else
-					{
-						if (distance_to_player_length < entity->type->stop_movement_distance)
-						{
-							tile_position entity_position = get_tile_position(entity->position);
-							current_goal = entity_position;
-							current_start = entity_position;										
-						}
-						else
-						{
-							tile_position closest_end = get_closest_end_from_tile_range(entity->path, player->position);
-							current_goal = closest_end;
-						}
-					}
-				}
-				else
-				{
-					set_entity_rotated_graphics(entity, NULL);
-				}
-
-				move_entity(level, entity, current_start, current_goal, player, delta_time);
-
-				if (length(entity->velocity) <= 0.5f)
-				{
-					entity->current_animation = NULL;
-					entity->animation_duration = 0.0f;
-				}
-				else
-				{
-					if (entity->current_animation != entity->type->walk_animation)
-					{
-						entity->current_animation = entity->type->walk_animation;
-						entity->animation_duration = 0.0f;
-					}
-				}
+				process_entity_movement(level, entity, player, delta_time);
 
 				r32 frame_duration_modifier = 0.75f + (1.0f / length(entity->velocity));
 				animate_entity(NULL, entity, delta_time, frame_duration_modifier);

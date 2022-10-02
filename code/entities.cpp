@@ -763,3 +763,150 @@ void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 tar
 	fire_bullet(level, enemy->type->fired_bullet_type, enemy->position, bullet_offset,
 		direction_to_target * enemy->type->fired_bullet_type->constant_velocity);				
 }
+
+void process_entity_movement(level_state* level, entity* entity_to_move, entity* player, r32 delta_time)
+{
+	v2 distance_to_player = get_position_difference(player->position, entity_to_move->position);
+	r32 distance_to_player_length = length(distance_to_player);
+
+	if (false == entity_to_move->has_walking_path)
+	{
+		if (are_entity_flags_set(entity_to_move, entity_flags::WALKS_HORIZONTALLY))
+		{
+			find_walking_path_for_enemy(level, entity_to_move);
+		}
+
+		if (are_entity_flags_set(entity_to_move, entity_flags::FLIES_HORIZONTALLY))
+		{
+			find_flying_path_for_enemy(level, entity_to_move, false);
+		}
+
+		if (are_entity_flags_set(entity_to_move, entity_flags::FLIES_VERTICALLY))
+		{
+			find_flying_path_for_enemy(level, entity_to_move, true);
+		}
+	}
+
+	if (entity_to_move->has_walking_path)
+	{
+		tile_position current_goal;
+		tile_position current_start;
+
+		if (entity_to_move->goal_path_point == 0)
+		{
+			current_goal = entity_to_move->path.start;
+			current_start = entity_to_move->path.end;
+		}
+		else if (entity_to_move->goal_path_point == 1)
+		{
+			current_goal = entity_to_move->path.end;
+			current_start = entity_to_move->path.start;
+		}
+		else
+		{
+			// wracamy na początek
+			entity_to_move->goal_path_point = 0;
+			current_goal = entity_to_move->path.start;
+			current_start = entity_to_move->path.end;
+		}
+
+		v2 player_target_offset = get_v2(0.0f, -0.3f);
+		world_position player_as_target = add_to_position(player->position, get_v2(0.0f, -0.3f));
+		if (is_point_visible_for_entity(level, entity_to_move, player_as_target))
+		{
+			entity_to_move->player_detected = true;
+
+			if (are_entity_flags_set(entity_to_move, entity_flags::ENEMY)
+				&& entity_to_move->type->fired_bullet_type)
+			{
+				if (entity_to_move->attack_cooldown > 0.0f)
+				{
+					// nie robimy nic
+					entity_to_move->attack_cooldown -= delta_time;
+
+					if (entity_to_move->attack_cooldown <= 0.0f)
+					{
+						entity_to_move->attack_series_duration = entity_to_move->type->default_attack_series_duration;
+					}
+				}
+				else
+				{
+					if (entity_to_move->attack_series_duration > 0.0f)
+					{
+						entity_to_move->attack_series_duration -= delta_time;
+
+						if (entity_to_move->attack_bullet_interval_duration > 0.0f)
+						{
+							// przerwa, nic nie robimy
+							entity_to_move->attack_bullet_interval_duration -= delta_time;
+						}
+						else
+						{
+							// wystrzeliwujemy jeden pocisk
+							enemy_fire_bullet(level, entity_to_move, player, get_v2(0.0f, -0.3f));
+							entity_to_move->attack_bullet_interval_duration =
+								entity_to_move->type->default_attack_bullet_interval_duration;
+						}
+					}
+					else
+					{
+						// przywracamy cooldown
+						entity_to_move->attack_cooldown = entity_to_move->type->default_attack_cooldown;
+					}
+				}
+			}
+		}
+		else
+		{
+			entity_to_move->player_detected = false;
+			entity_to_move->attack_cooldown = 0.0f;
+			entity_to_move->attack_series_duration = 0.0f;
+			entity_to_move->attack_bullet_interval_duration = 0.0f;
+		}
+
+		// zatrzymywanie się lub podchodzenie w zależności od pozycji gracza				
+		if (entity_to_move->player_detected)
+		{
+			set_entity_rotated_graphics(entity_to_move, &player->position);
+
+			if (distance_to_player_length > entity_to_move->type->forget_detection_distance)
+			{
+				entity_to_move->player_detected = false;
+			}
+			else
+			{
+				if (distance_to_player_length < entity_to_move->type->stop_movement_distance)
+				{
+					tile_position entity_position = get_tile_position(entity_to_move->position);
+					current_goal = entity_position;
+					current_start = entity_position;
+				}
+				else
+				{
+					tile_position closest_end = get_closest_end_from_tile_range(entity_to_move->path, player->position);
+					current_goal = closest_end;
+				}
+			}
+		}
+		else
+		{
+			set_entity_rotated_graphics(entity_to_move, NULL);
+		}
+
+		move_entity(level, entity_to_move, current_start, current_goal, player, delta_time);
+
+		if (length(entity_to_move->velocity) <= 0.5f)
+		{
+			entity_to_move->current_animation = NULL;
+			entity_to_move->animation_duration = 0.0f;
+		}
+		else
+		{
+			if (entity_to_move->current_animation != entity_to_move->type->walk_animation)
+			{
+				entity_to_move->current_animation = entity_to_move->type->walk_animation;
+				entity_to_move->animation_duration = 0.0f;
+			}
+		}	
+	}
+}
