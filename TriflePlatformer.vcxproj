@@ -163,6 +163,7 @@
     <ClCompile Include="code\input.cpp" />
     <ClCompile Include="code\jormath.cpp" />
     <ClCompile Include="code\jorstring.cpp" />
+    <ClCompile Include="code\level_parsing.cpp" />
     <ClCompile Include="code\main.cpp" />
     <ClCompile Include="code\map.cpp" />
     <ClCompile Include="code\collision.cpp" />
@@ -181,6 +182,7 @@
     <ClInclude Include="code\input.h" />
     <ClInclude Include="code\jormath.h" />
     <ClInclude Include="code\jorutils.h" />
+    <ClInclude Include="code\level_parsing.h" />
     <ClInclude Include="code\main.h" />
     <ClInclude Include="code\map.h" />
     <ClInclude Include="code\collision.h" />

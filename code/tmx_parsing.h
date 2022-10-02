@@ -1,28 +1,83 @@
 ﻿#pragma once
 
-#include "main.h"
+#include "jorstring.h"
 
-struct tmx_parsing_error
+enum xml_token_type
 {
-	string_ref message;
-	tmx_parsing_error* next;
+	LEFT_CHEVRON, // <
+	CLOSING_LEFT_CHEVRON, // </
+	RIGHT_CHEVRON, // >
+	SELF_CLOSING_RIGHT_CHEVRON, // />
+	LEFT_PROLOG_CHEVRON, // <?
+	RIGHT_PROLOG_CHEVRON, // ?>
+	TAG,
+	ATTRIBUTE_NAME,
+	ATTRIBUTE_VALUE,
+	INNER_TEXT
 };
 
-struct tmx_parsing_error_report
+struct xml_token
 {
-	tmx_parsing_error* first_error;
-	tmx_parsing_error* last_error;
-	u32 errors_count;
+	xml_token_type type;
+	string_ref value;
+	xml_token* next;
 };
 
-struct tmx_map_parsing_result
+struct xml_scanner
 {
-	map parsed_map;
-	tmx_parsing_error_report* errors;
+	char* source;
+	u32 source_length;
+	memory_arena* arena;
+
+	u32 current_char_index;
+
+	xml_token* first_token;
+	xml_token* last_token;
+	u32 token_count;
 };
 
-tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, memory_arena* transient_arena, 
-	read_file_result file, const char* layer_name, b32 clean_up_transient_arena);
-map read_collision_map(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file);
-string_ref get_parsing_errors_message(memory_arena* transient_arena, render_group* render,
-	font font, rect textbox_area, tmx_parsing_error_report* errors);
+struct xml_parser
+{
+	xml_scanner scan;
+	u32 current_token_index;
+	xml_token* current_token;
+	memory_arena* arena;
+	u32 nodes_count;
+};
+
+struct xml_attribute;
+
+struct xml_node
+{
+	string_ref tag;
+	xml_node* parent;
+	xml_node* next; // np. następne dziecko tego samego rodzica
+	string_ref inner_text;
+
+	xml_attribute* first_attribute;
+	u32 attributes_count;
+
+	xml_node* first_child;
+	u32 children_count;
+};
+
+struct xml_attribute
+{
+	string_ref name;
+	string_ref value;
+	xml_attribute* next;
+};
+
+struct xml_node_search_result
+{
+	xml_node** found_nodes;
+	u32 found_nodes_count;
+};
+
+xml_node* scan_and_parse_tmx(memory_arena* transient_arena, void* file_contents, u32 file_size);
+
+xml_node* find_tag_in_children(xml_node* node, const char* tag);
+xml_node* find_tag_in_nested_children(xml_node* node, const char* tag);
+xml_node* find_tag_with_attribute_in_children(xml_node* node, const char* tag, const char* attr_name, const char* attr_value);
+string_ref get_attribute_value(xml_node* node, const char* attribute_name);
+xml_node_search_result* find_all_nodes_with_tag(memory_arena* arena, xml_node* root_node, const char* tag);

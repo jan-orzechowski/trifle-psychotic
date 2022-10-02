@@ -7,7 +7,7 @@
 #include "collision.h"
 #include "entities.h"
 #include "player.h"
-#include "tmx_parsing.h"
+#include "level_parsing.h"
 #include "rendering.h"
 #include "ui.h"
 #include "input.h"
