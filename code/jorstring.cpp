@@ -70,6 +70,18 @@ string_ref copy_string(memory_arena* arena, string_ref str)
 	return new_str;
 }
 
+string_ref copy_string_to_buffer(char* buffer, u32 buffer_length, string_ref str)
+{
+	string_ref result = {};
+	result.ptr = buffer;
+	result.string_size = buffer_length < str.string_size ? buffer_length : str.string_size;
+	for (u32 char_index = 0; char_index < result.string_size; char_index++)
+	{
+		*(buffer + char_index) = *(str.ptr + char_index);
+	}
+	return result;
+}
+
 char* get_c_string(memory_arena* arena, string_ref str)
 {
 	char* new_c_str = (char*)push_size(arena, str.string_size + 1);
@@ -685,7 +697,7 @@ void string_function_test(memory_arena* test_arena)
 	v4 hex2_parsed = parse_color_from_hexadecimal(hex2);
 	assert(hex2_parsed == get_v4(60.0f, 255.0f, 106.0f, 106.0f));
 
-	end_temporary_memory(test);
+	end_temporary_memory(test, true);
 }
 
 string_builder get_string_builder(memory_arena* arena, u32 max_size)

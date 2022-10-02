@@ -21,6 +21,7 @@ string_ref get_string_ref(const char*);
 b32 is_empty_string(string_ref);
 b32 operator ==(string_ref, string_ref);
 string_ref copy_string(memory_arena*, string_ref);
+string_ref copy_string_to_buffer(char* buffer, u32 buffer_length, string_ref str);
 char* get_c_string(memory_arena*, string_ref);
 b32 compare_to_c_string(string_ref, const char*);
 u32 get_c_string_length(const char*, u32);

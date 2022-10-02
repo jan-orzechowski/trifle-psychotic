@@ -138,7 +138,7 @@ internal temporary_memory begin_temporary_memory(memory_arena* arena)
 	return result;
 }
 
-internal void end_temporary_memory(temporary_memory temp, b32 zero_bytes = false)
+internal void end_temporary_memory(temporary_memory temp, b32 zero_bytes)
 {
 	memory_arena* arena = temp.arena;
 	assert(arena->temporary_memory_stack_frame_count > 0);

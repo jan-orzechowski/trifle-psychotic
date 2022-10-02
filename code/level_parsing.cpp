@@ -253,7 +253,10 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 							}
 							else
 							{
-								// osiągniety max string size
+								snprintf(error_buffer, ERROR_BUFFER_LENGTH,
+									"Next level name is longer than %d characters",
+									MAX_LEVEL_NAME_LENGTH);
+								add_error(transient_arena, errors, error_buffer);
 							}
 						}
 					}
@@ -464,7 +467,6 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 			{
 				// tak samo jak z nazwą następnego poziomu
 				entity_to_spawn->message = copy_string(permanent_arena, entity_to_spawn->message);
-				printf(entity_to_spawn->message.ptr);
 			}
 		}
 	}
@@ -555,12 +557,12 @@ map read_collision_map(memory_arena* permanent_arena, memory_arena* transient_ar
 	return result;
 }
 
-string_ref get_parsing_errors_message(memory_arena* transient_arena, render_group* render,
+string_ref get_parsing_errors_message(memory_arena* arena, render_group* render,
 	font font, rect textbox_area, tmx_parsing_error_report* errors)
 {
 	text_area_limits limits = get_text_area_limits(font, textbox_area);
 
-	string_builder builder = get_string_builder(transient_arena, limits.max_character_count);
+	string_builder builder = get_string_builder(arena, limits.max_character_count);
 	push_string(&builder, "Unable to read a level from the TMX file! Errors:\n");
 
 	char counter_buffer[10];

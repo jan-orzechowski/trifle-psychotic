@@ -136,13 +136,13 @@ text_area_limits get_text_area_limits(font font, rect writing_area)
 
 void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, string_ref text, b32 wrap)
 {
+    temporary_memory writing_memory = begin_temporary_memory(transient_arena);
+    
     text_area_limits limits = get_text_area_limits(font, writing_area);
     if (text.string_size > limits.max_character_count)
     {
         text.string_size = limits.max_character_count;
     }
-
-    temporary_memory writing_memory = begin_temporary_memory(transient_arena);
 
     if (wrap) 
     {        
@@ -241,7 +241,7 @@ void render_text(render_group* render, memory_arena* transient_arena, font font,
         render_text_line(render, font, writing_area, line_to_render);
     }
 
-    end_temporary_memory(writing_memory);
+    end_temporary_memory(writing_memory, true);
 }
 
 void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, const char* buffer, u32 buffer_size, b32 wrap)

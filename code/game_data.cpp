@@ -472,7 +472,8 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->menu_continue_str = copy_c_string_to_memory_arena(arena, "Continue");
 	data->menu_credits_str = copy_c_string_to_memory_arena(arena, "Credits");
 	data->menu_exit_str = copy_c_string_to_memory_arena(arena, "Exit");
-	data->cursor = get_rect_from_min_corner(get_v2(216, 48), get_v2(13, 13));
+	data->crosshair = get_rect_from_min_corner(get_v2(216, 48), get_v2(13, 13));
+	data->menu_indicator = get_rect_from_min_corner(136, 176, 16, 16);
 
 	std::string collision_file_path = "data/collision_map.tmx";
 	read_file_result collision_file = read_file(collision_file_path);

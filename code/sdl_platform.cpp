@@ -220,7 +220,11 @@ int main(int argc, char* args[])
 		game.transient_arena = &transient_arena;		
 
 		game.render.max_push_buffer_size = megabytes_to_bytes(20);
-		game.render.push_buffer_base = (u8*)push_size(&transient_arena, game.render.max_push_buffer_size);
+		game.render.push_buffer_base = (u8*)push_size(&permanent_arena, game.render.max_push_buffer_size);
+
+		game.level_state = push_struct(&permanent_arena, level_state);
+
+		game.level_name_buffer = (char*)push_size(&permanent_arena, MAX_LEVEL_NAME_LENGTH);
 
 		static_game_data* static_data = push_struct(&permanent_arena, static_game_data);
 
@@ -296,7 +300,7 @@ int main(int argc, char* args[])
 			sdl.debug_frame_counter = frame_counter + 1;
 		}
 
-		end_temporary_memory(game.game_level_memory);
+		end_temporary_memory(game.game_level_memory, false);
 
 		check_arena(game.arena);
 		check_arena(game.transient_arena);

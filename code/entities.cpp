@@ -405,7 +405,7 @@ void initialize_current_map(game_state* game, level_state* level)
 {
 	assert(false == level->current_map_initialized);
 
-	temporary_memory memory_for_initialization = begin_temporary_memory(game->transient_arena);
+	//temporary_memory memory_for_initialization = begin_temporary_memory(game->transient_arena);
 
 	add_entity(level, level->current_map.starting_tile,
 		get_entity_type_ptr(level->static_data->entity_types_dict, entity_type_enum::PLAYER));
@@ -464,7 +464,7 @@ void initialize_current_map(game_state* game, level_state* level)
 		}
 	}
 
-	end_temporary_memory(memory_for_initialization);
+	//end_temporary_memory(memory_for_initialization);
 
 	level->current_map_initialized = true;
 }

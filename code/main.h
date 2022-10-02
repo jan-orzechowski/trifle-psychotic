@@ -25,6 +25,8 @@
 
 #define CHUNK_SIDE_IN_TILES 16
 
+#define MAX_LEVEL_NAME_LENGTH 100
+
 enum class textures
 {
 	NONE,
@@ -516,7 +518,8 @@ struct static_game_data
 	gates_graphics gates_gfx;
 	switches_graphics switches_gfx;
 	display_graphics display_gfx;
-	rect cursor;
+	rect crosshair;
+	rect menu_indicator;
 
 	string_ref menu_new_game_str;
 	string_ref menu_continue_str;
@@ -540,6 +543,7 @@ struct scene_change
 {
 	b32 change_scene;
 	scene new_scene;
+	b32 restore_checkpoint;
 	string_ref map_to_load;
 	r32 fade_out_speed;
 };
@@ -549,7 +553,7 @@ struct level_state
 	string_ref current_map_name;
 	b32 current_map_initialized;
 	map current_map;
-	
+
 	player_movement player_movement;
 	r32 player_invincibility_cooldown;
 	
@@ -575,6 +579,11 @@ struct level_state
 	r32 screen_shake_duration;
 	r32 screen_shake_multiplier;
 
+	b32 show_message;
+	string_ref message_to_show;
+	r32 min_message_timer;
+	b32 stop_player_movement;
+
 	scene_change active_scene_change;
 	r32 scene_fade_perc;
 	r32 fade_in_perc;
@@ -582,6 +591,7 @@ struct level_state
 
 struct save
 {
+	b32 used;
 	string_ref map_name;
 	u32 player_max_health;
 };
@@ -603,7 +613,7 @@ struct death_screen_state
 	b32 initialized;
 	string_ref prompt;
 	r32 timer;
-	b32 transition_to_main_menu;
+	b32 transition_to_game;
 	r32 fade_out_perc;
 	r32 fade_in_perc;
 };
@@ -613,12 +623,13 @@ struct game_state
 	b32 initialized;
 	scene current_scene;
 	
-	b32 first_game_run_initialized;
+	b32 level_initialized;
 	level_state* level_state;
 	memory_arena* arena;
 	memory_arena* transient_arena;	
 	
 	save checkpoint;
+	char* level_name_buffer;
 	main_menu_state main_menu;
 	death_screen_state death_screen;
 

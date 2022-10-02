@@ -162,7 +162,16 @@ void set_player_rotated_graphics_based_on_mouse_position(game_input* input, enti
 
 world_position process_input(level_state* level, input_buffer* input_buffer, entity* player, r32 delta_time)
 {
+	game_input empty_input = {};
 	game_input* input = get_last_frame_input(input_buffer);
+
+	if (level->stop_player_movement)
+	{
+		// wartości wybrane dla obróconej pozycji
+		empty_input.mouse_x = SCREEN_CENTER_IN_PIXELS.x * 2 + 10;
+		empty_input.mouse_y = SCREEN_CENTER_IN_PIXELS.y * 2 + 10;
+		input = &empty_input;	
+	}
 
 	set_player_rotated_graphics_based_on_mouse_position(input, player);
 
@@ -369,28 +378,5 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
 
 			change_player_movement_mode(&level->player_movement, movement_mode::RECOIL);
 		}		
-	}
-}
-
-save* save_player_state(memory_arena* arena, level_state* level)
-{
-	save* result = push_struct(arena, save);
-	entity* player = get_player(level);
-	if (player->type)
-	{
-		result->map_name = copy_string(arena, level->current_map_name);
-		result->player_max_health = level->entities[0].type->max_health;
-	}
-	return result;
-}
-
-void restore_player_state(level_state* level, save* save)
-{
-	assert(level->current_map_initialized);
-	assert(level && save);
-	entity* player = get_player(level);
-	if (player->type)
-	{
-		player->type->max_health = save->player_max_health;
 	}
 }

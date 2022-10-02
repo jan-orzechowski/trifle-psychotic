@@ -79,5 +79,5 @@ void circular_buffer_test(memory_arena* arena)
 	test_input = get_past_input(input_buf, 1);
 	assert(test_input->up.number_of_presses == test_input_count - 2);
 
-	end_temporary_memory(test_memory);
+	end_temporary_memory(test_memory, true);
 }
