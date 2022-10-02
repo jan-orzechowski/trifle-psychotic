@@ -3,6 +3,7 @@
 #include "main.h"
 #include "animation.h"
 #include "entities.h"
+#include "input.h"
 
 entity* get_player(level_state* level);
 b32 damage_player(level_state* level, r32 damage_amount);

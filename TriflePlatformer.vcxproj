@@ -160,32 +160,38 @@
     <ClCompile Include="code\animation.cpp" />
     <ClCompile Include="code\entities.cpp" />
     <ClCompile Include="code\gates.cpp" />
+    <ClCompile Include="code\input.cpp" />
     <ClCompile Include="code\jormath.cpp" />
     <ClCompile Include="code\jorstring.cpp" />
     <ClCompile Include="code\main.cpp" />
     <ClCompile Include="code\map.cpp" />
     <ClCompile Include="code\collision.cpp" />
     <ClCompile Include="code\player.cpp" />
+    <ClCompile Include="code\rendering.cpp" />
     <ClCompile Include="code\sdl_platform.cpp" />
     <ClCompile Include="code\text_rendering.cpp" />
     <ClCompile Include="code\tmx_parsing.cpp" />
     <ClCompile Include="code\game_data.cpp" />
+    <ClCompile Include="code\ui.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\animation.h" />
     <ClInclude Include="code\entities.h" />
     <ClInclude Include="code\gates.h" />
+    <ClInclude Include="code\input.h" />
     <ClInclude Include="code\jormath.h" />
     <ClInclude Include="code\jorutils.h" />
     <ClInclude Include="code\main.h" />
     <ClInclude Include="code\map.h" />
     <ClInclude Include="code\collision.h" />
     <ClInclude Include="code\player.h" />
+    <ClInclude Include="code\rendering.h" />
     <ClInclude Include="code\sdl_platform.h" />
     <ClInclude Include="code\text_rendering.h" />
     <ClInclude Include="code\tmx_parsing.h" />
     <ClInclude Include="code\jorstring.h" />
     <ClInclude Include="code\game_data.h" />
+    <ClInclude Include="code\ui.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

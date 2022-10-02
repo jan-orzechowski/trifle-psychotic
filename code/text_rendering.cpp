@@ -1,5 +1,6 @@
 ﻿#include "main.h"
 #include "text_rendering.h"
+#include "rendering.h"
 
 struct lines_to_render
 {

@@ -1,4 +1,5 @@
 ﻿#include "tmx_parsing.h"
+#include "map.h"
 
 enum xml_token_type
 {
@@ -1322,5 +1323,43 @@ map read_collision_map(memory_arena* permanent_arena, memory_arena* transient_ar
 
 	end_temporary_memory(memory_for_parsing, true);
 
+	return result;
+}
+
+#include "text_rendering.h"
+
+string_ref get_parsing_errors_message(memory_arena* transient_arena, render_group* render,
+	font font, rect textbox_area, tmx_parsing_error_report* errors)
+{
+	text_area_limits limits = get_text_area_limits(font, textbox_area);
+
+	string_builder builder = get_string_builder(transient_arena, limits.max_character_count);
+	push_string(&builder, "Unable to read a level from the TMX file! Errors:\n");
+
+	char counter_buffer[10];
+	u32 printed_errors_count = 0;
+	u32 max_printer_errors_count = 100;
+
+	tmx_parsing_error* error = errors->first_error;
+	while (error && (printed_errors_count < max_printer_errors_count))
+	{
+		snprintf(counter_buffer, 10, "%d. ", printed_errors_count + 1);
+
+		push_string(&builder, counter_buffer);
+		push_string(&builder, error->message);
+		push_string(&builder, "\n");
+
+		printed_errors_count++;
+		error = error->next;
+	}
+
+	i32 remaining_errors = (errors->errors_count - printed_errors_count);
+	if (remaining_errors > 0)
+	{
+		snprintf(counter_buffer, 10, "And %d more errors", remaining_errors);
+		push_string(&builder, counter_buffer);
+	}
+
+	string_ref result = get_string_from_string_builder(&builder);
 	return result;
 }

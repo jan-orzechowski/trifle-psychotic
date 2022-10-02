@@ -3,6 +3,7 @@
 #include "jorutils.h"
 #include "sdl_platform.h"
 #include "entities.h"
+#include "rendering.h"
 
 #define ENTITY_TYPES_MAX_COUNT 20
 #define BULLET_TYPES_MAX_COUNT 10
@@ -61,7 +62,7 @@ animation_frame get_tile_graphics(memory_arena* arena, u32 tile_value)
 	result.sprite.parts_count = 1;
 	result.sprite.parts = push_array(arena, result.sprite.parts_count, sprite_part);
 	result.sprite.parts[0].texture = textures::TILESET;
-	result.sprite.parts[0].texture_rect = get_tile_rect(tile_value);
+	result.sprite.parts[0].texture_rect = get_tile_bitmap_rect(tile_value);
 	return result;
 }
 

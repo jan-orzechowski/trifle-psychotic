@@ -68,6 +68,15 @@
     <ClCompile Include="code\player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="code\rendering.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\input.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\ui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\tmx_parsing.h">
@@ -110,6 +119,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="code\player.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\rendering.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\input.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\ui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

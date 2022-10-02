@@ -2,6 +2,7 @@
 #include "jormath.h"
 #include "main.h"
 #include "map.h"
+#include "rendering.h"
 
 b32 are_flags_set(sprite_effect_flags* flags, sprite_effect_flags flag_values_to_check)
 {

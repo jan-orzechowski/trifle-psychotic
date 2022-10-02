@@ -1,6 +1,8 @@
-﻿#include "main.h"
+﻿#include "sdl_platform.h"
+#include "main.h"
 #include "game_data.h"
-#include "sdl_platform.h"
+#include "rendering.h"
+#include "input.h"
 
 sdl_data GLOBAL_SDL_DATA;
 
