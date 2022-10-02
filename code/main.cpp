@@ -76,7 +76,7 @@ void render_bitmap_with_effects(render_group* group,
 static void render_clear(render_group* group, v4 color)
 {
 	render_group_entry_clear* entry = (render_group_entry_clear*)push_render_element(
-		group, sizeof(render_group_entry_clear), render_group_entry_type::BITMAP_WITH_EFFECTS);
+		group, sizeof(render_group_entry_clear), render_group_entry_type::CLEAR);
 
 	entry->color = color;
 }
@@ -450,10 +450,28 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	// update player
 	if (update) 
 	{
+		if (player->health <= 0.0f)
+		{
+			// przegrywamy
+			if (false == level->active_scene_change.change_scene)
+			{
+				level->active_scene_change.change_scene = true;
+				level->active_scene_change.new_scene = scene::DEATH;
+				level->scene_fade_perc = 0.0f;
+				level->active_scene_change.fade_out_speed = 0.5f;
+				update = false;
+
+				if (player->type->death_animation)
+				{
+					add_explosion(level, add_to_position(player->position, player->type->death_animation_offset),
+						player->type->death_animation);
+				}
+			}
+		}
+
 		if (level->player_invincibility_cooldown > 0.0f)
 		{
 			level->player_invincibility_cooldown -= delta_time;
-			//printf("niezniszczalnosc jeszcze przez %.02f\n", level->player_invincibility_cooldown);
 		}
 
 		update_power_up_timers(level, delta_time);
@@ -498,6 +516,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			level->active_scene_change.change_scene = true;
 			level->active_scene_change.new_scene = scene::GAME;
 			level->active_scene_change.map_to_load = level->current_map.next_map;
+			level->active_scene_change.fade_out_speed = 1.5f;
 			level->scene_fade_perc = 0.0f;
 		}
 
@@ -614,8 +633,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 						}
 						else
 						{
-							// problem jest tylko taki, jeśli series duration jest 0, 
-							// to nie wiemy, czy już skończyliśmy, czy właśnie mamy zacząć
 							if (entity->attack_series_duration > 0.0f)
 							{
 								entity->attack_series_duration -= delta_time;
@@ -725,20 +742,20 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			{
 				remove_bullet(level, &bullet_index);
 			}
-		}
+		}		
+	}
 
-		// update explosions
-		for (i32 explosion_index = 0; explosion_index < level->explosions_count; explosion_index++)
+	// update explosions
+	for (i32 explosion_index = 0; explosion_index < level->explosions_count; explosion_index++)
+	{
+		entity* explosion = level->explosions + explosion_index;
+		if ((explosion->animation_duration + delta_time) > explosion->current_animation->total_duration)
 		{
-			entity* explosion = level->explosions + explosion_index;		
-			if ((explosion->animation_duration + delta_time) > explosion->current_animation->total_duration)
-			{
-				remove_explosion(level, &explosion_index);
-			}
-			else
-			{
-				animate_entity(NULL, explosion, delta_time);
-			}
+			remove_explosion(level, &explosion_index);
+		}
+		else
+		{
+			animate_entity(NULL, explosion, delta_time);
 		}
 	}
 
@@ -895,12 +912,15 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		v2 margin = get_v2(4, 4);
 		render_textbox(level->static_data, &game->render, add_side_length(text_area, margin));
 
-		render_text(&game->render, game->transient_arena, level->static_data->ui_font, text_area, text_to_show, true);
+		render_text(&game->render, game->transient_arena, level->static_data->ui_font, 
+			text_area, text_to_show, true);
 	}
 
 	if (level->active_scene_change.change_scene)
 	{
-		level->scene_fade_perc += (delta_time * 1.5f);
+		assert(level->active_scene_change.fade_out_speed > 0.0f);
+
+		level->scene_fade_perc += (delta_time * level->active_scene_change.fade_out_speed);
 		if (level->scene_fade_perc > 1.0f)
 		{
 			level->scene_fade_perc = 1.0f;
@@ -1017,8 +1037,6 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 		}
 	}
 	
-	//render_clear(&game->render, get_zero_v4());
-
 	i32 option_spacing = 20;
 	u32 options_x = 140;
 	u32 first_option_y = 140;
@@ -1040,21 +1058,36 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 
 	render_bitmap(&game->render, textures::CHARSET, bitmap_rect, indicator_screen_rect);
 
+	local_persist r32 fade_in_perc = 1.0f;
+
+	if (fade_in_perc > 0.0f)
+	{
+		fade_in_perc -= (delta_time * 1.5f);
+		if (fade_in_perc < 0.0f)
+		{
+			fade_in_perc = 0.0f;
+		}
+
+		v4 fade_color = get_zero_v4();
+		render_fade(&game->render, fade_color, fade_in_perc);
+	}
+
 	return change_to_other_scene;
 };
 
-rect get_text_area_for_parsing_errors_message()
+rect get_whole_screen_text_area(r32 margin)
 {
 	r32 window_border = 4.0f * 2;
 	rect result = get_rect_from_corners(
-		get_v2(window_border, window_border),
-		get_v2((SCREEN_WIDTH - window_border) / SCALING_FACTOR, (SCREEN_HEIGHT - window_border) / SCALING_FACTOR));
+		get_v2(window_border + margin, window_border + margin),
+		get_v2((SCREEN_WIDTH  - window_border - margin) / SCALING_FACTOR,
+			   (SCREEN_HEIGHT - window_border - margin) / SCALING_FACTOR));
 	return result;
 }
 
 string_ref get_parsing_errors_message(render_group* render, font font, memory_arena* transient_arena, tmx_parsing_error_report* errors)
 {	
-	rect textbox_area = get_text_area_for_parsing_errors_message();
+	rect textbox_area = get_whole_screen_text_area(0.0f);
 	text_area_limits limits = get_text_area_limits(font, textbox_area);
 
 	string_builder builder = get_string_builder(transient_arena, limits.max_character_count);
@@ -1086,6 +1119,70 @@ string_ref get_parsing_errors_message(render_group* render, font font, memory_ar
 
 	string_ref result = get_string_from_string_builder(&builder);
 	return result;
+}
+
+scene_change death_screen_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
+{
+	scene_change change_to_other_scene = {};
+
+	if (false == game->death_screen.initialized)
+	{
+		game->death_screen.timer = 5.0f;
+		const char* prompt = "Jesli nie teraz, umarlbys za 30 lat";
+		game->death_screen.prompt = copy_c_string_to_memory_arena(game->transient_arena, prompt);
+		game->death_screen.fade_in_perc = 1.0f;
+		game->death_screen.initialized = true;
+	}
+	
+	render_text(&game->render, game->transient_arena, static_data->ui_font,
+		get_whole_screen_text_area(50.0f), game->death_screen.prompt);
+
+	if (game->death_screen.timer > 0.0f)
+	{
+		game->death_screen.timer -= delta_time;
+	}
+	else
+	{
+		game_input* input = get_last_frame_input(&game->input_buffer);
+		if (input->fire.number_of_presses > 0)
+		{
+			game->death_screen.transition_to_main_menu = true;		
+		}
+	}
+
+	if (game->death_screen.transition_to_main_menu)
+	{		
+		game->death_screen.fade_out_perc += (delta_time * 0.5f);
+		if (game->death_screen.fade_out_perc > 1.0f)
+		{
+			game->death_screen.fade_out_perc = 1.0f;
+		}
+
+		v4 fade_color = get_zero_v4();
+		render_fade(&game->render, fade_color, game->death_screen.fade_out_perc);
+	}
+
+	if (game->death_screen.transition_to_main_menu 
+		&& game->death_screen.fade_out_perc >= 1.0f)
+	{
+		change_to_other_scene.change_scene = true;
+		change_to_other_scene.fade_out_speed = 1.5f;
+		change_to_other_scene.new_scene = scene::MAIN_MENU;
+	}
+
+	if (game->death_screen.fade_in_perc > 0.0f)
+	{
+		game->death_screen.fade_in_perc -= (delta_time * 0.5f);
+		if (game->death_screen.fade_in_perc < 0.0f)
+		{
+			game->death_screen.fade_in_perc = 0.0f;
+		}
+
+		v4 fade_color = get_zero_v4();
+		render_fade(&game->render, fade_color, game->death_screen.fade_in_perc);
+	}
+
+	return change_to_other_scene;
 }
 
 void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_time)
@@ -1135,25 +1232,27 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 			if (game->map_errors.string_size > 0)
 			{			
 				render_text(&game->render, game->transient_arena, static_data->ui_font, 
-					get_text_area_for_parsing_errors_message(), game->map_errors);
+					get_whole_screen_text_area(0.0f), game->map_errors);
 
 				game_input* input = get_last_frame_input(&game->input_buffer);
 				if (input->is_left_mouse_key_held || input->fire.number_of_presses > 0)
 				{
 					scene_change.change_scene = true;
 					scene_change.new_scene = scene::MAIN_MENU;
+					game->main_menu = {};
 				}
 			}
 			else
 			{
 				scene_change.change_scene = true;
 				scene_change.new_scene = scene::MAIN_MENU;
+				game->main_menu = {};
 			}
 		};
 		break;
 		case scene::DEATH:
 		{
-			// czy potrzebujemy tutaj osobnej "sceny"?
+			scene_change = death_screen_update_and_render(game, static_data, delta_time);
 		};
 		break;
 		case scene::CREDITS:
@@ -1171,6 +1270,14 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 		{
 			case scene::GAME:
 			{
+				if (scene_change.map_to_load.string_size == 0)
+				{
+					scene_change.change_scene = true;	
+					scene_change.new_scene = scene::MAIN_MENU;
+					game->main_menu = {};
+					break;
+				}
+
 				temporary_memory auxillary_memory_for_loading = begin_temporary_memory(game->transient_arena);
 				{
 					string_ref level_name = copy_string(game->transient_arena, scene_change.map_to_load);
@@ -1190,7 +1297,7 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 			}
 			case scene::MAIN_MENU:
 			{
-				
+				game->main_menu = {};
 			}
 			break;
 			case scene::MAP_ERRORS:
@@ -1200,7 +1307,7 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 			break;
 			case scene::DEATH:
 			{
-
+				game->death_screen = {};
 			}
 			break;
 			case scene::CREDITS:

@@ -541,6 +541,7 @@ struct scene_change
 	b32 change_scene;
 	scene new_scene;
 	string_ref map_to_load;
+	r32 fade_out_speed;
 };
 
 struct level_state
@@ -592,6 +593,21 @@ struct render_group
 	u8* push_buffer_base;
 };
 
+struct main_menu_state
+{
+
+};
+
+struct death_screen_state
+{
+	b32 initialized;
+	string_ref prompt;
+	r32 timer;
+	b32 transition_to_main_menu;
+	r32 fade_out_perc;
+	r32 fade_in_perc;
+};
+
 struct game_state
 {
 	b32 initialized;
@@ -602,6 +618,10 @@ struct game_state
 	memory_arena* arena;
 	memory_arena* transient_arena;	
 	
+	save checkpoint;
+	main_menu_state main_menu;
+	death_screen_state death_screen;
+
 	input_buffer input_buffer;
 
 	string_ref map_errors;

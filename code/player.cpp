@@ -61,18 +61,9 @@ b32 damage_player(level_state* level, r32 damage_amount)
 		player->health -= damage_amount;
 		start_visual_effect(level, player, 1, false);
 		//printf("gracz dostaje %.02f obrazen, zostalo %.02f zdrowia\n", damage_amount, player->health);
-		if (player->health < 0.0f)
+		if (player->health >= 0.0f)
 		{
-			// przegrywamy
-			if (player->type->death_animation)
-			{
-				add_explosion(level, add_to_position(player->position, player->type->death_animation_offset),
-					player->type->death_animation);
-			}
-		}
-		else
-		{
-			level->player_invincibility_cooldown = level->static_data->default_player_invincibility_cooldown;
+			level->player_invincibility_cooldown = level->static_data->default_player_invincibility_cooldown;			
 		}
 	}
 	return damaged;
