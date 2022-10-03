@@ -516,7 +516,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	entity_type* player_entity_type = add_entity_type(data, entity_type_enum::PLAYER);
 	player_entity_type->idle_pose = get_player_idle_pose(arena);
 	player_entity_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT | (u32)entity_flags::PLAYER);
-	player_entity_type->max_health = 100;
+	player_entity_type->max_health = 200;
 	player_entity_type->velocity_multiplier = 40.0f;
 	player_entity_type->slowdown_multiplier = 0.80f;
 	player_entity_type->default_attack_cooldown = 0.2f;
@@ -527,7 +527,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	player_entity_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 0);
 
 	entity_type* player_bullet_type = add_bullet_type(data);
-	player_bullet_type->damage_on_contact = 5;
+	player_bullet_type->damage_on_contact = 10;
 	player_bullet_type->constant_velocity = 12.0f;
 	player_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 1);
 
@@ -578,7 +578,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	guardian_type->detection_type = detection_type::DETECT_180_DEGREES_BELOW;
 	guardian_type->detection_distance = 10.0f;
 	guardian_type->stop_movement_distance = 4.0f;
-	guardian_type->forget_detection_distance = 7.0f;
+	guardian_type->forget_detection_distance = 12.0f;
 
 	guardian_type->max_health = 10;
 	guardian_type->damage_on_contact = 10;
@@ -601,17 +601,19 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	flying_bomb_type->flags = (entity_flags)(
 		(u32)entity_flags::BLOCKS_MOVEMENT 
 		| (u32)entity_flags::ENEMY
+		| (u32)entity_flags::FLIES_TOWARDS_PLAYER
 		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
-	flying_bomb_type->detection_type = detection_type::DETECT_180_DEGREES_BELOW;
+	flying_bomb_type->detection_type = detection_type::DETECT_360_DEGREES;
 	flying_bomb_type->detection_distance = 10.0f;
+	flying_bomb_type->forget_detection_distance = 12.0f;
 	
-	flying_bomb_type->max_health = 10;
+	flying_bomb_type->max_health = 20;
 	flying_bomb_type->damage_on_contact = 100.0f;
-	flying_bomb_type->velocity_multiplier = 5.0f;
+	flying_bomb_type->velocity_multiplier = 2.0f;
 	flying_bomb_type->default_attack_cooldown = 0.5f;
 	flying_bomb_type->player_acceleration_on_collision = 3.0f;
-	flying_bomb_type->collision_rect_dim = get_v2(1.0f, 1.0f);
-	flying_bomb_type->death_animation = data->explosion_animations.size_32x32;
+	flying_bomb_type->collision_rect_dim = get_v2(0.8f, 0.3f);
+	flying_bomb_type->death_animation = data->explosion_animations.size_48x48;
 
 	entity_type* robot_type = add_entity_type(data, entity_type_enum::ENEMY_ROBOT);
 	robot_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 2 * 24), true);
@@ -623,7 +625,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	robot_type->detection_type = detection_type::DETECT_90_DEGREES_IN_FRONT;
 	robot_type->detection_distance = 7.0f;
 	robot_type->stop_movement_distance = 4.0f;
-	robot_type->forget_detection_distance = 7.0f;
+	robot_type->forget_detection_distance = 12.0f;
 	robot_type->looking_position_offset = get_v2(0.0f, -1.0f);
 
 	robot_type->max_health = 10;
@@ -656,7 +658,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	cultist_type->forget_detection_distance = 15.0f;
 	cultist_type->looking_position_offset = get_v2(0.0f, -1.2f);
 
-	cultist_type->max_health = 10;
+	cultist_type->max_health = 15;
 	cultist_type->damage_on_contact = 10;
 	cultist_type->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -5.0f));
 	cultist_type->default_attack_cooldown = 0.5f;
@@ -673,7 +675,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	cultist_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 4, get_v2(0, -4));
 
 	entity_type* cultist_bullet_type = add_bullet_type(data);
-	cultist_bullet_type->damage_on_contact = 5;
+	cultist_bullet_type->damage_on_contact = 10;
 	cultist_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
 	cultist_bullet_type->constant_velocity = 12.0f;
 	cultist_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 0);

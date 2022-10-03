@@ -200,7 +200,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			
 			if (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY)
 				|| are_entity_flags_set(entity, entity_flags::FLIES_HORIZONTALLY)
-				|| are_entity_flags_set(entity, entity_flags::FLIES_VERTICALLY))
+				|| are_entity_flags_set(entity, entity_flags::FLIES_VERTICALLY)
+				|| are_entity_flags_set(entity, entity_flags::FLIES_TOWARDS_PLAYER))
 			{				
 				process_entity_movement(level, entity, player, delta_time);
 

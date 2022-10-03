@@ -78,7 +78,7 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 			case 7:  type = entity_type_enum::ENEMY_ROBOT; break;
 			case 8:  type = entity_type_enum::ENEMY_CULTIST; break;
 			case 9:  type = entity_type_enum::ENEMY_FLYING_BOMB; break;
-			case 10:  type = entity_type_enum::ENEMY_GUARDIAN; break;
+			case 10: type = entity_type_enum::ENEMY_GUARDIAN; break;
 			case 11: type = entity_type_enum::ENEMY_SENTRY; break;
 			case 13: type = entity_type_enum::POWER_UP_HEALTH; break;
 			case 14: type = entity_type_enum::POWER_UP_INVINCIBILITY; break;

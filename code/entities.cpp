@@ -623,7 +623,7 @@ void set_entity_rotated_graphics(entity* entity, world_position* target)
 	}
 }
 
-void move_entity(level_state* level, entity* entity_to_move, tile_position current_start, tile_position current_goal, 
+void move_entity_on_path(level_state* level, entity* entity_to_move, tile_position current_start, tile_position current_goal, 
 	entity* player, r32 delta_time)
 {
 	if (current_goal != current_start)
@@ -643,18 +643,17 @@ void move_entity(level_state* level, entity* entity_to_move, tile_position curre
 		r32 velocity = entity_to_move->type->velocity_multiplier;
 
 		r32 slowdown_threshold = 2.0f;
-		r32 fudge = 0.1f;
+		r32 margin = 0.1f;
 		if (distance_length < slowdown_threshold)
 		{
-			velocity *= ((distance_length + fudge) / slowdown_threshold);
+			velocity *= ((distance_length + margin) / slowdown_threshold);
 		}
 		else if (distance_to_start_length < slowdown_threshold)
 		{
-			velocity *= ((distance_to_start_length + fudge) / slowdown_threshold);
+			velocity *= ((distance_to_start_length + margin) / slowdown_threshold);
 		}
 
 		entity_to_move->velocity = direction * velocity;
-		// ten kod gryzie się z kodem odpowiedzialnym za strzelanie
 		if (entity_to_move->velocity.x < 0.0f)
 		{
 			entity_to_move->direction = direction::W;
@@ -682,16 +681,12 @@ void move_entity(level_state* level, entity* entity_to_move, tile_position curre
 
 		if (length(get_position_difference(current_goal, entity_to_move->position)) < 0.01f)
 		{
-			//entity_to_move->position = goal_pos;
-
 			if (entity_to_move->goal_path_point == 0)
 			{
-				//printf("dotarliśmy do 0\n");
 				entity_to_move->goal_path_point = 1;
 			}
 			else if (entity_to_move->goal_path_point == 1)
 			{
-				//printf("dotarliśmy do 1\n");
 				entity_to_move->goal_path_point = 0;
 			}
 		}
@@ -699,6 +694,32 @@ void move_entity(level_state* level, entity* entity_to_move, tile_position curre
 	else
 	{
 		entity_to_move->velocity = get_zero_v2();
+	}
+}
+
+void move_entity_towards_player(level_state* level, entity* entity_to_move, entity* player, r32 delta_time)
+{
+	assert(entity_to_move->type->velocity_multiplier != 0.0f);
+	r32 velocity = entity_to_move->type->velocity_multiplier;
+
+	v2 direction = get_unit_vector(get_position_difference(player->position, entity_to_move->position));
+
+	entity_to_move->velocity = direction * velocity;
+
+	world_position new_position = add_to_position(entity_to_move->position, (direction * velocity * delta_time));
+	v2 movement_delta = get_position_difference(new_position, entity_to_move->position);
+	entity_to_move->position = new_position;
+
+	// sprawdzenie kolizji z graczem
+	chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(entity_to_move->position));
+	collision new_collision = check_minkowski_collision(
+		get_entity_collision_data(reference_chunk, entity_to_move),
+		get_entity_collision_data(reference_chunk, player),
+		movement_delta, 1.0f);
+
+	if (new_collision.collided_wall != direction::NONE)
+	{
+		handle_player_and_enemy_collision(level, player, entity_to_move);
 	}
 }
 
@@ -893,7 +914,7 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
 			set_entity_rotated_graphics(entity_to_move, NULL);
 		}
 
-		move_entity(level, entity_to_move, current_start, current_goal, player, delta_time);
+		move_entity_on_path(level, entity_to_move, current_start, current_goal, player, delta_time);
 
 		if (length(entity_to_move->velocity) <= 0.5f)
 		{
@@ -908,5 +929,33 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
 				entity_to_move->animation_duration = 0.0f;
 			}
 		}	
+	}
+	else
+	{
+		if (are_entity_flags_set(entity_to_move, entity_flags::FLIES_TOWARDS_PLAYER))
+		{
+			v2 player_target_offset = get_v2(0.0f, -0.3f);
+			world_position player_as_target = add_to_position(player->position, get_v2(0.0f, -0.3f));
+			if (is_point_visible_for_entity(level, entity_to_move, player_as_target))
+			{
+				entity_to_move->player_detected = true;
+			}
+			else
+			{
+				entity_to_move->player_detected = false;
+			}
+
+			if (entity_to_move->player_detected)
+			{
+				if (distance_to_player_length > entity_to_move->type->forget_detection_distance)
+				{
+					entity_to_move->player_detected = false;
+				}
+				else
+				{
+					move_entity_towards_player(level, entity_to_move, player, delta_time);
+				}
+			}
+		}
 	}
 }
