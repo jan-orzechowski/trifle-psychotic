@@ -52,6 +52,25 @@ b32 was_up_key_pressed_in_last_frames(input_buffer* buffer, u32 number_of_frames
 	return result;
 }
 
+b32 was_any_key_pressed_in_last_frames(input_buffer* buffer, u32 number_of_frames)
+{
+	b32 result = false;
+	for (u32 frame = 1; frame <= number_of_frames; frame++)
+	{
+		game_input* input = get_past_input(buffer, frame);
+		if (input->up.number_of_presses > 0
+			|| input->down.number_of_presses > 0
+			|| input->left.number_of_presses > 0
+			|| input->right.number_of_presses > 0
+			|| input->fire.number_of_presses > 0)
+		{
+			result = true;
+			break;
+		}
+	}
+	return result;
+}
+
 void circular_buffer_test(memory_arena* arena)
 {
 	temporary_memory test_memory = begin_temporary_memory(arena);

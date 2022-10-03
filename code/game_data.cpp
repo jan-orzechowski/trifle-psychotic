@@ -385,6 +385,9 @@ ui_graphics load_ui_graphics()
 	result.msgbox_frame_left = move_rect(&r, get_v2(0, -4));
 	result.msgbox_frame_background = move_rect(&r, get_v2(4, 0));
 
+	result.crosshair = get_rect_from_min_corner(get_v2(216, 48), get_v2(13, 13));
+	result.menu_indicator = get_rect_from_min_corner(136, 176, 16, 16);
+
 	return result;
 }
 
@@ -471,9 +474,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->menu_new_game_str = copy_c_string_to_memory_arena(arena, "New Game");
 	data->menu_continue_str = copy_c_string_to_memory_arena(arena, "Continue");
 	data->menu_credits_str = copy_c_string_to_memory_arena(arena, "Credits");
-	data->menu_exit_str = copy_c_string_to_memory_arena(arena, "Exit");
-	data->crosshair = get_rect_from_min_corner(get_v2(216, 48), get_v2(13, 13));
-	data->menu_indicator = get_rect_from_min_corner(136, 176, 16, 16);
+	data->menu_exit_str = copy_c_string_to_memory_arena(arena, "Exit");	
 
 	std::string collision_file_path = "data/collision_map.tmx";
 	read_file_result collision_file = read_file(collision_file_path);

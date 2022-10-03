@@ -71,8 +71,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	{
 		if (level->min_message_timer < 0.0f)
 		{
-			game_input* input = get_last_frame_input(&game->input_buffer);
-			if (input->fire.number_of_presses > 0)
+			if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
 			{
 				level->min_message_timer = 0.0f;
 				level->show_message = false;				
@@ -94,7 +93,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			{
 				level->active_scene_change.change_scene = true;
 				level->active_scene_change.new_scene = scene::DEATH;
-				level->scene_fade_perc = 0.0f;
 				level->active_scene_change.fade_out_speed = 0.5f;
 				level->stop_player_movement = true;
 
@@ -139,10 +137,9 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			string_ref message = collision.collided_message_display->type->message;
 			if (message.string_size)
 			{
-				//printf(message.ptr); printf("\n");	
 				level->show_message = true;
 				level->message_to_show = collision.collided_message_display->type->message;
-				level->min_message_timer = 2.0f;
+				level->min_message_timer = 1.0f;
 				collision.collided_message_display->type->message = {};
 			}
 		}
@@ -154,7 +151,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			level->active_scene_change.new_scene = scene::GAME;
 			level->active_scene_change.map_to_load = level->current_map.next_map;
 			level->active_scene_change.fade_out_speed = 1.5f;
-			level->scene_fade_perc = 0.0f;
 		}
 
 		v2 player_direction_v2 = get_unit_vector(player->velocity);
@@ -417,34 +413,16 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	if (level->active_scene_change.change_scene)
 	{
 		assert(level->active_scene_change.fade_out_speed > 0.0f);
-
-		level->scene_fade_perc += (delta_time * level->active_scene_change.fade_out_speed);
-		if (level->scene_fade_perc > 1.0f)
-		{
-			level->scene_fade_perc = 1.0f;
-		}
-
-		v4 fade_color = get_zero_v4();
-		render_fade(&game->render, fade_color, level->scene_fade_perc);
+		process_fade(&game->render, &level->fade_out_perc, delta_time, false, level->active_scene_change.fade_out_speed);
 	}
 
 	scene_change scene_change = {}; 
-	if (level->scene_fade_perc >= 1.0f)
+	if (level->fade_out_perc >= 1.0f)
 	{
 		scene_change = level->active_scene_change;
 	}
 
-	if (level->fade_in_perc > 0.0f)
-	{
-		level->fade_in_perc -= (delta_time * 1.5f);
-		if (level->fade_in_perc < 0.0f)
-		{
-			level->fade_in_perc = 0.0f;
-		}
-
-		v4 fade_color = get_zero_v4();
-		render_fade(&game->render, fade_color, level->fade_in_perc);
-	}
+	process_fade(&game->render, &level->fade_in_perc, delta_time, true);
 
 	return scene_change;
 }
@@ -454,48 +432,42 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	scene_change change_to_other_scene = {};
 
 	game_input* input = get_last_frame_input(&game->input_buffer);
-
-	local_persist i32 menu_index = 0;
-	local_persist i32 menu_max_index = 3;
-
-	r32 menu_change_default_timer = 0.15f;
-	local_persist r32 menu_change_timer = 0.0f;
-
 	if (input->up.number_of_presses > 0)
 	{
-		if (menu_change_timer < 0)
+		if (game->main_menu.option_change_timer < 0.0f)
 		{
-			menu_index--;
-			menu_change_timer = menu_change_default_timer;
+			game->main_menu.option_index--;
+			game->main_menu.option_change_timer = 0.15f;;
 		}
 	} 
 	if (input->down.number_of_presses > 0)
 	{
-		if (menu_change_timer < 0)
+		if (game->main_menu.option_change_timer < 0.0f)
 		{
-			menu_index++;
-			menu_change_timer = menu_change_default_timer;
+			game->main_menu.option_index++;
+			game->main_menu.option_change_timer = 0.15f;;
 		}
 	}
 
-	menu_change_timer -= delta_time;
+	game->main_menu.option_change_timer -= delta_time;
+	game->main_menu.option_max_index = game->checkpoint.used ? 3 : 2;
 
-	if (menu_index < 0)
+	if (game->main_menu.option_index < 0)
 	{
-		menu_index = menu_max_index;
+		game->main_menu.option_index = game->main_menu.option_max_index;
 	}
-	if (menu_index > menu_max_index)
+	if (game->main_menu.option_index > game->main_menu.option_max_index)
 	{
-		menu_index = 0;
+		game->main_menu.option_index = 0;
 	}
 
-	if (input->fire.number_of_presses)
+	if (input->fire.number_of_presses > 0)
 	{
-		switch (menu_index)
+		switch (game->main_menu.option_index)
 		{
 			case 0: 
 			{
-				// New game
+				// new game
 				change_to_other_scene.change_scene = true;
 				change_to_other_scene.new_scene = scene::GAME;
 				change_to_other_scene.restore_checkpoint = false;
@@ -503,12 +475,16 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 			break;
 			case 1:
 			{
-				// Continue
-				change_to_other_scene.change_scene = true;
-				change_to_other_scene.new_scene = scene::GAME;
-				change_to_other_scene.restore_checkpoint = true;
-			}
-			break;
+				if (game->checkpoint.used)
+				{
+					// continue
+					change_to_other_scene.change_scene = true;
+					change_to_other_scene.new_scene = scene::GAME;
+					change_to_other_scene.restore_checkpoint = true;
+					break;
+				}
+			}		
+			// intentional fallthrough
 			case 2:
 			{
 				change_to_other_scene.change_scene = true;
@@ -548,25 +524,13 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	render_menu_option(static_data->menu_font, game, 
 		options_x, option_y, static_data->menu_exit_str);
 
-	u32 indicator_y = first_option_y + (menu_index * option_y_spacing) - 4;
+	u32 indicator_y = first_option_y + (game->main_menu.option_index * option_y_spacing) - 4;
 	u32 indicator_x = options_x - 20;
 
 	rect indicator_screen_rect = get_rect_from_min_corner(indicator_x, indicator_y, 16, 16);
-	render_bitmap(&game->render, textures::CHARSET, static_data->menu_indicator, indicator_screen_rect);
+	render_bitmap(&game->render, textures::CHARSET, static_data->ui_gfx.menu_indicator, indicator_screen_rect);
 
-	local_persist r32 fade_in_perc = 1.0f;
-
-	if (fade_in_perc > 0.0f)
-	{
-		fade_in_perc -= (delta_time * 1.5f);
-		if (fade_in_perc < 0.0f)
-		{
-			fade_in_perc = 0.0f;
-		}
-
-		v4 fade_color = get_zero_v4();
-		render_fade(&game->render, fade_color, fade_in_perc);
-	}
+	process_fade(&game->render, &game->main_menu.fade_percentage, delta_time, true, 1.5f);
 
 	return change_to_other_scene;
 };
@@ -594,8 +558,7 @@ scene_change death_screen_update_and_render(game_state* game, static_game_data* 
 	}
 	else
 	{
-		game_input* input = get_last_frame_input(&game->input_buffer);
-		if (input->fire.number_of_presses > 0)
+		if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
 		{
 			game->death_screen.transition_to_game = true;
 		}
@@ -603,14 +566,7 @@ scene_change death_screen_update_and_render(game_state* game, static_game_data* 
 
 	if (game->death_screen.transition_to_game)
 	{		
-		game->death_screen.fade_out_perc += (delta_time * 0.5f);
-		if (game->death_screen.fade_out_perc > 1.0f)
-		{
-			game->death_screen.fade_out_perc = 1.0f;
-		}
-
-		v4 fade_color = get_zero_v4();
-		render_fade(&game->render, fade_color, game->death_screen.fade_out_perc);
+		process_fade(&game->render, &game->death_screen.fade_out_perc, delta_time, false, 0.5f);
 	}
 
 	if (game->death_screen.transition_to_game
@@ -622,17 +578,7 @@ scene_change death_screen_update_and_render(game_state* game, static_game_data* 
 		change_to_other_scene.restore_checkpoint = true;
 	}
 
-	if (game->death_screen.fade_in_perc > 0.0f)
-	{
-		game->death_screen.fade_in_perc -= (delta_time * 0.5f);
-		if (game->death_screen.fade_in_perc < 0.0f)
-		{
-			game->death_screen.fade_in_perc = 0.0f;
-		}
-
-		v4 fade_color = get_zero_v4();
-		render_fade(&game->render, fade_color, game->death_screen.fade_in_perc);
-	}
+	process_fade(&game->render, &game->death_screen.fade_in_perc, delta_time, true, 0.5f);
 
 	return change_to_other_scene;
 }
@@ -669,7 +615,7 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 					get_whole_screen_text_area(0.0f), game->map_errors);
 
 				game_input* input = get_last_frame_input(&game->input_buffer);
-				if (input->is_left_mouse_key_held || input->fire.number_of_presses > 0)
+				if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
 				{
 					scene_change.change_scene = true;
 					scene_change.new_scene = scene::MAIN_MENU;
@@ -704,67 +650,64 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 		{
 			case scene::GAME:
 			{				
-				//if (false == game->level_initialized)
-				//{
-				printf("przed inicjalizacja permanent arena: %d, transient arena: %d\n",
-					game->arena->size_used, game->transient_arena->size_used);
+				/*printf("przed inicjalizacja permanent arena: %d, transient arena: %d\n",
+					game->arena->size_used, game->transient_arena->size_used);*/
 
-					temporary_memory auxillary_memory_for_loading = begin_temporary_memory(game->transient_arena);
+				temporary_memory auxillary_memory_for_loading = begin_temporary_memory(game->transient_arena);
 					
-					string_ref level_to_load_name = {};
-					if (scene_change.restore_checkpoint 
-						&& game->checkpoint.used
-						&& game->checkpoint.map_name.string_size > 0)
-					{
-						level_to_load_name = copy_string(game->transient_arena, game->checkpoint.map_name);
-					}
-					else if (scene_change.map_to_load.string_size)
-					{
-						level_to_load_name = copy_string(game->transient_arena, scene_change.map_to_load);
-					}
+				string_ref level_to_load_name = {};
+				if (scene_change.restore_checkpoint 
+					&& game->checkpoint.used
+					&& game->checkpoint.map_name.string_size > 0)
+				{
+					level_to_load_name = copy_string(game->transient_arena, game->checkpoint.map_name);
+				}
+				else if (scene_change.map_to_load.string_size)
+				{
+					level_to_load_name = copy_string(game->transient_arena, scene_change.map_to_load);
+				}
 
-					if (level_to_load_name.string_size == 0)
-					{
-						level_to_load_name = copy_c_string_to_memory_arena(game->transient_arena, "map_01");
-					}
+				if (level_to_load_name.string_size == 0)
+				{
+					level_to_load_name = copy_c_string_to_memory_arena(game->transient_arena, "map_01");
+				}
 
-					if (game->game_level_memory.size_used_at_creation != 0)
-					{
-						end_temporary_memory(game->game_level_memory, true);
-					}
-					game->game_level_memory = begin_temporary_memory(game->arena);
+				if (game->game_level_memory.size_used_at_creation != 0)
+				{
+					end_temporary_memory(game->game_level_memory, true);
+				}
+				game->game_level_memory = begin_temporary_memory(game->arena);
 			
-					initialize_level_state(game->level_state, static_data, level_to_load_name, game->arena);
-					tmx_map_parsing_result parsing_result = load_map(level_to_load_name, game->arena, game->transient_arena);
-					if (parsing_result.errors->errors_count > 0)
-					{
-						scene_change.change_scene = true;
-						scene_change.new_scene = scene::MAP_ERRORS;
-						game->map_errors = get_parsing_errors_message(game->arena, &game->render,
-							static_data->ui_font, get_whole_screen_text_area(0.0f), parsing_result.errors);
+				initialize_level_state(game->level_state, static_data, level_to_load_name, game->arena);
+				tmx_map_parsing_result parsing_result = load_map(level_to_load_name, game->arena, game->transient_arena);
+				if (parsing_result.errors->errors_count > 0)
+				{
+					scene_change.change_scene = true;
+					scene_change.new_scene = scene::MAP_ERRORS;
+					game->map_errors = get_parsing_errors_message(game->arena, &game->render,
+						static_data->ui_font, get_whole_screen_text_area(0.0f), parsing_result.errors);
 
-						game->level_initialized = false;
-					} 
-					else
-					{
-						game->level_state->current_map = parsing_result.parsed_map;
-						initialize_current_map(game, game->level_state);
+					game->level_initialized = false;
+				} 
+				else
+				{
+					game->level_state->current_map = parsing_result.parsed_map;
+					initialize_current_map(game, game->level_state);
 
-						game->level_initialized = true;
+					game->level_initialized = true;
 						
-						if (scene_change.restore_checkpoint && game->checkpoint.used)
-						{
-							restore_checkpoint(game);
-						}
-
-						save_checkpoint(game);
+					if (scene_change.restore_checkpoint && game->checkpoint.used)
+					{
+						restore_checkpoint(game);
 					}
 
-					end_temporary_memory(auxillary_memory_for_loading, true);
-				//}
+					save_checkpoint(game);
+				}
 
-					printf("po inicjalizacji permanent arena: %d, transient arena: %d\n",
-						game->arena->size_used, game->transient_arena->size_used);
+				end_temporary_memory(auxillary_memory_for_loading, true);
+				
+			/*	printf("po inicjalizacji permanent arena: %d, transient arena: %d\n",
+					game->arena->size_used, game->transient_arena->size_used);*/
 			}
 			case scene::MAIN_MENU:
 			{

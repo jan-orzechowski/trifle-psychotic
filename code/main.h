@@ -455,6 +455,9 @@ struct ui_graphics
 	rect msgbox_frame_lower_left;
 	rect msgbox_frame_left;
 	rect msgbox_frame_background;
+
+	rect crosshair;
+	rect menu_indicator;	
 };
 
 struct gates_graphics
@@ -518,9 +521,7 @@ struct static_game_data
 	gates_graphics gates_gfx;
 	switches_graphics switches_gfx;
 	display_graphics display_gfx;
-	rect crosshair;
-	rect menu_indicator;
-
+	
 	string_ref menu_new_game_str;
 	string_ref menu_continue_str;
 	string_ref menu_credits_str;
@@ -585,7 +586,7 @@ struct level_state
 	b32 stop_player_movement;
 
 	scene_change active_scene_change;
-	r32 scene_fade_perc;
+	r32 fade_out_perc;
 	r32 fade_in_perc;
 };
 
@@ -605,7 +606,10 @@ struct render_group
 
 struct main_menu_state
 {
-
+	i32 option_index;
+	i32 option_max_index;
+	r32 option_change_timer;
+	r32 fade_percentage;
 };
 
 struct death_screen_state

@@ -276,3 +276,34 @@ void start_screen_shake(level_state* level, r32 duration_in_seconds, r32 strengt
 	level->screen_shake_duration = duration_in_seconds;
 	level->screen_shake_multiplier = strength;
 }
+
+void process_fade(render_group* render, r32* percentage, r32 delta_time, b32 fade_in, r32 delta_time_multiplier)
+{
+	v4 fade_color = get_zero_v4();
+	if (fade_in)
+	{
+		if (*percentage > 0.0f)
+		{
+			*percentage -= (delta_time * delta_time_multiplier);
+			if (*percentage < 0.0f)
+			{
+				*percentage = 0.0f;
+			}
+
+			render_fade(render, fade_color, *percentage);
+		}
+	}
+	else
+	{
+		if (*percentage < 1.0f)
+		{
+			*percentage += (delta_time * delta_time_multiplier);
+			if (*percentage > 1.0f)
+			{
+				*percentage = 1.0f;
+			}
+
+			render_fade(render, fade_color, *percentage);
+		}
+	}
+}
