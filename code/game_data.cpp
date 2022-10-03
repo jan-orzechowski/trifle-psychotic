@@ -385,6 +385,11 @@ ui_graphics load_ui_graphics()
 	result.msgbox_frame_left = move_rect(&r, get_v2(0, -4));
 	result.msgbox_frame_background = move_rect(&r, get_v2(4, 0));
 
+	r = get_rect_from_min_corner(get_v2(192.0f, 68.0f), get_v2(15, 5));
+	result.msgbox_dots_1 = r;
+	result.msgbox_dots_2 = move_rect(&r, get_v2(0, 5));
+	result.msgbox_dots_3 = move_rect(&r, get_v2(0, 5));
+
 	result.crosshair = get_rect_from_min_corner(get_v2(216, 48), get_v2(13, 13));
 	result.menu_indicator = get_rect_from_min_corner(136, 176, 16, 16);
 

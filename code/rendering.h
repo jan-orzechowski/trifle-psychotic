@@ -68,4 +68,3 @@ rect get_tile_screen_rect(v2 position_relative_to_camera);
 void debug_render_tile(render_group* render, tile_position tile_pos, v4 color, world_position camera_pos);
 void render_entity_sprite(render_group* render, world_position camera_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite);
-void render_textbox(static_game_data* static_data, render_group* group, rect textbox_rect);

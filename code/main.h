@@ -446,6 +446,7 @@ struct ui_graphics
 	rect healthbar_empty_bar;
 	rect healthbar_red_bar;
 	rect healthbar_white_bar;
+
 	rect msgbox_frame_upper_left; 
 	rect msgbox_frame_upper;
 	rect msgbox_frame_upper_right;
@@ -455,6 +456,10 @@ struct ui_graphics
 	rect msgbox_frame_lower_left;
 	rect msgbox_frame_left;
 	rect msgbox_frame_background;
+
+	rect msgbox_dots_1;
+	rect msgbox_dots_2;
+	rect msgbox_dots_3;
 
 	rect crosshair;
 	rect menu_indicator;	
@@ -636,6 +641,9 @@ struct game_state
 	char* level_name_buffer;
 	main_menu_state main_menu;
 	death_screen_state death_screen;
+
+	i32 message_dots_index;
+	r32 message_dots_timer;
 
 	input_buffer input_buffer;
 

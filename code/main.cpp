@@ -385,7 +385,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 #endif
 		}
 
-		render_debug_information(game, level);
+		//render_debug_information(game, level);
 
 		render_hitpoint_bar(level->static_data, &game->render, player, is_power_up_active(level->power_ups.invincibility));
 	}
@@ -396,18 +396,51 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		game_input* input = get_last_frame_input(&game->input_buffer);
 		v2 relative_mouse_pos = get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR;
 		rect screen_rect = get_rect_from_center(relative_mouse_pos, get_v2(13, 13));
-		render_bitmap(&game->render, textures::CHARSET, level->static_data->crosshair, screen_rect);
+		render_bitmap(&game->render, textures::CHARSET, level->static_data->ui_gfx.crosshair, screen_rect);
 	}
 
 	if (level->show_message && level->message_to_show.string_size)
 	{
-		rect text_area = get_rect_from_center(SCREEN_CENTER_IN_PIXELS, get_v2(100, 100));
+		v2 text_box_dimensions = get_v2(150, 120);
 
-		v2 margin = get_v2(4, 4);
+		rect text_area = get_rect_from_center(SCREEN_CENTER_IN_PIXELS, text_box_dimensions);
+
+		v2 margin = get_v2(8, 8);
 		render_textbox(level->static_data, &game->render, add_side_length(text_area, margin));
 
 		render_text(&game->render, game->transient_arena, level->static_data->ui_font, 
 			text_area, level->message_to_show, true);
+
+		if (level->min_message_timer <= 0.0f)
+		{
+			game->message_dots_timer += delta_time;
+			if (game->message_dots_timer > 0.4f)
+			{
+				game->message_dots_timer = 0.0f;
+				game->message_dots_index++;
+				if (game->message_dots_index > 2)
+				{
+					game->message_dots_index = 0;
+				}
+			}
+			
+			rect dots_indicator_rect = get_rect_from_center(
+				get_v2(text_area.min_corner.x + (text_box_dimensions.x / 2), text_area.max_corner.y - 4.5f),
+				get_v2(15, 5));
+
+			switch (game->message_dots_index)
+			{
+				case 0: render_bitmap(&game->render, textures::CHARSET, 
+					level->static_data->ui_gfx.msgbox_dots_1, dots_indicator_rect); 
+					break;
+				case 1: render_bitmap(&game->render, textures::CHARSET, 
+					level->static_data->ui_gfx.msgbox_dots_2, dots_indicator_rect); 
+					break;
+				case 2: render_bitmap(&game->render, textures::CHARSET, 
+					level->static_data->ui_gfx.msgbox_dots_3, dots_indicator_rect); 
+					break;
+			}	
+		}
 	}
 
 	if (level->active_scene_change.change_scene)

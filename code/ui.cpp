@@ -60,3 +60,77 @@ void render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, s
 
 	render_text(&game->render, game->transient_arena, font, textbox_area, title);
 }
+
+void render_textbox(static_game_data* static_data, render_group* group, rect textbox_rect)
+{
+	v2 dimensions = get_rect_dimensions(textbox_rect);
+
+	v4 background_color = get_v4(255, 255, 255, 255);
+	render_rectangle(group, textbox_rect, background_color, false);
+
+	v2 tile_dimensions = get_v2(4, 4);
+	u32 tile_x_count = ceil(dimensions.x / tile_dimensions.x);
+	u32 tile_y_count = ceil(dimensions.y / tile_dimensions.y);
+
+	rect first_destination_rect = get_rect_from_min_corner(
+		textbox_rect.min_corner - tile_dimensions,
+		tile_dimensions);
+	rect destination_rect = first_destination_rect;
+
+	for (u32 y = 0; y <= tile_y_count + 1; y++)
+	{
+		destination_rect = move_rect(first_destination_rect, get_v2(0, y * tile_dimensions.y));
+
+		if (y == 0)
+		{
+			for (u32 x = 0; x <= tile_x_count; x++)
+			{
+				rect source_bitmap;
+				if (x == 0)
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_upper_left;
+				}
+				else if (x == tile_x_count)
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_upper_right;
+				}
+				else
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_upper;
+				}
+
+				render_bitmap(group, textures::CHARSET, source_bitmap, destination_rect);
+				move_rect(&destination_rect, get_v2(tile_dimensions.x, 0));
+			}
+		}
+		else if (y == tile_y_count + 1)
+		{
+			for (u32 x = 0; x <= tile_x_count; x++)
+			{
+				rect source_bitmap;
+				if (x == 0)
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_lower_left;
+				}
+				else if (x == tile_x_count)
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_lower_right;
+				}
+				else
+				{
+					source_bitmap = static_data->ui_gfx.msgbox_frame_lower;
+				}
+
+				render_bitmap(group, textures::CHARSET, source_bitmap, destination_rect);
+				move_rect(&destination_rect, get_v2(tile_dimensions.x, 0));
+			}
+		}
+		else
+		{
+			render_bitmap(group, textures::CHARSET, static_data->ui_gfx.msgbox_frame_left, destination_rect);
+
+			destination_rect = move_rect(destination_rect, get_v2(tile_x_count * tile_dimensions.x, 0));
+			render_bitmap(group, textures::CHARSET, static_data->ui_gfx.msgbox_frame_right, destination_rect);
+		}
+	}
+}
