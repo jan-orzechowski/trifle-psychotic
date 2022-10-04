@@ -51,23 +51,20 @@ void apply_power_up(level_state* level, entity* player, entity* power_up)
 	power_up->health = -10.0f; // usuwamy obiekt
 }
 
-b32 damage_player(level_state* level, r32 damage_amount)
+void damage_player(level_state* level, r32 damage_amount, b32 ignore_after_damage_invincibility)
 {
-	entity* player = get_player(level);
-	b32 damaged = false;
-	if (level->player_invincibility_cooldown <= 0.0f
-		&& false == is_power_up_active(level->power_ups.invincibility))
+	entity* player = get_player(level);	
+	if (false == is_power_up_active(level->power_ups.invincibility))
 	{	
-		damaged = true;
-		player->health -= damage_amount;
-		start_visual_effect(level, player, 1, false);
-		//printf("gracz dostaje %.02f obrazen, zostalo %.02f zdrowia\n", damage_amount, player->health);
-		if (player->health >= 0.0f)
+		if (ignore_after_damage_invincibility || level->player_invincibility_cooldown <= 0.0f)
 		{
-			level->player_invincibility_cooldown = level->static_data->default_player_invincibility_cooldown;			
+			player->health -= damage_amount;			
+			if (player->health >= 0.0f)
+			{
+				level->player_invincibility_cooldown = level->static_data->default_player_invincibility_cooldown;
+			}
 		}
 	}
-	return damaged;
 }
 
 void update_power_up_timers(level_state* level, r32 delta_time)
@@ -269,12 +266,12 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 			if (input->left.number_of_presses > 0)
 			{
-				player->acceleration += get_v2(-1, 0);
+				player->acceleration += get_v2(-1.25f, 0);
 			}
 
 			if (input->right.number_of_presses > 0)
 			{
-				player->acceleration += get_v2(1, 0);
+				player->acceleration += get_v2(1.25f, 0);
 			}
 
 #if 0
@@ -301,12 +298,12 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 			if (input->left.number_of_presses > 0)
 			{
-				player->acceleration += get_v2(-0.5f, 0);
+				player->acceleration += get_v2(-1, 0);
 			}
 
 			if (input->right.number_of_presses > 0)
 			{
-				player->acceleration += get_v2(0.5f, 0);
+				player->acceleration += get_v2(1, 0);
 			}
 		}
 		break;
@@ -356,12 +353,12 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
 	{
 		if (are_entity_flags_set(enemy, entity_flags::DESTRUCTION_ON_PLAYER_CONTACT))
 		{
-			damage_player(level, enemy->type->damage_on_contact);
+			damage_player(level, enemy->type->damage_on_contact, true);
 			enemy->health = -1.0f;
 		}
 		else if (are_entity_flags_set(enemy, entity_flags::PLAYER_RECOIL_ON_CONTACT))
 		{
-			damage_player(level, enemy->type->damage_on_contact);
+			damage_player(level, enemy->type->damage_on_contact, false);
 
 			v2 direction = get_unit_vector(
 				get_position_difference(player->position, enemy->position));

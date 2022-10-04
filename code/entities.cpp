@@ -727,7 +727,7 @@ void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bulle
 {
 	if (are_entity_flags_set(hit_entity, entity_flags::PLAYER))
 	{
-		damage_player(level, moving_bullet->type->damage_on_contact);
+		damage_player(level, moving_bullet->type->damage_on_contact, false);
 	}
 	else
 	{
@@ -735,14 +735,11 @@ void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bulle
 		{
 			start_visual_effect(level, hit_entity, 1, false);
 			hit_entity->health -= moving_bullet->type->damage_on_contact;
-			printf("pocisk trafil w entity, %.2f obrazen, zostalo %.2f\n",
-				moving_bullet->type->damage_on_contact, hit_entity->health);
-
-			v2 bullet_direction = get_position_difference(moving_bullet->position, hit_entity->position);
 			
 			if (false == hit_entity->player_detected)
 			{
 				direction previous_direction = hit_entity->direction;
+				v2 bullet_direction = get_position_difference(moving_bullet->position, hit_entity->position);
 				if (bullet_direction.x < 0)
 				{
 					hit_entity->direction = direction::W;
