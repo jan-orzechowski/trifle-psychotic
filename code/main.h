@@ -283,8 +283,10 @@ struct entity_type
 
 	shooting_rotation_sprites* rotation_sprites;
 	animation* walk_animation;
-	animation* death_animation;
+	
 	v2 death_animation_offset;
+	animation** death_animation_variants;
+	u32 death_animation_variants_count;
 
 	entity_type* fired_bullet_type;
 

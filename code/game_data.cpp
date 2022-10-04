@@ -416,6 +416,23 @@ animation* load_explosion_animation(memory_arena* arena, v2 offset, u32 tile_sid
 	return new_animation;
 }
 
+void add_death_animation(memory_arena* arena, entity_type* type, animation* death_animation)
+{
+	type->death_animation_variants = push_struct(arena, animation*);
+	*type->death_animation_variants = death_animation;
+	type->death_animation_variants_count = 1;
+}
+
+void add_death_animations(memory_arena* arena, entity_type* type, 
+	animation* death_animation_1, animation* death_animation_2, animation* death_animation_3)
+{
+	type->death_animation_variants = push_array(arena, 3, animation*);
+	type->death_animation_variants[0] = death_animation_1;
+	type->death_animation_variants[1] = death_animation_2;
+	type->death_animation_variants[2] = death_animation_3;
+	type->death_animation_variants_count = 3;
+}
+
 shooting_rotation_sprites* load_shooting_rotation_sprites_with_offset(memory_arena* arena, u32 tile_y, v2 offset_in_pixels = get_zero_v2())
 {
 	shooting_rotation_sprites* result = push_struct(arena, shooting_rotation_sprites);
@@ -522,14 +539,18 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	player_entity_type->default_attack_cooldown = 0.2f;
 	player_entity_type->walk_animation = get_walk_animation(arena, get_zero_v2(), false);
 	player_entity_type->collision_rect_dim = get_v2(0.35f, 1.6f);
-	player_entity_type->death_animation = data->explosion_animations.size_48x48;
 	player_entity_type->death_animation_offset = get_v2(0.0f, -0.75f);
 	player_entity_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 0);
+	add_death_animation(arena, player_entity_type, data->explosion_animations.size_48x48);
 
 	entity_type* player_bullet_type = add_bullet_type(data);
 	player_bullet_type->damage_on_contact = 10;
 	player_bullet_type->constant_velocity = 12.0f;
 	player_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 1);
+	add_death_animations(arena, player_bullet_type,
+		data->explosion_animations.size_16x16_variant_1,
+		data->explosion_animations.size_16x16_variant_2,
+		data->explosion_animations.size_16x16_variant_3);
 
 	player_entity_type->fired_bullet_type = player_bullet_type;
 
@@ -537,6 +558,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	power_up_bullet_type->damage_on_contact = 10;
 	power_up_bullet_type->constant_velocity = 16.0f;
 	power_up_bullet_type->idle_pose = get_bullet_graphics(arena, 3, 1);
+	add_death_animation(arena, power_up_bullet_type, data->explosion_animations.size_24x24);
 
 	data->player_normal_bullet_type = player_bullet_type;
 	data->player_power_up_bullet_type = power_up_bullet_type;
@@ -556,14 +578,18 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	sentry_type->default_attack_cooldown = 0.5f;
 	sentry_type->player_acceleration_on_collision = 3.0f;
 	sentry_type->collision_rect_dim = get_v2(0.75f, 0.75f);
-	sentry_type->death_animation = data->explosion_animations.size_32x32;
 	sentry_type->rotation_sprites = load_shooting_rotation_sprites(arena, 6);
+	add_death_animation(arena, sentry_type, data->explosion_animations.size_32x32);
 
 	entity_type* sentry_bullet_type = add_bullet_type(data);
 	sentry_bullet_type->damage_on_contact = 5;
 	sentry_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
 	sentry_bullet_type->constant_velocity = 12.0f;
 	sentry_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 0);
+	add_death_animations(arena, sentry_bullet_type,
+		data->explosion_animations.size_16x16_variant_1,
+		data->explosion_animations.size_16x16_variant_2,
+		data->explosion_animations.size_16x16_variant_3);
 
 	sentry_type->fired_bullet_type = sentry_bullet_type;
 
@@ -586,13 +612,13 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	guardian_type->default_attack_cooldown = 0.5f;
 	guardian_type->player_acceleration_on_collision = 3.0f;
 	guardian_type->collision_rect_dim = get_v2(1.0f, 1.0f);
-	guardian_type->death_animation = data->explosion_animations.size_32x32;
+	add_death_animation(arena, guardian_type, data->explosion_animations.size_32x32);
 
 	entity_type* guardian_bullet_type = add_bullet_type(data);
 	guardian_bullet_type->damage_on_contact = 5;
 	guardian_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
 	guardian_bullet_type->constant_velocity = 12.0f;
-	guardian_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 0);
+	guardian_bullet_type->idle_pose = get_bullet_graphics(arena, 0, 3);
 
 	guardian_type->fired_bullet_type = guardian_bullet_type;
 
@@ -613,7 +639,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	flying_bomb_type->default_attack_cooldown = 0.5f;
 	flying_bomb_type->player_acceleration_on_collision = 3.0f;
 	flying_bomb_type->collision_rect_dim = get_v2(0.8f, 0.3f);
-	flying_bomb_type->death_animation = data->explosion_animations.size_48x48;
+	add_death_animation(arena, flying_bomb_type, data->explosion_animations.size_48x48);
 
 	entity_type* robot_type = add_entity_type(data, entity_type_enum::ENEMY_ROBOT);
 	robot_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 2 * 24), true);
@@ -635,7 +661,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	robot_type->velocity_multiplier = 3.0f;
 	robot_type->player_acceleration_on_collision = 3.0f;
 	robot_type->collision_rect_dim = get_v2(0.35f, 1.6f);
-	robot_type->death_animation = data->explosion_animations.size_48x48;
+	add_death_animation(arena, robot_type, data->explosion_animations.size_48x48);
 	robot_type->death_animation_offset = get_v2(0.0f, -0.75f);
 
 	entity_type* robot_bullet_type = add_bullet_type(data);
@@ -643,6 +669,10 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	robot_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
 	robot_bullet_type->constant_velocity = 12.0f;
 	robot_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 0);
+	add_death_animations(arena, robot_bullet_type,
+		data->explosion_animations.size_16x16_variant_1,
+		data->explosion_animations.size_16x16_variant_2,
+		data->explosion_animations.size_16x16_variant_3);
 
 	robot_type->fired_bullet_type = robot_bullet_type;
 
@@ -669,8 +699,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	cultist_type->player_acceleration_on_collision = 3.0f;
 	cultist_type->collision_rect_dim = get_v2(0.4f, 1.7f);
 	cultist_type->collision_rect_offset = get_v2(0.0f, -0.4f);
-
-	cultist_type->death_animation = data->explosion_animations.size_48x48;
+	add_death_animation(arena, cultist_type, data->explosion_animations.size_48x48);
 	cultist_type->death_animation_offset = get_v2(0.0f, -0.75f);
 	cultist_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 4, get_v2(0, -4));
 
@@ -679,6 +708,10 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	cultist_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
 	cultist_bullet_type->constant_velocity = 12.0f;
 	cultist_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 0);
+	add_death_animations(arena, cultist_bullet_type,
+		data->explosion_animations.size_16x16_variant_1,
+		data->explosion_animations.size_16x16_variant_2,
+		data->explosion_animations.size_16x16_variant_3);
 
 	cultist_type->fired_bullet_type = cultist_bullet_type;
 

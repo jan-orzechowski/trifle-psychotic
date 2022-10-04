@@ -3,6 +3,7 @@
 #include "main.h"
 #include "map.h"
 #include "rendering.h"
+#include "entities.h"
 
 b32 are_flags_set(sprite_effect_flags* flags, sprite_effect_flags flag_values_to_check)
 {
@@ -305,5 +306,27 @@ void process_fade(render_group* render, r32* percentage, r32 delta_time, b32 fad
 
 			render_fade(render, fade_color, *percentage);
 		}
+	}
+}
+
+void start_death_animation(level_state* level, entity* entity)
+{
+	if (entity->type->death_animation_variants_count > 0)
+	{
+		i32 random = rand() % entity->type->death_animation_variants_count;
+		animation* death_animation = entity->type->death_animation_variants[random];
+		world_position position = add_to_position(entity->position, entity->type->death_animation_offset);
+		add_explosion(level, position, death_animation);
+	}
+}
+
+void start_death_animation(level_state* level, bullet* bullet)
+{
+	if (bullet->type->death_animation_variants_count > 0)
+	{
+		i32 random = rand() % bullet->type->death_animation_variants_count;
+		animation* death_animation = bullet->type->death_animation_variants[random];
+		//world_position position = add_to_position(bullet->position, bullet->type->death_animation_offset);
+		add_explosion(level, bullet->position, death_animation);
 	}
 }

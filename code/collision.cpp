@@ -626,6 +626,11 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 
 		if (hit_entity)
 		{
+			start_death_animation(level, moving_bullet);
+		}
+
+		if (hit_entity)
+		{
 			handle_entity_and_bullet_collision(level, moving_bullet, hit_entity);
 		}
 		else if (false == hit_wall)

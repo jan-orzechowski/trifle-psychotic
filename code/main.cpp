@@ -96,12 +96,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				level->active_scene_change.fade_out_speed = 0.5f;
 				level->stop_player_movement = true;
 
-				if (player->type->death_animation)
-				{
-					start_screen_shake(level, 0.6f, 30.0f);
-					add_explosion(level, add_to_position(player->position, player->type->death_animation_offset),
-						player->type->death_animation);
-				}
+				start_screen_shake(level, 0.6f, 30.0f);
+				start_death_animation(level, player);
 			}
 		}
 
@@ -188,12 +184,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 			if (entity->health < 0.0f)
 			{
-				if (entity->type->death_animation)
-				{
-					add_explosion(level, add_to_position(entity->position, entity->type->death_animation_offset),
-						entity->type->death_animation);
-				}
-
+				start_death_animation(level, entity);
 				remove_entity(entity);
 				continue;
 			}
