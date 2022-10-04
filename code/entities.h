@@ -22,7 +22,6 @@ entity* add_entity(level_state* level, tile_position position, entity_type* type
 void remove_entity(entity* entity_to_remove);
 
 void fire_bullet(level_state* level, entity_type* bullet_type, world_position bullet_starting_position, v2 bullet_offset, v2 velocity);
-void fire_bullet(level_state* level, entity* entity, b32 cooldown);
 void remove_bullet(level_state* level, i32* bullet_index);
 
 entity* add_explosion(level_state* level, world_position position, animation* explosion_animation);
@@ -37,15 +36,13 @@ void find_flying_path_for_enemy(level_state* level, entity* entity, b32 vertical
 
 b32 is_point_visible_within_90_degrees(world_position looking_point, direction looking_direction, r32 max_looking_distance, world_position point_to_check);
 b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, world_position point);
-//void add_next_level_transition(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn);
-//void add_message_display_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn);
 void initialize_current_map(game_state* game, level_state* level);
 
+void enemy_attack(level_state* level, entity* enemy, entity* player, r32 delta_time);
 void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bullet, entity* hit_entity);
 shooting_rotation get_entity_shooting_rotation(shooting_rotation_sprites* rotation_sprites, v2 shooting_direction);
 void set_entity_rotated_graphics(entity* entity, world_position* target);
 
-void move_entity(level_state* level, entity* entity_to_move, tile_position current_start, tile_position current_goal, entity* player, r32 delta_time);
 void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 target_offset);
 
 void process_entity_movement(level_state* level, entity* entity_to_move, entity* player, r32 delta_time);

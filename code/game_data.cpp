@@ -564,18 +564,23 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->player_power_up_bullet_type = power_up_bullet_type;
 
 	entity_type* sentry_type = add_entity_type(data, entity_type_enum::ENEMY_SENTRY);
+	sentry_type->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 0, 6));
 	sentry_type->flags = (entity_flags)(
 		(u32)entity_flags::BLOCKS_MOVEMENT 
 		| (u32)entity_flags::ENEMY
-		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT
-		| (u32)entity_flags::FLIES_HORIZONTALLY);
+		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
 	sentry_type->detection_type = detection_type::DETECT_360_DEGREES;
-	sentry_type->detection_distance = 10.0f;
+	sentry_type->detection_distance = 12.0f;
+	sentry_type->stop_movement_distance = 4.0f;
+	sentry_type->forget_detection_distance = 14.0f;
 
-	sentry_type->max_health = 10;
+	sentry_type->default_attack_cooldown = 3.0f;
+	sentry_type->default_attack_series_duration = 0.6f;
+	sentry_type->default_attack_bullet_interval_duration = 0.2f;
+
+	sentry_type->max_health = 30;
 	sentry_type->damage_on_contact = 10;
-	sentry_type->velocity_multiplier = 2.0f;
-	sentry_type->default_attack_cooldown = 0.5f;
+	sentry_type->velocity_multiplier = 0.0f;
 	sentry_type->player_acceleration_on_collision = 3.0f;
 	sentry_type->collision_rect_dim = get_v2(0.75f, 0.75f);
 	sentry_type->rotation_sprites = load_shooting_rotation_sprites(arena, 6);

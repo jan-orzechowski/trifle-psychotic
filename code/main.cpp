@@ -199,6 +199,26 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				r32 frame_duration_modifier = 0.75f + (1.0f / length(entity->velocity));
 				animate_entity(NULL, entity, delta_time, frame_duration_modifier);
 			}
+			else if (are_entity_flags_set(entity, entity_flags::ENEMY))
+			{
+				enemy_attack(level, entity, player, delta_time);
+
+				if (entity->player_detected)
+				{
+					if (entity->type->rotation_sprites)
+					{
+						set_entity_rotated_graphics(entity, &player->position);
+					}
+
+					v2 distance_to_player = get_position_difference(player->position, entity->position);
+					r32 distance_to_player_length = length(distance_to_player);
+
+					if (distance_to_player_length > entity->type->forget_detection_distance)
+					{
+						entity->player_detected = false;
+					}
+				}
+			}
 		}
 
 		// update bullets

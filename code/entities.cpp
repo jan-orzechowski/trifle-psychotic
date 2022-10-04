@@ -782,6 +782,69 @@ void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 tar
 		direction_to_target * enemy->type->fired_bullet_type->constant_velocity);				
 }
 
+void enemy_attack(level_state* level, entity* enemy, entity* player, r32 delta_time)
+{
+	if (enemy->type->fired_bullet_type)
+	{
+		v2 player_target_offset = get_v2(0.0f, -0.3f);
+		world_position player_as_target = add_to_position(player->position, get_v2(0.0f, -0.3f));
+
+		if (is_point_visible_for_entity(level, enemy, player_as_target))
+		{
+			if (false == enemy->player_detected)
+			{
+				// zaczynamy od ataku
+				enemy->attack_series_duration = enemy->type->default_attack_series_duration;
+			}
+
+			enemy->player_detected = true;
+
+			if (enemy->attack_cooldown > 0.0f)
+			{
+				// nie robimy nic
+				enemy->attack_cooldown -= delta_time;
+
+				if (enemy->attack_cooldown <= 0.0f)
+				{
+					enemy->attack_series_duration = enemy->type->default_attack_series_duration;
+				}
+			}
+			else
+			{
+				if (enemy->attack_series_duration > 0.0f)
+				{
+					enemy->attack_series_duration -= delta_time;
+
+					if (enemy->attack_bullet_interval_duration > 0.0f)
+					{
+						// przerwa, nic nie robimy
+						enemy->attack_bullet_interval_duration -= delta_time;
+					}
+					else
+					{
+						// wystrzeliwujemy jeden pocisk
+						enemy_fire_bullet(level, enemy, player, get_v2(0.0f, -0.3f));
+						enemy->attack_bullet_interval_duration =
+							enemy->type->default_attack_bullet_interval_duration;
+					}
+				}
+				else
+				{
+					// przywracamy cooldown
+					enemy->attack_cooldown = enemy->type->default_attack_cooldown;
+				}
+			}
+		}
+		else
+		{
+			enemy->player_detected = false;
+			enemy->attack_cooldown = 0.0f;
+			enemy->attack_series_duration = 0.0f;
+			enemy->attack_bullet_interval_duration = 0.0f;
+		}
+	}
+}
+
 void process_entity_movement(level_state* level, entity* entity_to_move, entity* player, r32 delta_time)
 {
 	v2 distance_to_player = get_position_difference(player->position, entity_to_move->position);
@@ -828,59 +891,7 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
 			current_start = entity_to_move->path.end;
 		}
 
-		v2 player_target_offset = get_v2(0.0f, -0.3f);
-		world_position player_as_target = add_to_position(player->position, get_v2(0.0f, -0.3f));
-		if (is_point_visible_for_entity(level, entity_to_move, player_as_target))
-		{
-			entity_to_move->player_detected = true;
-
-			if (are_entity_flags_set(entity_to_move, entity_flags::ENEMY)
-				&& entity_to_move->type->fired_bullet_type)
-			{
-				if (entity_to_move->attack_cooldown > 0.0f)
-				{
-					// nie robimy nic
-					entity_to_move->attack_cooldown -= delta_time;
-
-					if (entity_to_move->attack_cooldown <= 0.0f)
-					{
-						entity_to_move->attack_series_duration = entity_to_move->type->default_attack_series_duration;
-					}
-				}
-				else
-				{
-					if (entity_to_move->attack_series_duration > 0.0f)
-					{
-						entity_to_move->attack_series_duration -= delta_time;
-
-						if (entity_to_move->attack_bullet_interval_duration > 0.0f)
-						{
-							// przerwa, nic nie robimy
-							entity_to_move->attack_bullet_interval_duration -= delta_time;
-						}
-						else
-						{
-							// wystrzeliwujemy jeden pocisk
-							enemy_fire_bullet(level, entity_to_move, player, get_v2(0.0f, -0.3f));
-							entity_to_move->attack_bullet_interval_duration =
-								entity_to_move->type->default_attack_bullet_interval_duration;
-						}
-					}
-					else
-					{
-						// przywracamy cooldown
-						entity_to_move->attack_cooldown = entity_to_move->type->default_attack_cooldown;
-					}
-				}
-			}
-		}
-		else
-		{
-			entity_to_move->player_detected = false;
-			entity_to_move->attack_cooldown = 0.0f;
-			entity_to_move->attack_series_duration = 0.0f;
-			entity_to_move->attack_bullet_interval_duration = 0.0f;
-		}
+		enemy_attack(level, entity_to_move, player, delta_time);
 
 		// zatrzymywanie się lub podchodzenie w zależności od pozycji gracza				
 		if (entity_to_move->player_detected)
