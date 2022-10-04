@@ -533,7 +533,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	entity_type* player_entity_type = add_entity_type(data, entity_type_enum::PLAYER);
 	player_entity_type->idle_pose = get_player_idle_pose(arena);
 	player_entity_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT | (u32)entity_flags::PLAYER);
-	player_entity_type->max_health = 200;
+	player_entity_type->max_health = 40;
 	player_entity_type->velocity_multiplier = 40.0f;
 	player_entity_type->slowdown_multiplier = 0.80f;
 	player_entity_type->default_attack_cooldown = 0.2f;
@@ -545,7 +545,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	entity_type* player_bullet_type = add_bullet_type(data);
 	player_bullet_type->damage_on_contact = 10;
-	player_bullet_type->constant_velocity = 12.0f;
+	player_bullet_type->constant_velocity = 14.0f;
 	player_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 1);
 	add_death_animations(arena, player_bullet_type,
 		data->explosion_animations.size_16x16_variant_1,
@@ -555,8 +555,8 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	player_entity_type->fired_bullet_type = player_bullet_type;
 
 	entity_type* power_up_bullet_type = add_bullet_type(data);
-	power_up_bullet_type->damage_on_contact = 10;
-	power_up_bullet_type->constant_velocity = 16.0f;
+	power_up_bullet_type->damage_on_contact = 20;
+	power_up_bullet_type->constant_velocity = 18.0f;
 	power_up_bullet_type->idle_pose = get_bullet_graphics(arena, 3, 1);
 	add_death_animation(arena, power_up_bullet_type, data->explosion_animations.size_24x24);
 
@@ -587,9 +587,9 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	add_death_animation(arena, sentry_type, data->explosion_animations.size_32x32);
 
 	entity_type* sentry_bullet_type = add_bullet_type(data);
-	sentry_bullet_type->damage_on_contact = 5;
+	sentry_bullet_type->damage_on_contact = 10;
 	sentry_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
-	sentry_bullet_type->constant_velocity = 12.0f;
+	sentry_bullet_type->constant_velocity = 8.0f;
 	sentry_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 0);
 	add_death_animations(arena, sentry_bullet_type,
 		data->explosion_animations.size_16x16_variant_1,
@@ -600,19 +600,23 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	entity_type* guardian_type = add_entity_type(data, entity_type_enum::ENEMY_GUARDIAN);
 	guardian_type->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 1, 7));
-	guardian_type->walk_animation = get_animation_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 2, 7));
+	guardian_type->walk_animation = get_animation_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 1, 7));
 	guardian_type->flags = (entity_flags)(
 		(u32)entity_flags::BLOCKS_MOVEMENT 
 		| (u32)entity_flags::ENEMY
 		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT
 		| (u32)entity_flags::FLIES_VERTICALLY);
-	guardian_type->detection_type = detection_type::DETECT_180_DEGREES_BELOW;
+	guardian_type->detection_type = detection_type::DETECT_360_DEGREES;
 	guardian_type->detection_distance = 10.0f;
 	guardian_type->stop_movement_distance = 4.0f;
 	guardian_type->forget_detection_distance = 12.0f;
 
-	guardian_type->max_health = 10;
-	guardian_type->damage_on_contact = 10;
+	guardian_type->default_attack_cooldown = 1.5f;
+	guardian_type->default_attack_series_duration = 0.5f;
+	guardian_type->default_attack_bullet_interval_duration = 1.0f;
+
+	guardian_type->max_health = 50;
+	guardian_type->damage_on_contact = 20;
 	guardian_type->velocity_multiplier = 3.0f;
 	guardian_type->default_attack_cooldown = 0.5f;
 	guardian_type->player_acceleration_on_collision = 3.0f;
@@ -620,10 +624,11 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	add_death_animation(arena, guardian_type, data->explosion_animations.size_32x32);
 
 	entity_type* guardian_bullet_type = add_bullet_type(data);
-	guardian_bullet_type->damage_on_contact = 5;
+	guardian_bullet_type->damage_on_contact = 20;
 	guardian_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
-	guardian_bullet_type->constant_velocity = 12.0f;
+	guardian_bullet_type->constant_velocity = 4.0f;
 	guardian_bullet_type->idle_pose = get_bullet_graphics(arena, 0, 3);
+	add_death_animation(arena, guardian_bullet_type, data->explosion_animations.size_24x24);
 
 	guardian_type->fired_bullet_type = guardian_bullet_type;
 
@@ -653,7 +658,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 		| (u32)entity_flags::ENEMY
 		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
 
-	robot_type->detection_type = detection_type::DETECT_90_DEGREES_IN_FRONT;
+	robot_type->detection_type = detection_type::DETECT_180_DEGREES_IN_FRONT;
 	robot_type->detection_distance = 7.0f;
 	robot_type->stop_movement_distance = 4.0f;
 	robot_type->forget_detection_distance = 12.0f;
@@ -666,6 +671,10 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	robot_type->velocity_multiplier = 3.0f;
 	robot_type->player_acceleration_on_collision = 3.0f;
 	robot_type->collision_rect_dim = get_v2(0.35f, 1.6f);
+	robot_type->default_attack_cooldown = 1.0f;
+	robot_type->default_attack_series_duration = 1.5f;
+	robot_type->default_attack_bullet_interval_duration = 0.2f;
+
 	add_death_animation(arena, robot_type, data->explosion_animations.size_48x48);
 	robot_type->death_animation_offset = get_v2(0.0f, -0.75f);
 
