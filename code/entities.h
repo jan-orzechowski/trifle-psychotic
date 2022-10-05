@@ -27,6 +27,8 @@ void remove_bullet(level_state* level, i32* bullet_index);
 entity* add_explosion(level_state* level, world_position position, animation* explosion_animation);
 void remove_explosion(level_state* level, i32* explosion_index);
 
+void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn);
+
 entity_type_dictionary create_entity_types_dictionary(memory_arena* arena);
 void set_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum type, entity_type* enity_type_ptr);
 entity_type* get_entity_type_ptr(entity_type_dictionary dictionary, entity_type_enum type);

@@ -97,6 +97,8 @@ enum class entity_type_enum
 {
 	UNKNOWN,
 	PLAYER,
+	NEXT_LEVEL_TRANSITION,
+	MESSAGE_DISPLAY,
 	ENEMY_SENTRY,
 	ENEMY_GUARDIAN,
 	ENEMY_FLYING_BOMB,
@@ -115,8 +117,14 @@ enum class entity_type_enum
 	POWER_UP_SPEED,
 	POWER_UP_DAMAGE,
 	POWER_UP_SPREAD,
-	NEXT_LEVEL_TRANSITION,
-	MESSAGE_DISPLAY,
+	MOVING_PLATFORM_HORIZONTAL_BLUE,
+	MOVING_PLATFORM_HORIZONTAL_GREY,
+	MOVING_PLATFORM_HORIZONTAL_RED,
+	MOVING_PLATFORM_HORIZONTAL_GREEN,
+	MOVING_PLATFORM_VERTICAL_BLUE,
+	MOVING_PLATFORM_VERTICAL_GREY,
+	MOVING_PLATFORM_VERTICAL_RED,
+	MOVING_PLATFORM_VERTICAL_GREEN,
 	_LAST
 };
 
@@ -147,6 +155,8 @@ enum class entity_flags
 	FLIES_HORIZONTALLY = (1 << 13),
 	FLIES_VERTICALLY = (1 << 14),
 	FLIES_TOWARDS_PLAYER = (1 << 15),
+	MOVING_PLATFORM_VERTICAL = (1 << 16),
+	MOVING_PLATFORM_HORIZONTAL = (1 << 17)
 };
 
 struct entity_to_spawn
@@ -365,6 +375,7 @@ struct collision_result
 	entity* collided_transition;
 	entity* collided_power_up;
 	entity* collided_message_display;
+	entity* collided_platform;
 };
 
 struct entity_collision_data
@@ -388,6 +399,13 @@ enum class movement_mode
 	RECOIL
 };
 
+struct standing_history
+{
+	b32* buffer;
+	u32 current_index;
+	u32 buffer_size;
+};
+
 struct player_movement
 {
 	movement_mode current_mode;
@@ -398,6 +416,8 @@ struct player_movement
 	r32 recoil_timer;
 	r32 recoil_acceleration_timer;
 	v2 recoil_acceleration;
+
+	standing_history standing_history;
 };
 
 struct gate_dictionary_entry
@@ -424,6 +444,13 @@ struct gate_graphics
 	sprite_part gate;
 	sprite_part frame_upper;
 	sprite_part frame_lower;
+};
+
+struct moving_platform_graphics
+{
+	sprite_part left;
+	sprite_part middle;
+	sprite_part right;
 };
 
 struct display_graphics
@@ -483,6 +510,13 @@ struct switches_graphics
 	switch_graphics green;	
 };
 
+struct moving_platforms_graphics
+{
+	moving_platform_graphics blue;
+	moving_platform_graphics grey;
+	moving_platform_graphics red;
+	moving_platform_graphics green;
+};
 
 struct font
 {
@@ -527,8 +561,9 @@ struct static_game_data
 	ui_graphics ui_gfx;
 	gates_graphics gates_gfx;
 	switches_graphics switches_gfx;
-	display_graphics display_gfx;
-	
+	display_graphics display_gfx;	
+	moving_platforms_graphics platforms_gfx;
+
 	string_ref menu_new_game_str;
 	string_ref menu_continue_str;
 	string_ref menu_credits_str;
@@ -579,6 +614,7 @@ struct level_state
 
 	gate_dictionary gates_dict;
 	sprite_effect_dictionary gate_tints_dict;
+	entity_type* moving_platform_types[8];
 
 	static_game_data* static_data;
 

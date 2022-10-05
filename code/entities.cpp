@@ -242,6 +242,35 @@ void find_flying_path_for_enemy(level_state* level, entity* entity, b32 vertical
 		new_path.start.x, new_path.start.y, new_path.end.x, new_path.end.y);
 }
 
+void find_path_for_moving_platform(level_state* level, entity* entity, b32 vertical)
+{
+	if (vertical)
+	{
+		find_flying_path_for_enemy(level, entity, true);
+		if (entity->path.start.x != 0 && entity->path.start.y != 0)
+		{
+			// zatrzymujemy się przed sufitem, żeby nie zmiażdżyć gracza
+			if (entity->path.start.y + 2 < entity->path.end.y)
+			{
+				entity->path.start.y += 2;
+			}
+		}
+	}
+	else
+	{
+		find_flying_path_for_enemy(level, entity, false);
+		if (entity->path.start.x != 0 && entity->path.start.y != 0)
+		{
+			// z racji szerokości platformy musimy zatrzymać się o pole wcześniej
+			if (entity->path.start.x + 2 < entity->path.end.x)
+			{
+				entity->path.start.x++;
+				entity->path.end.x--;
+			}
+		}
+	}
+}
+
 // domyślnie trójkąt jest zwrócony podstawą w prawo
 // można podać x i y odwrotnie dla trójkątów zwróconych podstawą w górę lub w dół
 b32 is_point_within_right_triangle(r32 triangle_height, r32 relative_x, r32 relative_y, b32 invert_sign)
@@ -449,7 +478,18 @@ void initialize_current_map(game_state* game, level_state* level)
 			{
 				add_message_display_entity(level, game->arena, new_entity);
 			}
-			break;
+			break;	
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE:
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY:
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED:
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_BLUE:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREY:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_RED:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN:
+			{
+				add_moving_platform_entity(level, game->arena, new_entity);
+			}
 			case entity_type_enum::UNKNOWN:
 			{
 				// ignorujemy
@@ -665,18 +705,38 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
 
 		world_position new_position = add_to_position(entity_to_move->position, (direction * velocity * delta_time));
 		v2 movement_delta = get_position_difference(new_position, entity_to_move->position);
-		entity_to_move->position = new_position;
-
-		// sprawdzenie kolizji z graczem
-		chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(entity_to_move->position));
-		collision new_collision = check_minkowski_collision(
-			get_entity_collision_data(reference_chunk, entity_to_move),
-			get_entity_collision_data(reference_chunk, player),
-			movement_delta, 1.0f);
-
-		if (new_collision.collided_wall != direction::NONE)
+		
+		if (are_entity_flags_set(entity_to_move, entity_flags::ENEMY))
 		{
-			handle_player_and_enemy_collision(level, player, entity_to_move);
+			// sprawdzenie kolizji z graczem
+			chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(entity_to_move->position));
+			collision new_collision = check_minkowski_collision(
+				get_entity_collision_data(reference_chunk, entity_to_move),
+				get_entity_collision_data(reference_chunk, player),
+				movement_delta, 1.0f);
+
+			if (new_collision.collided_wall != direction::NONE)
+			{
+				handle_player_and_enemy_collision(level, player, entity_to_move);
+			}
+
+			entity_to_move->position = new_position;
+		}
+
+		if (are_entity_flags_set(entity_to_move, entity_flags::MOVING_PLATFORM_HORIZONTAL)
+			|| are_entity_flags_set(entity_to_move, entity_flags::MOVING_PLATFORM_VERTICAL))
+		{
+			chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(entity_to_move->position));
+			collision new_collision = check_minkowski_collision(
+				get_entity_collision_data(reference_chunk, entity_to_move),
+				get_entity_collision_data(reference_chunk, player),
+				movement_delta, 1.0f);
+				
+			if (new_collision.collided_wall == direction::NONE)
+			{
+				entity_to_move->position = add_to_position(entity_to_move->position,
+					movement_delta * new_collision.possible_movement_perc);
+			}
 		}
 
 		if (length(get_position_difference(current_goal, entity_to_move->position)) < 0.01f)
@@ -710,16 +770,19 @@ void move_entity_towards_player(level_state* level, entity* entity_to_move, enti
 	v2 movement_delta = get_position_difference(new_position, entity_to_move->position);
 	entity_to_move->position = new_position;
 
-	// sprawdzenie kolizji z graczem
-	chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(entity_to_move->position));
-	collision new_collision = check_minkowski_collision(
-		get_entity_collision_data(reference_chunk, entity_to_move),
-		get_entity_collision_data(reference_chunk, player),
-		movement_delta, 1.0f);
-
-	if (new_collision.collided_wall != direction::NONE)
+	if (are_entity_flags_set(entity_to_move, entity_flags::ENEMY))
 	{
-		handle_player_and_enemy_collision(level, player, entity_to_move);
+		// sprawdzenie kolizji z graczem
+		chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(entity_to_move->position));
+		collision new_collision = check_minkowski_collision(
+			get_entity_collision_data(reference_chunk, entity_to_move),
+			get_entity_collision_data(reference_chunk, player),
+			movement_delta, 1.0f);
+
+		if (new_collision.collided_wall != direction::NONE)
+		{
+			handle_player_and_enemy_collision(level, player, entity_to_move);
+		}
 	}
 }
 
@@ -866,6 +929,16 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
 		{
 			find_flying_path_for_enemy(level, entity_to_move, true);
 		}
+
+		if (are_entity_flags_set(entity_to_move, entity_flags::MOVING_PLATFORM_HORIZONTAL))
+		{
+			find_path_for_moving_platform(level, entity_to_move, false);
+		}
+
+		if (are_entity_flags_set(entity_to_move, entity_flags::MOVING_PLATFORM_VERTICAL))
+		{
+			find_path_for_moving_platform(level, entity_to_move, true);
+		}
 	}
 
 	if (entity_to_move->has_walking_path)
@@ -891,36 +964,39 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
 			current_start = entity_to_move->path.end;
 		}
 
-		enemy_attack(level, entity_to_move, player, delta_time);
-
-		// zatrzymywanie się lub podchodzenie w zależności od pozycji gracza				
-		if (entity_to_move->player_detected)
+		if (are_entity_flags_set(entity_to_move, entity_flags::ENEMY))
 		{
-			set_entity_rotated_graphics(entity_to_move, &player->position);
+			enemy_attack(level, entity_to_move, player, delta_time);
 
-			if (distance_to_player_length > entity_to_move->type->forget_detection_distance)
+			// zatrzymywanie się lub podchodzenie w zależności od pozycji gracza				
+			if (entity_to_move->player_detected)
 			{
-				entity_to_move->player_detected = false;
-			}
-			else
-			{
-				if (distance_to_player_length < entity_to_move->type->stop_movement_distance)
+				set_entity_rotated_graphics(entity_to_move, &player->position);
+
+				if (distance_to_player_length > entity_to_move->type->forget_detection_distance)
 				{
-					tile_position entity_position = get_tile_position(entity_to_move->position);
-					current_goal = entity_position;
-					current_start = entity_position;
+					entity_to_move->player_detected = false;
 				}
 				else
 				{
-					tile_position closest_end = get_closest_end_from_tile_range(entity_to_move->path, player->position);
-					current_goal = closest_end;
+					if (distance_to_player_length < entity_to_move->type->stop_movement_distance)
+					{
+						tile_position entity_position = get_tile_position(entity_to_move->position);
+						current_goal = entity_position;
+						current_start = entity_position;
+					}
+					else
+					{
+						tile_position closest_end = get_closest_end_from_tile_range(entity_to_move->path, player->position);
+						current_goal = closest_end;
+					}
 				}
 			}
-		}
-		else
-		{
-			set_entity_rotated_graphics(entity_to_move, NULL);
-		}
+			else
+			{
+				set_entity_rotated_graphics(entity_to_move, NULL);
+			}
+		}	
 
 		move_entity_on_path(level, entity_to_move, current_start, current_goal, player, delta_time);
 
@@ -966,4 +1042,115 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
 			}
 		}
 	}
+}
+
+u32 get_moving_platform_type_index(entity_type_enum type)
+{
+	u32 result = 0;
+	switch (type)
+	{
+		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE:  result = 0; break;
+		case entity_type_enum::MOVING_PLATFORM_VERTICAL_BLUE:    result = 1; break;
+		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY:  result = 2; break;
+		case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREY:    result = 3; break;
+		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED:   result = 4; break;
+		case entity_type_enum::MOVING_PLATFORM_VERTICAL_RED:     result = 5; break;
+		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN: result = 6; break;
+		case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN:   result = 7; break;
+			invalid_default_case;
+	}
+	return result;
+}
+
+void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+{
+	u32 type_index = get_moving_platform_type_index(new_entity_to_spawn->type);
+	entity_type* type = level->moving_platform_types[type_index];
+	if (type == NULL)
+	{
+		type = push_struct(arena, entity_type);
+
+		moving_platform_graphics platform_gfx = level->static_data->platforms_gfx.blue;
+		switch (new_entity_to_spawn->type)
+		{
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_BLUE:
+			{
+				platform_gfx = level->static_data->platforms_gfx.blue;
+			}
+			break;
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREY:
+			{
+				platform_gfx = level->static_data->platforms_gfx.grey;
+			}
+			break;
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_RED:
+			{
+				platform_gfx = level->static_data->platforms_gfx.red;
+			}
+			break;
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN:
+			{
+				platform_gfx = level->static_data->platforms_gfx.green;
+			}
+			break;
+			invalid_default_case;
+		}
+
+		animation_frame frame = {};
+		frame.sprite.parts_count = 3;
+		frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
+		frame.sprite.parts[0] = platform_gfx.left;
+		frame.sprite.parts[0].offset_in_pixels = get_v2(-1, 0) * TILE_SIDE_IN_PIXELS;
+		frame.sprite.parts[1] = platform_gfx.middle;
+		frame.sprite.parts[2] = platform_gfx.right;
+		frame.sprite.parts[2].offset_in_pixels = get_v2(1, 0) * TILE_SIDE_IN_PIXELS;
+		type->idle_pose = frame;
+
+		type->collision_rect_dim = get_v2(3, 1);
+
+		type->velocity_multiplier = 3.0f;
+
+		set_flags(&type->flags, entity_flags::BLOCKS_MOVEMENT);
+		set_flags(&type->flags, entity_flags::INDESTRUCTIBLE);
+
+		if (new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE
+			|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY
+			|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED
+			|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN)
+		{
+			set_flags(&type->flags, entity_flags::MOVING_PLATFORM_HORIZONTAL);
+		}
+		else
+		{
+			set_flags(&type->flags, entity_flags::MOVING_PLATFORM_VERTICAL);
+		}
+	}
+
+	// jeśli znajdujemy się przy ścianie, odsuwamy się
+	tile_position entity_position = new_entity_to_spawn->position;
+	tile_position tile_to_left = get_tile_position(entity_position.x - 1, entity_position.y);
+	tile_position tile_to_right = get_tile_position(entity_position.x + 1, entity_position.y);
+	b32 left_tile_collides = is_tile_colliding(level->current_map, level->static_data->collision_reference, tile_to_left);
+	b32 right_tile_collides = is_tile_colliding(level->current_map, level->static_data->collision_reference, tile_to_right);
+	if (left_tile_collides && right_tile_collides)
+	{
+		// nie mamy gdzie przesunąć
+	}
+	else
+	{
+		if (left_tile_collides && false == right_tile_collides)
+		{
+			entity_position.x++;
+		}
+		else if (right_tile_collides && false == left_tile_collides)
+		{
+			entity_position.x--;
+		}
+	}
+
+	add_entity(level, entity_position, type);
 }

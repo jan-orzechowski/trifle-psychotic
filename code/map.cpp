@@ -218,6 +218,13 @@ b32 is_tile_colliding(map level, map collision_ref, u32 tile_x, u32 tile_y)
 	return result;
 }
 
+b32 is_tile_colliding(map level, map collision_ref, tile_position tile_pos)
+{
+	u32 tile_value = get_tile_value(level, tile_pos);
+	b32 result = is_tile_colliding(collision_ref, tile_value);
+	return result;
+}
+
 tile_range get_tile_range(tile_position start, tile_position end)
 {
 	tile_range result = {};

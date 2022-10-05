@@ -29,6 +29,7 @@ u32 get_tile_value(map level, i32 x_coord, i32 y_coord);
 u32 get_tile_value(map level, tile_position tile);
 b32 is_tile_colliding(map collision_ref, u32 tile_value);
 b32 is_tile_colliding(map level, map collision_ref, u32 tile_x, u32 tile_y);
+b32 is_tile_colliding(map level, map collision_ref, tile_position tile_pos);
 tile_range get_tile_range(tile_position start, tile_position end);
 tile_range find_horizontal_range_of_free_tiles(map level, map collision_ref, tile_position starting_tile, u32 length_limit);
 tile_range find_vertical_range_of_free_tiles(map level, map collision_ref, tile_position starting_tile, u32 length_limit);

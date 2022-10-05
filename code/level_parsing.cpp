@@ -75,27 +75,35 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 		gid -= (entity_tileset_first_gid - 1);
 		switch (gid)
 		{
-			case 7:  type = entity_type_enum::ENEMY_ROBOT; break;
-			case 8:  type = entity_type_enum::ENEMY_CULTIST; break;
-			case 9:  type = entity_type_enum::ENEMY_FLYING_BOMB; break;
-			case 10: type = entity_type_enum::ENEMY_GUARDIAN; break;
-			case 11: type = entity_type_enum::ENEMY_SENTRY; break;
-			case 13: type = entity_type_enum::POWER_UP_HEALTH; break;
-			case 14: type = entity_type_enum::POWER_UP_INVINCIBILITY; break;
-			case 15: type = entity_type_enum::POWER_UP_SPEED; break;
-			case 16: type = entity_type_enum::POWER_UP_DAMAGE; break;
-			case 17: type = entity_type_enum::POWER_UP_SPREAD; break;
-			case 19: type = entity_type_enum::GATE_BLUE; break;
-			case 20: type = entity_type_enum::GATE_GREY; break;
-			case 21: type = entity_type_enum::GATE_RED; break;
-			case 22: type = entity_type_enum::GATE_GREEN; break;
-			case 25: type = entity_type_enum::SWITCH_BLUE; break;
-			case 26: type = entity_type_enum::SWITCH_GREY; break;
-			case 27: type = entity_type_enum::SWITCH_RED; break;
-			case 28: type = entity_type_enum::SWITCH_GREEN; break;
-			case 1:  type = entity_type_enum::PLAYER; break;
-			case 2:  type = entity_type_enum::NEXT_LEVEL_TRANSITION; break;
-			case 3:  type = entity_type_enum::MESSAGE_DISPLAY; break;
+			case 6:  type = entity_type_enum::ENEMY_SENTRY; break;
+			case 7:  type = entity_type_enum::ENEMY_GUARDIAN; break;
+			case 8:  type = entity_type_enum::ENEMY_FLYING_BOMB; break;
+			case 9:  type = entity_type_enum::ENEMY_ROBOT; break;
+			case 10: type = entity_type_enum::ENEMY_CULTIST; break;
+			case 11: type = entity_type_enum::POWER_UP_HEALTH; break;
+			case 12: type = entity_type_enum::POWER_UP_SPEED; break;
+			case 13: type = entity_type_enum::POWER_UP_SPREAD; break;
+			case 14: type = entity_type_enum::POWER_UP_DAMAGE; break;
+			case 15: type = entity_type_enum::POWER_UP_INVINCIBILITY; break;
+			case 16: type = entity_type_enum::GATE_BLUE; break;
+			case 17: type = entity_type_enum::GATE_GREY; break;
+			case 18: type = entity_type_enum::GATE_RED; break;
+			case 19: type = entity_type_enum::GATE_GREEN; break;
+			case 21: type = entity_type_enum::SWITCH_BLUE; break;
+			case 22: type = entity_type_enum::SWITCH_GREY; break;
+			case 23: type = entity_type_enum::SWITCH_RED; break;
+			case 24: type = entity_type_enum::SWITCH_GREEN; break;
+			case 26: type = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE; break;
+			case 27: type = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY; break;
+			case 28: type = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED; break;
+			case 29: type = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN; break;
+			case 31: type = entity_type_enum::MOVING_PLATFORM_VERTICAL_BLUE; break;
+			case 32: type = entity_type_enum::MOVING_PLATFORM_VERTICAL_GREY; break;
+			case 33: type = entity_type_enum::MOVING_PLATFORM_VERTICAL_RED; break;
+			case 34: type = entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN; break;
+			case 2:  type = entity_type_enum::PLAYER; break;
+			case 3:  type = entity_type_enum::NEXT_LEVEL_TRANSITION; break;
+			case 4:  type = entity_type_enum::MESSAGE_DISPLAY; break;
 		}
 	}
 

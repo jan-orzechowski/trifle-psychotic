@@ -47,13 +47,20 @@ void render_debug_information(game_state* game, level_state* level)
 {
 	entity* player = get_player(level);
 
-	b32 is_standing = is_standing_on_ground(level, player);
+	collision_result collision = {};
+	b32 is_standing = is_standing_on_ground(level, player, &collision);
+
+	b32 is_standing_on_platform = false;
+	if (collision.collided_platform)
+	{
+		is_standing_on_platform = true;
+	}
 
 	char buffer[200];
 	v4 text_color = get_v4(1, 1, 1, 0);
-	int error = snprintf(buffer, 200, "Chunk:(%d,%d),Pos:(%0.2f,%0.2f),Acc: (%0.2f,%0.2f) Standing: %d, Direction: %s",
+	int error = snprintf(buffer, 200, "Chunk:(%d,%d),Pos:(%0.2f,%0.2f),Acc: (%0.2f,%0.2f) Standing: %d, Platform: %d, Direction: %s",
 		player->position.chunk_pos.x, player->position.chunk_pos.y, player->position.pos_in_chunk.x, player->position.pos_in_chunk.y,
-		player->acceleration.x, player->acceleration.y, is_standing, (player->direction == direction::W ? "W" : "E"));
+		player->acceleration.x, player->acceleration.y, is_standing, is_standing_on_platform, (player->direction == direction::W ? "W" : "E"));
 
 	rect area = get_rect_from_corners(
 		get_v2(10, 200), get_v2((SCREEN_WIDTH / 2) - 10, 260)
@@ -192,7 +199,9 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			if (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY)
 				|| are_entity_flags_set(entity, entity_flags::FLIES_HORIZONTALLY)
 				|| are_entity_flags_set(entity, entity_flags::FLIES_VERTICALLY)
-				|| are_entity_flags_set(entity, entity_flags::FLIES_TOWARDS_PLAYER))
+				|| are_entity_flags_set(entity, entity_flags::FLIES_TOWARDS_PLAYER)
+				|| are_entity_flags_set(entity, entity_flags::MOVING_PLATFORM_HORIZONTAL)
+				|| are_entity_flags_set(entity, entity_flags::MOVING_PLATFORM_VERTICAL))
 			{				
 				process_entity_movement(level, entity, player, delta_time);
 

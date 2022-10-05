@@ -244,8 +244,8 @@ b32 check_if_sight_line_is_obstructed(level_state* level, world_position start, 
 			tile_x_to_check <= area_to_check.max_corner.x;
 			tile_x_to_check++)
 		{
-			u32 tile_value = get_tile_value(level->current_map, tile_x_to_check, tile_y_to_check);
-			if (is_tile_colliding(level->static_data->collision_reference, tile_value))
+			if (is_tile_colliding(level->current_map, level->static_data->collision_reference,
+				tile_x_to_check, tile_y_to_check))
 			{
 				entity_collision_data entity_collision = get_tile_collision_data(
 					reference_chunk, get_tile_position(tile_x_to_check, tile_y_to_check));
@@ -410,8 +410,8 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 						tile_x_to_check++)
 					{
 						tile_position tile_to_check_pos = get_tile_position(tile_x_to_check, tile_y_to_check);
-						u32 tile_value = get_tile_value(level->current_map, tile_x_to_check, tile_y_to_check);
-						if (is_tile_colliding(level->static_data->collision_reference, tile_value))
+						if (is_tile_colliding(level->current_map, level->static_data->collision_reference,
+							tile_x_to_check, tile_y_to_check))
 						{
 							collision new_collision = check_minkowski_collision(
 								get_entity_collision_data(reference_chunk, moving_entity),
@@ -460,6 +460,12 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 									if (are_entity_flags_set(entity_to_check, entity_flags::ENEMY))
 									{
 										result.collided_enemy = entity_to_check;
+									}
+
+									if (are_entity_flags_set(entity_to_check, entity_flags::MOVING_PLATFORM_HORIZONTAL)
+										|| are_entity_flags_set(entity_to_check, entity_flags::MOVING_PLATFORM_VERTICAL))
+									{
+										result.collided_platform = entity_to_check;
 									}
 
 									if (are_entity_flags_set(entity_to_check, entity_flags::SWITCH))
@@ -551,8 +557,8 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 					tile_x_to_check <= area_to_check.max_corner.x + 1;
 					tile_x_to_check++)
 				{
-					u32 tile_value = get_tile_value(level->current_map, tile_x_to_check, tile_y_to_check);
-					if (is_tile_colliding(level->static_data->collision_reference, tile_value))
+					if (is_tile_colliding(level->current_map, level->static_data->collision_reference, 
+						tile_x_to_check, tile_y_to_check))
 					{
 						rect tile_colliding_rect = get_tile_colliding_rect(reference_chunk, tile_x_to_check, tile_y_to_check);
 						if (is_point_inside_rect(tile_colliding_rect, relative_target_pos))
@@ -642,7 +648,7 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 	return (hit_entity || hit_wall);
 }
 
-b32 is_standing_on_ground(level_state* level, entity* entity_to_check)
+b32 is_standing_on_ground(level_state* level, entity* entity_to_check, collision_result* collision_to_fill)
 {
 	b32 result = false;
 	r32 corner_distance_apron = 0.0f;
@@ -651,11 +657,16 @@ b32 is_standing_on_ground(level_state* level, entity* entity_to_check)
 	entity test_entity = *entity_to_check;
 	world_position target_pos = add_to_position(test_entity.position, get_v2(0.0f, 0.1f));
 	collision_result collision = move(level, &test_entity, target_pos);
-	if (collision.collided_enemy
-		|| collision.collided_switch
-		|| collision.collision_data.collided_wall == direction::S)
+
+	// przypadkowo możemy mieć kolizję z inną ścianą niż górna - ale tutaj to pomijamy
+	if (collision.collision_data.collided_wall == direction::S)
 	{
 		result = true;
+		if (collision_to_fill)
+		{
+			*collision_to_fill = collision;
+		}
 	}
+
 	return result;
 }

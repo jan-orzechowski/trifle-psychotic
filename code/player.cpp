@@ -80,6 +80,27 @@ void update_power_up_timers(level_state* level, r32 delta_time)
 	}
 }
 
+void write_to_standing_history(standing_history* buffer, b32 was_standing)
+{
+	buffer->buffer[buffer->current_index] = was_standing;
+	buffer->current_index++;
+	if (buffer->current_index == buffer->buffer_size)
+	{
+		buffer->current_index = 0;
+	}
+}
+
+b32 get_if_was_standing(standing_history* buffer, u32 how_many_frames_backwards)
+{
+	i32 input_index = buffer->current_index - 1 - how_many_frames_backwards;
+	while (input_index < 0)
+	{
+		input_index = buffer->buffer_size + input_index;
+	}
+	b32 result = buffer->buffer[input_index];
+	return result;
+}
+
 void change_player_movement_mode(player_movement* movement, movement_mode mode)
 {
 	movement->previous_mode = movement->current_mode;
@@ -172,7 +193,9 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 	set_player_rotated_graphics_based_on_mouse_position(input, player);
 
-	b32 is_standing_at_frame_beginning = is_standing_on_ground(level, player);
+	collision_result standing_on = {};
+	b32 is_standing_at_frame_beginning = is_standing_on_ground(level, player, &standing_on);
+	write_to_standing_history(&level->player_movement.standing_history, is_standing_at_frame_beginning);
 
 	v2 gravity = get_v2(0, 1.0f);
 	v2 jump_acceleration = get_v2(0, -33.0f);
@@ -233,22 +256,6 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 	{
 		case movement_mode::WALK:
 		{
-			// ułatwienie dla gracza - jeśli gracz nacisnął skok w ostatnich klatkach skoku, wykonujemy skok i tak
-			if (level->player_movement.frame_duration == 1)
-			{
-				if (is_standing_at_frame_beginning
-					&& level->player_movement.previous_mode == movement_mode::JUMP)
-				{
-					if (was_up_key_pressed_in_last_frames(input_buffer, 3))
-					{
-						player->acceleration += jump_acceleration;
-						change_player_movement_mode(&level->player_movement, movement_mode::JUMP);
-						printf("ulatwienie!\n");
-						break;
-					}
-				}
-			}
-
 			if (input->is_left_mouse_key_held)
 			{
 				player_fire_bullet(level, input, player);
@@ -256,10 +263,10 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 			if (input->up.number_of_presses > 0)
 			{
-				if (is_standing_at_frame_beginning)
+				if (get_if_was_standing(&level->player_movement.standing_history, 0)
+					&& get_if_was_standing(&level->player_movement.standing_history, 1))
 				{
-					player->acceleration += jump_acceleration;
-					change_player_movement_mode(&level->player_movement, movement_mode::JUMP);
+					player->acceleration = jump_acceleration;
 					break;
 				}
 			}
@@ -339,6 +346,15 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 	world_position target_pos = add_to_position(player->position,
 		player->velocity * player->type->velocity_multiplier * delta_time);
+
+	if (standing_on.collided_platform)
+	{
+		// nie jest to zgodne z fizyką, ale bardziej intuicyjne dla gracza
+		if (length(player->velocity) < 0.01f)
+		{
+			target_pos = add_to_position(target_pos, standing_on.collided_platform->velocity * delta_time);
+		}
+	}
 
 	return target_pos;
 }

@@ -299,6 +299,9 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
 	level->explosions = push_array(arena, level->explosions_max_count, entity);
 
 	level->player_movement.current_mode = movement_mode::WALK;
+	level->player_movement.standing_history.buffer_size = 10;
+	level->player_movement.standing_history.buffer = push_array(arena,
+		level->player_movement.standing_history.buffer_size, b32);
 
 	level->fade_in_perc = 1.0f;
 }
@@ -348,6 +351,18 @@ display_graphics load_gate_switch_displays()
 	result.switch_right_display = get_16x16_sprite_part(offset, textures::CHARSET, 2, 0);
 	result.gate_upper_display = get_16x16_sprite_part(offset, textures::CHARSET, 3, 0);
 	result.gate_lower_display = get_16x16_sprite_part(offset, textures::CHARSET, 4, 0);
+	return result;
+}
+
+moving_platform_graphics load_moving_platform_graphics(u32 x, u32 y)
+{
+	v2 offset = get_v2(120.0f, 0.0f);
+
+	moving_platform_graphics result = {};
+	result.left = get_16x16_sprite_part(offset, textures::CHARSET, 3 * x, y);
+	result.middle = get_16x16_sprite_part(offset, textures::CHARSET, (3 * x) + 1, y);
+	result.right = get_16x16_sprite_part(offset, textures::CHARSET, (3 * x) + 2, y);
+
 	return result;
 }
 
@@ -512,6 +527,10 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->switches_gfx.red = load_switch_graphics(2);
 	data->switches_gfx.green = load_switch_graphics(3);
 	data->display_gfx = load_gate_switch_displays();
+	data->platforms_gfx.blue = load_moving_platform_graphics(0, 0);
+	data->platforms_gfx.grey = load_moving_platform_graphics(0, 1);
+	data->platforms_gfx.red = load_moving_platform_graphics(1, 0);
+	data->platforms_gfx.green = load_moving_platform_graphics(1, 1);
 
 	data->explosion_animations.size_16x16_variant_1 = load_explosion_animation(arena, get_v2(464, 0), 16, 7, 0.1f);
 	data->explosion_animations.size_16x16_variant_2 = load_explosion_animation(arena, get_v2(464, 16), 16, 7, 0.1f);
