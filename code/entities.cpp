@@ -801,13 +801,16 @@ void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bulle
 {
 	if (are_entity_flags_set(hit_entity, entity_flags::PLAYER))
 	{
+		start_visual_effect(level, hit_entity, sprite_effects_types::BULLET_HIT);
+
 		damage_player(level, moving_bullet->type->damage_on_contact, false);
 	}
 	else
 	{
 		if (false == are_entity_flags_set(hit_entity, entity_flags::INDESTRUCTIBLE))
 		{
-			start_visual_effect(level, hit_entity, 1, false);
+			start_visual_effect(level, hit_entity, sprite_effects_types::BULLET_HIT);
+
 			hit_entity->health -= moving_bullet->type->damage_on_contact;
 			
 			if (false == hit_entity->player_detected)

@@ -121,7 +121,7 @@ void open_gates_with_given_color(level_state* level, v4 color)
 				}
 				else if (are_entity_flags_set(entry->entity, entity_flags::TINTED_DISPLAY))
 				{
-					start_visual_effect(entry->entity, &level->static_data->visual_effects[0], true);
+					start_visual_effect(level, entry->entity, sprite_effects_types::GATE_DISPLAY_INACTIVE);
 				}
 
 				// w ten sposób nie będziemy otwierać bram ponownie
@@ -310,11 +310,12 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 	if (tint_effect == NULL)
 	{
 		tint_effect = push_struct(arena, sprite_effect);
+		tint_effect->type = sprite_effects_types::GATE_DISPLAY_ACTIVE;
 		tint_effect->stages_count = 1;
 		tint_effect->stages = push_array(arena, tint_effect->stages_count, sprite_effect_stage);
 		tint_effect->color = new_entity_to_spawn->color;
 		tint_effect->stages[0].amplitude = 1.0f;
-		tint_effect->stages[0].vertical_shift = 0.5f;
+		tint_effect->stages[0].vertical_shift = 0.7f;
 		tint_effect->stages[0].phase_shift = 0;
 		tint_effect->stages[0].period = 3.0f;
 		tint_effect->stages[0].stage_duration = 0.0f;
@@ -324,5 +325,5 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 		set_sprite_effect_for_color(level->gate_tints_dict, tint_effect);
 	}
 
-	start_visual_effect(display_entity, tint_effect, true);
+	start_visual_effect(display_entity, tint_effect);
 }

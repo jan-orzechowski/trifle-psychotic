@@ -179,6 +179,21 @@ struct map
 	string_ref next_map;
 };
 
+// polegamy na tym, by _FIRST było pierwsze, a _LAST ostatnie, dla policzenia ile potrzebujemy miejsc w słowniku
+enum class sprite_effects_types
+{
+	_FIRST,
+	OTHER,
+	DEATH,
+	SHOCK,
+	RECOIL,
+	BULLET_HIT,
+	GATE_DISPLAY_ACTIVE,
+	GATE_DISPLAY_INACTIVE,
+	INVINCIBILITY,
+	_LAST 
+};
+
 struct sprite_effect_stage
 {
 	r32 amplitude;
@@ -197,6 +212,7 @@ enum class sprite_effect_flags
 
 struct sprite_effect
 {
+	sprite_effects_types type;
 	v4 color;
 	sprite_effect_stage* stages;
 	u32 stages_count;

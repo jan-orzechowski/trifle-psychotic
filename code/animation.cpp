@@ -93,32 +93,85 @@ v4 get_tint(sprite_effect* effect, r32 time)
 	return result;
 }
 
-void start_visual_effect(entity* entity, sprite_effect* effect, b32 override_current)
+
+i32 get_sprite_effect_priority(sprite_effects_types type)
 {
-	if (entity->visual_effect == NULL || override_current)
+	i32 priority = 0;
+	switch (type)
 	{
-		if (entity->visual_effect != effect)
-		{
-			entity->visual_effect = effect;
-			entity->visual_effect_duration = 0;
-		}
+		case sprite_effects_types::OTHER:		          priority = -1; break;
+		case sprite_effects_types::DEATH:		          priority = 10; break;
+		case sprite_effects_types::SHOCK:			      priority = 0; break;
+		case sprite_effects_types::RECOIL:			      priority = 0; break;
+		case sprite_effects_types::GATE_DISPLAY_ACTIVE:   priority = 4; break;
+		case sprite_effects_types::GATE_DISPLAY_INACTIVE: priority = 5; break;
+		case sprite_effects_types::INVINCIBILITY:         priority = 9; break;
+		case sprite_effects_types::BULLET_HIT:            priority = 2; break;
+		invalid_default_case;
+	}
+	return priority;
+}
+
+b32 should_sprite_effect_override_current_effect(
+	sprite_effects_types old_effect_type, sprite_effects_types new_effect_type)
+{
+	i32 old_priority = get_sprite_effect_priority(old_effect_type);
+	i32 new_priority = get_sprite_effect_priority(new_effect_type);
+	// w przypadku, gdy oba mają ten sam typ lub priorytet, nie nadpisujemy
+	b32 should_override = (new_priority > old_priority);
+	return should_override;
+}
+
+b32 should_sprite_effect_override_current_effect(sprite_effect* old_effect, sprite_effect* new_effect)
+{
+	assert(new_effect != NULL);
+
+	b32 should_override = false;
+	if (old_effect == NULL)
+	{
+		should_override = true;
+	}
+	else
+	{
+		should_override = should_sprite_effect_override_current_effect(old_effect->type, new_effect->type);
+	}
+
+	return should_override;
+}
+
+void start_visual_effect(entity* entity, sprite_effect* effect)
+{
+	if (entity->visual_effect == NULL 
+		|| should_sprite_effect_override_current_effect(entity->visual_effect, effect))
+	{
+		entity->visual_effect = effect;
+		entity->visual_effect_duration = 0;
 	}
 }
 
 void stop_visual_effect(entity* entity, sprite_effect* effect_to_stop)
 {
-	if (entity->visual_effect == effect_to_stop)
+	if (entity->visual_effect && entity->visual_effect->type == effect_to_stop->type)
 	{
 		entity->visual_effect = NULL;
 		entity->visual_effect_duration = 0;
-	}	
+	}
 }
 
-void start_visual_effect(level_state* level, entity* entity, u32 sprite_effect_index, b32 override_current)
+void start_visual_effect(level_state* level, entity* entity, sprite_effects_types type)
 {
-	assert(sprite_effect_index < level->static_data->visual_effects_count);
-	sprite_effect* effect = &level->static_data->visual_effects[sprite_effect_index];
-	start_visual_effect(entity, effect, override_current);
+	i32 index = (i32)type;
+	assert(index > 0 && index < level->static_data->visual_effects_count);
+	sprite_effect* effect = &level->static_data->visual_effects[index];
+	start_visual_effect(entity, effect);
+}
+
+void stop_visual_effect(level_state* level, entity* entity, sprite_effects_types type)
+{
+	i32 index = (i32)type;
+	assert(index > 0 && index < level->static_data->visual_effects_count);
+	sprite_effect* effect_to_stop = &level->static_data->visual_effects[index];
+	stop_visual_effect(entity, effect_to_stop);
 }
 
 u32 get_current_animation_frame_index(animation* animation, r32 elapsed_time, r32 frame_duration_modifier)

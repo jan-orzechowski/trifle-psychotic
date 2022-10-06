@@ -105,6 +105,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 				start_screen_shake(level, 0.6f, 30.0f);
 				start_death_animation(level, player);
+				start_visual_effect(level, player, sprite_effects_types::DEATH);
 			}
 		}
 
@@ -164,11 +165,11 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		if (is_power_up_active(level->power_ups.invincibility))
 		{
-			start_visual_effect(player, &level->static_data->visual_effects[2], true);
+			start_visual_effect(level, player, sprite_effects_types::INVINCIBILITY);
 		}
 		else 
 		{
-			stop_visual_effect(player, &level->static_data->visual_effects[2]);
+			stop_visual_effect(level, player, sprite_effects_types::INVINCIBILITY);
 		}
 	}
 	

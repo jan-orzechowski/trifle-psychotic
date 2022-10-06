@@ -66,27 +66,26 @@ animation_frame get_tile_graphics(memory_arena* arena, u32 tile_value)
 	return result;
 }
 
-sprite_effect_stage* add_sprite_effect_stage(sprite_effect* effect,
-	r32 amplitude, r32 phase_shift, r32 vertical_shift, r32 period, r32 stage_duration)
+u32 count_sprite_effects_types()
 {
-	assert(stage_duration != 0);
-
-	sprite_effect_stage* new_stage = &effect->stages[effect->stages_count++];
-	effect->total_duration += stage_duration;
-
-	new_stage->amplitude = amplitude;
-	new_stage->phase_shift = phase_shift;
-	new_stage->period = period;
-	new_stage->stage_duration = stage_duration;
-
-	return new_stage;
+	u32 result = 0;
+	for (i32 enum_value = (i32)sprite_effects_types::_FIRST;
+		enum_value < (i32)sprite_effects_types::_LAST;
+		enum_value++)
+	{
+		result++;
+	}
+	return result;
 }
 
-sprite_effect_stage* add_constant_tint_sprite_effect_stage(sprite_effect* effect,
-	r32 tint_perc, r32 stage_duration)
+sprite_effect* add_sprite_effect(static_game_data* data, sprite_effects_types type)
 {
-	sprite_effect_stage* new_stage = add_sprite_effect_stage(effect, tint_perc, 0.0f, 0.0f, 0.0f, stage_duration);
-	return new_stage;
+	i32 index = (i32)type;
+	assert(index > 0 && index < data->visual_effects_count);
+	sprite_effect* result = &data->visual_effects[index];
+	assert((i32)result->type == 0); // sprawdzamy, czy typ był nieużywany
+	result->type = type;
+	return result;
 }
 
 void fill_animation_frame(animation* animation, u32 frame_index, u32 part_index, sprite_part part, r32* duration = NULL)
@@ -226,18 +225,6 @@ animation_frame get_bullet_graphics(memory_arena* arena, u32 x, u32 y)
 	result.sprite.parts[0].texture = textures::CHARSET;
 	result.sprite.parts[0].texture_rect = texture_rect;
 	return result;
-}
-
-void test_if_all_types_loaded(entity_type_dictionary dictionary)
-{
-	for (i32 enum_value = (i32)entity_type_enum::UNKNOWN + 1;
-		enum_value < (i32)entity_type_enum::_LAST;
-		enum_value++)
-	{
-		assert(enum_value < dictionary.type_ptrs_count);
-		entity_type* type = dictionary.type_ptrs[enum_value];
-		assert(type != NULL);
-	}
 }
 
 entity_type* add_entity_type(static_game_data* data, entity_type_enum type)
@@ -748,32 +735,53 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	cultist_type->fired_bullet_type = cultist_bullet_type;
 
-	data->visual_effects_count = 5;
-	data->visual_effects = push_array(arena, data->visual_effects_count, sprite_effect);
 
-	sprite_effect* gate_display_fade_effect = &data->visual_effects[0];
-	gate_display_fade_effect->stages_count = 1;
-	gate_display_fade_effect->stages = push_array(arena, gate_display_fade_effect->stages_count, sprite_effect_stage);
-	gate_display_fade_effect->stages[0].amplitude = 1.0f;
-	gate_display_fade_effect->color = get_v4(100, 100, 100, 0);
+	// sprite effects
+	{
+		data->visual_effects_count = count_sprite_effects_types();
+		data->visual_effects = push_array(arena, data->visual_effects_count, sprite_effect);
 
-	sprite_effect* damage_tint_effect = &data->visual_effects[1];
-	damage_tint_effect->stages_count = 1;
-	damage_tint_effect->stages = push_array(arena, damage_tint_effect->stages_count, sprite_effect_stage);
-	damage_tint_effect->stages[0].amplitude = 1.0f;
-	damage_tint_effect->color = get_v4(255, 0, 0, 0);
+		sprite_effect* death_effect = add_sprite_effect(data, sprite_effects_types::DEATH);
+		death_effect->stages_count = 1;
+		death_effect->stages = push_array(arena, death_effect->stages_count, sprite_effect_stage);
+		death_effect->stages[0].period = 0.0f;
+		death_effect->stages[0].amplitude = 1.0f;
+		death_effect->total_duration = 0.0f;
+		death_effect->color = get_v4(255, 0, 0, 0);
 
-	sprite_effect* invinvibility_tint_effect = &data->visual_effects[2];
-	invinvibility_tint_effect->stages_count = 1;
-	invinvibility_tint_effect->stages = push_array(arena, invinvibility_tint_effect->stages_count, sprite_effect_stage);
-	invinvibility_tint_effect->stages[0].period = 10.0f;
-	invinvibility_tint_effect->stages[0].amplitude = 1.5f;
-	invinvibility_tint_effect->flags = (sprite_effect_flags)((u32)sprite_effect_flags::REPEATS | (u32)sprite_effect_flags::ADDITIVE_MODE);
-	invinvibility_tint_effect->color = get_v4(0, 0, 255, 0);
+		sprite_effect* bullet_hit_effect = add_sprite_effect(data, sprite_effects_types::BULLET_HIT);
+		bullet_hit_effect->stages_count = 1;
+		bullet_hit_effect->stages = push_array(arena, bullet_hit_effect->stages_count, sprite_effect_stage);
+		bullet_hit_effect->stages[0].period = 1.0f;
+		bullet_hit_effect->stages[0].amplitude = 0.8f;
+		bullet_hit_effect->total_duration = 1.0f;
+		bullet_hit_effect->flags = sprite_effect_flags::ADDITIVE_MODE;
+		bullet_hit_effect->color = get_v4(255, 95, 31, 0);
 
-	add_sprite_effect_stage(damage_tint_effect, 1.0f, 0.0f, 0.0f, 5.0f, 5.0f);
-	add_constant_tint_sprite_effect_stage(damage_tint_effect, 0.5f, 5.0f);
+		sprite_effect* invinvibility_effect = add_sprite_effect(data, sprite_effects_types::INVINCIBILITY);
+		invinvibility_effect->stages_count = 1;
+		invinvibility_effect->stages = push_array(arena, invinvibility_effect->stages_count, sprite_effect_stage);
+		invinvibility_effect->stages[0].period = 10.0f;
+		invinvibility_effect->stages[0].amplitude = 1.5f;
+		invinvibility_effect->flags = (sprite_effect_flags)((u32)sprite_effect_flags::REPEATS | (u32)sprite_effect_flags::ADDITIVE_MODE);
+		invinvibility_effect->color = get_v4(0, 0, 255, 0);
 
+		sprite_effect* shock_effect = add_sprite_effect(data, sprite_effects_types::SHOCK);
+		shock_effect->stages_count = 1;
+		shock_effect->stages = push_array(arena, shock_effect->stages_count, sprite_effect_stage);
+		shock_effect->stages[0].period = 1.5f;
+		shock_effect->stages[0].amplitude = 1.5f;
+		shock_effect->total_duration = 1.5f;
+		shock_effect->flags = sprite_effect_flags::ADDITIVE_MODE;
+		shock_effect->color = get_v4(255, 255, 255, 0);
+
+		sprite_effect* gate_display_fade_effect = add_sprite_effect(data, sprite_effects_types::GATE_DISPLAY_INACTIVE);
+		gate_display_fade_effect->stages_count = 1;
+		gate_display_fade_effect->stages = push_array(arena, gate_display_fade_effect->stages_count, sprite_effect_stage);
+		gate_display_fade_effect->stages[0].amplitude = 1.2f;
+		gate_display_fade_effect->color = get_v4(100, 100, 100, 0);
+	}
+	
 	entity_flags power_up_flags = (entity_flags)((u32)entity_flags::POWER_UP | (u32)entity_flags::INDESTRUCTIBLE);
 	v2 power_up_size = get_v2(0.5f, 0.5f);
 	entity_type* power_up_invincibility_type = add_entity_type(data, entity_type_enum::POWER_UP_INVINCIBILITY);
