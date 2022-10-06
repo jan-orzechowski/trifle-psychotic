@@ -99,13 +99,14 @@ i32 get_sprite_effect_priority(sprite_effects_types type)
 	switch (type)
 	{
 		case sprite_effects_types::OTHER:		          priority = -1; break;
-		case sprite_effects_types::DEATH:		          priority = 10; break;
-		case sprite_effects_types::SHOCK:			      priority = 0; break;
-		case sprite_effects_types::RECOIL:			      priority = 0; break;
-		case sprite_effects_types::GATE_DISPLAY_ACTIVE:   priority = 4; break;
-		case sprite_effects_types::GATE_DISPLAY_INACTIVE: priority = 5; break;
+		case sprite_effects_types::BULLET_HIT:            priority = 1; break;
+		case sprite_effects_types::SHOCK:			      priority = 2; break;
+		case sprite_effects_types::SPEED:			      priority = 3; break;
+		case sprite_effects_types::RECOIL:			      priority = 4; break;
+		case sprite_effects_types::GATE_DISPLAY_ACTIVE:   priority = 5; break;
+		case sprite_effects_types::GATE_DISPLAY_INACTIVE: priority = 6; break;
 		case sprite_effects_types::INVINCIBILITY:         priority = 9; break;
-		case sprite_effects_types::BULLET_HIT:            priority = 2; break;
+		case sprite_effects_types::DEATH:		          priority = 10; break;
 		invalid_default_case;
 	}
 	return priority;

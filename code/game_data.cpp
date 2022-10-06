@@ -787,11 +787,26 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 		shock_effect->flags = sprite_effect_flags::ADDITIVE_MODE;
 		shock_effect->color = get_v4(255, 255, 255, 0);
 
+		sprite_effect* recoil_effect = add_sprite_effect(data, sprite_effects_types::RECOIL);
+		recoil_effect->stages_count = 1;
+		recoil_effect->stages = push_array(arena, shock_effect->stages_count, sprite_effect_stage);
+		recoil_effect->stages[0].period = 0.5f;
+		recoil_effect->stages[0].amplitude = 1.5f;
+		recoil_effect->flags = (sprite_effect_flags)((u32)sprite_effect_flags::REPEATS | (u32)sprite_effect_flags::ADDITIVE_MODE);
+		recoil_effect->color = get_v4(255, 255, 255, 0);
+
 		sprite_effect* gate_display_fade_effect = add_sprite_effect(data, sprite_effects_types::GATE_DISPLAY_INACTIVE);
 		gate_display_fade_effect->stages_count = 1;
 		gate_display_fade_effect->stages = push_array(arena, gate_display_fade_effect->stages_count, sprite_effect_stage);
 		gate_display_fade_effect->stages[0].amplitude = 1.2f;
 		gate_display_fade_effect->color = get_v4(100, 100, 100, 0);
+
+		sprite_effect* speedup_effect = add_sprite_effect(data, sprite_effects_types::SPEED);
+		speedup_effect->stages_count = 1;
+		speedup_effect->stages = push_array(arena, shock_effect->stages_count, sprite_effect_stage);
+		speedup_effect->stages[0].amplitude = 1.2f;
+		speedup_effect->flags = (sprite_effect_flags)((u32)sprite_effect_flags::REPEATS | (u32)sprite_effect_flags::ADDITIVE_MODE);
+		speedup_effect->color = get_v4(0, 120, 0, 0);
 	}
 	
 	entity_flags power_up_flags = (entity_flags)((u32)entity_flags::POWER_UP | (u32)entity_flags::INDESTRUCTIBLE);

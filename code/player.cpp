@@ -233,6 +233,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 				{
 					// tak
 					change_player_movement_mode(&level->player_movement, movement_mode::WALK);
+					stop_visual_effect(level, player, sprite_effects_types::RECOIL);
 				}
 			}
 			else
@@ -374,6 +375,8 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
 		}
 		else if (are_entity_flags_set(enemy, entity_flags::PLAYER_RECOIL_ON_CONTACT))
 		{
+			start_visual_effect(level, player, sprite_effects_types::RECOIL);
+			
 			damage_player(level, enemy->type->damage_on_contact, false);
 
 			v2 direction = get_unit_vector(
@@ -385,9 +388,9 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
 			level->player_movement.recoil_acceleration_timer = 1.0f;
 			level->player_movement.recoil_acceleration = (direction * acceleration);
 
-			printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
+			/*printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
 				level->player_movement.recoil_acceleration.x,
-				level->player_movement.recoil_acceleration.y);
+				level->player_movement.recoil_acceleration.y);*/
 
 			change_player_movement_mode(&level->player_movement, movement_mode::RECOIL);
 		}		

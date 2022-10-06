@@ -187,6 +187,7 @@ enum class sprite_effects_types
 	DEATH,
 	SHOCK,
 	RECOIL,
+	SPEED,
 	BULLET_HIT,
 	GATE_DISPLAY_ACTIVE,
 	GATE_DISPLAY_INACTIVE,

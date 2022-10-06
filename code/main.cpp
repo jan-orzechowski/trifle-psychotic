@@ -171,6 +171,15 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		{
 			stop_visual_effect(level, player, sprite_effects_types::INVINCIBILITY);
 		}
+
+		if (is_power_up_active(level->power_ups.speed))
+		{
+			start_visual_effect(level, player, sprite_effects_types::SPEED);
+		}
+		else
+		{
+			stop_visual_effect(level, player, sprite_effects_types::SPEED);
+		}
 	}
 	
 	if (false == level->show_message)
