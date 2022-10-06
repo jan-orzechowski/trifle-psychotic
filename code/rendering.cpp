@@ -178,7 +178,8 @@ void render_entity_sprite(render_group* render, world_position camera_position, 
 			assert(tint.r >= 0 && tint.r <= 1 && tint.g >= 0 && tint.g <= 1 && tint.b >= 0 && tint.b <= 1);
 			if (are_flags_set(&visual_effect->flags, sprite_effect_flags::ADDITIVE_MODE))
 			{
-				render_bitmap_with_effects(render, part->texture, part->texture_rect, screen_rect, tint, false, flip);
+				v4 no_tint = get_v4(1.0f, 1.0f, 1.0f, 1.0f);
+				render_bitmap_with_effects(render, part->texture, part->texture_rect, screen_rect, no_tint, false, flip);
 				render_bitmap_with_effects(render, part->texture, part->texture_rect, screen_rect, tint, true, flip);
 			}
 			else

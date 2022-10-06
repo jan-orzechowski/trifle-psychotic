@@ -379,10 +379,10 @@ void render_group_to_output(render_group* render_group)
 			{
 				render_group_entry_bitmap* entry = (render_group_entry_bitmap*)data;
 
+				SDL_Texture* texture = get_texture(GLOBAL_SDL_DATA, entry->texture);
 				SDL_Rect src = get_sdl_rect(entry->source_rect);
 				SDL_Rect dst = get_sdl_rect(entry->destination_rect);
-				SDL_RenderCopy(GLOBAL_SDL_DATA.renderer, get_texture(GLOBAL_SDL_DATA, entry->texture),
-					&src, &dst);
+				SDL_RenderCopy(GLOBAL_SDL_DATA.renderer, texture, &src, &dst);
 
 				base_address += sizeof(render_group_entry_bitmap);
 			}
@@ -392,36 +392,35 @@ void render_group_to_output(render_group* render_group)
 				render_group_entry_bitmap_with_effects* entry = (render_group_entry_bitmap_with_effects*)data;
 
 				SDL_Texture* texture = get_texture(GLOBAL_SDL_DATA, entry->texture);
-
-				if (entry->render_in_additive_mode)
-				{
-					SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_ADD);			
-				}
-
-				if (false == is_zero(entry->tint_color))
-				{
-					v4 sdl_tint = entry->tint_color * 255;
-					SDL_SetTextureColorMod(texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
-				}
-
 				SDL_Rect src = get_sdl_rect(entry->source_rect);
 				SDL_Rect dst = get_sdl_rect(entry->destination_rect);
 				SDL_RendererFlip flip = (entry->flip_horizontally ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
-				SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, flip);
-				if (entry->render_in_additive_mode)
-				{
-					// drugi raz - zastosowanie pojedynczo nie daje zauważalnych efektów
-					SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, flip);
-				}
+				v4 sdl_tint = entry->tint_color * 255;
 
-				if (false == is_zero(entry->tint_color))
-				{
+				if (entry->render_in_additive_mode)
+				{					
+					SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_ADD);
+					SDL_SetTextureColorMod(texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
+			
+					SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, flip);
+		
+					SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
 					SDL_SetTextureColorMod(texture, 255, 255, 255);
 				}
-
-				if (entry->render_in_additive_mode)
+				else
 				{
-					SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+					if (false == is_zero(entry->tint_color))
+					{
+						SDL_SetTextureColorMod(texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
+
+						SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, flip);
+
+						SDL_SetTextureColorMod(texture, 255, 255, 255);
+					}
+					else
+					{
+						SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, flip);
+					}
 				}
 
 				base_address += sizeof(render_group_entry_bitmap_with_effects);

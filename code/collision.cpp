@@ -632,7 +632,10 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 
 		if (hit_entity)
 		{
-			start_death_animation(level, moving_bullet);
+			if (false == are_entity_flags_set(hit_entity, entity_flags::INDESTRUCTIBLE))
+			{
+				start_death_animation(level, moving_bullet);
+			}
 		}
 
 		if (hit_entity)

@@ -64,11 +64,10 @@ v4 get_tint(sprite_effect* effect, r32 time)
 		for (u32 stage_index = 0; stage_index < effect->stages_count; stage_index++)
 		{
 			sprite_effect_stage* stage = effect->stages + stage_index;
-			if (stage->stage_duration == 0 || (time < stage->stage_duration))
+			if (stage->stage_duration == 0 || (time <= stage->stage_duration))
 			{
 				tint_value = get_stage_tint(stage, time);
 				found = true;
-				//printf("time: %.02f tint: %.02f\n", time, tint_value);
 				break;
 			}
 			else
@@ -233,12 +232,10 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r
 		}
 		else
 		{
-			if (entity->visual_effect_duration < entity->visual_effect->total_duration)
-			{
-				entity->visual_effect_duration += delta_time;
-			}
-			else	
-			{	
+			entity->visual_effect_duration += delta_time;
+
+			if (entity->visual_effect_duration > entity->visual_effect->total_duration)
+			{				
 				// zapętlenie lub skończenie efektu 
 				if (are_flags_set((u32*)&entity->visual_effect->flags, (u32)sprite_effect_flags::REPEATS))
 				{
@@ -315,13 +312,17 @@ void render_entity_animation_frame(render_group* render, world_position camera_p
 
 	if (sprite_to_render == NULL || sprite_to_render->parts == NULL)
 	{
-		sprite_to_render = &entity->type->idle_pose.sprite;
+		if (entity->type->idle_pose.sprite.parts_count > 0)
+		{
+			sprite_to_render = &entity->type->idle_pose.sprite;
+		}
 	}
 
-	assert(sprite_to_render != NULL);
-
-	render_entity_sprite(render, camera_position, entity->position, entity->direction,
-		entity->visual_effect, entity->visual_effect_duration, *sprite_to_render);
+	if (sprite_to_render != NULL)
+	{
+		render_entity_sprite(render, camera_position, entity->position, entity->direction,
+			entity->visual_effect, entity->visual_effect_duration, *sprite_to_render);
+	}
 }
 
 // strength 20 jest ok, 30 jest mocne, 40 - chyba zbyt
@@ -379,7 +380,6 @@ void start_death_animation(level_state* level, bullet* bullet)
 	{
 		i32 random = rand() % bullet->type->death_animation_variants_count;
 		animation* death_animation = bullet->type->death_animation_variants[random];
-		//world_position position = add_to_position(bullet->position, bullet->type->death_animation_offset);
 		add_explosion(level, bullet->position, death_animation);
 	}
 }
