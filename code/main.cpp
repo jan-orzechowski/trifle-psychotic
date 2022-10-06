@@ -197,17 +197,9 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				continue;
 			}
 			
-			if (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY)
-				|| are_entity_flags_set(entity, entity_flags::FLIES_HORIZONTALLY)
-				|| are_entity_flags_set(entity, entity_flags::FLIES_VERTICALLY)
-				|| are_entity_flags_set(entity, entity_flags::FLIES_TOWARDS_PLAYER)
-				|| are_entity_flags_set(entity, entity_flags::MOVING_PLATFORM_HORIZONTAL)
-				|| are_entity_flags_set(entity, entity_flags::MOVING_PLATFORM_VERTICAL))
+			if (is_entity_moving_type_entity(entity))
 			{				
-				process_entity_movement(level, entity, player, delta_time);
-
-				r32 frame_duration_modifier = 0.75f + (1.0f / length(entity->velocity));
-				animate_entity(NULL, entity, delta_time, frame_duration_modifier);
+				process_entity_movement(level, entity, player, delta_time);				
 			}
 			else if (are_entity_flags_set(entity, entity_flags::ENEMY))
 			{
@@ -215,20 +207,27 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 				if (entity->player_detected)
 				{
-					if (entity->type->rotation_sprites)
-					{
-						set_entity_rotated_graphics(entity, &player->position);
-					}
-
+					set_entity_rotated_graphics(entity, &player->position);
+				
 					v2 distance_to_player = get_position_difference(player->position, entity->position);
 					r32 distance_to_player_length = length(distance_to_player);
-
 					if (distance_to_player_length > entity->type->forget_detection_distance)
 					{
 						entity->player_detected = false;
 					}
 				}
+				else
+				{
+					// dla ustawienia początkowej grafiki, zanim gracz zostanie wykryty
+					if (entity->shooting_sprite.parts_count == 0)
+					{
+						set_entity_rotated_graphics(entity, NULL);
+					}
+				}
 			}
+
+			r32 frame_duration_modifier = 0.75f + (1.0f / length(entity->velocity));
+			animate_entity(NULL, entity, delta_time, frame_duration_modifier);
 		}
 
 		// update bullets

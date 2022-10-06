@@ -570,7 +570,6 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->player_power_up_bullet_type = power_up_bullet_type;
 
 	entity_type* sentry_type = add_entity_type(data, entity_type_enum::ENEMY_SENTRY);
-	sentry_type->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 0, 6));
 	sentry_type->flags = (entity_flags)(
 		(u32)entity_flags::BLOCKS_MOVEMENT 
 		| (u32)entity_flags::ENEMY
@@ -590,7 +589,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	sentry_type->player_acceleration_on_collision = 3.0f;
 	sentry_type->collision_rect_dim = get_v2(0.75f, 0.75f);
 	sentry_type->rotation_sprites = load_shooting_rotation_sprites(arena, 6);
-	add_death_animation(arena, sentry_type, data->explosion_animations.size_32x32);
+	add_death_animation(arena, sentry_type, data->explosion_animations.size_24x24);
 
 	entity_type* sentry_bullet_type = add_bullet_type(data);
 	sentry_bullet_type->damage_on_contact = 10;

@@ -79,6 +79,18 @@ entity_type* get_entity_type_ptr(entity_type_dictionary dictionary, entity_type_
 	return result;
 }
 
+b32 is_entity_moving_type_entity(entity* entity)
+{
+	b32 result = 
+          (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY)
+		|| are_entity_flags_set(entity, entity_flags::FLIES_HORIZONTALLY)
+		|| are_entity_flags_set(entity, entity_flags::FLIES_VERTICALLY)
+		|| are_entity_flags_set(entity, entity_flags::FLIES_TOWARDS_PLAYER)
+		|| are_entity_flags_set(entity, entity_flags::MOVING_PLATFORM_HORIZONTAL)
+		|| are_entity_flags_set(entity, entity_flags::MOVING_PLATFORM_VERTICAL));
+	return result;
+}
+
 void fire_bullet(level_state* level, entity_type* bullet_type, world_position bullet_starting_position,
 	v2 bullet_offset, v2 velocity)
 {
