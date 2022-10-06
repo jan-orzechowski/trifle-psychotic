@@ -240,8 +240,8 @@ b32 check_if_sight_line_is_obstructed(level_state* level, world_position start, 
 		tile_y_to_check <= area_to_check.max_corner.y;
 		tile_y_to_check++)
 	{
-		for (i32 tile_x_to_check = area_to_check.min_corner.x;
-			tile_x_to_check <= area_to_check.max_corner.x;
+		for (i32 tile_x_to_check = area_to_check.min_corner.x - 1;
+			tile_x_to_check <= area_to_check.max_corner.x + 1;
 			tile_x_to_check++)
 		{
 			if (is_tile_colliding(level->current_map, level->static_data->collision_reference,
