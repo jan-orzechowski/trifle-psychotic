@@ -521,6 +521,17 @@ entity* add_explosion(level_state* level, world_position position, animation* ex
 		new_explosion->position = renormalize_position(position);
 		new_explosion->current_animation = explosion_animation;
 		new_explosion->animation_duration = 0.0f;
+
+		// lustrzane odbicie animacji dla większej różnorodności wizualnej
+		b32 flip = (rand() % 2 == 1);
+		if (flip)
+		{
+			new_explosion->direction = direction::W;		
+		}
+		else
+		{
+			new_explosion->direction = direction::E;
+		}
 	}
 	return new_explosion;
 }
