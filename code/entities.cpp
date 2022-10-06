@@ -105,26 +105,6 @@ void fire_bullet(level_state* level, entity_type* bullet_type, world_position bu
 	}
 }
 
-void fire_bullet(level_state* level, entity* entity, b32 cooldown)
-{
-	assert(entity->type->fired_bullet_type);
-
-	v2 direction = (entity->direction == direction::E
-		? get_v2(1.0f, 0.0f)
-		: get_v2(-1.0f, 0.0f));
-	v2 bullet_offset = (entity->direction == direction::E
-		? entity->type->fired_bullet_offset
-		: get_v2(-entity->type->fired_bullet_offset.x, entity->type->fired_bullet_offset.y));
-
-	fire_bullet(level, entity->type->fired_bullet_type, entity->position, bullet_offset,
-		direction * entity->type->fired_bullet_type->constant_velocity);
-
-	if (cooldown)
-	{
-		entity->attack_cooldown = entity->type->default_attack_cooldown;
-	}
-}
-
 void remove_bullet(level_state* level, i32* bullet_index)
 {
 	if (level->bullets_count > 0)
@@ -862,10 +842,17 @@ void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 tar
 	if (enemy->type->rotation_sprites)
 	{
 		shooting_rotation rotation = get_entity_shooting_rotation(enemy->type->rotation_sprites, direction_to_target);
-		bullet_offset = rotation.bullet_offset;				
-		direction_to_target = get_unit_vector(get_position_difference(
-			target_position, add_to_position(enemy->position, rotation.bullet_offset)));
+		bullet_offset = rotation.bullet_offset;		
 	}
+	else
+	{
+		bullet_offset = (enemy->direction == direction::E
+			? enemy->type->fired_bullet_offset
+			: get_v2(-enemy->type->fired_bullet_offset.x, enemy->type->fired_bullet_offset.y));
+	}
+
+	direction_to_target = get_unit_vector(get_position_difference(
+		target_position, add_to_position(enemy->position, bullet_offset)));
 
 	fire_bullet(level, enemy->type->fired_bullet_type, enemy->position, bullet_offset,
 		direction_to_target * enemy->type->fired_bullet_type->constant_velocity);				

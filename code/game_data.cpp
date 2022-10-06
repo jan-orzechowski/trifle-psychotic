@@ -695,9 +695,11 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	robot_type->velocity_multiplier = 3.0f;
 	robot_type->player_acceleration_on_collision = 3.0f;
 	robot_type->collision_rect_dim = get_v2(0.35f, 1.6f);
-	robot_type->default_attack_cooldown = 1.0f;
-	robot_type->default_attack_series_duration = 1.5f;
-	robot_type->default_attack_bullet_interval_duration = 0.2f;
+	robot_type->collision_rect_offset = get_v2(0.0f, -0.60f);
+	robot_type->default_attack_cooldown = 1.2f;
+	robot_type->default_attack_series_duration = 0.6f;
+	robot_type->default_attack_bullet_interval_duration = 0.15f;
+	robot_type->fired_bullet_offset = get_v2(0.75f, -0.75f);
 
 	add_death_animation(arena, robot_type, data->explosion_animations.size_48x48);
 	robot_type->death_animation_offset = get_v2(0.0f, -0.75f);
