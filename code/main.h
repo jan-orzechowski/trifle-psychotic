@@ -548,9 +548,16 @@ struct explosions
 	animation* size_16x16_variant_1;
 	animation* size_16x16_variant_2;
 	animation* size_16x16_variant_3;
+	animation* size_16x16_variant_4;
+	animation* size_16x16_variant_5;
+	animation* size_16x16_variant_6;
+	animation* size_16x16_variant_7_blue;
+	animation* size_16x16_variant_8_blue;
+	animation* size_16x16_variant_9_blue;
 	animation* size_24x24;
 	animation* size_32x32;
 	animation* size_48x48;
+	animation* size_96x96;
 };
 
 struct static_game_data
