@@ -268,6 +268,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 					&& get_if_was_standing(&level->player_movement.standing_history, 1))
 				{
 					player->acceleration = jump_acceleration;
+					change_player_movement_mode(&level->player_movement, movement_mode::JUMP);
 					break;
 				}
 			}
@@ -350,10 +351,29 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 	if (standing_on.collided_platform)
 	{
-		// nie jest to zgodne z fizyką, ale bardziej intuicyjne dla gracza
-		if (length(player->velocity) < 0.01f)
+		if (level->player_movement.current_mode != movement_mode::JUMP)
 		{
-			target_pos = add_to_position(target_pos, standing_on.collided_platform->velocity * delta_time);
+			// jeśli platforma porusza się w dół, "przyklejamy" gracza do platformy
+			if (standing_on.collided_platform->velocity.y > 0.1f)
+			{
+				r32 closest_y_distance_from_platform =
+					(standing_on.collided_platform->type->collision_rect_dim.y / 2)
+					+ (player->type->collision_rect_dim.y / 2)
+					+ player->type->collision_rect_offset.y;
+
+				r32 actual_y_distance_from_platform =
+					-get_position_difference(target_pos, standing_on.collided_platform->position).y;
+
+				r32 difference = actual_y_distance_from_platform - closest_y_distance_from_platform;
+				target_pos = add_to_position(target_pos, get_v2(0.0f, difference - 0.01f));
+			}
+
+			// nie jest to zgodne z fizyką, ale bardziej intuicyjne dla gracza
+			// platforma przemieszcza gracza tylko wtedy, kiedy nie ma własnej prędkości
+			if (length(player->velocity) < 0.05f)
+			{
+				target_pos = add_to_position(target_pos, standing_on.collided_platform->velocity * delta_time);
+			}
 		}
 	}
 

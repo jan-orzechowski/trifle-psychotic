@@ -699,7 +699,7 @@ void set_entity_rotated_graphics(entity* entity, world_position* target)
 	}
 }
 
-void move_entity_on_path(level_state* level, entity* entity_to_move, tile_position current_start, tile_position current_goal, 
+void move_entity_on_path(level_state* level, entity* entity_to_move, tile_position current_start, tile_position current_goal,
 	entity* player, r32 delta_time)
 {
 	if (current_goal != current_start)
@@ -741,7 +741,7 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
 
 		world_position new_position = add_to_position(entity_to_move->position, (direction * velocity * delta_time));
 		v2 movement_delta = get_position_difference(new_position, entity_to_move->position);
-		
+
 		if (are_entity_flags_set(entity_to_move, entity_flags::ENEMY))
 		{
 			// sprawdzenie kolizji z graczem
@@ -767,8 +767,16 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
 				get_entity_collision_data(reference_chunk, entity_to_move),
 				get_entity_collision_data(reference_chunk, player),
 				movement_delta, 1.0f);
-				
-			if (new_collision.collided_wall == direction::NONE)
+
+			// jeśli platforma jedzie do góry i gracz stoi na niej
+			if (new_collision.collided_wall == direction::N
+				&& are_entity_flags_set(entity_to_move, entity_flags::MOVING_PLATFORM_VERTICAL)
+				&& movement_delta.y < 0.0f)
+			{
+				entity_to_move->position = add_to_position(entity_to_move->position, movement_delta);
+				player->position = add_to_position(player->position, movement_delta - get_v2(0.0f, 0.01f));
+			}
+			else if (new_collision.collided_wall == direction::NONE)
 			{
 				entity_to_move->position = add_to_position(entity_to_move->position,
 					movement_delta * new_collision.possible_movement_perc);
@@ -1165,7 +1173,7 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
 
 		type->collision_rect_dim = get_v2(3, 1);
 
-		type->velocity_multiplier = 3.0f;
+		type->velocity_multiplier = 2.0f;
 
 		set_flags(&type->flags, entity_flags::BLOCKS_MOVEMENT);
 		set_flags(&type->flags, entity_flags::INDESTRUCTIBLE);
