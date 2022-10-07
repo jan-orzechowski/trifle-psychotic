@@ -265,6 +265,7 @@ int main(int argc, char* args[])
 				if (state[SDL_SCANCODE_DOWN] || state[SDL_SCANCODE_S]) new_input.down.number_of_presses++;
 				if (state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A]) new_input.left.number_of_presses++;
 				if (state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D]) new_input.right.number_of_presses++;
+				if (state[SDL_SCANCODE_ESCAPE]) new_input.escape.number_of_presses++;
 
 				new_input.mouse_x = -1;
 				new_input.mouse_y = -1;
@@ -277,6 +278,11 @@ int main(int argc, char* args[])
 				write_to_input_buffer(&game.input_buffer, &new_input);
 
 				main_game_loop(&game, static_data, delta_time);
+
+				if (game.exit_game)
+				{
+					run = false;
+				}
 			}
 
 			u32 end_work_counter = SDL_GetPerformanceCounter();
@@ -301,7 +307,10 @@ int main(int argc, char* args[])
 			sdl.debug_frame_counter = frame_counter + 1;
 		}
 
-		end_temporary_memory(game.game_level_memory, false);
+		if (game.game_level_memory.arena)
+		{
+			end_temporary_memory(game.game_level_memory, false);
+		}
 
 		check_arena(game.arena);
 		check_arena(game.transient_arena);
@@ -311,16 +320,16 @@ int main(int argc, char* args[])
 		invalid_code_path;
 	}
 	
-	SDL_DestroyTexture(sdl.charset_texture);
-	SDL_DestroyTexture(sdl.tileset_texture);
-	SDL_DestroyTexture(sdl.font_texture);
-	SDL_DestroyTexture(sdl.explosion_texture);
-
-	SDL_DestroyRenderer(sdl.renderer);
-	SDL_DestroyWindow(sdl.window);
-
-	IMG_Quit();
-	SDL_Quit();
+	//SDL_DestroyTexture(sdl.charset_texture);
+	//SDL_DestroyTexture(sdl.tileset_texture);
+	//SDL_DestroyTexture(sdl.font_texture);
+	//SDL_DestroyTexture(sdl.explosion_texture);
+	//
+	//SDL_DestroyRenderer(sdl.renderer);
+	//SDL_DestroyWindow(sdl.window);
+	//
+	//IMG_Quit();
+	//SDL_Quit();
 
 	return 0;
 }

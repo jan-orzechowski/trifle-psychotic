@@ -57,7 +57,7 @@ b32 was_any_key_pressed_in_last_frames(input_buffer* buffer, u32 number_of_frame
 	b32 result = false;
 	for (u32 frame = 1; frame <= number_of_frames; frame++)
 	{
-		game_input* input = get_past_input(buffer, frame);
+		game_input* input = get_past_input(buffer, frame - 1);
 		if (input->up.number_of_presses > 0
 			|| input->down.number_of_presses > 0
 			|| input->left.number_of_presses > 0

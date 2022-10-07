@@ -511,6 +511,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->menu_continue_str = copy_c_string_to_memory_arena(arena, "Continue");
 	data->menu_credits_str = copy_c_string_to_memory_arena(arena, "Credits");
 	data->menu_exit_str = copy_c_string_to_memory_arena(arena, "Exit");	
+	data->exit_warning_message = copy_c_string_to_memory_arena(arena, "Are you sure you want to exit? Press ESC again to confirm");
 
 	std::string collision_file_path = "data/collision_map.tmx";
 	read_file_result collision_file = read_file(collision_file_path);

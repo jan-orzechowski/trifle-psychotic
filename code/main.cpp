@@ -73,20 +73,47 @@ void render_debug_information(game_state* game, level_state* level)
 scene_change game_update_and_render(game_state* game, level_state* level, r32 delta_time)
 {	
 	entity* player = get_player(level);
+	game_input* input = get_last_frame_input(&game->input_buffer);
 
 	if (level->show_message)
 	{
 		if (level->min_message_timer < 0.0f)
-		{
+		{			
+			if (level->show_exit_warning_message)
+			{
+				if (input->escape.number_of_presses > 0)
+				{
+					if (false == level->active_scene_change.change_scene)
+					{
+						level->active_scene_change.change_scene = true;
+						level->active_scene_change.new_scene = scene::MAIN_MENU;
+						level->active_scene_change.fade_out_speed = 0.5f;
+					}
+				}
+			}
+			
 			if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
 			{
 				level->min_message_timer = 0.0f;
-				level->show_message = false;				
-			}
+				level->show_message = false;
+				level->show_exit_warning_message = false;
+			}			
 		}
 		else
 		{
 			level->min_message_timer -= delta_time;
+		}
+	}
+	
+	if (input->escape.number_of_presses > 0)
+	{
+		if (false == level->show_message)
+		{
+			level->show_message = true;
+			level->message_to_show = level->static_data->exit_warning_message;
+			level->min_message_timer = 0.5f;
+			level->messagebox_dimensions = get_v2(120, 60);
+			level->show_exit_warning_message = true;
 		}
 	}
 
@@ -144,6 +171,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				level->show_message = true;
 				level->message_to_show = collision.collided_message_display->type->message;
 				level->min_message_timer = 1.0f;
+				level->messagebox_dimensions = get_v2(150, 120);
 				collision.collided_message_display->type->message = {};
 			}
 		}
@@ -431,9 +459,12 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 	if (level->show_message && level->message_to_show.string_size)
 	{
-		v2 text_box_dimensions = get_v2(150, 120);
+		if (is_zero(level->messagebox_dimensions))
+		{
+			level->messagebox_dimensions = get_v2(150, 120);
+		}
 
-		rect text_area = get_rect_from_center(SCREEN_CENTER_IN_PIXELS, text_box_dimensions);
+		rect text_area = get_rect_from_center(SCREEN_CENTER_IN_PIXELS, level->messagebox_dimensions);
 
 		v2 margin = get_v2(8, 8);
 		render_textbox(level->static_data, &game->render, add_side_length(text_area, margin));
@@ -455,7 +486,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			}
 			
 			rect dots_indicator_rect = get_rect_from_center(
-				get_v2(text_area.min_corner.x + (text_box_dimensions.x / 2), text_area.max_corner.y - 4.5f),
+				get_v2(text_area.min_corner.x + (level->messagebox_dimensions.x / 2), text_area.max_corner.y - 4.5f),
 				get_v2(15, 5));
 
 			switch (game->message_dots_index)
@@ -544,14 +575,26 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 					change_to_other_scene.change_scene = true;
 					change_to_other_scene.new_scene = scene::GAME;
 					change_to_other_scene.restore_checkpoint = true;
-					break;
+				}
+				else
+				{
+					change_to_other_scene.change_scene = true;
+					change_to_other_scene.new_scene = scene::CREDITS;
 				}
 			}		
-			// intentional fallthrough
+			break;
 			case 2:
 			{
-				change_to_other_scene.change_scene = true;
-				change_to_other_scene.new_scene = scene::CREDITS;
+				if (game->checkpoint.used)
+				{
+					change_to_other_scene.change_scene = true;
+					change_to_other_scene.new_scene = scene::CREDITS;
+				}
+				else
+				{
+					change_to_other_scene.change_scene = true;
+					change_to_other_scene.new_scene = scene::EXIT;
+				}
 			}
 			break;
 			case 3:
@@ -649,6 +692,12 @@ scene_change death_screen_update_and_render(game_state* game, static_game_data* 
 void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_time)
 {
 	scene_change scene_change = {};
+
+	if (game->current_scene == scene::GAME && game->map_errors.string_size > 0)
+	{
+		game->current_scene = scene::MAP_ERRORS;
+	}
+
 	switch (game->current_scene)
 	{
 		case scene::GAME:
@@ -745,8 +794,6 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 				tmx_map_parsing_result parsing_result = load_map(level_to_load_name, game->arena, game->transient_arena);
 				if (parsing_result.errors->errors_count > 0)
 				{
-					scene_change.change_scene = true;
-					scene_change.new_scene = scene::MAP_ERRORS;
 					game->map_errors = get_parsing_errors_message(game->arena, &game->render,
 						static_data->ui_font, get_whole_screen_text_area(0.0f), parsing_result.errors);
 
@@ -754,6 +801,8 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 				} 
 				else
 				{
+					game->map_errors = {};
+
 					game->level_state->current_map = parsing_result.parsed_map;
 					initialize_current_map(game, game->level_state);
 
@@ -772,6 +821,7 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 			/*	printf("po inicjalizacji permanent arena: %d, transient arena: %d\n",
 					game->arena->size_used, game->transient_arena->size_used);*/
 			}
+			break;
 			case scene::MAIN_MENU:
 			{
 				game->main_menu = {};
@@ -794,7 +844,7 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 			break;
 			case scene::EXIT:
 			{
-				// co teraz?
+				game->exit_game = true;
 			}
 			break;
 			invalid_default_case;

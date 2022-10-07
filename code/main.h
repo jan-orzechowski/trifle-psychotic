@@ -69,6 +69,7 @@ struct game_input
 	key_press left;
 	key_press right;
 	key_press fire;
+	key_press escape;
 };
 
 enum class direction
@@ -593,6 +594,8 @@ struct static_game_data
 	string_ref menu_credits_str;
 	string_ref menu_exit_str;
 
+	string_ref exit_warning_message;
+
 	explosions explosion_animations;
 };
 
@@ -648,7 +651,9 @@ struct level_state
 	r32 screen_shake_multiplier;
 
 	b32 show_message;
+	b32 show_exit_warning_message;
 	string_ref message_to_show;
+	v2 messagebox_dimensions;
 	r32 min_message_timer;
 	b32 stop_player_movement;
 
@@ -694,6 +699,7 @@ struct game_state
 	b32 initialized;
 	scene current_scene;
 	
+	b32 exit_game;
 	b32 level_initialized;
 	level_state* level_state;
 	memory_arena* arena;
