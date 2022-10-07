@@ -70,6 +70,76 @@ void render_debug_information(game_state* game, level_state* level)
 		game->level_state->static_data->ui_font, area, buffer, 200, true);
 }
 
+void render_map_layer(render_group* render, level_state* level, map_layer layer, tile_position camera_tile_pos, v2 camera_offset_in_tile)
+{	
+	if (layer.tiles_count > 0)
+	{
+		i32 screen_half_width = ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
+		i32 screen_half_height = ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
+
+		for (i32 y_coord_relative = -screen_half_height;
+			y_coord_relative < screen_half_height;
+			y_coord_relative++)
+		{
+			i32 y_coord_on_screen = y_coord_relative;
+			i32 y_coord_in_world = camera_tile_pos.y + y_coord_relative;
+
+			for (i32 x_coord_relative = -screen_half_width;
+				x_coord_relative < screen_half_width;
+				x_coord_relative++)
+			{
+				i32 x_coord_on_screen = x_coord_relative;
+				i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
+
+				u32 tile_value = get_tile_value(level->current_map, layer, x_coord_in_world, y_coord_in_world);
+				rect tile_bitmap = get_tile_bitmap_rect(tile_value);
+
+				v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - camera_offset_in_tile;
+				rect screen_rect = get_tile_screen_rect(position);
+				render_bitmap(render, textures::TILESET, tile_bitmap, screen_rect);
+			}
+		}
+	}
+}
+
+void debug_render_tile_collision(render_group* render, level_state* level, world_position camera_pos)
+{
+	i32 screen_half_width = ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
+	i32 screen_half_height = ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
+	tile_position camera_tile_pos = get_tile_position(camera_pos);
+
+	for (i32 y_coord_relative = -screen_half_height;
+		y_coord_relative < screen_half_height;
+		y_coord_relative++)
+	{
+		i32 y_coord_on_screen = y_coord_relative;
+		i32 y_coord_in_world = camera_tile_pos.y + y_coord_relative;
+
+		for (i32 x_coord_relative = -screen_half_width;
+			x_coord_relative < screen_half_width;
+			x_coord_relative++)
+		{
+			i32 x_coord_on_screen = x_coord_relative;
+			i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
+
+			u32 tile_value = get_tile_value(level->current_map, x_coord_in_world, y_coord_in_world);
+			if (is_tile_colliding(level->static_data->collision_reference, tile_value))
+			{
+				tile_position tile_pos = get_tile_position(x_coord_in_world, y_coord_in_world);
+				entity_collision_data tile_collision = get_tile_collision_data(camera_pos.chunk_pos, tile_pos);
+				v2 relative_position = get_position_difference(tile_pos, camera_pos);
+				v2 center = relative_position + tile_collision.collision_rect_offset;
+				v2 size = tile_collision.collision_rect_dim;
+				rect collision_rect = get_rect_from_center(
+					SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS),
+					(size * TILE_SIDE_IN_PIXELS));
+
+				render_rectangle(render, collision_rect, get_zero_v4(), true);
+			}
+		}
+	}
+}
+
 scene_change game_update_and_render(game_state* game, level_state* level, r32 delta_time)
 {	
 	entity* player = get_player(level);
@@ -327,48 +397,12 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		v2 camera_offset_in_chunk = get_position_difference(camera_position, reference_chunk);
 		v2 camera_offset_in_tile = camera_offset_in_chunk - camera_tile_offset_in_chunk;
 	
-		i32 screen_half_width = ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
-		i32 screen_half_height = ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
-
-		// draw tiles
-		for (i32 y_coord_relative = -screen_half_height;
-			y_coord_relative < screen_half_height;
-			y_coord_relative++)
-		{
-			i32 y_coord_on_screen = y_coord_relative;
-			i32 y_coord_in_world = camera_tile_pos.y + y_coord_relative;
-
-			for (i32 x_coord_relative = -screen_half_width;
-				x_coord_relative < screen_half_width;
-				x_coord_relative++)
-			{
-				i32 x_coord_on_screen = x_coord_relative;
-				i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
-
-				u32 tile_value = get_tile_value(level->current_map, x_coord_in_world, y_coord_in_world);
-				rect tile_bitmap = get_tile_bitmap_rect(tile_value);
-
-				v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - camera_offset_in_tile;
-				rect screen_rect = get_tile_screen_rect(position);
-				render_bitmap(&game->render, textures::TILESET, tile_bitmap, screen_rect);
-
+		render_map_layer(&game->render, level, level->current_map.background, camera_tile_pos, camera_offset_in_tile);
+		render_map_layer(&game->render, level, level->current_map.map, camera_tile_pos, camera_offset_in_tile);
+		
 #if 0
-				if (is_tile_colliding(level->static_data->collision_reference, tile_value))
-				{
-					tile_position tile_pos = get_tile_position(x_coord_in_world, y_coord_in_world);
-					entity_collision_data tile_collision = get_tile_collision_data(camera_position.chunk_pos, tile_pos);
-					v2 relative_position = get_position_difference(tile_pos, camera_position);
-					v2 center = relative_position + tile_collision.collision_rect_offset;
-					v2 size = tile_collision.collision_rect_dim;
-					rect collision_rect = get_rect_from_center(
-						SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS),
-						(size * TILE_SIDE_IN_PIXELS));
-
-					render_rectangle(&game->render, collision_rect, { 0,0,0,0 }, true);
-				}
+		debug_render_tile_collision(&game->render, level, camera_position);
 #endif
-			}
-		}
 
 		// draw entities
 		for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
@@ -412,6 +446,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				render_entity_animation_frame(&game->render, camera_position, explosion);
 			}
 		}
+
+		render_map_layer(&game->render, level, level->current_map.foreground, camera_tile_pos, camera_offset_in_tile);
 
 		// draw collision debug info
 		{

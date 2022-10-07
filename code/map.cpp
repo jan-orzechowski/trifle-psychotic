@@ -181,8 +181,23 @@ u32 get_tile_value(map level, i32 x_coord, i32 y_coord)
 		&& y_coord < (i32)level.height)
 	{
 		u32 tile_index = x_coord + (level.width * y_coord);
-		assert(tile_index < level.tiles_count);
-		result = level.tiles[tile_index];
+		assert(tile_index < level.map.tiles_count);
+		result = level.map.tiles[tile_index];
+	}
+	return result;
+}
+
+u32 get_tile_value(map level, map_layer layer, i32 x_coord, i32 y_coord)
+{
+	u32 result = 0;
+	if (x_coord >= 0
+		&& y_coord >= 0
+		&& x_coord < (i32)level.width
+		&& y_coord < (i32)level.height)
+	{
+		u32 tile_index = x_coord + (level.width * y_coord);
+		assert(tile_index < layer.tiles_count);
+		result = layer.tiles[tile_index];
 	}
 	return result;
 }
@@ -203,7 +218,7 @@ b32 is_tile_colliding(map collision_ref, u32 tile_value)
 	else
 	{
 		u32 x_coord = (tile_value - 1) % collision_ref.width;
-		u32 y_coord = (tile_value - 1) / collision_ref.height;
+		u32 y_coord = (tile_value - 1) / collision_ref.width;
 		u32 collision_tile_value = get_tile_value(collision_ref, x_coord, y_coord);
 		result = (collision_tile_value == 2);
 	}

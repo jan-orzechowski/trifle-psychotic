@@ -26,6 +26,7 @@ tile_position add_to_tile_position(tile_position tile_pos, i32 x_offset, i32 y_o
 v2 get_tile_offset_in_chunk(chunk_position chunk_pos, tile_position tile_pos);
 b32 is_in_neighbouring_chunk(chunk_position reference_chunk, world_position position_to_check);
 u32 get_tile_value(map level, i32 x_coord, i32 y_coord);
+u32 get_tile_value(map level, map_layer layer, i32 x_coord, i32 y_coord);
 u32 get_tile_value(map level, tile_position tile);
 b32 is_tile_colliding(map collision_ref, u32 tile_value);
 b32 is_tile_colliding(map level, map collision_ref, u32 tile_x, u32 tile_y);

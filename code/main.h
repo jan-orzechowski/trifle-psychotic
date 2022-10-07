@@ -6,7 +6,7 @@
 #include "jormath.h"
 #include "jorstring.h"
 
-#define TILESET_WIDTH 47
+#define TILESET_WIDTH 64
 #define TILE_SIDE_IN_PIXELS 16
 
 #define SCALING_FACTOR 2
@@ -168,12 +168,19 @@ struct entity_to_spawn
 	string_ref message;
 };
 
+struct map_layer
+{
+	i32* tiles;
+	u32 tiles_count;
+};
+
 struct map
 {
 	u32 width;
 	u32 height;
-	i32* tiles;
-	u32 tiles_count;
+	map_layer map;
+	map_layer background;
+	map_layer foreground;
 	entity_to_spawn* entities_to_spawn;
 	u32 entities_to_spawn_count;
 	tile_position starting_tile;

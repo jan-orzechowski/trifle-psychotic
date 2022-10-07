@@ -4,7 +4,8 @@
 #include "level_parsing.h"
 #include "text_rendering.h"
 
-entity_to_spawn* add_read_entity(map* level, memory_arena* arena, entity_type_enum type, tile_position position, v4 gate_color = get_zero_v4())
+entity_to_spawn* add_read_entity(map* level, memory_arena* arena, 
+	entity_type_enum type, tile_position position, v4 gate_color = get_zero_v4())
 {
 	entity_to_spawn* new_entity = push_struct(arena, entity_to_spawn);
 	new_entity->type = type;
@@ -20,30 +21,27 @@ entity_to_spawn* add_read_entity(map* level, memory_arena* arena, entity_type_en
 	return new_entity;
 }
 
-#define ERROR_BUFFER_LENGTH 1000
-
-void add_error(memory_arena* arena, tmx_parsing_error_report* errors, const char* error_message)
+void add_error(memory_arena* arena, tmx_errors_buffer* errors, const char* error_message)
 {
-	errors->errors_count++;
+	errors->report->errors_count++;
 
-	if (errors->last_error == NULL)
+	if (errors->report->last_error == NULL)
 	{
-		errors->first_error = push_struct(arena, tmx_parsing_error);
-		errors->last_error = errors->first_error;
+		errors->report->first_error = push_struct(arena, tmx_parsing_error);
+		errors->report->last_error = errors->report->first_error;
 	}
 	else
 	{
-		errors->last_error->next = push_struct(arena, tmx_parsing_error);
-		errors->last_error = errors->last_error->next;
+		errors->report->last_error->next = push_struct(arena, tmx_parsing_error);
+		errors->report->last_error = errors->report->last_error->next;
 	}
 
-	errors->last_error->message = copy_c_string_buffer_to_memory_arena(arena, error_message, ERROR_BUFFER_LENGTH);
+	errors->report->last_error->message = copy_c_string_buffer_to_memory_arena(arena, error_message, errors->message_buffer_size);
 }
 
-void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, map* level, tmx_parsing_error_report* errors, xml_node* node, i32 entity_tileset_first_gid)
+void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, 
+	map* level, tmx_errors_buffer* errors, xml_node* node, i32 entity_tileset_first_gid)
 {
-	char error_buffer[ERROR_BUFFER_LENGTH];
-
 	string_ref gid_str = get_attribute_value(node, "gid");
 	string_ref x_str = get_attribute_value(node, "x");
 	string_ref y_str = get_attribute_value(node, "y");
@@ -185,10 +183,10 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 			}
 			else
 			{
-				snprintf(error_buffer, ERROR_BUFFER_LENGTH,
+				snprintf(errors->message_buffer, errors->message_buffer_size,
 					"More than one starting point set. Starting point at (%d, %d) ignored",
 					position.x, position.y);
-				add_error(transient_arena, errors, error_buffer);
+				add_error(transient_arena, errors, errors->message_buffer);
 			}
 		}
 		break;
@@ -261,10 +259,10 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 							}
 							else
 							{
-								snprintf(error_buffer, ERROR_BUFFER_LENGTH,
+								snprintf(errors->message_buffer, errors->message_buffer_size,
 									"Next level name is longer than %d characters",
 									MAX_LEVEL_NAME_LENGTH);
-								add_error(transient_arena, errors, error_buffer);
+								add_error(transient_arena, errors, errors->message_buffer);
 							}
 						}
 					}
@@ -280,14 +278,97 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, m
 	}
 }
 
+map_layer parse_tmx_layer(memory_arena* permanent_arena, memory_arena* transient_arena, 
+	tmx_errors_buffer* errors, xml_node* root_node, i32 map_width, i32 map_height,
+	i32 tileset_first_gid, const char* layer_name, b32 is_layer_required)
+{
+	map_layer layer = {};
+	xml_node* layer_node = find_tag_with_attribute_in_children(root_node, "layer", "name", layer_name);
+	if (layer_node)
+	{
+		string_ref layer_width_str = get_attribute_value(layer_node, "width");
+		string_ref layer_height_str = get_attribute_value(layer_node, "height");
+		if (layer_width_str.ptr && layer_height_str.ptr)
+		{
+			i32 layer_width = parse_i32(layer_width_str);
+			i32 layer_height = parse_i32(layer_height_str);
+			if (layer_width == map_width && layer_height == map_height)
+			{			
+				xml_node* data_node = find_tag_in_children(layer_node, "data");
+				if (data_node)
+				{
+					string_ref data = data_node->inner_text;
+					string_ref encoding_str = get_attribute_value(data_node, "encoding");
+					if (compare_to_c_string(encoding_str, "csv"))
+					{
+						layer.tiles_count = map_width * map_height;
+						layer.tiles = parse_array_of_i32(permanent_arena, layer.tiles_count, data, ',');
 
+						if (tileset_first_gid != -1
+							&& tileset_first_gid != 0
+							&& tileset_first_gid != 1)
+						{
+							for (u32 tile_index = 0; tile_index < layer.tiles_count; tile_index++)
+							{
+								i32 original_gid = layer.tiles[tile_index];
+								if (original_gid < tileset_first_gid)
+								{
+									// błąd											
+								}
 
-tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file, const char* layer_name, b32 clean_up_transient_arena)
+								layer.tiles[tile_index] -= (tileset_first_gid - 1);
+							}
+						}
+					}
+					else
+					{
+						snprintf(errors->message_buffer, errors->message_buffer_size,
+							"Format of the layer '%s' is not set to 'csv'", layer_name);
+						add_error(transient_arena, errors, errors->message_buffer);
+					}
+				}
+				else
+				{
+					snprintf(errors->message_buffer, errors->message_buffer_size,
+						"The 'data' element is missing in the layer '%s'", layer_name);
+					add_error(transient_arena, errors, errors->message_buffer);
+				}
+			}
+			else
+			{
+				snprintf(errors->message_buffer, errors->message_buffer_size,
+					"Size of the layer '%s' (%d, %d) doesn't match the map size (%d, %d)",
+					layer_name, layer_width, layer_height, map_width, map_height);
+				add_error(transient_arena, errors, errors->message_buffer);
+			}
+		}
+		else
+		{
+			snprintf(errors->message_buffer, errors->message_buffer_size,
+				"Layer '%s' doesn't have defined width or height", layer_name);
+			add_error(transient_arena, errors, errors->message_buffer);
+		}
+	}
+	else
+	{
+		if (is_layer_required)
+		{
+			snprintf(errors->message_buffer, errors->message_buffer_size,
+				"Layer '%s' not found", layer_name);
+			add_error(transient_arena, errors, errors->message_buffer);
+		}
+	}
+
+	return layer;
+}
+
+tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, memory_arena* transient_arena, 
+	read_file_result file, const char* layer_name, b32 clean_up_transient_arena)
 {
 	tmx_map_parsing_result result = {};
 	map level = {};
 
-	// dla późniejszego sprawdzenia, czy została pozycja startowa została ustawiona
+	// dla późniejszego sprawdzenia, czy pozycja startowa została ustawiona
 	level.starting_tile = get_tile_position(-1, -1);
 
 	temporary_memory memory_for_parsing = {};
@@ -296,8 +377,10 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 		memory_for_parsing = begin_temporary_memory(transient_arena);
 	}
 
-	char error_buffer[ERROR_BUFFER_LENGTH];
-	tmx_parsing_error_report* errors = push_struct(transient_arena, tmx_parsing_error_report);
+	tmx_errors_buffer errors = {};
+	errors.message_buffer_size = 1000;
+	errors.message_buffer = push_array(transient_arena, errors.message_buffer_size, char);
+	errors.report = push_struct(transient_arena, tmx_parsing_error_report);
 
 	xml_node* root = scan_and_parse_tmx(transient_arena, file.contents, file.size);
 	if (root)
@@ -333,12 +416,14 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 
 		if (tileset_first_gid == -1 || tileset_first_gid == 0)
 		{
-			add_error(transient_arena, errors, "Tileset 'map_tileset.tsx' not added");
+			add_error(transient_arena, &errors, "Tileset 'map_tileset.tsx' not added");
+			goto end_of_read_map_from_tmx_file_function;
 		}
 
 		if (entity_first_gid == -1 || entity_first_gid == 0)
 		{
-			add_error(transient_arena, errors, "Tileset 'entities_tileset.tsx' not added");
+			add_error(transient_arena, &errors, "Tileset 'entities_tileset.tsx' not added");
+			goto end_of_read_map_from_tmx_file_function;
 		}
 
 		xml_node* map_node = find_tag_in_children(root, "map");
@@ -348,86 +433,27 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 			string_ref height = get_attribute_value(map_node, "height");
 			if (width.ptr && height.ptr)
 			{
-				i32 map_width = parse_i32(width);
-				i32 map_height = parse_i32(height);
+				level.width = parse_i32(width);
+				level.height = parse_i32(height);
 
-				xml_node* layer_node = find_tag_with_attribute_in_children(root, "layer", "name", layer_name);
+				level.map = parse_tmx_layer(permanent_arena, transient_arena, &errors,
+					map_node, level.width, level.height, tileset_first_gid, "map", true);
 
-				string_ref layer_width_str = get_attribute_value(layer_node, "width");
-				string_ref layer_height_str = get_attribute_value(layer_node, "height");
+				level.background = parse_tmx_layer(permanent_arena, transient_arena, &errors,
+					map_node, level.width, level.height, tileset_first_gid, "background", false);
 
-				if (layer_width_str.ptr && layer_height_str.ptr)
-				{
-					i32 layer_width = parse_i32(layer_width_str);
-					i32 layer_height = parse_i32(layer_height_str);
-					if (layer_width == map_width && layer_height == map_height)
-					{
-						level.width = map_width;
-						level.height = map_height;
-
-						xml_node* data_node = find_tag_in_children(layer_node, "data");
-						if (data_node)
-						{
-							string_ref data = data_node->inner_text;
-
-							string_ref encoding_str = get_attribute_value(data_node, "encoding");
-							if (compare_to_c_string(encoding_str, "csv"))
-							{
-								level.tiles_count = level.width * level.height;
-								level.tiles = parse_array_of_i32(permanent_arena, level.tiles_count, data, ',');
-
-								if (tileset_first_gid != -1
-									&& tileset_first_gid != 0
-									&& tileset_first_gid != 1)
-								{
-									for (u32 tile_index = 0; tile_index < level.tiles_count; tile_index++)
-									{
-										i32 original_gid = level.tiles[tile_index];
-										if (original_gid < tileset_first_gid)
-										{
-											// błąd											
-										}
-
-										level.tiles[tile_index] -= (tileset_first_gid - 1);
-									}
-								}
-							}
-							else
-							{
-								add_error(transient_arena, errors, "File format is not set to 'csv'");
-								goto end_of_read_map_from_tmx_file_function;
-							}
-						}
-						else
-						{
-							add_error(transient_arena, errors, "The 'data' element is missing");
-							goto end_of_read_map_from_tmx_file_function;
-						}
-					}
-					else
-					{
-						snprintf(error_buffer, ERROR_BUFFER_LENGTH,
-							"Layer size (%d, %d) doesn't match map size (%d, %d)",
-							layer_width, layer_height, map_width, map_height);
-						add_error(transient_arena, errors, error_buffer);
-						goto end_of_read_map_from_tmx_file_function;
-					}
-				}
-				else
-				{
-					add_error(transient_arena, errors, "Layer doesn't have defined width or height");
-					goto end_of_read_map_from_tmx_file_function;
-				}
+				level.foreground = parse_tmx_layer(permanent_arena, transient_arena, &errors,
+					map_node, level.width, level.height, tileset_first_gid, "foreground", false);
 			}
 			else
 			{
-				add_error(transient_arena, errors, "Map doesn't have defined width or height");
+				add_error(transient_arena, &errors, "Map doesn't have defined width or height");
 				goto end_of_read_map_from_tmx_file_function;
 			}
 		}
 		else
 		{
-			add_error(transient_arena, errors, "The 'map' element is missing");
+			add_error(transient_arena, &errors, "The 'map' element is missing");
 			goto end_of_read_map_from_tmx_file_function;
 		}
 
@@ -444,7 +470,7 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 					xml_node* node = *(objects->found_nodes + xml_node_index);
 					if (node)
 					{
-						read_entity(permanent_arena, transient_arena, &level, errors, node, entity_first_gid);
+						read_entity(permanent_arena, transient_arena, &level, &errors, node, entity_first_gid);
 					}
 				}
 			}
@@ -452,12 +478,12 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 			// tutaj błęd entities
 			if (level.starting_tile.x == -1 || level.starting_tile.y == -1)
 			{
-				add_error(transient_arena, errors, "Starting position not set");
+				add_error(transient_arena, &errors, "Starting position not set");
 			}
 		}
 		else
 		{
-			add_error(transient_arena, errors, "The 'objectgroup' element is missing");
+			add_error(transient_arena, &errors, "The 'objectgroup' element is missing");
 		}
 
 		if (level.next_map.string_size > 0)
@@ -480,7 +506,7 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 	}
 	else
 	{
-		add_error(transient_arena, errors, "File is not a proper TMX format file");
+		add_error(transient_arena, &errors, "File is not a proper TMX format file");
 	}
 
 end_of_read_map_from_tmx_file_function:
@@ -491,7 +517,7 @@ end_of_read_map_from_tmx_file_function:
 	}
 
 	result.parsed_map = level;
-	result.errors = errors;
+	result.errors = errors.report;
 
 	return result;
 }
@@ -544,15 +570,15 @@ map read_collision_map(memory_arena* permanent_arena, memory_arena* transient_ar
 				if (compare_to_c_string(encoding_str, "csv"))
 				{
 					string_ref data = data_node->inner_text;
-					result.tiles_count = result.width * result.height;
-					result.tiles = parse_array_of_i32(permanent_arena, result.tiles_count, data, ',');
+					result.map.tiles_count = result.width * result.height;
+					result.map.tiles = parse_array_of_i32(permanent_arena, result.map.tiles_count, data, ',');
 
 					if (collision_tileset_first_gid != -1 && collision_tileset_first_gid != 1)
 					{
-						for (u32 tile_index = 0; tile_index < result.tiles_count; tile_index++)
+						for (u32 tile_index = 0; tile_index < result.map.tiles_count; tile_index++)
 						{
-							i32 original_gid = result.tiles[tile_index];
-							result.tiles[tile_index] -= (collision_tileset_first_gid - 1);
+							i32 original_gid = result.map.tiles[tile_index];
+							result.map.tiles[tile_index] -= (collision_tileset_first_gid - 1);
 						}
 					}
 				}

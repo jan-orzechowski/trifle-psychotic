@@ -21,6 +21,13 @@ struct tmx_map_parsing_result
 	tmx_parsing_error_report* errors;
 };
 
+struct tmx_errors_buffer
+{
+	char* message_buffer;
+	u32 message_buffer_size;
+	tmx_parsing_error_report* report;
+};
+
 tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, memory_arena* transient_arena,
 	read_file_result file, const char* layer_name, b32 clean_up_transient_arena);
 map read_collision_map(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file);
