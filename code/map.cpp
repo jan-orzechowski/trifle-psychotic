@@ -309,6 +309,31 @@ tile_range find_vertical_range_of_free_tiles(map level, map collision_ref, tile_
 	return result;
 }
 
+tile_range find_vertical_range_of_free_tiles_downwards(map level, map collision_ref, tile_position starting_tile, u32 length_limit)
+{
+	tile_position upper_end = starting_tile;
+	tile_position lower_end = starting_tile;
+
+	tile_position test_tile = starting_tile;
+	for (i32 distance = 0; distance <= length_limit; distance++)
+	{
+		test_tile.y = starting_tile.y + distance;
+		if (false == is_tile_colliding(level, collision_ref, test_tile.x, test_tile.y))
+		{
+			lower_end = test_tile;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	tile_range result = {};
+	result.start = upper_end;
+	result.end = lower_end;
+	return result;
+}
+
 b32 is_good_for_walk_path(map level, map collision_ref, u32 tile_x, u32 tile_y)
 {
 	b32 result = (false == is_tile_colliding(level, collision_ref, tile_x, tile_y)

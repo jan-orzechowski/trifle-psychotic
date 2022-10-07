@@ -185,13 +185,11 @@ tile_range find_walking_path(map level, map collision_ref, tile_position start_t
 	return result;
 }
 
-void find_walking_path_for_enemy(level_state* level, entity* entity)
+tile_range find_walking_path(level_state* level, tile_position starting_position)
 {
-	tile_position starting_position = get_tile_position(entity->position);
 	tile_range new_path = find_walking_path(
 		level->current_map, level->static_data->collision_reference, starting_position);
 
-	// na razie sprawdziliśmy same pola - powinniśmy sprawdzić jeszcze kolizję z bramami i przełącznikami
 	tile_range first_part = get_tile_range(starting_position, new_path.start);
 	tile_range second_part = get_tile_range(starting_position, new_path.end);
 	first_part = find_path_fragment_not_blocked_by_entities(level, first_part);
@@ -199,25 +197,25 @@ void find_walking_path_for_enemy(level_state* level, entity* entity)
 
 	new_path = get_tile_range(first_part.end, second_part.end);
 
-	entity->path = new_path;
-	entity->has_walking_path = true;
+	return new_path;
 }
 
-void find_flying_path_for_enemy(level_state* level, entity* entity, b32 vertical)
+tile_range find_flying_path(level_state* level, tile_position starting_position, b32 vertical)
 {
 	u32 length_limit = 15;
-	tile_position starting_position = get_tile_position(entity->position);
 	tile_range new_path;
 	
 	if (vertical)
 	{
 		new_path = find_vertical_range_of_free_tiles(
-			level->current_map, level->static_data->collision_reference, starting_position, length_limit);
+			level->current_map, level->static_data->collision_reference, 
+			starting_position, level->current_map.height);
 	}
 	else
 	{
 		new_path = find_horizontal_range_of_free_tiles(
-			level->current_map, level->static_data->collision_reference, starting_position, length_limit);
+			level->current_map, level->static_data->collision_reference, 
+			starting_position, level->current_map.width);
 	}
 	
 	tile_range first_part = get_tile_range(starting_position, new_path.start);
@@ -227,18 +225,53 @@ void find_flying_path_for_enemy(level_state* level, entity* entity, b32 vertical
 
 	new_path = get_tile_range(first_part.end, second_part.end);
 
-	entity->path = new_path;
-	entity->has_walking_path = true;
+	return new_path;
+}
 
-	printf("nowe latanie: od (%d, %d) do (%d, %d)\n",
-		new_path.start.x, new_path.start.y, new_path.end.x, new_path.end.y);
+void find_walking_path_for_enemy(level_state* level, entity* enemy)
+{
+	tile_range new_path = find_walking_path(level, get_tile_position(enemy->position));
+	enemy->path = new_path;
+	enemy->has_path = true;
+}
+
+void find_flying_path_for_enemy(level_state* level, entity* enemy, b32 vertical)
+{
+	tile_range new_path = find_flying_path(level, get_tile_position(enemy->position), vertical);
+	enemy->path = new_path;
+	enemy->has_path = true;
 }
 
 void find_path_for_moving_platform(level_state* level, entity* entity, b32 vertical)
 {
 	if (vertical)
-	{
-		find_flying_path_for_enemy(level, entity, true);
+	{	
+		// musimy wziąć pod uwagę cały rozmiar platformy
+
+		tile_position platform_middle_position = get_tile_position(entity->position);
+		tile_position platform_left_position = add_to_tile_position(platform_middle_position, -1, 0);
+		tile_position platform_right_position = add_to_tile_position(platform_middle_position, 1, 0);
+
+		tile_range middle_path = find_vertical_range_of_free_tiles_downwards(
+			level->current_map, level->static_data->collision_reference, 
+			platform_middle_position, level->current_map.height);
+		tile_range left_path = find_vertical_range_of_free_tiles_downwards(
+			level->current_map, level->static_data->collision_reference,
+			platform_left_position, level->current_map.height);
+		tile_range right_path = find_vertical_range_of_free_tiles_downwards(
+			level->current_map, level->static_data->collision_reference,
+			platform_right_position, level->current_map.height);
+
+		u32 min_y = max_of_three(middle_path.start.y, left_path.start.y, right_path.start.y);
+		u32 max_y = min_of_three(middle_path.end.y, left_path.end.y, right_path.end.y);
+
+		tile_range new_path = {};
+		new_path.start = get_tile_position(middle_path.start.x, min_y);
+		new_path.end = get_tile_position(middle_path.end.x, max_y);
+
+		entity->path = find_path_fragment_not_blocked_by_entities(level, new_path);
+		entity->has_path = true;
+
 		if (entity->path.start.x != 0 && entity->path.start.y != 0)
 		{
 			// zatrzymujemy się przed sufitem, żeby nie zmiażdżyć gracza
@@ -926,7 +959,7 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
 	v2 distance_to_player = get_position_difference(player->position, entity_to_move->position);
 	r32 distance_to_player_length = length(distance_to_player);
 
-	if (false == entity_to_move->has_walking_path)
+	if (false == entity_to_move->has_path)
 	{
 		if (are_entity_flags_set(entity_to_move, entity_flags::WALKS_HORIZONTALLY))
 		{
@@ -954,7 +987,7 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
 		}
 	}
 
-	if (entity_to_move->has_walking_path)
+	if (entity_to_move->has_path)
 	{
 		tile_position current_goal;
 		tile_position current_start;
@@ -1079,6 +1112,13 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
 {
 	u32 type_index = get_moving_platform_type_index(new_entity_to_spawn->type);
 	entity_type* type = level->moving_platform_types[type_index];
+
+	b32 is_horizontal = 
+		  (new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE
+		|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY
+		|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED
+		|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN);
+
 	if (type == NULL)
 	{
 		type = push_struct(arena, entity_type);
@@ -1130,10 +1170,7 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
 		set_flags(&type->flags, entity_flags::BLOCKS_MOVEMENT);
 		set_flags(&type->flags, entity_flags::INDESTRUCTIBLE);
 
-		if (new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE
-			|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY
-			|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED
-			|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN)
+		if (is_horizontal)
 		{
 			set_flags(&type->flags, entity_flags::MOVING_PLATFORM_HORIZONTAL);
 		}
@@ -1164,6 +1201,6 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
 			entity_position.x--;
 		}
 	}
-
+	
 	add_entity(level, entity_position, type);
 }

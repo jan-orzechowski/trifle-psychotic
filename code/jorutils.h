@@ -57,6 +57,8 @@ typedef uint8_t byte;
 
 #define min(arg1, arg2) ((arg1) < (arg2) ? (arg1) : (arg2))
 #define max(arg1, arg2) ((arg1) > (arg2) ? (arg1) : (arg2))	
+#define min_of_three(arg1, arg2, arg3) (min(arg1, min(arg2, arg3)))
+#define max_of_three(arg1, arg2, arg3) (max(arg1, max(arg2, arg3)))
 
 #if 1
 #define assert(expression) if(!(expression)) {*(int *)0 = 0;}

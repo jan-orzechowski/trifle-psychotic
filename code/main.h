@@ -357,7 +357,7 @@ struct entity
 	sprite shooting_sprite;
 
 	b32 player_detected;
-	b32 has_walking_path;
+	b32 has_path;
 	tile_range path;
 	u32 goal_path_point;
 };
