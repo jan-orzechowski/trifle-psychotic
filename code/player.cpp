@@ -197,6 +197,12 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 	b32 is_standing_at_frame_beginning = is_standing_on_ground(level, player, &standing_on);
 	write_to_standing_history(&level->player_movement.standing_history, is_standing_at_frame_beginning);
 
+	if (standing_on.collided_switch)
+	{
+		v4 color = standing_on.collided_switch->type->color;
+		open_gates_with_given_color(level, color);
+	}
+
 	v2 gravity = get_v2(0, 1.0f);
 	v2 jump_acceleration = get_v2(0, -33.0f);
 
