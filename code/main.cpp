@@ -385,17 +385,14 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					if (hit)
 					{
 						remove_bullet(level, &bullet_index);
+						printf("bullet usuniety bo trafil\n");
 					}
-				}
-
-				if (is_zero(bullet->velocity))
-				{
-					remove_bullet(level, &bullet_index);
 				}
 			}
 			else
 			{
 				remove_bullet(level, &bullet_index);
+				printf("bullet usuniety bo poza chunkiem\n");
 			}
 		}
 

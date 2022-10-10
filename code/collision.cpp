@@ -270,9 +270,11 @@ b32 check_if_sight_line_is_obstructed(level_state* level, world_position start, 
 			continue;
 		}
 
-		if ((are_entity_flags_set(entity, entity_flags::GATE)
-				|| are_entity_flags_set(entity, entity_flags::SWITCH))
-			&& are_entity_flags_set(entity, entity_flags::BLOCKS_MOVEMENT)
+		if (are_entity_flags_set(entity, entity_flags::BLOCKS_MOVEMENT) 
+			&& (are_entity_flags_set(entity, entity_flags::GATE)
+				|| are_entity_flags_set(entity, entity_flags::SWITCH)
+				|| are_entity_flags_set(entity, entity_flags::MOVING_PLATFORM_HORIZONTAL)
+				|| are_entity_flags_set(entity, entity_flags::MOVING_PLATFORM_VERTICAL))	
 			&& is_in_neighbouring_chunk(reference_chunk, entity->position))
 		{
 			entity_collision_data entity_collision = get_entity_collision_data(reference_chunk, entity);
@@ -595,7 +597,9 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 						r32 distance = length(get_position_difference(entity_to_check->position, moving_bullet->position));
 
 						if (are_entity_flags_set(entity_to_check, entity_flags::SWITCH)
-							|| are_entity_flags_set(entity_to_check, entity_flags::GATE))
+							|| are_entity_flags_set(entity_to_check, entity_flags::GATE)
+							|| are_entity_flags_set(entity_to_check, entity_flags::MOVING_PLATFORM_HORIZONTAL)
+							|| are_entity_flags_set(entity_to_check, entity_flags::MOVING_PLATFORM_VERTICAL))
 						{
 							collision_closest_distance = distance;
 							hit_wall = true;
