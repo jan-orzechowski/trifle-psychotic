@@ -653,6 +653,7 @@ struct level_state
 	static_game_data* static_data;
 
 	power_ups power_ups;
+	i32 enemies_to_kill_counter;
 
 	r32 screen_shake_duration;
 	r32 screen_shake_multiplier;

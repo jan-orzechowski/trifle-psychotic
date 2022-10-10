@@ -15,13 +15,13 @@ rect get_whole_screen_text_area(r32 margin)
 
 void render_hitpoint_bar(static_game_data* static_data, render_group* render, entity* player, b32 draw_white_bars)
 {
-	// zabezpieczenie na uint wrapping
-	if (player->health < 0.0f)
+	r32 health = player->health;
+	if (health < 0.0f)
 	{
-		player->health = 0.0f;
+		health = 0.0f;
 	}
 
-	u32 filled_health_bars = (u32)(player->health / 10);
+	u32 filled_health_bars = (u32)(health / 10);
 	u32 max_health_bars = (u32)(player->type->max_health / 10);
 
 	r32 box_width = 16 + (max_health_bars * 4);
@@ -56,6 +56,31 @@ void render_hitpoint_bar(static_game_data* static_data, render_group* render, en
 		bar_screen_rect = move_rect(bar_screen_rect, get_v2(4, 0));
 		render_bitmap(render, textures::CHARSET, bar_texture_rect, bar_screen_rect);
 	}
+}
+
+void render_counter(static_game_data* static_data, render_group* render, memory_arena* transient_arena,
+	i32 counter, u32 counter_max_value)
+{
+	if (counter > counter_max_value)
+	{
+		counter = counter_max_value;
+	}
+
+	if (counter < 0)
+	{
+		counter = 0;
+	}
+	
+	u32 digits_count = how_many_digits(counter_max_value);
+	v2 box_size = get_text_area_for_line_of_text(static_data->ui_font, digits_count);
+	v2 box_position = get_v2((SCREEN_WIDTH / SCALING_FACTOR) - box_size.x - 8, 12);
+	rect box = get_rect_from_min_corner(box_position, box_size);
+	
+	char buffer[10];
+	snprintf(buffer, 10, "%d", counter);
+
+	render_ui_box(static_data, render, add_side_length(box, get_v2(4, 4)));
+	render_text(render, transient_arena, static_data->ui_font, box, buffer, 10, false);
 }
 
 void render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, string_ref title)

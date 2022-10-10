@@ -333,6 +333,11 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 			if (entity->health < 0.0f)
 			{
+				if (entity->type->type_enum == entity_type_enum::ENEMY_CULTIST)
+				{
+					level->enemies_to_kill_counter--;
+				}
+
 				start_death_animation(level, entity);
 				remove_entity(entity);
 				continue;
@@ -515,6 +520,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		//render_debug_information(game, level);
 
 		render_hitpoint_bar(level->static_data, &game->render, player, is_power_up_active(level->power_ups.invincibility));
+
+		render_counter(level->static_data, &game->render, game->transient_arena, level->enemies_to_kill_counter, 99);
 	}
 
 	// render crosshair

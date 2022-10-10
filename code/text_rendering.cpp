@@ -128,10 +128,18 @@ text_area_limits get_text_area_limits(font font, rect writing_area)
     if (area_dim.y < 0) { area_dim.y = -area_dim.y; }
 
     result.max_line_length = area_dim.x / (font.width_in_pixels + font.letter_spacing);
-    result.max_lines_count = area_dim.y / (font.height_in_pixels + font.line_spacing);
+    result.max_lines_count = (area_dim.y / (font.height_in_pixels + font.line_spacing)) + 1;
     result.max_character_count = result.max_line_length * result.max_lines_count;
     
     return result;
+}
+
+v2 get_text_area_for_line_of_text(font font, u32 character_count)
+{
+    v2 result = get_v2(
+        character_count * (font.width_in_pixels + font.letter_spacing),
+        font.height_in_pixels);
+    return result; 
 }
 
 void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, string_ref text, b32 wrap)

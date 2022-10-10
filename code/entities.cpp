@@ -524,6 +524,11 @@ void initialize_current_map(game_state* game, level_state* level)
 			{
 				add_entity(level, get_world_position(new_entity->position),
 					get_entity_type_ptr(level->static_data->entity_types_dict, new_entity->type));
+
+				if (new_entity->type == entity_type_enum::ENEMY_CULTIST)
+				{
+					level->enemies_to_kill_counter++;
+				}
 			}
 			break;
 		}
