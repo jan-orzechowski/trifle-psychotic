@@ -159,6 +159,7 @@ sdl_data init_sdl()
 					load_image(sdl_game.renderer, &sdl_game.font_texture, "gfx/font1.png", &success);
 					load_image(sdl_game.renderer, &sdl_game.charset_texture, "gfx/charset.png", &success);
 					load_image(sdl_game.renderer, &sdl_game.explosion_texture, "gfx/explosions.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.backdrop_texture, "gfx/backdrop.png", &success);
 				}
 				else
 				{
@@ -361,6 +362,7 @@ internal SDL_Texture* get_texture(sdl_data sdl, textures type)
 		case textures::FONT: { result = sdl.font_texture; }; break;
 		case textures::CHARSET: { result = sdl.charset_texture; }; break;
 		case textures::EXPLOSION: { result = sdl.explosion_texture; }; break;
+		case textures::BACKDROP: { result = sdl.backdrop_texture; }; break;
 		invalid_default_case;
 	}
 	return result;

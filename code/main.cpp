@@ -105,6 +105,37 @@ void render_map_layer(render_group* render, level_state* level, map_layer layer,
 	}
 }
 
+void render_backdrop(render_group* render, level_state* level, world_position camera_position)
+{
+	v2 backdrop_size = get_v2(320, 320);
+	v2 backdrop_size_in_tiles = backdrop_size / TILE_SIDE_IN_PIXELS;
+	rect bitmap_rect = get_rect_from_corners(get_zero_v2(), backdrop_size);
+
+	tile_position camera_tile_pos = get_tile_position(camera_position);	
+	tile_position backdrop_origin_tile_pos = get_tile_position(
+		camera_tile_pos.x - (camera_tile_pos.x % (i32)backdrop_size_in_tiles.x),
+		camera_tile_pos.y - (camera_tile_pos.y % (i32)backdrop_size_in_tiles.y));		
+	v2 backdrop_offset = get_position_difference(camera_position, backdrop_origin_tile_pos);
+
+	for (i32 y_coord_relative = -backdrop_size.y;
+		y_coord_relative < SCREEN_HEIGHT + backdrop_size.y;
+		y_coord_relative += backdrop_size.y)
+	{
+		i32 y_coord_on_screen = y_coord_relative;
+
+		for (i32 x_coord_relative = -backdrop_size.x;
+			x_coord_relative < SCREEN_WIDTH + backdrop_size.x;
+			x_coord_relative += backdrop_size.x)
+		{
+			i32 x_coord_on_screen = x_coord_relative;
+			i32 y_coord_on_screen = y_coord_relative;
+			v2 backdrop_position = get_v2(x_coord_on_screen, y_coord_on_screen) - (backdrop_offset * TILE_SIDE_IN_PIXELS);		 
+			rect screen_rect = get_rect_from_min_corner(backdrop_position, backdrop_size);
+			render_bitmap(render, textures::BACKDROP, bitmap_rect, screen_rect);
+		}
+	}
+}
+
 void debug_render_tile_collision(render_group* render, level_state* level, world_position camera_pos)
 {
 	i32 screen_half_width = ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
@@ -400,6 +431,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		v2 camera_offset_in_chunk = get_position_difference(camera_position, reference_chunk);
 		v2 camera_offset_in_tile = camera_offset_in_chunk - camera_tile_offset_in_chunk;
 	
+		render_backdrop(&game->render, level, camera_position);
+
 		render_map_layer(&game->render, level, level->current_map.background, camera_tile_pos, camera_offset_in_tile);
 		render_map_layer(&game->render, level, level->current_map.map, camera_tile_pos, camera_offset_in_tile);
 		
