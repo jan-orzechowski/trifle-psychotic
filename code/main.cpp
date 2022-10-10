@@ -76,7 +76,7 @@ void render_map_layer(render_group* render, level_state* level, map_layer layer,
 	{
 		i32 screen_half_width = ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
 		i32 screen_half_height = ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
-
+		
 		for (i32 y_coord_relative = -screen_half_height;
 			y_coord_relative < screen_half_height;
 			y_coord_relative++)
@@ -92,11 +92,14 @@ void render_map_layer(render_group* render, level_state* level, map_layer layer,
 				i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
 
 				u32 tile_value = get_tile_value(level->current_map, layer, x_coord_in_world, y_coord_in_world);
-				rect tile_bitmap = get_tile_bitmap_rect(tile_value);
+				if (tile_value != 0 && tile_value != 1) // przezroczyste pola
+				{
+					rect tile_bitmap = get_tile_bitmap_rect(tile_value);
 
-				v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - camera_offset_in_tile;
-				rect screen_rect = get_tile_screen_rect(position);
-				render_bitmap(render, textures::TILESET, tile_bitmap, screen_rect);
+					v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - camera_offset_in_tile;
+					rect screen_rect = get_tile_screen_rect(position);
+					render_bitmap(render, textures::TILESET, tile_bitmap, screen_rect);
+				}
 			}
 		}
 	}
