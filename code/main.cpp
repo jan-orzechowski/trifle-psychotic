@@ -536,7 +536,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		rect text_area = get_rect_from_center(SCREEN_CENTER_IN_PIXELS, level->messagebox_dimensions);
 
 		v2 margin = get_v2(8, 8);
-		render_textbox(level->static_data, &game->render, add_side_length(text_area, margin));
+		render_ui_box(level->static_data, &game->render, add_side_length(text_area, margin));
 
 		render_text(&game->render, game->transient_arena, level->static_data->ui_font, 
 			text_area, level->message_to_show, true);

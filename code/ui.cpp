@@ -1,6 +1,7 @@
 #include "main.h"
 #include "rendering.h"
 #include "text_rendering.h"
+#include "ui.h"
 
 rect get_whole_screen_text_area(r32 margin)
 {
@@ -22,6 +23,11 @@ void render_hitpoint_bar(static_game_data* static_data, render_group* render, en
 
 	u32 filled_health_bars = (u32)(player->health / 10);
 	u32 max_health_bars = (u32)(player->type->max_health / 10);
+
+	r32 box_width = 16 + (max_health_bars * 4);
+	r32 box_height = 8;
+	rect box = get_rect_from_min_corner(get_v2(10, 10), get_v2(box_width, box_height));
+	render_ui_box(static_data, render, box);
 
 	rect icon_screen_rect = get_rect_from_min_corner(get_v2(10, 10), get_v2(10, 10));
 	rect bar_screen_rect = get_rect_from_min_corner(get_v2(18, 10), get_v2(4, 8));
@@ -61,7 +67,7 @@ void render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, s
 	render_text(&game->render, game->transient_arena, font, textbox_area, title);
 }
 
-void render_textbox(static_game_data* static_data, render_group* group, rect textbox_rect)
+void render_ui_box(static_game_data* static_data, render_group* group, rect textbox_rect)
 {
 	v2 dimensions = get_rect_dimensions(textbox_rect);
 
