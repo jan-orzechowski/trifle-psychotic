@@ -33,7 +33,8 @@ enum class textures
 	TILESET,
 	FONT,
 	CHARSET,
-	EXPLOSION
+	EXPLOSION,
+	BACKDROP,
 };
 
 struct tile_position
@@ -174,6 +175,15 @@ struct map_layer
 	u32 tiles_count;
 };
 
+struct backdrop_properties
+{
+	// jeśli 0, backdrop jest nieruchomy, jeśli 1, porusza się tak jak gracz
+	textures texture;
+	v2 size;
+	u32 x_slowdown;
+	u32 y_slowdown;
+};
+
 struct map
 {
 	u32 width;
@@ -181,6 +191,8 @@ struct map
 	map_layer map;
 	map_layer background;
 	map_layer foreground;
+	backdrop_properties first_backdrop;
+	backdrop_properties second_backdrop;
 	entity_to_spawn* entities_to_spawn;
 	u32 entities_to_spawn_count;
 	tile_position starting_tile;

@@ -369,6 +369,11 @@ i32 parse_i32(string_ref str)
 	i32 result = 0;
 	b32 negative = false;
 
+	if (is_empty_string(str))
+	{
+		goto function_parse_i32_end;
+	}
+
 	str = omit_leading_whitespace(str);
 	if (*str.ptr == '-')
 	{

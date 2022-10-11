@@ -39,7 +39,7 @@ void add_error(memory_arena* arena, tmx_errors_buffer* errors, const char* error
 	errors->report->last_error->message = copy_c_string_buffer_to_memory_arena(arena, error_message, errors->message_buffer_size);
 }
 
-void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena, 
+void parse_entity(memory_arena* permanent_arena, memory_arena* transient_arena, 
 	map* level, tmx_errors_buffer* errors, xml_node* node, i32 entity_tileset_first_gid)
 {
 	string_ref gid_str = get_attribute_value(node, "gid");
@@ -278,7 +278,100 @@ void read_entity(memory_arena* permanent_arena, memory_arena* transient_arena,
 	}
 }
 
-map_layer parse_tmx_layer(memory_arena* permanent_arena, memory_arena* transient_arena, 
+void parse_backdrop_texture_property(backdrop_properties* backdrop, string_ref name)
+{
+	backdrop->texture = textures::NONE;
+
+	if (compare_to_c_string(name, "backdrop"))
+	{
+		backdrop->texture = textures::BACKDROP;
+		backdrop->size = get_v2(320, 320);
+	}
+	else if (compare_to_c_string(name, "other_backdrop"))
+	{
+		backdrop->texture = textures::BACKDROP;
+		backdrop->size = get_v2(320, 320);
+	}
+}
+
+void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_buffer* errors, xml_node* map_node)
+{
+	xml_node* properties_node = find_tag_in_children(map_node, "properties");
+	if (properties_node)
+	{
+		xml_node_search_result* map_properties = find_all_nodes_with_tag(transient_arena, properties_node, "property");
+		for (u32 property_index = 0;
+			property_index < map_properties->found_nodes_count;
+			property_index++)
+		{
+			xml_node* property_node = map_properties->found_nodes[property_index];
+			string_ref name = get_attribute_value(property_node, "name");
+			string_ref type = get_attribute_value(property_node, "type");
+			string_ref value = get_attribute_value(property_node, "value");
+
+			if (compare_to_c_string(name, "backdrop"))
+			{
+				parse_backdrop_texture_property(&level->first_backdrop, value);
+			}
+			else if (compare_to_c_string(name, "backdrop_slowdown_x"))
+			{
+				if (compare_to_c_string(type, "int"))
+				{
+					level->first_backdrop.x_slowdown = parse_i32(value);
+				}
+				else
+				{
+					// bład
+				}
+			}
+			else if (compare_to_c_string(name, "backdrop_slowdown_y"))
+			{
+				if (compare_to_c_string(type, "int"))
+				{
+					level->first_backdrop.y_slowdown = parse_i32(value);
+				}
+				else
+				{
+					// bład
+				}
+			}
+			else if (compare_to_c_string(name, "second_backdrop"))
+			{
+				parse_backdrop_texture_property(&level->second_backdrop, value);
+			}
+			else if (compare_to_c_string(name, "second_backdrop_slowdown_x"))
+			{
+				if (compare_to_c_string(type, "int"))
+				{
+					level->second_backdrop.x_slowdown = parse_i32(value);
+				}
+				else
+				{
+					// bład
+				}
+			}
+			else if (compare_to_c_string(name, "second_backdrop_slowdown_y"))
+			{
+				if (compare_to_c_string(type, "int"))
+				{
+					level->second_backdrop.y_slowdown = parse_i32(value);
+				}
+				else
+				{
+					// bład
+				}
+			}
+			else
+			{
+				snprintf(errors->message_buffer, errors->message_buffer_size,
+					"Unknown map property: '%s'", name.ptr);
+				add_error(transient_arena, errors, errors->message_buffer);
+			}
+		}
+	}
+}
+
+map_layer parse_map_layer(memory_arena* permanent_arena, memory_arena* transient_arena, 
 	tmx_errors_buffer* errors, xml_node* root_node, i32 map_width, i32 map_height,
 	i32 tileset_first_gid, const char* layer_name, b32 is_layer_required)
 {
@@ -436,13 +529,13 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 				level.width = parse_i32(width);
 				level.height = parse_i32(height);
 
-				level.map = parse_tmx_layer(permanent_arena, transient_arena, &errors,
+				level.map = parse_map_layer(permanent_arena, transient_arena, &errors,
 					map_node, level.width, level.height, tileset_first_gid, "map", true);
 
-				level.background = parse_tmx_layer(permanent_arena, transient_arena, &errors,
+				level.background = parse_map_layer(permanent_arena, transient_arena, &errors,
 					map_node, level.width, level.height, tileset_first_gid, "background", false);
 
-				level.foreground = parse_tmx_layer(permanent_arena, transient_arena, &errors,
+				level.foreground = parse_map_layer(permanent_arena, transient_arena, &errors,
 					map_node, level.width, level.height, tileset_first_gid, "foreground", false);
 			}
 			else
@@ -450,6 +543,8 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 				add_error(transient_arena, &errors, "Map doesn't have defined width or height");
 				goto end_of_read_map_from_tmx_file_function;
 			}
+
+			parse_map_properties(&level, transient_arena, &errors, map_node);
 		}
 		else
 		{
@@ -470,7 +565,7 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 					xml_node* node = *(objects->found_nodes + xml_node_index);
 					if (node)
 					{
-						read_entity(permanent_arena, transient_arena, &level, &errors, node, entity_first_gid);
+						parse_entity(permanent_arena, transient_arena, &level, &errors, node, entity_first_gid);
 					}
 				}
 			}
