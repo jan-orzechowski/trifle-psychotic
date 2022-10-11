@@ -60,7 +60,7 @@ typedef uint8_t byte;
 #define min_of_three(arg1, arg2, arg3) (min(arg1, min(arg2, arg3)))
 #define max_of_three(arg1, arg2, arg3) (max(arg1, max(arg2, arg3)))
 
-#if 1
+#if TRIFLE_DEBUG
 #define assert(expression) if(!(expression)) {*(int *)0 = 0;}
 #define invalid_code_path assert(!"Invalid code path!")
 #define invalid_default_case default: invalid_code_path; break;

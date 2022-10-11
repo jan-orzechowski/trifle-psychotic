@@ -547,7 +547,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		render_map_layer(&game->render, level, level->current_map.background, camera_tile_pos, camera_offset_in_tile);
 		render_map_layer(&game->render, level, level->current_map.map, camera_tile_pos, camera_offset_in_tile);
 		
-#if 0
+#if TRIFLE_DEBUG
 		debug_render_tile_collision(&game->render, level, camera_position);
 #endif
 
@@ -598,7 +598,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		// draw collision debug info
 		{
-#if 0
+#if TRIFLE_DEBUG
 			for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 			{
 				entity* entity = level->entities + entity_index;
