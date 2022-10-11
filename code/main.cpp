@@ -105,35 +105,136 @@ void render_map_layer(render_group* render, level_state* level, map_layer layer,
 	}
 }
 
-void render_backdrop(render_group* render, level_state* level, world_position camera_position)
-{
-	v2 backdrop_size = get_v2(320, 320);
-	v2 backdrop_size_in_tiles = backdrop_size / TILE_SIDE_IN_PIXELS;
-	rect bitmap_rect = get_rect_from_corners(get_zero_v2(), backdrop_size);
+void render_static_repeated_backdrop(render_group* render, level_state* level,
+	world_position camera_position, backdrop_properties backdrop)
+{	
+	assert(backdrop.texture != textures::NONE);
+	assert(false == is_zero(backdrop.size));
 
-	tile_position camera_tile_pos = get_tile_position(camera_position);	
-	tile_position backdrop_origin_tile_pos = get_tile_position(
-		camera_tile_pos.x - (camera_tile_pos.x % (i32)backdrop_size_in_tiles.x),
-		camera_tile_pos.y - (camera_tile_pos.y % (i32)backdrop_size_in_tiles.y));		
-	v2 backdrop_offset = get_position_difference(camera_position, backdrop_origin_tile_pos);
-
-	for (i32 y_coord_relative = -backdrop_size.y;
-		y_coord_relative < SCREEN_HEIGHT + backdrop_size.y;
-		y_coord_relative += backdrop_size.y)
-	{
-		i32 y_coord_on_screen = y_coord_relative;
-
-		for (i32 x_coord_relative = -backdrop_size.x;
-			x_coord_relative < SCREEN_WIDTH + backdrop_size.x;
-			x_coord_relative += backdrop_size.x)
-		{
-			i32 x_coord_on_screen = x_coord_relative;
-			i32 y_coord_on_screen = y_coord_relative;
-			v2 backdrop_position = get_v2(x_coord_on_screen, y_coord_on_screen) - (backdrop_offset * TILE_SIDE_IN_PIXELS);		 
-			rect screen_rect = get_rect_from_min_corner(backdrop_position, backdrop_size);
-			render_bitmap(render, textures::BACKDROP, bitmap_rect, screen_rect);
+	i32 size_y = (i32)backdrop.size.y;
+	i32 size_x = (i32)backdrop.size.x;
+	for (i32 y = -size_y; y < SCREEN_HEIGHT + size_y; y += size_y)
+	{		
+		for (i32 x = -size_x; x < SCREEN_WIDTH + size_x; x += size_x)
+		{ 
+			render_bitmap(render, backdrop.texture, 
+				get_rect_from_corners(get_zero_v2(), backdrop.size),
+				get_rect_from_min_corner(get_v2(x, y), backdrop.size));
 		}
 	}
+}
+
+void render_scrolling_repeated_backdrop(render_group* render, level_state* level, 
+	world_position camera_position, backdrop_properties backdrop)
+{
+	assert(backdrop.texture != textures::NONE);
+	assert(false == is_zero(backdrop.size));
+
+	v2 backdrop_size_in_tiles = (backdrop.size / TILE_SIDE_IN_PIXELS);
+	if (backdrop.x_slowdown != 0)
+	{
+		backdrop_size_in_tiles.x *= backdrop.x_slowdown;
+	}
+	if (backdrop.y_slowdown != 0)
+	{
+		backdrop_size_in_tiles.y *= backdrop.y_slowdown;
+	}
+
+	tile_position camera_tile_pos = get_tile_position(camera_position);
+	tile_position backdrop_origin_tile_pos = get_tile_position(
+		camera_tile_pos.x - (camera_tile_pos.x % (i32)backdrop_size_in_tiles.x),
+		camera_tile_pos.y - (camera_tile_pos.y % (i32)backdrop_size_in_tiles.y));
+	v2 backdrop_offset = get_position_difference(camera_position, backdrop_origin_tile_pos);
+		
+	if (backdrop.x_slowdown != 0)
+	{
+		backdrop_offset.x /= backdrop.x_slowdown;
+	}
+	if (backdrop.y_slowdown != 0)
+	{
+		backdrop_offset.y /= backdrop.y_slowdown;
+	}
+
+	i32 size_y = (i32)backdrop.size.y;
+	i32 size_x = (i32)backdrop.size.x;
+	for (i32 y = 0; y < SCREEN_HEIGHT; y += size_y)
+	{		
+		for (i32 x = 0; x < SCREEN_WIDTH; x += size_x)
+		{
+			v2 backdrop_position = get_v2(x, y);
+
+			if (backdrop.x_slowdown != 0)
+			{
+				backdrop_position.x -= (backdrop_offset.x * TILE_SIDE_IN_PIXELS);
+			}
+			if (backdrop.y_slowdown != 0)
+			{
+				backdrop_position.y -= (backdrop_offset.y * TILE_SIDE_IN_PIXELS);
+			}
+
+			render_bitmap(render, backdrop.texture,
+				get_rect_from_corners(get_zero_v2(), backdrop.size), 
+				get_rect_from_min_corner(backdrop_position, backdrop.size));
+		}
+	}
+}
+
+void render_scrolling_nonrepeated_backdrop(render_group* render, level_state* level,
+	world_position camera_position, backdrop_properties backdrop)
+{
+	assert(backdrop.texture != textures::NONE);
+	assert(false == is_zero(backdrop.size));
+
+	v2 backdrop_size_in_tiles = (backdrop.size / TILE_SIDE_IN_PIXELS);
+	if (backdrop.x_slowdown != 0)
+	{
+		backdrop_size_in_tiles.x *= backdrop.x_slowdown;
+	}
+	if (backdrop.y_slowdown != 0)
+	{
+		backdrop_size_in_tiles.y *= backdrop.y_slowdown;
+	}
+
+	v2 backdrop_offset = get_position_difference(camera_position, get_tile_position(0, 0));	
+	
+	if (backdrop.x_slowdown != 0)
+	{
+		backdrop_offset.x /= backdrop.x_slowdown;
+	}
+	if (backdrop.y_slowdown != 0)
+	{
+		backdrop_offset.y /= backdrop.y_slowdown;
+	}
+
+	backdrop_offset *= TILE_SIDE_IN_PIXELS;
+	
+	r32 max_x_offset = backdrop.size.x - (SCREEN_WIDTH / SCALING_FACTOR);
+	r32 max_y_offset = backdrop.size.y - (SCREEN_HEIGHT / SCALING_FACTOR);
+
+	if (backdrop_offset.x > max_x_offset)
+	{
+		backdrop_offset.x = max_x_offset;
+	}
+
+	if (backdrop_offset.y > max_y_offset)
+	{
+		backdrop_offset.y = max_y_offset;
+	}
+
+	if (backdrop_offset.x < 0)
+	{
+		backdrop_offset.x = 0;
+	}
+
+	if (backdrop_offset.y < 0)
+	{
+		backdrop_offset.y = 0;
+	}
+
+	v2 backdrop_position = get_zero_v2() - backdrop_offset;
+	render_bitmap(render, backdrop.texture,
+		get_rect_from_corners(get_zero_v2(), backdrop.size),
+		get_rect_from_min_corner(backdrop_position, backdrop.size));
 }
 
 void debug_render_tile_collision(render_group* render, level_state* level, world_position camera_pos)
@@ -433,7 +534,15 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		v2 camera_offset_in_chunk = get_position_difference(camera_position, reference_chunk);
 		v2 camera_offset_in_tile = camera_offset_in_chunk - camera_tile_offset_in_chunk;
 	
-		render_backdrop(&game->render, level, camera_position);
+		if (level->current_map.second_backdrop.texture != textures::NONE)
+		{
+			render_scrolling_nonrepeated_backdrop(&game->render, level, camera_position, level->current_map.second_backdrop);
+		}
+
+		if (level->current_map.first_backdrop.texture != textures::NONE)
+		{
+			render_scrolling_nonrepeated_backdrop(&game->render, level, camera_position, level->current_map.first_backdrop);
+		}
 
 		render_map_layer(&game->render, level, level->current_map.background, camera_tile_pos, camera_offset_in_tile);
 		render_map_layer(&game->render, level, level->current_map.map, camera_tile_pos, camera_offset_in_tile);
