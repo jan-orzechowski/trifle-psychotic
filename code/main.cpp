@@ -12,6 +12,7 @@
 #include "ui.h"
 #include "input.h"
 #include "sdl_platform.h"
+#include "debug.h"
 
 void save_checkpoint(game_state* game)
 {
@@ -39,35 +40,11 @@ void restore_checkpoint(game_state* game)
 	{
 		player->type->max_health = game->checkpoint.player_max_health;
 		player->health = player->type->max_health;
-		printf("wczytane max health: %d", game->checkpoint.player_max_health);
+
+#if TRIFLE_DEBUG
+		printf("wczytane max health: %d\n", game->checkpoint.player_max_health);
+#endif
 	}
-}
-
-void render_debug_information(game_state* game, level_state* level)
-{
-	entity* player = get_player(level);
-
-	collision_result collision = {};
-	b32 is_standing = is_standing_on_ground(level, player, &collision);
-
-	b32 is_standing_on_platform = false;
-	if (collision.collided_platform)
-	{
-		is_standing_on_platform = true;
-	}
-
-	char buffer[200];
-	v4 text_color = get_v4(1, 1, 1, 0);
-	int error = snprintf(buffer, 200, "Chunk:(%d,%d),Pos:(%0.2f,%0.2f),Acc: (%0.2f,%0.2f) Standing: %d, Platform: %d, Direction: %s",
-		player->position.chunk_pos.x, player->position.chunk_pos.y, player->position.pos_in_chunk.x, player->position.pos_in_chunk.y,
-		player->acceleration.x, player->acceleration.y, is_standing, is_standing_on_platform, (player->direction == direction::W ? "W" : "E"));
-
-	rect area = get_rect_from_corners(
-		get_v2(10, 200), get_v2((SCREEN_WIDTH / 2) - 10, 260)
-	);
-
-	render_text(&game->render, game->transient_arena,
-		game->level_state->static_data->ui_font, area, buffer, 200, true);
 }
 
 void render_map_layer(render_group* render, level_state* level, map_layer layer, tile_position camera_tile_pos, v2 camera_offset_in_tile)
@@ -235,44 +212,6 @@ void render_scrolling_nonrepeated_backdrop(render_group* render, level_state* le
 	render_bitmap(render, backdrop.texture,
 		get_rect_from_corners(get_zero_v2(), backdrop.size),
 		get_rect_from_min_corner(backdrop_position, backdrop.size));
-}
-
-void debug_render_tile_collision(render_group* render, level_state* level, world_position camera_pos)
-{
-	i32 screen_half_width = ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
-	i32 screen_half_height = ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
-	tile_position camera_tile_pos = get_tile_position(camera_pos);
-
-	for (i32 y_coord_relative = -screen_half_height;
-		y_coord_relative < screen_half_height;
-		y_coord_relative++)
-	{
-		i32 y_coord_on_screen = y_coord_relative;
-		i32 y_coord_in_world = camera_tile_pos.y + y_coord_relative;
-
-		for (i32 x_coord_relative = -screen_half_width;
-			x_coord_relative < screen_half_width;
-			x_coord_relative++)
-		{
-			i32 x_coord_on_screen = x_coord_relative;
-			i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
-
-			u32 tile_value = get_tile_value(level->current_map, x_coord_in_world, y_coord_in_world);
-			if (is_tile_colliding(level->static_data->collision_reference, tile_value))
-			{
-				tile_position tile_pos = get_tile_position(x_coord_in_world, y_coord_in_world);
-				entity_collision_data tile_collision = get_tile_collision_data(camera_pos.chunk_pos, tile_pos);
-				v2 relative_position = get_position_difference(tile_pos, camera_pos);
-				v2 center = relative_position + tile_collision.collision_rect_offset;
-				v2 size = tile_collision.collision_rect_dim;
-				rect collision_rect = get_rect_from_center(
-					SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS),
-					(size * TILE_SIDE_IN_PIXELS));
-
-				render_rectangle(render, collision_rect, get_zero_v4(), true);
-			}
-		}
-	}
 }
 
 scene_change game_update_and_render(game_state* game, level_state* level, r32 delta_time)
@@ -491,14 +430,12 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					if (hit)
 					{
 						remove_bullet(level, &bullet_index);
-						printf("bullet usuniety bo trafil\n");
 					}
 				}
 			}
 			else
 			{
 				remove_bullet(level, &bullet_index);
-				printf("bullet usuniety bo poza chunkiem\n");
 			}
 		}
 
@@ -548,7 +485,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		render_map_layer(&game->render, level, level->current_map.map, camera_tile_pos, camera_offset_in_tile);
 		
 #if TRIFLE_DEBUG
-		debug_render_tile_collision(&game->render, level, camera_position);
+		debug_render_tile_collision_boxes(&game->render, level, camera_position);
 #endif
 
 		// draw entities
@@ -596,37 +533,13 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		render_map_layer(&game->render, level, level->current_map.foreground, camera_tile_pos, camera_offset_in_tile);
 
-		// draw collision debug info
-		{
 #if TRIFLE_DEBUG
-			for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
-			{
-				entity* entity = level->entities + entity_index;
-				if (false == entity->used)
-				{
-					continue;
-				}
 
-				if (is_in_neighbouring_chunk(camera_position.chunk_pos, entity->position))
-				{
-					// istotne - offset sprite'a nie ma tu znaczenia
-					v2 relative_position = get_position_difference(entity->position, camera_position);
-					v2 center = relative_position + entity->type->collision_rect_offset;
-					v2 size = entity->type->collision_rect_dim;
-					rect collision_rect = get_rect_from_center(
-						SCREEN_CENTER_IN_PIXELS + (center * TILE_SIDE_IN_PIXELS),
-						size * TILE_SIDE_IN_PIXELS);
+		debug_render_entity_collision_boxes(&game->render, level, camera_position);
+		debug_render_bullet_collision_boxes(&game->render, level, camera_position);
+		debug_render_player_information(game, level);
 
-					render_rectangle(&game->render, collision_rect, { 0, 0, 0, 0 }, true);
-
-					v2 entity_position = SCREEN_CENTER_IN_PIXELS + relative_position * TILE_SIDE_IN_PIXELS;
-					render_point(&game->render, entity_position, get_v4(1, 0, 0, 0));
-				}
-			}
 #endif
-		}
-
-		//render_debug_information(game, level);
 
 		render_hitpoint_bar(level->static_data, &game->render, player, is_power_up_active(level->power_ups.invincibility));
 

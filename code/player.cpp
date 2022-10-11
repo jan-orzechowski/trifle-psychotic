@@ -108,7 +108,7 @@ void change_player_movement_mode(player_movement* movement, movement_mode mode)
 	movement->current_mode = mode;
 	movement->frame_duration = 0;
 
-	//debug
+#if TRIFLE_DEBUG
 	switch (mode)
 	{
 		case movement_mode::WALK:
@@ -121,6 +121,7 @@ void change_player_movement_mode(player_movement* movement, movement_mode mode)
 		printf("switch to RECOIL after %d frames\n", movement->previous_mode_frame_duration);
 		break;
 	}
+#endif
 }
 
 void player_fire_bullet(level_state* level, game_input* input, entity* player)
@@ -288,18 +289,6 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 			{
 				player->acceleration += get_v2(1.25f, 0);
 			}
-
-#if 0
-			if (input->up.number_of_presses > 0)
-			{
-				player->acceleration += get_v2(0, -1);
-			}
-
-			if (input->down.number_of_presses > 0)
-			{
-				player->acceleration += get_v2(0, 1);
-			}
-#endif
 		}
 		break;
 		case movement_mode::JUMP:
