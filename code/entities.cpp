@@ -461,9 +461,20 @@ void initialize_current_map(game_state* game, level_state* level)
 
 	//temporary_memory memory_for_initialization = begin_temporary_memory(game->transient_arena);
 
-	add_entity(level, level->current_map.starting_tile,
-		get_entity_type_ptr(level->static_data->entity_types_dict, entity_type_enum::PLAYER));
+	// add player
+	{
+		entity_type* player_type = get_entity_type_ptr(
+			level->static_data->entity_types_dict, entity_type_enum::PLAYER);
 
+		// gracz ma środek w innym miejscu niż pozostałe entities 
+		// - z tego powodu musimy skorygować początkowe położenie
+		world_position starting_position = get_world_position(level->current_map.starting_tile);
+		starting_position = add_to_position(starting_position, 
+			get_v2(0, (player_type->collision_rect_dim.y / 2 - 0.2f)));
+
+		add_entity(level, starting_position, player_type);
+	}
+	
 	level->gates_dict.entries_count = 100;
 	level->gates_dict.entries = push_array(game->arena, level->gates_dict.entries_count, gate_dictionary_entry);
 
@@ -522,8 +533,11 @@ void initialize_current_map(game_state* game, level_state* level)
 			break;
 			default:
 			{
-				add_entity(level, get_world_position(new_entity->position),
-					get_entity_type_ptr(level->static_data->entity_types_dict, new_entity->type));
+				entity_type* type = get_entity_type_ptr(
+					level->static_data->entity_types_dict, new_entity->type);
+				world_position position = get_world_position(new_entity->position);
+
+				add_entity(level, position, type);
 
 				if (new_entity->type == entity_type_enum::ENEMY_CULTIST)
 				{
