@@ -179,6 +179,16 @@ void set_player_rotated_graphics_based_on_mouse_position(game_input* input, enti
 	}
 }
 
+void set_player_legs_graphics_based_on_movement_mode(static_game_data* static_data, entity* player, movement_mode current_mode)
+{
+	switch (current_mode)
+	{
+		case movement_mode::JUMP: player->type->idle_pose = static_data->player_jump_pose; break;
+		case movement_mode::RECOIL: player->type->idle_pose = static_data->player_recoil_pose; break;
+		default: player->type->idle_pose = static_data->player_idle_pose;
+	}
+}
+
 world_position process_input(level_state* level, input_buffer* input_buffer, entity* player, r32 delta_time)
 {
 	game_input empty_input = {};
@@ -193,6 +203,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 	}
 
 	set_player_rotated_graphics_based_on_mouse_position(input, player);
+	set_player_legs_graphics_based_on_movement_mode(level->static_data, player, level->player_movement.current_mode);
 
 	collision_result standing_on = {};
 	b32 is_standing_at_frame_beginning = is_standing_on_ground(level, player, &standing_on);

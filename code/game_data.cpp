@@ -173,19 +173,18 @@ animation_frame get_walk_idle_pose(memory_arena* arena, v2 bitmap_offset, b32 ad
 	return result;
 }
 
-animation_frame get_player_idle_pose(memory_arena* arena)
+animation_frame get_player_pose(memory_arena* arena, i32 index)
 {
 	animation_frame result = {};	
 
 	rect legs_rect = get_rect_from_min_corner(0, 24, 24, 24);
-	v2 legs_offset = get_v2(0.0f, 0.0f);
+	legs_rect = move_rect(legs_rect, get_v2(index * 24, 0));
 
 	result.sprite.parts_count = 1;
 	result.sprite.parts = push_array(arena, result.sprite.parts_count, sprite_part);
 
 	result.sprite.parts[0].texture = textures::CHARSET;
 	result.sprite.parts[0].texture_rect = legs_rect;
-	result.sprite.parts[0].offset_in_pixels = legs_offset;
 	result.sprite.parts[0].default_direction = direction::E;
 
 	return result;
@@ -557,7 +556,6 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->bullet_types_count = 0;
 
 	entity_type* player_entity_type = add_entity_type(data, entity_type_enum::PLAYER);
-	player_entity_type->idle_pose = get_player_idle_pose(arena);
 	player_entity_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT | (u32)entity_flags::PLAYER);
 	player_entity_type->max_health = 100; //40;
 	player_entity_type->velocity_multiplier = 40.0f;
@@ -568,6 +566,10 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	player_entity_type->death_animation_offset = get_v2(0.0f, -0.75f);
 	player_entity_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 0);
 	add_death_animation(arena, player_entity_type, data->explosion_animations.size_48x48);
+
+	data->player_idle_pose = get_player_pose(arena, 0);
+	data->player_jump_pose = get_player_pose(arena, 1);
+	data->player_recoil_pose = get_player_pose(arena, 2);
 
 	entity_type* player_bullet_type = add_bullet_type(data);
 	player_bullet_type->damage_on_contact = 10;

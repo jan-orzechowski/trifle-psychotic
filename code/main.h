@@ -603,6 +603,9 @@ struct static_game_data
 
 	entity_type* player_normal_bullet_type;
 	entity_type* player_power_up_bullet_type;
+	animation_frame player_idle_pose;
+	animation_frame player_jump_pose;
+	animation_frame player_recoil_pose;
 
 	font ui_font;
 	font menu_font;
