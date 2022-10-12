@@ -36,9 +36,9 @@ bld
 sdl
 SDL2.dll
 SDL2_image.dll
-SDL2_ttf.dll
 
-# gfx
+# dev folders
+build
 gfx
 _dev_files
 
