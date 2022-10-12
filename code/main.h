@@ -167,6 +167,7 @@ struct entity_to_spawn
 	entity_type_enum type;
 	v4 color;
 	string_ref message;
+	entity_to_spawn* next;
 };
 
 struct map_layer
@@ -193,8 +194,11 @@ struct map
 	map_layer foreground;
 	backdrop_properties first_backdrop;
 	backdrop_properties second_backdrop;
-	entity_to_spawn* entities_to_spawn;
-	u32 entities_to_spawn_count;
+
+	//linked lista entities to spawn jest usuwana po zakończeniu inicjalizacji
+	entity_to_spawn* first_entity_to_spawn;
+	entity_to_spawn* last_entity_to_spawn;
+
 	tile_position starting_tile;
 	string_ref next_map;
 };

@@ -4,7 +4,25 @@
 #include "level_parsing.h"
 #include "text_rendering.h"
 
-entity_to_spawn* add_read_entity(map* level, memory_arena* arena, 
+struct tmx_errors_buffer
+{
+	char* message_buffer;
+	u32 message_buffer_size;
+	tmx_parsing_error_report* report;
+};
+
+struct level_parsing_context
+{
+	memory_arena* permanent_arena;
+	memory_arena* transient_arena;
+	tmx_errors_buffer* errors;
+	map* level;
+	i32 tileset_first_gid;
+	i32 entity_tileset_first_gid;
+	i32 entity_tileset_last_gid;
+};
+
+entity_to_spawn* add_entity_to_spawn(map* level, memory_arena* arena,
 	entity_type_enum type, tile_position position, v4 gate_color = get_zero_v4())
 {
 	entity_to_spawn* new_entity = push_struct(arena, entity_to_spawn);
@@ -12,10 +30,15 @@ entity_to_spawn* add_read_entity(map* level, memory_arena* arena,
 	new_entity->position = position;
 	new_entity->color = gate_color;
 
-	level->entities_to_spawn_count++;
-	if (level->entities_to_spawn == NULL)
+	if (level->first_entity_to_spawn == NULL)
 	{
-		level->entities_to_spawn = new_entity;
+		level->first_entity_to_spawn = new_entity;
+		level->last_entity_to_spawn = new_entity;
+	}
+	else
+	{
+		level->last_entity_to_spawn->next = new_entity;
+		level->last_entity_to_spawn = level->last_entity_to_spawn->next;
 	}
 
 	return new_entity;
@@ -39,8 +62,115 @@ void add_error(memory_arena* arena, tmx_errors_buffer* errors, const char* error
 	errors->report->last_error->message = copy_c_string_buffer_to_memory_arena(arena, error_message, errors->message_buffer_size);
 }
 
-void parse_entity(memory_arena* permanent_arena, memory_arena* transient_arena, 
-	map* level, tmx_errors_buffer* errors, xml_node* node, i32 entity_tileset_first_gid)
+void add_error(level_parsing_context* level_parsing, const char* message = NULL)
+{
+	if (message == NULL)
+	{
+		add_error(level_parsing->transient_arena, level_parsing->errors, level_parsing->errors->message_buffer);
+	}
+	else
+	{
+		add_error(level_parsing->transient_arena, level_parsing->errors, message);
+	}
+}
+
+entity_type_enum get_entity_type_enum_from_gid(i32 gid, i32 entity_tileset_first_gid)
+{
+	entity_type_enum result = entity_type_enum::UNKNOWN;
+
+	gid -= (entity_tileset_first_gid - 1);
+	switch (gid)
+	{
+		case 6:  result = entity_type_enum::ENEMY_SENTRY; break;
+		case 7:  result = entity_type_enum::ENEMY_GUARDIAN; break;
+		case 8:  result = entity_type_enum::ENEMY_FLYING_BOMB; break;
+		case 9:  result = entity_type_enum::ENEMY_ROBOT; break;
+		case 10: result = entity_type_enum::ENEMY_CULTIST; break;
+		case 11: result = entity_type_enum::POWER_UP_HEALTH; break;
+		case 12: result = entity_type_enum::POWER_UP_SPEED; break;
+		case 13: result = entity_type_enum::POWER_UP_SPREAD; break;
+		case 14: result = entity_type_enum::POWER_UP_DAMAGE; break;
+		case 15: result = entity_type_enum::POWER_UP_INVINCIBILITY; break;
+		case 16: result = entity_type_enum::GATE_BLUE; break;
+		case 17: result = entity_type_enum::GATE_GREY; break;
+		case 18: result = entity_type_enum::GATE_RED; break;
+		case 19: result = entity_type_enum::GATE_GREEN; break;
+		case 21: result = entity_type_enum::SWITCH_BLUE; break;
+		case 22: result = entity_type_enum::SWITCH_GREY; break;
+		case 23: result = entity_type_enum::SWITCH_RED; break;
+		case 24: result = entity_type_enum::SWITCH_GREEN; break;
+		case 26: result = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE; break;
+		case 27: result = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY; break;
+		case 28: result = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED; break;
+		case 29: result = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN; break;
+		case 31: result = entity_type_enum::MOVING_PLATFORM_VERTICAL_BLUE; break;
+		case 32: result = entity_type_enum::MOVING_PLATFORM_VERTICAL_GREY; break;
+		case 33: result = entity_type_enum::MOVING_PLATFORM_VERTICAL_RED; break;
+		case 34: result = entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN; break;
+		case 2:  result = entity_type_enum::PLAYER; break;
+		case 3:  result = entity_type_enum::NEXT_LEVEL_TRANSITION; break;
+		case 4:  result = entity_type_enum::MESSAGE_DISPLAY; break;
+		invalid_default_case;
+	}
+
+	return result;
+}
+
+void parse_entity_from_tile(level_parsing_context* level_parsing, u32 tile_index, i32 gid)
+{
+	tile_position entity_position = get_tile_position_from_index(level_parsing->level, tile_index);
+
+	entity_type_enum type = get_entity_type_enum_from_gid(gid, level_parsing->entity_tileset_first_gid);
+	switch (type)
+	{
+		case entity_type_enum::GATE_BLUE:
+		case entity_type_enum::GATE_GREY:
+		case entity_type_enum::GATE_RED:
+		case entity_type_enum::GATE_GREEN:
+		case entity_type_enum::SWITCH_BLUE:
+		case entity_type_enum::SWITCH_GREY:
+		case entity_type_enum::SWITCH_RED:
+		case entity_type_enum::SWITCH_GREEN:
+		case entity_type_enum::NEXT_LEVEL_TRANSITION:
+		case entity_type_enum::MESSAGE_DISPLAY:
+		{
+			snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
+				"Entity added as a tile at (%d, %d) is a switch, gate, next level transition or a message.\
+				It needs to be added in the entity layer with properties set istead",
+				entity_position.x, entity_position.y);
+		}
+		break;
+		case entity_type_enum::PLAYER:
+		{
+			if (level_parsing->level->starting_tile.x == -1 
+				&& level_parsing->level->starting_tile.y == -1)
+			{
+				level_parsing->level->starting_tile = entity_position;
+			}
+			else
+			{
+				snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
+					"More than one starting point set. Starting point added as a tile at (%d, %d) ignored",
+					entity_position.x, entity_position.y);
+				add_error(level_parsing);
+			}
+		}
+		break;
+		case entity_type_enum::UNKNOWN:
+		{
+			// pomijamy
+			debug_breakpoint;
+		}
+		break;
+		default:
+		{
+			add_entity_to_spawn(level_parsing->level, level_parsing->transient_arena, type, entity_position);
+		}
+		break;
+	}
+}
+
+void parse_entity(level_parsing_context* level_parsing, xml_node* node)
 {
 	string_ref gid_str = get_attribute_value(node, "gid");
 	string_ref x_str = get_attribute_value(node, "x");
@@ -60,51 +190,16 @@ void parse_entity(memory_arena* permanent_arena, memory_arena* transient_arena,
 	}
 	else
 	{
-
+		// błąd
 	}
 
-	string_ref next_level_name = {};
-
-	entity_type_enum type = entity_type_enum::UNKNOWN;
 	i32 gid = -1;
 	if (gid_str.string_size)
 	{
-		gid = parse_i32(gid_str);
-		gid -= (entity_tileset_first_gid - 1);
-		switch (gid)
-		{
-			case 6:  type = entity_type_enum::ENEMY_SENTRY; break;
-			case 7:  type = entity_type_enum::ENEMY_GUARDIAN; break;
-			case 8:  type = entity_type_enum::ENEMY_FLYING_BOMB; break;
-			case 9:  type = entity_type_enum::ENEMY_ROBOT; break;
-			case 10: type = entity_type_enum::ENEMY_CULTIST; break;
-			case 11: type = entity_type_enum::POWER_UP_HEALTH; break;
-			case 12: type = entity_type_enum::POWER_UP_SPEED; break;
-			case 13: type = entity_type_enum::POWER_UP_SPREAD; break;
-			case 14: type = entity_type_enum::POWER_UP_DAMAGE; break;
-			case 15: type = entity_type_enum::POWER_UP_INVINCIBILITY; break;
-			case 16: type = entity_type_enum::GATE_BLUE; break;
-			case 17: type = entity_type_enum::GATE_GREY; break;
-			case 18: type = entity_type_enum::GATE_RED; break;
-			case 19: type = entity_type_enum::GATE_GREEN; break;
-			case 21: type = entity_type_enum::SWITCH_BLUE; break;
-			case 22: type = entity_type_enum::SWITCH_GREY; break;
-			case 23: type = entity_type_enum::SWITCH_RED; break;
-			case 24: type = entity_type_enum::SWITCH_GREEN; break;
-			case 26: type = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE; break;
-			case 27: type = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY; break;
-			case 28: type = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED; break;
-			case 29: type = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN; break;
-			case 31: type = entity_type_enum::MOVING_PLATFORM_VERTICAL_BLUE; break;
-			case 32: type = entity_type_enum::MOVING_PLATFORM_VERTICAL_GREY; break;
-			case 33: type = entity_type_enum::MOVING_PLATFORM_VERTICAL_RED; break;
-			case 34: type = entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN; break;
-			case 2:  type = entity_type_enum::PLAYER; break;
-			case 3:  type = entity_type_enum::NEXT_LEVEL_TRANSITION; break;
-			case 4:  type = entity_type_enum::MESSAGE_DISPLAY; break;
-		}
+		gid = parse_i32(gid_str);	
 	}
 
+	entity_type_enum type = get_entity_type_enum_from_gid(gid, level_parsing->entity_tileset_first_gid);
 	switch (type)
 	{
 		case entity_type_enum::GATE_BLUE:
@@ -121,7 +216,7 @@ void parse_entity(memory_arena* permanent_arena, memory_arena* transient_arena,
 			if (properties_parent_node)
 			{
 				xml_node_search_result* properties = find_all_nodes_with_tag(
-					transient_arena, properties_parent_node, "property");
+					level_parsing->transient_arena, properties_parent_node, "property");
 
 				for (u32 property_index = 0;
 					property_index < properties->found_nodes_count;
@@ -171,38 +266,41 @@ void parse_entity(memory_arena* permanent_arena, memory_arena* transient_arena,
 
 			if (false == is_zero(gate_color))
 			{
-				add_read_entity(level, permanent_arena, type, position, gate_color);
+				add_entity_to_spawn(level_parsing->level, level_parsing->transient_arena, type, position, gate_color);
 			}
 		}
 		break;
 		case entity_type_enum::PLAYER:
 		{
-			if (level->starting_tile.x == -1 && level->starting_tile.y == -1)
+			if (level_parsing->level->starting_tile.x == -1 
+				&& level_parsing->level->starting_tile.y == -1)
 			{
-				level->starting_tile = position;
+				level_parsing->level->starting_tile = position;
 			}
 			else
 			{
-				snprintf(errors->message_buffer, errors->message_buffer_size,
+				snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
 					"More than one starting point set. Starting point at (%d, %d) ignored",
 					position.x, position.y);
-				add_error(transient_arena, errors, errors->message_buffer);
+				add_error(level_parsing);
 			}
 		}
 		break;
 		case entity_type_enum::NEXT_LEVEL_TRANSITION:
 		{
-			if (level->next_map.string_size > 0)
+			if (level_parsing->level->next_map.string_size > 0)
 			{
-				add_error(transient_arena, errors, "More than one starting points set. Point at () ignored");
+				add_error(level_parsing, "More than one starting points set. Point at () ignored");
 				break;
 			}
+
+			string_ref next_level_name = {};
 
 			xml_node* properties_parent_node = find_tag_in_children(node, "properties");
 			if (properties_parent_node)
 			{
 				xml_node_search_result* properties = find_all_nodes_with_tag(
-					transient_arena, properties_parent_node, "property");
+					level_parsing->transient_arena, properties_parent_node, "property");
 
 				for (u32 property_index = 0;
 					property_index < properties->found_nodes_count;
@@ -228,8 +326,8 @@ void parse_entity(memory_arena* permanent_arena, memory_arena* transient_arena,
 
 			if (next_level_name.string_size)
 			{
-				add_read_entity(level, permanent_arena, type, position);
-				level->next_map = next_level_name;
+				add_entity_to_spawn(level_parsing->level, level_parsing->transient_arena, type, position);
+				level_parsing->level->next_map = copy_string(level_parsing->permanent_arena, next_level_name);
 			}
 		}
 		break;
@@ -239,7 +337,7 @@ void parse_entity(memory_arena* permanent_arena, memory_arena* transient_arena,
 			if (properties_parent_node)
 			{
 				xml_node_search_result* properties = find_all_nodes_with_tag(
-					transient_arena, properties_parent_node, "property");
+					level_parsing->transient_arena, properties_parent_node, "property");
 
 				for (u32 property_index = 0;
 					property_index < properties->found_nodes_count;
@@ -254,15 +352,16 @@ void parse_entity(memory_arena* permanent_arena, memory_arena* transient_arena,
 						{
 							if (message_str.string_size < 1000)
 							{
-								entity_to_spawn* message_entity = add_read_entity(level, permanent_arena, type, position);
-								message_entity->message = message_str;
+								entity_to_spawn* message_entity = 
+									add_entity_to_spawn(level_parsing->level, level_parsing->transient_arena, type, position);
+								message_entity->message = copy_string(level_parsing->permanent_arena, message_str);
 							}
 							else
 							{
-								snprintf(errors->message_buffer, errors->message_buffer_size,
+								snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
 									"Next level name is longer than %d characters",
 									MAX_LEVEL_NAME_LENGTH);
-								add_error(transient_arena, errors, errors->message_buffer);
+								add_error(level_parsing);
 							}
 						}
 					}
@@ -270,9 +369,14 @@ void parse_entity(memory_arena* permanent_arena, memory_arena* transient_arena,
 			}
 		}
 		break;
+		case  entity_type_enum::UNKNOWN:
+		{
+			// pomijamy
+		}
+		break;
 		default:
 		{
-			add_read_entity(level, permanent_arena, type, position);
+			add_entity_to_spawn(level_parsing->level, level_parsing->transient_arena, type, position);
 		}
 		break;
 	}
@@ -371,9 +475,8 @@ void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_
 	}
 }
 
-map_layer parse_map_layer(memory_arena* permanent_arena, memory_arena* transient_arena, 
-	tmx_errors_buffer* errors, xml_node* root_node, i32 map_width, i32 map_height,
-	i32 tileset_first_gid, const char* layer_name, b32 is_layer_required)
+map_layer parse_map_layer(level_parsing_context* level_parsing,
+	xml_node* root_node, const char* layer_name, b32 is_layer_required)
 {
 	map_layer layer = {};
 	xml_node* layer_node = find_tag_with_attribute_in_children(root_node, "layer", "name", layer_name);
@@ -385,7 +488,8 @@ map_layer parse_map_layer(memory_arena* permanent_arena, memory_arena* transient
 		{
 			i32 layer_width = parse_i32(layer_width_str);
 			i32 layer_height = parse_i32(layer_height_str);
-			if (layer_width == map_width && layer_height == map_height)
+			if (layer_width == level_parsing->level->width 
+				&& layer_height == level_parsing->level->height)
 			{			
 				xml_node* data_node = find_tag_in_children(layer_node, "data");
 				if (data_node)
@@ -394,61 +498,61 @@ map_layer parse_map_layer(memory_arena* permanent_arena, memory_arena* transient
 					string_ref encoding_str = get_attribute_value(data_node, "encoding");
 					if (compare_to_c_string(encoding_str, "csv"))
 					{
-						layer.tiles_count = map_width * map_height;
-						layer.tiles = parse_array_of_i32(permanent_arena, layer.tiles_count, data, ',');
+						layer.tiles_count = layer_width * layer_height;
+						layer.tiles = parse_array_of_i32(level_parsing->permanent_arena, layer.tiles_count, data, ',');
 
-						if (tileset_first_gid != -1
-							&& tileset_first_gid != 0
-							&& tileset_first_gid != 1)
+						for (u32 tile_index = 0; tile_index < layer.tiles_count; tile_index++)
 						{
-							for (u32 tile_index = 0; tile_index < layer.tiles_count; tile_index++)
+							i32 gid = layer.tiles[tile_index];
+							if (gid >= level_parsing->entity_tileset_first_gid
+								&& gid <= level_parsing->entity_tileset_last_gid)
 							{
-								i32 original_gid = layer.tiles[tile_index];
-								if (original_gid < tileset_first_gid)
-								{
-									// błąd											
-								}
-
-								layer.tiles[tile_index] -= (tileset_first_gid - 1);
+								parse_entity_from_tile(level_parsing, tile_index, gid);
+								// dodajemy puste pole w miejscu, gdzie zostało zdefiniowane entity
+								layer.tiles[tile_index] = 2;
 							}
-						}
+							else
+							{
+								layer.tiles[tile_index] -= (level_parsing->tileset_first_gid - 1);
+							}
+						}						
 					}
 					else
 					{
-						snprintf(errors->message_buffer, errors->message_buffer_size,
+						snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
 							"Format of the layer '%s' is not set to 'csv'", layer_name);
-						add_error(transient_arena, errors, errors->message_buffer);
+						add_error(level_parsing);
 					}
 				}
 				else
 				{
-					snprintf(errors->message_buffer, errors->message_buffer_size,
+					snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
 						"The 'data' element is missing in the layer '%s'", layer_name);
-					add_error(transient_arena, errors, errors->message_buffer);
+					add_error(level_parsing);
 				}
 			}
 			else
 			{
-				snprintf(errors->message_buffer, errors->message_buffer_size,
+				snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
 					"Size of the layer '%s' (%d, %d) doesn't match the map size (%d, %d)",
-					layer_name, layer_width, layer_height, map_width, map_height);
-				add_error(transient_arena, errors, errors->message_buffer);
+					layer_name, layer_width, layer_height, level_parsing->level->width, level_parsing->level->height);
+				add_error(level_parsing);
 			}
 		}
 		else
 		{
-			snprintf(errors->message_buffer, errors->message_buffer_size,
+			snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
 				"Layer '%s' doesn't have defined width or height", layer_name);
-			add_error(transient_arena, errors, errors->message_buffer);
+			add_error(level_parsing);
 		}
 	}
 	else
 	{
 		if (is_layer_required)
 		{
-			snprintf(errors->message_buffer, errors->message_buffer_size,
+			snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
 				"Layer '%s' not found", layer_name);
-			add_error(transient_arena, errors, errors->message_buffer);
+			add_error(level_parsing);
 		}
 	}
 
@@ -519,6 +623,15 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 			goto end_of_read_map_from_tmx_file_function;
 		}
 
+		level_parsing_context level_parsing = {};
+		level_parsing.tileset_first_gid = tileset_first_gid;
+		level_parsing.entity_tileset_first_gid = entity_first_gid;
+		level_parsing.entity_tileset_last_gid = entity_first_gid + 35;
+		level_parsing.errors = &errors;
+		level_parsing.permanent_arena = permanent_arena;
+		level_parsing.transient_arena = transient_arena;
+		level_parsing.level = &level;
+
 		xml_node* map_node = find_tag_in_children(root, "map");
 		if (map_node)
 		{
@@ -529,14 +642,9 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 				level.width = parse_i32(width);
 				level.height = parse_i32(height);
 
-				level.map = parse_map_layer(permanent_arena, transient_arena, &errors,
-					map_node, level.width, level.height, tileset_first_gid, "map", true);
-
-				level.background = parse_map_layer(permanent_arena, transient_arena, &errors,
-					map_node, level.width, level.height, tileset_first_gid, "background", false);
-
-				level.foreground = parse_map_layer(permanent_arena, transient_arena, &errors,
-					map_node, level.width, level.height, tileset_first_gid, "foreground", false);
+				level.map = parse_map_layer(&level_parsing, map_node, "map", true);
+				level.background = parse_map_layer(&level_parsing, map_node, "background", true);
+				level.foreground = parse_map_layer(&level_parsing, map_node, "foreground", true);
 			}
 			else
 			{
@@ -558,19 +666,16 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 			xml_node_search_result* objects = find_all_nodes_with_tag(transient_arena, objectgroup_node, "object");
 			if (objects->found_nodes_count > 0)
 			{
-				level.entities_to_spawn_count = 0;
-				level.entities_to_spawn = NULL;
 				for (u32 xml_node_index = 0; xml_node_index < objects->found_nodes_count; xml_node_index++)
 				{
 					xml_node* node = *(objects->found_nodes + xml_node_index);
 					if (node)
 					{
-						parse_entity(permanent_arena, transient_arena, &level, &errors, node, entity_first_gid);
+						parse_entity(&level_parsing, node);
 					}
 				}
 			}
 
-			// tutaj błęd entities
 			if (level.starting_tile.x == -1 || level.starting_tile.y == -1)
 			{
 				add_error(transient_arena, &errors, "Starting position not set");
@@ -579,24 +684,6 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 		else
 		{
 			add_error(transient_arena, &errors, "The 'objectgroup' element is missing");
-		}
-
-		if (level.next_map.string_size > 0)
-		{
-			// kopiujemy do permanent arena na samym końcu, ponieważ lista nowych entities jest "dynamiczna"
-			level.next_map = copy_string(permanent_arena, level.next_map);
-		}
-
-		for (u32 entity_index = 0;
-			entity_index < level.entities_to_spawn_count;
-			entity_index++)
-		{
-			entity_to_spawn* entity_to_spawn = level.entities_to_spawn + entity_index;
-			if (entity_to_spawn->type == entity_type_enum::MESSAGE_DISPLAY)
-			{
-				// tak samo jak z nazwą następnego poziomu
-				entity_to_spawn->message = copy_string(permanent_arena, entity_to_spawn->message);
-			}
 		}
 	}
 	else

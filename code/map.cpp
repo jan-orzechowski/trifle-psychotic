@@ -21,6 +21,14 @@ tile_position get_tile_position(world_position world_pos)
 	return result;
 }
 
+tile_position get_tile_position_from_index(map* level, u32 tile_index)
+{
+	i32 x = (tile_index - 1) % level->width;
+	i32 y = (tile_index - 1) / level->width;
+	tile_position result = get_tile_position(x, y);
+	return result;
+}
+
 b32 operator ==(tile_position a, tile_position b)
 {
 	b32 result = (a.x == b.x && a.y == b.y);
@@ -217,9 +225,9 @@ b32 is_tile_colliding(map collision_ref, u32 tile_value)
 	}
 	else
 	{
-		u32 x_coord = (tile_value - 1) % collision_ref.width;
-		u32 y_coord = (tile_value - 1) / collision_ref.width;
-		u32 collision_tile_value = get_tile_value(collision_ref, x_coord, y_coord);
+		i32 x = (tile_value - 1) % collision_ref.width;
+		i32 y = (tile_value - 1) / collision_ref.width;
+		u32 collision_tile_value = get_tile_value(collision_ref, x, y);
 		result = (collision_tile_value == 2);
 	}
 

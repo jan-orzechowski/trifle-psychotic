@@ -6,6 +6,7 @@
 
 tile_position get_tile_position(i32 tile_x, i32 tile_y);
 tile_position get_tile_position(world_position world_pos);
+tile_position get_tile_position_from_index(map* level, u32 tile_index);
 b32 operator ==(tile_position a, tile_position b);
 b32 operator !=(tile_position a, tile_position b);
 chunk_position get_tile_chunk_position(tile_position tile_pos);

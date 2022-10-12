@@ -459,8 +459,6 @@ void initialize_current_map(game_state* game, level_state* level)
 {
 	assert(false == level->current_map_initialized);
 
-	//temporary_memory memory_for_initialization = begin_temporary_memory(game->transient_arena);
-
 	// add player
 	{
 		entity_type* player_type = get_entity_type_ptr(
@@ -482,11 +480,9 @@ void initialize_current_map(game_state* game, level_state* level)
 	level->gate_tints_dict.sprite_effects = push_array(game->arena, level->gate_tints_dict.sprite_effects_count, sprite_effect*);
 	level->gate_tints_dict.probing_jump = 7;
 
-	for (u32 entity_index = 0;
-		entity_index < level->current_map.entities_to_spawn_count;
-		entity_index++)
+	entity_to_spawn* new_entity = level->current_map.first_entity_to_spawn;
+	while(new_entity)
 	{
-		entity_to_spawn* new_entity = level->current_map.entities_to_spawn + entity_index;
 		switch (new_entity->type)
 		{
 			case entity_type_enum::GATE_BLUE:
@@ -526,6 +522,7 @@ void initialize_current_map(game_state* game, level_state* level)
 			{
 				add_moving_platform_entity(level, game->arena, new_entity);
 			}
+			break;
 			case entity_type_enum::UNKNOWN:
 			{
 				// ignorujemy
@@ -546,9 +543,9 @@ void initialize_current_map(game_state* game, level_state* level)
 			}
 			break;
 		}
-	}
 
-	//end_temporary_memory(memory_for_initialization);
+		new_entity = new_entity->next;
+	}
 
 	level->current_map_initialized = true;
 }
@@ -1130,7 +1127,7 @@ u32 get_moving_platform_type_index(entity_type_enum type)
 		case entity_type_enum::MOVING_PLATFORM_VERTICAL_RED:     result = 5; break;
 		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN: result = 6; break;
 		case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN:   result = 7; break;
-			invalid_default_case;
+		invalid_default_case;
 	}
 	return result;
 }
