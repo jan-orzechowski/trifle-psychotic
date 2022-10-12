@@ -34,7 +34,7 @@ union v3
     struct
     {
         v2 xy;
-        r32 z;
+        r32 _z; // ze względu na GCC nie można nazwać zmiennej tak samo jak w innym strukcie w unii
     };
     r32 e[3];
 };
@@ -51,7 +51,7 @@ union v4
     struct
     {
         v3 xyz;
-        r32 w;
+        r32 _w;  // ze względu na GCC nie można nazwać zmiennej tak samo jak w innym strukcie w unii
     };
     struct
     {

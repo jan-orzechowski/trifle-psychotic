@@ -4,6 +4,11 @@
 #include "rendering.h"
 #include "input.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#endif
+
 sdl_data GLOBAL_SDL_DATA;
 
 r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
@@ -126,7 +131,7 @@ sdl_data init_sdl()
 	sdl_data sdl_game = {};
 	b32 success = true;
 
-	int init = SDL_Init(SDL_INIT_EVERYTHING);
+	int init = SDL_Init(SDL_INIT_VIDEO); // SDL_INIT_EVERYTHING powoduje błąd w Emscripten
 	if (init == 0) // wg dokumentacji oznacza to sukces
 	{
 		if (false == SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"))
@@ -196,6 +201,19 @@ sdl_data init_sdl()
 	}
 }
 
+#ifdef __EMSCRIPTEN__
+EM_BOOL emscripten_main_game_loop(double time, void* passed_data)
+{
+	r32 target_hz = 30;
+	r32 target_elapsed_ms = 1000 / target_hz;
+	r32 elapsed_work_ms = 0;
+	r64 delta_time = 1 / target_hz;
+
+	main_game_loop((game_state*)passed_data, ((game_state*)passed_data)->static_data, delta_time);
+	return EM_TRUE;
+}
+#endif
+
 int main(int argc, char* args[])
 {
 	sdl_data sdl = init_sdl();
@@ -229,6 +247,7 @@ int main(int argc, char* args[])
 		game.level_name_buffer = (char*)push_size(&permanent_arena, MAX_LEVEL_NAME_LENGTH);
 
 		static_game_data* static_data = push_struct(&permanent_arena, static_game_data);
+		game.static_data = static_data;
 
 		load_static_game_data(static_data, &permanent_arena, &transient_arena);
 		game.input_buffer = initialize_input_buffer(&permanent_arena);
@@ -278,7 +297,12 @@ int main(int argc, char* args[])
 
 				write_to_input_buffer(&game.input_buffer, &new_input);
 
+#ifdef __EMSCRIPTEN__
+				// Receives a function to call and some user data to provide it.
+				emscripten_request_animation_frame_loop(emscripten_main_game_loop, (void*)&game);
+#else
 				main_game_loop(&game, static_data, delta_time);
+#endif
 
 				if (game.exit_game)
 				{

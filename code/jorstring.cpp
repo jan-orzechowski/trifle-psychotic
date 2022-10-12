@@ -237,7 +237,7 @@ b32 ends_with(string_ref str, const char* suffix)
 	return result;
 }
 
-inline b32 is_whitespace(char c)
+b32 is_whitespace(char c)
 {
 	b32 result = (c == ' ' || c == '\r' || c == '\t' || c == '\n');
 	return result;
@@ -385,7 +385,7 @@ i32 parse_i32(string_ref str)
 	if (false == is_empty_string(str) && is_all_digits(str))
 	{
 		i32 digits_count = str.string_size;
-		if (*(str.ptr + str.string_size) = '\0')
+		if (*(str.ptr + str.string_size) == '\0')
 		{
 			digits_count--;
 		}

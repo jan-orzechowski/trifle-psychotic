@@ -30,7 +30,7 @@ string_ref copy_c_string_to_memory_arena(memory_arena*, const char*, u32);
 string_ref copy_c_string_to_memory_arena(memory_arena*, const char*);
 string_ref copy_c_string_buffer_to_memory_arena(memory_arena*, const char*, u32);
 b32 ends_with(string_ref, const char*);
-inline b32 is_whitespace(char);
+b32 is_whitespace(char);
 b32 is_digit(char);
 b32 is_all_digits(string_ref);
 b32 check_if_string_is_whitespace(string_ref);
