@@ -202,34 +202,60 @@ sdl_data init_sdl()
 }
 
 #ifdef __EMSCRIPTEN__
-EM_BOOL emscripten_main_game_loop(double time, void* passed_data)
+void emscripten_main_game_loop(void* passed_data)
 {
 	r32 target_hz = 30;
 	r32 target_elapsed_ms = 1000 / target_hz;
 	r32 elapsed_work_ms = 0;
 	r64 delta_time = 1 / target_hz;
 
+	SDL_Event e = {};
+	game_input new_input = {};
+	while (SDL_PollEvent(&e) != 0)
+	{
+		if (e.type == SDL_MOUSEBUTTONDOWN)
+		{
+			new_input.fire.number_of_presses++;
+		}
+	}
+
+	const Uint8* state = SDL_GetKeyboardState(NULL);
+	if (state[SDL_SCANCODE_UP] || state[SDL_SCANCODE_W]) new_input.up.number_of_presses++;
+	if (state[SDL_SCANCODE_DOWN] || state[SDL_SCANCODE_S]) new_input.down.number_of_presses++;
+	if (state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A]) new_input.left.number_of_presses++;
+	if (state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D]) new_input.right.number_of_presses++;
+	if (state[SDL_SCANCODE_ESCAPE]) new_input.escape.number_of_presses++;
+
+	new_input.mouse_x = -1;
+	new_input.mouse_y = -1;
+	Uint32 mouse_buttons = SDL_GetMouseState(&new_input.mouse_x, &new_input.mouse_y);
+	if (mouse_buttons & SDL_BUTTON_LMASK)
+	{
+		new_input.is_left_mouse_key_held = true;
+	}
+
+	write_to_input_buffer(&(((game_state*)passed_data)->input_buffer), &new_input);
+
 	main_game_loop((game_state*)passed_data, ((game_state*)passed_data)->static_data, delta_time);
-	return EM_TRUE;
 }
 #endif
 
 int main(int argc, char* args[])
-{
+{	
 	sdl_data sdl = init_sdl();
 	if (sdl.initialized)
 	{
 		GLOBAL_SDL_DATA = sdl;
-
+		
 		bool run = true;
 
-		u32 memory_for_permanent_arena_size = megabytes_to_bytes(50);
+		u32 memory_for_permanent_arena_size = megabytes_to_bytes(20);
 		memory_arena permanent_arena = {};
 		void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);
 		initialize_memory_arena(&permanent_arena, memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
 
 		memory_arena transient_arena = {};
-		u32 memory_for_transient_arena_size = megabytes_to_bytes(50);
+		u32 memory_for_transient_arena_size = megabytes_to_bytes(30);
 		void* memory_for_transient_arena = SDL_malloc(memory_for_transient_arena_size);
 		initialize_memory_arena(&transient_arena, memory_for_transient_arena_size, (byte*)memory_for_transient_arena);
 
@@ -238,10 +264,10 @@ int main(int argc, char* args[])
 		game.arena = &permanent_arena;
 		game.transient_arena = &transient_arena;		
 
-		game.render.max_push_buffer_size = megabytes_to_bytes(20);
+		game.render.max_push_buffer_size = megabytes_to_bytes(10);
 		game.render.push_buffer_base = (u8*)push_size(&permanent_arena, game.render.max_push_buffer_size);
 
-		game.current_scene = scene::MAIN_MENU;
+		game.current_scene = scene::GAME;
 
 		game.level_state = push_struct(&permanent_arena, level_state);
 		game.level_name_buffer = (char*)push_size(&permanent_arena, MAX_LEVEL_NAME_LENGTH);
@@ -259,6 +285,11 @@ int main(int argc, char* args[])
 		r32 elapsed_work_ms = 0;
 		r64 delta_time = 1 / target_hz;
 
+#ifdef __EMSCRIPTEN__
+		emscripten_set_main_loop_arg(emscripten_main_game_loop, (void*)&game, 30, true);
+		printf("request animation frame\n");
+
+#else		
 		while (run)
 		{
 			frame_counter++;
@@ -297,12 +328,7 @@ int main(int argc, char* args[])
 
 				write_to_input_buffer(&game.input_buffer, &new_input);
 
-#ifdef __EMSCRIPTEN__
-				// Receives a function to call and some user data to provide it.
-				emscripten_request_animation_frame_loop(emscripten_main_game_loop, (void*)&game);
-#else
 				main_game_loop(&game, static_data, delta_time);
-#endif
 
 				if (game.exit_game)
 				{
@@ -331,6 +357,9 @@ int main(int argc, char* args[])
 			sdl.debug_elapsed_work_ms = elapsed_work_ms;
 			sdl.debug_frame_counter = frame_counter + 1;
 		}
+#endif
+
+		printf("wychodzimy");
 
 		if (game.game_level_memory.arena)
 		{
@@ -353,8 +382,8 @@ int main(int argc, char* args[])
 	//SDL_DestroyRenderer(sdl.renderer);
 	//SDL_DestroyWindow(sdl.window);
 	//
-	//IMG_Quit();
-	//SDL_Quit();
+	IMG_Quit();
+	SDL_Quit();
 
 	return 0;
 }

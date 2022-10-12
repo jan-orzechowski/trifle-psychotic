@@ -739,6 +739,8 @@ struct game_state
 	temporary_memory game_level_memory;	
 
 	render_group render;
+
+	static_game_data* static_data;
 };
 
 void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_time);
