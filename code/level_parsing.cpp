@@ -110,7 +110,6 @@ entity_type_enum get_entity_type_enum_from_gid(i32 gid, i32 entity_tileset_first
 		case 2:  result = entity_type_enum::PLAYER; break;
 		case 3:  result = entity_type_enum::NEXT_LEVEL_TRANSITION; break;
 		case 4:  result = entity_type_enum::MESSAGE_DISPLAY; break;
-		invalid_default_case;
 	}
 
 	return result;
@@ -386,15 +385,39 @@ void parse_backdrop_texture_property(backdrop_properties* backdrop, string_ref n
 {
 	backdrop->texture = textures::NONE;
 
-	if (compare_to_c_string(name, "backdrop"))
+	if (compare_to_c_string(name, "desert"))
 	{
-		backdrop->texture = textures::BACKDROP;
-		backdrop->size = get_v2(320, 320);
+		backdrop->texture = textures::BACKGROUND_DESERT;
+		backdrop->size = get_v2(320, 520);
 	}
-	else if (compare_to_c_string(name, "other_backdrop"))
+	else if (compare_to_c_string(name, "ice_desert"))
 	{
-		backdrop->texture = textures::BACKDROP;
-		backdrop->size = get_v2(320, 320);
+		backdrop->texture = textures::BACKGROUND_ICE_DESERT;
+		backdrop->size = get_v2(320, 520);
+	}
+	else if (compare_to_c_string(name, "clouds"))
+	{
+		backdrop->texture = textures::BACKGROUND_CLOUDS;
+		backdrop->size = get_v2(2048, 512);
+	}
+	else if (compare_to_c_string(name, "red_planet_desert"))
+	{
+		backdrop->texture = textures::BACKGROUND_RED_PLANET_DESERT;
+		backdrop->size = get_v2(410, 480);
+	}
+	else if (compare_to_c_string(name, "red_planet_sky"))
+	{
+		backdrop->texture = textures::BACKGROUND_RED_PLANET_SKY;
+		backdrop->size = get_v2(410, 480);
+	}
+	else if (compare_to_c_string(name, "planet_orbit"))
+	{
+		backdrop->texture = textures::BACKGROUND_PLANET_ORBIT;
+		backdrop->size = get_v2(384, 320);
+	}
+	else
+	{
+		debug_breakpoint;
 	}
 }
 
@@ -509,7 +532,7 @@ map_layer parse_map_layer(level_parsing_context* level_parsing,
 							{
 								parse_entity_from_tile(level_parsing, tile_index, gid);
 								// dodajemy puste pole w miejscu, gdzie zostało zdefiniowane entity
-								layer.tiles[tile_index] = 2;
+								layer.tiles[tile_index] = 1;
 							}
 							else
 							{

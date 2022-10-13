@@ -18,7 +18,12 @@ struct sdl_data
 	SDL_Texture* font_texture;
 	SDL_Texture* charset_texture;
 	SDL_Texture* explosion_texture;
-	SDL_Texture* backdrop_texture;
+	SDL_Texture* background_desert_texture;
+	SDL_Texture* background_ice_desert_texture;
+	SDL_Texture* background_clouds_texture;
+	SDL_Texture* background_red_planet_sky_texture;
+	SDL_Texture* background_red_planet_desert_texture;
+	SDL_Texture* background_planet_orbit_texture;
 };
 
 read_file_result read_file(std::string path);

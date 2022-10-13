@@ -164,7 +164,12 @@ sdl_data init_sdl()
 					load_image(sdl_game.renderer, &sdl_game.font_texture, "gfx/font1.png", &success);
 					load_image(sdl_game.renderer, &sdl_game.charset_texture, "gfx/charset.png", &success);
 					load_image(sdl_game.renderer, &sdl_game.explosion_texture, "gfx/explosions.png", &success);
-					load_image(sdl_game.renderer, &sdl_game.backdrop_texture, "gfx/backdrop.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.background_desert_texture, "gfx/background_desert.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.background_ice_desert_texture, "gfx/background_ice_desert.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.background_clouds_texture, "gfx/background_clouds.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.background_red_planet_sky_texture, "gfx/background_red_planet_sky.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.background_red_planet_desert_texture, "gfx/background_red_planet_desert.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.background_planet_orbit_texture, "gfx/background_planet_orbit.png", &success);
 				}
 				else
 				{
@@ -415,7 +420,12 @@ internal SDL_Texture* get_texture(sdl_data sdl, textures type)
 		case textures::FONT: { result = sdl.font_texture; }; break;
 		case textures::CHARSET: { result = sdl.charset_texture; }; break;
 		case textures::EXPLOSION: { result = sdl.explosion_texture; }; break;
-		case textures::BACKDROP: { result = sdl.backdrop_texture; }; break;
+		case textures::BACKGROUND_DESERT: { result = sdl.background_desert_texture; }; break;
+		case textures::BACKGROUND_ICE_DESERT: { result = sdl.background_ice_desert_texture; }; break;
+		case textures::BACKGROUND_CLOUDS: { result = sdl.background_clouds_texture; }; break;
+		case textures::BACKGROUND_RED_PLANET_SKY: { result = sdl.background_red_planet_sky_texture; }; break;
+		case textures::BACKGROUND_RED_PLANET_DESERT: { result = sdl.background_red_planet_desert_texture; }; break;
+		case textures::BACKGROUND_PLANET_ORBIT: { result = sdl.background_planet_orbit_texture; }; break;
 		invalid_default_case;
 	}
 	return result;

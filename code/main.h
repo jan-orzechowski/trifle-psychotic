@@ -34,7 +34,12 @@ enum class textures
 	FONT,
 	CHARSET,
 	EXPLOSION,
-	BACKDROP,
+	BACKGROUND_DESERT,
+	BACKGROUND_ICE_DESERT,
+	BACKGROUND_CLOUDS,
+	BACKGROUND_RED_PLANET_SKY,
+	BACKGROUND_RED_PLANET_DESERT,
+	BACKGROUND_PLANET_ORBIT
 };
 
 struct tile_position
@@ -181,8 +186,8 @@ struct backdrop_properties
 	// jeśli 0, backdrop jest nieruchomy, jeśli 1, porusza się tak jak gracz
 	textures texture;
 	v2 size;
-	u32 x_slowdown;
-	u32 y_slowdown;
+	i32 x_slowdown;
+	i32 y_slowdown;
 };
 
 struct map

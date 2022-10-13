@@ -482,12 +482,12 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	
 		if (level->current_map.second_backdrop.texture != textures::NONE)
 		{
-			render_scrolling_nonrepeated_backdrop(&game->render, level, camera_position, level->current_map.second_backdrop);
+			render_scrolling_repeated_backdrop(&game->render, level, camera_position, level->current_map.second_backdrop);
 		}
 
 		if (level->current_map.first_backdrop.texture != textures::NONE)
 		{
-			render_scrolling_nonrepeated_backdrop(&game->render, level, camera_position, level->current_map.first_backdrop);
+			render_scrolling_repeated_backdrop(&game->render, level, camera_position, level->current_map.first_backdrop);
 		}
 
 		render_map_layer(&game->render, level, level->current_map.background, camera_tile_pos, camera_offset_in_tile);
