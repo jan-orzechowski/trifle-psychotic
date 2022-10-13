@@ -473,6 +473,12 @@ void render_group_to_output(render_group* render_group)
 				SDL_Rect dst = get_sdl_rect(entry->destination_rect);
 				SDL_RendererFlip flip = (entry->flip_horizontally ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
 				v4 sdl_tint = entry->tint_color * 255;
+	
+				// naprawienie dziwnego zachowania SDL - odwrócone bitmapy zmieniały pozycję na ekranie
+				if (flip == SDL_FLIP_HORIZONTAL)
+				{
+					dst.x -= CHARSET_WIDTH / 2;
+				}
 
 				if (entry->render_in_additive_mode)
 				{					
