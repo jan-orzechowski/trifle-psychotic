@@ -238,6 +238,16 @@ void find_walking_path_for_enemy(level_state* level, entity* enemy)
 void find_flying_path_for_enemy(level_state* level, entity* enemy, b32 vertical)
 {
 	tile_range new_path = find_flying_path(level, get_tile_position(enemy->position), vertical);
+	
+	// dodajemy ograniczenie, by zatrzymywać się dwa pola nad ziemią
+	if (new_path.start.x != 0 && new_path.start.y != 0)
+	{
+		if (new_path.end.y - 2 > new_path.start.y)
+		{
+			new_path.end.y -= 2;
+		}
+	}
+
 	enemy->path = new_path;
 	enemy->has_path = true;
 }
