@@ -93,8 +93,8 @@ rect get_tile_bitmap_rect(u32 tile_id)
 	else
 	{
 		// id liczą się od 1, nie od zera
-		u32 column = (tile_id - 1) % TILESET_WIDTH;
-		u32 row = (tile_id - 1) / TILESET_WIDTH;
+		u32 column = (tile_id - 1) % TILESET_WIDTH_IN_TILES;
+		u32 row = (tile_id - 1) / TILESET_WIDTH_IN_TILES;
 
 		u32 x = column * TILE_SIDE_IN_PIXELS;
 		u32 y = row * TILE_SIDE_IN_PIXELS;

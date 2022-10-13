@@ -134,11 +134,6 @@ sdl_data init_sdl()
 	int init = SDL_Init(SDL_INIT_VIDEO); // SDL_INIT_EVERYTHING powoduje błąd w Emscripten
 	if (init == 0) // wg dokumentacji oznacza to sukces
 	{
-		if (false == SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"))
-		{
-			print_sdl_error();
-		}
-
 		if (false == SDL_ShowCursor(SDL_DISABLE))
 		{
 			print_sdl_error();
@@ -155,6 +150,14 @@ sdl_data init_sdl()
 			if (sdl_game.renderer)
 			{
 				SDL_RenderSetScale(sdl_game.renderer, SCALING_FACTOR, SCALING_FACTOR);
+
+				SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, 0);
+				SDL_RenderSetLogicalSize(sdl_game.renderer, 
+					SCREEN_WIDTH / SCALING_FACTOR, 
+					SCREEN_HEIGHT / SCALING_FACTOR);
+
+				SDL_SetWindowFullscreen(sdl_game.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+
 				SDL_SetRenderDrawColor(sdl_game.renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
 				int img_flags = IMG_INIT_PNG;
