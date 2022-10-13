@@ -280,6 +280,15 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			}
 		}
 
+		if (get_tile_position(player->position).y > level->current_map.height)
+		{
+			// przegrywamy - spadliśmy z mapy
+			level->active_scene_change.change_scene = true;
+			level->active_scene_change.new_scene = scene::DEATH;
+			level->active_scene_change.fade_out_speed = 0.5f;
+			level->stop_player_movement = true;
+		}
+
 		if (level->player_invincibility_cooldown > 0.0f)
 		{
 			level->player_invincibility_cooldown -= delta_time;

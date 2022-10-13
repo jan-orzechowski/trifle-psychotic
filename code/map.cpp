@@ -221,7 +221,8 @@ b32 is_tile_colliding(map collision_ref, u32 tile_value)
 	b32 result = false;
 	if (tile_value == 0)
 	{
-		result = true;
+		// pozwalamy na wypadnięcie poza mapę
+		result = false;
 	}
 	else
 	{
