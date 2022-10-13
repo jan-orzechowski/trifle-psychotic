@@ -789,8 +789,35 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
 				&& are_entity_flags_set(entity_to_move, entity_flags::MOVING_PLATFORM_VERTICAL)
 				&& movement_delta.y < 0.0f)
 			{
-				entity_to_move->position = add_to_position(entity_to_move->position, movement_delta);
-				player->position = add_to_position(player->position, movement_delta - get_v2(0.0f, 0.01f));
+				// przesuwamy gracza wyżej
+				world_position player_target_position = add_to_position(player->position,
+					movement_delta - get_v2(0.0f, 0.01f));				
+
+				collision_result collision = move(level, player, player_target_position);
+				if (collision.collision_data.collided_wall == direction::NONE)
+				{
+					// jeśli gracz się nie zablokował, możemy jechać
+					entity_to_move->position = add_to_position(entity_to_move->position, movement_delta);
+				}				
+			}
+			// jeśli platforma jedzie do dołu i gracz jest pod nią
+			else if (new_collision.collided_wall == direction::S
+				&& are_entity_flags_set(entity_to_move, entity_flags::MOVING_PLATFORM_VERTICAL)
+				&& movement_delta.y > 0.0f)
+			{
+				// popychamy gracza do dołu
+				world_position player_target_position = add_to_position(player->position,
+					movement_delta + get_v2(0.0f, 0.01f));
+
+				collision_result collision = move(level, player, player_target_position);
+				if (collision.collision_data.collided_wall == direction::NONE)
+				{
+					entity_to_move->position = add_to_position(entity_to_move->position, movement_delta);
+				}
+				else
+				{
+					damage_player(level, 1.0f, true);
+				}
 			}
 			else if (new_collision.collided_wall == direction::NONE)
 			{
