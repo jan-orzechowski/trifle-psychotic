@@ -9,6 +9,8 @@
 #include <emscripten/html5.h>
 #endif
 
+#define TARGET_HZ 30.0f
+
 sdl_data GLOBAL_SDL_DATA;
 
 r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
@@ -152,11 +154,14 @@ sdl_data init_sdl()
 				SDL_RenderSetScale(sdl_game.renderer, SCALING_FACTOR, SCALING_FACTOR);
 
 				SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, 0);
-				SDL_RenderSetLogicalSize(sdl_game.renderer, 
-					SCREEN_WIDTH / SCALING_FACTOR, 
+				SDL_RenderSetLogicalSize(sdl_game.renderer,
+					SCREEN_WIDTH / SCALING_FACTOR,
 					SCREEN_HEIGHT / SCALING_FACTOR);
 
+#ifndef __EMSCRIPTEN__
 				SDL_SetWindowFullscreen(sdl_game.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+				sdl_game.fullscreen = true;
+#endif
 
 				SDL_SetRenderDrawColor(sdl_game.renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
@@ -209,18 +214,18 @@ sdl_data init_sdl()
 	}
 }
 
-#ifdef __EMSCRIPTEN__
-void emscripten_main_game_loop(void* passed_data)
+game_input get_input_from_sdl_events()
 {
-	r32 target_hz = 30;
-	r32 target_elapsed_ms = 1000 / target_hz;
-	r32 elapsed_work_ms = 0;
-	r64 delta_time = 1 / target_hz;
+	game_input new_input = {};
 
 	SDL_Event e = {};
-	game_input new_input = {};
 	while (SDL_PollEvent(&e) != 0)
 	{
+		if (e.type == SDL_QUIT)
+		{
+			new_input.quit = true;
+		}
+
 		if (e.type == SDL_MOUSEBUTTONDOWN)
 		{
 			new_input.fire.number_of_presses++;
@@ -228,11 +233,11 @@ void emscripten_main_game_loop(void* passed_data)
 	}
 
 	const Uint8* state = SDL_GetKeyboardState(NULL);
-	if (state[SDL_SCANCODE_UP] || state[SDL_SCANCODE_W]) new_input.up.number_of_presses++;
-	if (state[SDL_SCANCODE_DOWN] || state[SDL_SCANCODE_S]) new_input.down.number_of_presses++;
-	if (state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A]) new_input.left.number_of_presses++;
+	if (state[SDL_SCANCODE_UP]    || state[SDL_SCANCODE_W]) new_input.up.number_of_presses++;
+	if (state[SDL_SCANCODE_DOWN]  || state[SDL_SCANCODE_S]) new_input.down.number_of_presses++;
+	if (state[SDL_SCANCODE_LEFT]  || state[SDL_SCANCODE_A]) new_input.left.number_of_presses++;
 	if (state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D]) new_input.right.number_of_presses++;
-	if (state[SDL_SCANCODE_ESCAPE]) new_input.escape.number_of_presses++;
+	if (state[SDL_SCANCODE_ESCAPE])                         new_input.escape.number_of_presses++;
 
 	new_input.mouse_x = -1;
 	new_input.mouse_y = -1;
@@ -242,19 +247,27 @@ void emscripten_main_game_loop(void* passed_data)
 		new_input.is_left_mouse_key_held = true;
 	}
 
+	return new_input;
+}
+
+#ifdef __EMSCRIPTEN__
+void emscripten_main_game_loop(void* passed_data)
+{
+	game_input new_input = get_input_from_sdl_events();
 	write_to_input_buffer(&(((game_state*)passed_data)->input_buffer), &new_input);
 
+	r64 delta_time = 1 / TARGET_HZ;
 	main_game_loop((game_state*)passed_data, ((game_state*)passed_data)->static_data, delta_time);
 }
 #endif
 
 int main(int argc, char* args[])
-{	
+{
 	sdl_data sdl = init_sdl();
 	if (sdl.initialized)
 	{
 		GLOBAL_SDL_DATA = sdl;
-		
+
 		bool run = true;
 
 		u32 memory_for_permanent_arena_size = megabytes_to_bytes(20);
@@ -270,7 +283,7 @@ int main(int argc, char* args[])
 		game_state game = {};
 
 		game.arena = &permanent_arena;
-		game.transient_arena = &transient_arena;		
+		game.transient_arena = &transient_arena;
 
 		game.render.max_push_buffer_size = megabytes_to_bytes(10);
 		game.render.push_buffer_base = (u8*)push_size(&permanent_arena, game.render.max_push_buffer_size);
@@ -286,52 +299,27 @@ int main(int argc, char* args[])
 		load_static_game_data(static_data, &permanent_arena, &transient_arena);
 		game.input_buffer = initialize_input_buffer(&permanent_arena);
 
-		u32 frame_counter = 0;
-
-		r32 target_hz = 30;
-		r32 target_elapsed_ms = 1000 / target_hz;
-		r32 elapsed_work_ms = 0;
-		r64 delta_time = 1 / target_hz;
-
 #ifdef __EMSCRIPTEN__
-		emscripten_set_main_loop_arg(emscripten_main_game_loop, (void*)&game, 30, true);
-		printf("request animation frame\n");
+		game.show_exit_game_option = false;
 
+		emscripten_set_main_loop_arg(emscripten_main_game_loop, (void*)&game, TARGET_HZ, true);
 #else		
+		game.show_exit_game_option = true;
+
+		r32 target_elapsed_ms = 1000 / TARGET_HZ;
+		r32 elapsed_work_ms = 0;
+		r64 delta_time = 1 / TARGET_HZ;
+
 		while (run)
 		{
-			frame_counter++;
-
 			u32 start_work_counter = SDL_GetPerformanceCounter();
+
 			{
-				SDL_Event e = {};
-				game_input new_input = {};
-				while (SDL_PollEvent(&e) != 0)
+				game_input new_input = get_input_from_sdl_events();
+
+				if (new_input.quit)
 				{
-					if (e.type == SDL_QUIT)
-					{
-						run = false;
-					}
-
-					if (e.type == SDL_MOUSEBUTTONDOWN)
-					{
-						new_input.fire.number_of_presses++;
-					}
-				}
-
-				const Uint8* state = SDL_GetKeyboardState(NULL);
-				if (state[SDL_SCANCODE_UP] || state[SDL_SCANCODE_W]) new_input.up.number_of_presses++;
-				if (state[SDL_SCANCODE_DOWN] || state[SDL_SCANCODE_S]) new_input.down.number_of_presses++;
-				if (state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A]) new_input.left.number_of_presses++;
-				if (state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D]) new_input.right.number_of_presses++;
-				if (state[SDL_SCANCODE_ESCAPE]) new_input.escape.number_of_presses++;
-
-				new_input.mouse_x = -1;
-				new_input.mouse_y = -1;
-				Uint32 mouse_buttons = SDL_GetMouseState(&new_input.mouse_x, &new_input.mouse_y);
-				if (mouse_buttons & SDL_BUTTON_LMASK)
-				{
-					new_input.is_left_mouse_key_held = true;
+					run = false;
 				}
 
 				write_to_input_buffer(&game.input_buffer, &new_input);
@@ -361,13 +349,8 @@ int main(int argc, char* args[])
 					total_elapsed_ms = get_elapsed_miliseconds(start_work_counter, SDL_GetPerformanceCounter());
 				}
 			}
-
-			sdl.debug_elapsed_work_ms = elapsed_work_ms;
-			sdl.debug_frame_counter = frame_counter + 1;
 		}
 #endif
-
-		printf("wychodzimy");
 
 		if (game.game_level_memory.arena)
 		{
@@ -419,7 +402,7 @@ internal SDL_Texture* get_texture(sdl_data sdl, textures type)
 	switch (type)
 	{
 		case textures::NONE: { result = NULL; }; break;
-		case textures::TILESET: { result = sdl.tileset_texture;  }; break;
+		case textures::TILESET: { result = sdl.tileset_texture; }; break;
 		case textures::FONT: { result = sdl.font_texture; }; break;
 		case textures::CHARSET: { result = sdl.charset_texture; }; break;
 		case textures::EXPLOSION: { result = sdl.explosion_texture; }; break;
@@ -473,20 +456,20 @@ void render_group_to_output(render_group* render_group)
 				SDL_Rect dst = get_sdl_rect(entry->destination_rect);
 				SDL_RendererFlip flip = (entry->flip_horizontally ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
 				v4 sdl_tint = entry->tint_color * 255;
-	
-				// naprawienie dziwnego zachowania SDL - odwrócone bitmapy zmieniały pozycję na ekranie
-				if (flip == SDL_FLIP_HORIZONTAL)
+
+				// naprawienie dziwnego zachowania SDL w fullscreenie - odwrócone bitmapy zmieniały pozycję na ekranie
+				if (GLOBAL_SDL_DATA.fullscreen && flip == SDL_FLIP_HORIZONTAL)
 				{
 					dst.x -= CHARSET_WIDTH / 2;
 				}
 
 				if (entry->render_in_additive_mode)
-				{					
+				{
 					SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_ADD);
 					SDL_SetTextureColorMod(texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
-			
+
 					SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, flip);
-		
+
 					SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
 					SDL_SetTextureColorMod(texture, 255, 255, 255);
 				}
@@ -512,7 +495,7 @@ void render_group_to_output(render_group* render_group)
 			case render_group_entry_type::DEBUG_RECTANGLE:
 			{
 				render_group_entry_debug_rectangle* entry = (render_group_entry_debug_rectangle*)data;
-			
+
 				if (false == is_zero(entry->color))
 				{
 					v4 sdl_tint = entry->color * 255;
@@ -530,7 +513,7 @@ void render_group_to_output(render_group* render_group)
 				}
 
 				if (false == is_zero(entry->color))
-				{				
+				{
 					SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, 255, 255, 255, 0);
 				}
 

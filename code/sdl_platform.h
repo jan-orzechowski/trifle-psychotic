@@ -6,10 +6,8 @@
 
 struct sdl_data
 {
-	bool initialized;
-
-	u32 debug_frame_counter;
-	r32 debug_elapsed_work_ms;
+	b32 initialized;
+	b32 fullscreen;
 
 	SDL_Window* window;
 	SDL_Renderer* renderer;
