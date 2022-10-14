@@ -190,6 +190,8 @@ struct backdrop_properties
 	v2 size;
 	i32 x_slowdown;
 	i32 y_slowdown;
+	r32 x_speed;
+	r32 y_speed;
 };
 
 struct map
@@ -201,6 +203,8 @@ struct map
 	map_layer foreground;
 	backdrop_properties first_backdrop;
 	backdrop_properties second_backdrop;
+	v2 first_backdrop_offset;
+	v2 second_backdrop_offset;
 
 	//linked lista entities to spawn jest usuwana po zakończeniu inicjalizacji
 	entity_to_spawn* first_entity_to_spawn;

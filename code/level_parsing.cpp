@@ -388,17 +388,17 @@ void parse_backdrop_texture_property(backdrop_properties* backdrop, string_ref n
 	if (compare_to_c_string(name, "desert"))
 	{
 		backdrop->texture = textures::BACKGROUND_DESERT;
-		backdrop->size = get_v2(320, 520);
+		backdrop->size = get_v2(320, 420);
 	}
 	else if (compare_to_c_string(name, "ice_desert"))
 	{
 		backdrop->texture = textures::BACKGROUND_ICE_DESERT;
-		backdrop->size = get_v2(320, 520);
+		backdrop->size = get_v2(320, 420);
 	}
 	else if (compare_to_c_string(name, "clouds"))
 	{
 		backdrop->texture = textures::BACKGROUND_CLOUDS;
-		backdrop->size = get_v2(2048, 512);
+		backdrop->size = get_v2(2048, 400);
 	}
 	else if (compare_to_c_string(name, "red_planet_desert"))
 	{
@@ -408,7 +408,7 @@ void parse_backdrop_texture_property(backdrop_properties* backdrop, string_ref n
 	else if (compare_to_c_string(name, "red_planet_sky"))
 	{
 		backdrop->texture = textures::BACKGROUND_RED_PLANET_SKY;
-		backdrop->size = get_v2(410, 480);
+		backdrop->size = get_v2(410, 600);
 	}
 	else if (compare_to_c_string(name, "planet_orbit"))
 	{
@@ -456,6 +456,28 @@ void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_
 				if (compare_to_c_string(type, "int"))
 				{
 					level->first_backdrop.y_slowdown = parse_i32(value);
+				}
+				else
+				{
+					// bład
+				}
+			}
+			else if (compare_to_c_string(name, "backdrop_speed_x"))
+			{
+				if (compare_to_c_string(type, "float"))
+				{
+					level->first_backdrop.x_speed = parse_r32(value, '.');
+				}
+				else
+				{
+					// bład
+				}
+			}
+			else if (compare_to_c_string(name, "backdrop_speed_y"))
+			{
+				if (compare_to_c_string(type, "float"))
+				{
+					level->first_backdrop.y_speed = parse_r32(value, '.');
 				}
 				else
 				{
