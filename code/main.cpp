@@ -651,7 +651,9 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	}
 
 	game->main_menu.option_change_timer -= delta_time;
-	game->main_menu.option_max_index = game->checkpoint.used ? 3 : 2;
+	game->main_menu.option_max_index = 1; 
+	if (game->show_exit_game_option) game->main_menu.option_max_index++;
+	if (game->checkpoint.used) game->main_menu.option_max_index++;
 
 	if (game->main_menu.option_index < 0)
 	{
@@ -699,15 +701,21 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 				}
 				else
 				{
-					change_to_other_scene.change_scene = true;
-					change_to_other_scene.new_scene = scene::EXIT;
+					if (game->show_exit_game_option)
+					{
+						change_to_other_scene.change_scene = true;
+						change_to_other_scene.new_scene = scene::EXIT;
+					}
 				}
 			}
 			break;
 			case 3:
 			{
-				change_to_other_scene.change_scene = true;
-				change_to_other_scene.new_scene = scene::EXIT;
+				if (game->show_exit_game_option)
+				{
+					change_to_other_scene.change_scene = true;
+					change_to_other_scene.new_scene = scene::EXIT;
+				}
 			}
 			break;
 			invalid_default_case;
@@ -734,8 +742,11 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 		options_x, option_y, static_data->menu_credits_str);
 	option_y += option_y_spacing;
 
-	render_menu_option(static_data->menu_font, game, 
-		options_x, option_y, static_data->menu_exit_str);
+	if (game->show_exit_game_option)
+	{
+		render_menu_option(static_data->menu_font, game,
+			options_x, option_y, static_data->menu_exit_str);
+	}
 
 	u32 indicator_y = first_option_y + (game->main_menu.option_index * option_y_spacing) - 4;
 	u32 indicator_x = options_x - 20;

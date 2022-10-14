@@ -77,6 +77,7 @@ struct game_input
 	key_press right;
 	key_press fire;
 	key_press escape;
+	b32 quit;
 };
 
 enum class direction
@@ -731,7 +732,8 @@ struct game_state
 {
 	b32 initialized;
 	scene current_scene;
-	
+
+	b32 show_exit_game_option;
 	b32 exit_game;
 	b32 level_initialized;
 	level_state* level_state;
