@@ -364,15 +364,21 @@ int main(int argc, char* args[])
 	{
 		invalid_code_path;
 	}
+
+	SDL_DestroyTexture(sdl.background_clouds_texture);
+	SDL_DestroyTexture(sdl.background_desert_texture);
+	SDL_DestroyTexture(sdl.background_ice_desert_texture);
+	SDL_DestroyTexture(sdl.background_planet_orbit_texture);
+	SDL_DestroyTexture(sdl.background_red_planet_desert_texture);
+	SDL_DestroyTexture(sdl.background_red_planet_sky_texture);
+	SDL_DestroyTexture(sdl.tileset_texture);
+	SDL_DestroyTexture(sdl.charset_texture);
+	SDL_DestroyTexture(sdl.font_texture);
+	SDL_DestroyTexture(sdl.explosion_texture);
 	
-	//SDL_DestroyTexture(sdl.charset_texture);
-	//SDL_DestroyTexture(sdl.tileset_texture);
-	//SDL_DestroyTexture(sdl.font_texture);
-	//SDL_DestroyTexture(sdl.explosion_texture);
-	//
-	//SDL_DestroyRenderer(sdl.renderer);
-	//SDL_DestroyWindow(sdl.window);
-	//
+	SDL_DestroyRenderer(sdl.renderer);
+	SDL_DestroyWindow(sdl.window);
+
 	IMG_Quit();
 	SDL_Quit();
 
