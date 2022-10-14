@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <style>
+            #body { margin: 0px !important; }
+            /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+            #canvas { border: 0px none !important; background-color: black; }
+        </style>
+    </head>
+    <body id="body">
+        <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+        <script type='text/javascript'>
+            var Module = {         
+                canvas: (function() {
+                    var canvas = document.getElementById('canvas');
+                    canvas.addEventListener("webglcontextlost", function(e) { 
+                        alert('WebGL context lost. You will need to reload the page.');
+                        e.preventDefault();
+                        }, false);
+                    return canvas;
+                })() 
+            };
+
+            let scrolling_key_codes = [ 32, 37, 38, 39, 40 ];
+            let body, canvas, last_target;
+            window.onload = function() {
+                body = document.querySelector('body'),
+                canvas = document.getElementById('canvas');
+            
+                body.addEventListener('keydown', function (event) {
+                    if (last_target != canvas) {
+                        return false;
+                    }
+                    if (scrolling_key_codes.includes(event.keyCode)) {
+                        event.preventDefault();
+                    }
+                }, false);
+
+                body.addEventListener('click', function (event) {
+                    last_target = event.target;
+                    window.focus();
+                }, false);
+
+                canvas.addEventListener('mousedown', function (event) {
+                    window.focus();
+                    event.preventDefault();
+                    event.stopPropagation();
+                }, false);            
+            };
+        </script>
+        {{{ SCRIPT }}}
+    </body>
+</html>
