@@ -329,7 +329,7 @@ string_ref omit_trailing_whitespace(string_ref str)
 	if (false == is_empty_string(str))
 	{
 		char* new_end = 0;
-		for (u32 char_index = str.string_size - 1;
+		for (i32 char_index = str.string_size - 1;
 			char_index >= 0;
 			char_index--)
 		{

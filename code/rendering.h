@@ -65,6 +65,7 @@ rect get_tile_bitmap_rect(u32 tile_id);
 rect get_screen_rect(v2 position_relative_to_camera, v2 rect_size);
 rect get_tile_screen_rect(v2 position_relative_to_camera);
 
-void debug_render_tile(render_group* render, tile_position tile_pos, v4 color, world_position camera_pos);
+
+void render_map_layer(render_group* render, level_state* level, map_layer layer, tile_position camera_tile_pos, v2 camera_offset_in_tile);
 void render_entity_sprite(render_group* render, world_position camera_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite);

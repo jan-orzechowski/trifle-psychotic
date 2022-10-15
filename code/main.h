@@ -57,7 +57,7 @@ struct chunk_position
 
 struct read_file_result
 {
-	void* contents;
+	char* contents;
 	int size;
 };
 

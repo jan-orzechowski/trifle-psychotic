@@ -131,11 +131,39 @@ rect get_tile_screen_rect(v2 position_relative_to_camera)
 	return result;
 }
 
-void debug_render_tile(render_group* render, tile_position tile_pos, v4 color, world_position camera_pos)
+void render_map_layer(render_group* render, level_state* level, map_layer layer, tile_position camera_tile_pos, v2 camera_offset_in_tile)
 {
-	v2 position = get_position_difference(tile_pos, camera_pos);
-	rect screen_rect = get_tile_screen_rect(position);
-	render_rectangle(render, screen_rect, color, false);
+	if (layer.tiles_count > 0)
+	{
+		i32 screen_half_width = ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
+		i32 screen_half_height = ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
+
+		for (i32 y_coord_relative = -screen_half_height;
+			y_coord_relative < screen_half_height;
+			y_coord_relative++)
+		{
+			i32 y_coord_on_screen = y_coord_relative;
+			i32 y_coord_in_world = camera_tile_pos.y + y_coord_relative;
+
+			for (i32 x_coord_relative = -screen_half_width;
+				x_coord_relative < screen_half_width;
+				x_coord_relative++)
+			{
+				i32 x_coord_on_screen = x_coord_relative;
+				i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
+
+				u32 tile_value = get_tile_value(level->current_map, layer, x_coord_in_world, y_coord_in_world);
+				if (tile_value != 0 && tile_value != 1) // przezroczyste pola
+				{
+					rect tile_bitmap = get_tile_bitmap_rect(tile_value);
+
+					v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - camera_offset_in_tile;
+					rect screen_rect = get_tile_screen_rect(position);
+					render_bitmap(render, textures::TILESET, tile_bitmap, screen_rect);
+				}
+			}
+		}
+	}
 }
 
 void render_entity_sprite(render_group* render, world_position camera_position, world_position entity_position, direction entity_direction,

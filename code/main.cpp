@@ -48,40 +48,6 @@ void restore_checkpoint(game_state* game)
 	}
 }
 
-void render_map_layer(render_group* render, level_state* level, map_layer layer, tile_position camera_tile_pos, v2 camera_offset_in_tile)
-{	
-	if (layer.tiles_count > 0)
-	{
-		i32 screen_half_width = ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
-		i32 screen_half_height = ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
-		
-		for (i32 y_coord_relative = -screen_half_height;
-			y_coord_relative < screen_half_height;
-			y_coord_relative++)
-		{
-			i32 y_coord_on_screen = y_coord_relative;
-			i32 y_coord_in_world = camera_tile_pos.y + y_coord_relative;
-
-			for (i32 x_coord_relative = -screen_half_width;
-				x_coord_relative < screen_half_width;
-				x_coord_relative++)
-			{
-				i32 x_coord_on_screen = x_coord_relative;
-				i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
-
-				u32 tile_value = get_tile_value(level->current_map, layer, x_coord_in_world, y_coord_in_world);
-				if (tile_value != 0 && tile_value != 1) // przezroczyste pola
-				{
-					rect tile_bitmap = get_tile_bitmap_rect(tile_value);
-
-					v2 position = get_v2(x_coord_on_screen, y_coord_on_screen) - camera_offset_in_tile;
-					rect screen_rect = get_tile_screen_rect(position);
-					render_bitmap(render, textures::TILESET, tile_bitmap, screen_rect);
-				}
-			}
-		}
-	}
-}
 scene_change game_update_and_render(game_state* game, level_state* level, r32 delta_time)
 {	
 	entity* player = get_player(level);
@@ -784,10 +750,8 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 				else
 				{
 					game->map_errors = {};
-
 					game->level_state->current_map = parsing_result.parsed_map;
 					initialize_current_map(game, game->level_state);
-
 					game->level_initialized = true;
 						
 					if (scene_change.restore_checkpoint && game->checkpoint.used)

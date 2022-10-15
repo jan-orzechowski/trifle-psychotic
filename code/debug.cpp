@@ -9,6 +9,13 @@
 #include "ui.h"
 #include "player.h"
 
+void debug_render_tile(render_group* render, tile_position tile_pos, v4 color, world_position camera_pos)
+{
+	v2 position = get_position_difference(tile_pos, camera_pos);
+	rect screen_rect = get_tile_screen_rect(position);
+	render_rectangle(render, screen_rect, color, false);
+}
+
 void debug_render_player_information(game_state* game, level_state* level)
 {
 	entity* player = get_player(level);
