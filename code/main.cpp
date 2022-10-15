@@ -196,10 +196,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		}
 	}
 	
-	update_backdrops_movement(&level->current_map.first_backdrop, &level->current_map.first_backdrop_offset, 
-		delta_time, player->velocity);
-	update_backdrops_movement(&level->current_map.second_backdrop, &level->current_map.second_backdrop_offset,
-		delta_time, player->velocity);
+	update_backdrops_movement(&level->current_map.first_backdrop, &level->current_map.first_backdrop_offset, player, delta_time);
+	update_backdrops_movement(&level->current_map.second_backdrop, &level->current_map.second_backdrop_offset, player, delta_time);
 
 	if (false == level->show_message)
 	{

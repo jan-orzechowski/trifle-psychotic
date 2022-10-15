@@ -1,4 +1,4 @@
-#include "main.h"
+﻿#include "main.h"
 #include "rendering.h"
 #include "map.h"
 
@@ -77,6 +77,15 @@ void render_scrolling_repeated_backdrop(render_group* render, level_state* level
 
 	i32 starting_y = -(backdrop_offset.y * TILE_SIDE_IN_PIXELS);
 	i32 starting_x = -(backdrop_offset.x * TILE_SIDE_IN_PIXELS);
+	if (starting_x > 0)
+	{
+		starting_x -= backdrop.size.x;
+	}
+	if (starting_y > 0)
+	{
+		starting_y -= backdrop.size.y;
+	}
+
 	for (i32 y = starting_y; y < SCREEN_HEIGHT; y += backdrop.size.y)
 	{
 		for (i32 x = starting_x; x < SCREEN_WIDTH; x += backdrop.size.x)
@@ -88,12 +97,23 @@ void render_scrolling_repeated_backdrop(render_group* render, level_state* level
 	}
 }
 
-void update_backdrops_movement(backdrop_properties* backdrop, v2* backdrop_offset, r32 delta_time, v2 player_velocity)
+void update_backdrops_movement(backdrop_properties* backdrop, v2* backdrop_offset, entity* player, r32 delta_time)
 {
 	if (backdrop->texture != textures::NONE)
 	{
 		backdrop_offset->x += (backdrop->x_speed * delta_time);
 		backdrop_offset->y += (backdrop->y_speed * delta_time);
+
+		// w przypadku ruchu gracza w przeciwnym kierunku dodajemy dodatkowe przesunięcie, żeby ruchy nie zniwelowały się
+		// i nie powstało wrażenie, że tło jest statyczne - wygląda to lepiej z perspektywy gracza
+		v2 player_moved_distance = player->velocity * player->type->velocity_multiplier * delta_time;
+		if (length(player_moved_distance) > 0.01f)
+		{
+			if (backdrop->x_speed != 0 && sign(backdrop->x_speed) != sign(player_moved_distance.x))
+			{
+				backdrop_offset->x -= player_moved_distance.x;
+			}
+		}
 
 		r32 max_x_offset = backdrop->size.x / TILE_SIDE_IN_PIXELS;
 		if (backdrop_offset->x > max_x_offset)

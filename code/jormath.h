@@ -89,6 +89,8 @@ struct coordinate_system
     v2 y_axis; // względem origin (0,0)
 };
 
+i32 sign(i32);
+i32 sign(r32);
 v2 get_v2(r32, r32);
 v3 get_v3(r32, r32, r32);
 v3 get_v3(v2, r32);

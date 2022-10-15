@@ -3,6 +3,18 @@
 
 // podstawowe
 
+i32 sign(i32 value)
+{
+    i32 result = value >= 0 ? 1 : -1;
+    return result;
+}
+
+i32 sign(r32 value)
+{
+    i32 result = value >= 0 ? 1 : -1;
+    return result;
+}
+
 i32 multiply(i32 num, i32 multiplier, u32 times)
 {
     i32 result;
