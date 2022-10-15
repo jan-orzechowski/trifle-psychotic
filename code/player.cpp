@@ -22,7 +22,7 @@ void apply_power_up(level_state* level, entity* player, entity* power_up)
 	{
 		case entity_type_enum::POWER_UP_INVINCIBILITY:
 		{
-			level->power_ups.invincibility.time_remaining += 20.0f;
+			level->power_ups.invincibility.time_remaining += 30.0f;
 		}
 		break;
 		case entity_type_enum::POWER_UP_HEALTH:
@@ -38,12 +38,12 @@ void apply_power_up(level_state* level, entity* player, entity* power_up)
 		break;
 		case entity_type_enum::POWER_UP_DAMAGE:
 		{
-			level->power_ups.damage.time_remaining += 20.0f;
+			level->power_ups.damage.time_remaining += 30.0f;
 		}
 		break;
 		case entity_type_enum::POWER_UP_SPREAD:
 		{
-			level->power_ups.spread.time_remaining += 20.0f;
+			level->power_ups.spread.time_remaining += 30.0f;
 		}
 		break;
 	}
@@ -348,11 +348,6 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 			}
 		}
 		break;
-	}
-
-	if (is_power_up_active(level->power_ups.invincibility))
-	{
-		player->acceleration.x *= 0.5f;
 	}
 
 	if (is_power_up_active(level->power_ups.speed))
