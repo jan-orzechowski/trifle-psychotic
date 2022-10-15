@@ -23,8 +23,8 @@ tile_position get_tile_position(world_position world_pos)
 
 tile_position get_tile_position_from_index(map* level, u32 tile_index)
 {
-	i32 x = (tile_index - 1) % level->width;
-	i32 y = (tile_index - 1) / level->width;
+	i32 x = tile_index % level->width;
+	i32 y = tile_index / level->width;
 	tile_position result = get_tile_position(x, y);
 	return result;
 }
