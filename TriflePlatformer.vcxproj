@@ -165,6 +165,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="code\animation.cpp" />
+    <ClCompile Include="code\backdrops.cpp" />
     <ClCompile Include="code\debug.cpp" />
     <ClCompile Include="code\entities.cpp" />
     <ClCompile Include="code\gates.cpp" />
@@ -185,6 +186,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\animation.h" />
+    <ClInclude Include="code\backdrops.h" />
     <ClInclude Include="code\debug.h" />
     <ClInclude Include="code\entities.h" />
     <ClInclude Include="code\gates.h" />
