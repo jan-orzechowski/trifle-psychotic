@@ -257,7 +257,6 @@ void find_path_for_moving_platform(level_state* level, entity* entity, b32 verti
 	if (vertical)
 	{	
 		// musimy wziąć pod uwagę cały rozmiar platformy
-
 		tile_position platform_middle_position = get_tile_position(entity->position);
 		tile_position platform_left_position = add_to_tile_position(platform_middle_position, -1, 0);
 		tile_position platform_right_position = add_to_tile_position(platform_middle_position, 1, 0);
@@ -290,6 +289,9 @@ void find_path_for_moving_platform(level_state* level, entity* entity, b32 verti
 				entity->path.start.y += 2;
 			}
 		}
+
+		//printf("moving platform from (%d,%d) to (%d,%d)\n",
+		//	entity->path.start.x, entity->path.start.y, entity->path.end.x, entity->path.end.y);
 	}
 	else
 	{

@@ -85,7 +85,7 @@ void invalidate_paths_in_neighbouring_chunks(level_state* level, world_position 
 		// w przypadku przeciwników i platform latających pionowo otworzenie bramy nic nie zmienia
 		if (are_entity_flags_set(entity, entity_flags::WALKS_HORIZONTALLY)
 			|| are_entity_flags_set(entity, entity_flags::FLIES_HORIZONTALLY)
-			|| are_entity_flags_set(entity, entity_flags::MOVING_PLATFORM_VERTICAL))
+			|| are_entity_flags_set(entity, entity_flags::MOVING_PLATFORM_HORIZONTAL))
 		{
 			entity->has_path = false;
 		}
