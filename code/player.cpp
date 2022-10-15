@@ -67,6 +67,19 @@ void damage_player(level_state* level, r32 damage_amount, b32 ignore_after_damag
 	}
 }
 
+void handle_player_and_switch_collision(level_state* level, collision_result collision)
+{
+	if (collision.collided_switch)
+	{
+		// na przycisk musimy nacisnąć od góry
+		if (collision.collision_data.collided_wall == direction::S)
+		{
+			v4 color = collision.collided_switch->type->color;
+			open_gates_with_given_color(level, color);
+		}
+	}
+}
+
 void update_power_up_timers(level_state* level, r32 delta_time)
 {
 	for (u32 index = 0; index < array_count(level->power_ups.states); index++)
@@ -211,8 +224,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 	if (standing_on.collided_switch)
 	{
-		v4 color = standing_on.collided_switch->type->color;
-		open_gates_with_given_color(level, color);
+		handle_player_and_switch_collision(level, standing_on);
 	}
 
 	v2 gravity = get_v2(0, 1.0f);

@@ -180,8 +180,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	
 		if (collision.collided_switch)
 		{
-			v4 color = collision.collided_switch->type->color;
-			open_gates_with_given_color(level, color);
+			handle_player_and_switch_collision(level, collision);
 		}
 
 		if (collision.collided_message_display)
