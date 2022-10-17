@@ -284,9 +284,26 @@ void find_path_for_moving_platform(level_state* level, entity* entity, b32 verti
 		if (entity->path.start.x != 0 && entity->path.start.y != 0)
 		{
 			// zatrzymujemy się przed sufitem, żeby nie zmiażdżyć gracza
-			if (entity->path.start.y + 2 < entity->path.end.y)
+			tile_position tile_above = get_tile_position(entity->path.start.x, entity->path.start.y - 1);
+			tile_position two_tiles_above = get_tile_position(entity->path.start.x, entity->path.start.y - 2);
+			if (is_tile_colliding(level->current_map, level->static_data->collision_reference, 
+				tile_above))
 			{
-				entity->path.start.y += 2;
+				// przesuwamy dwa do dołu
+				if (entity->path.start.y + 2 < entity->path.end.y)
+				{
+					entity->path.start.y += 2;
+				}
+			}
+			else 
+			if (is_tile_colliding(level->current_map, level->static_data->collision_reference,
+				two_tiles_above))
+			{
+				// przesuwamy jeden do dołu
+				if (entity->path.start.y + 1 < entity->path.end.y)
+				{
+					entity->path.start.y += 1;
+				}
 			}
 		}
 
