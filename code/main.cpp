@@ -128,6 +128,11 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			level->player_invincibility_cooldown -= delta_time;
 		}
 
+		if (level->player_ignore_enemy_collision_cooldown > 0.0f)
+		{
+			level->player_ignore_enemy_collision_cooldown -= delta_time;
+		}
+
 		update_power_up_timers(level, delta_time);
 		animate_entity(&level->player_movement, player, delta_time);
 

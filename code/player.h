@@ -6,6 +6,7 @@
 #include "input.h"
 
 entity* get_player(level_state* level);
+b32 ignore_player_and_enemy_collisions(level_state* level);
 void damage_player(level_state* level, r32 damage_amount, b32 ignore_after_damage_invincibility);
 void update_power_up_timers(level_state* level, r32 delta_time);
 b32 is_power_up_active(power_up_state power_up);

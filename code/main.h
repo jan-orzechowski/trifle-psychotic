@@ -663,6 +663,7 @@ struct level_state
 
 	player_movement player_movement;
 	r32 player_invincibility_cooldown;
+	r32 player_ignore_enemy_collision_cooldown;
 	
 	entity* entities;
 	u32 entities_max_count;

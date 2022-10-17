@@ -461,7 +461,10 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 								{
 									if (are_entity_flags_set(entity_to_check, entity_flags::ENEMY))
 									{
-										result.collided_enemy = entity_to_check;
+										if (false == ignore_player_and_enemy_collisions(level))
+										{
+											result.collided_enemy = entity_to_check;
+										}										
 									}
 
 									if (are_entity_flags_set(entity_to_check, entity_flags::MOVING_PLATFORM_HORIZONTAL)
@@ -494,7 +497,18 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 
 							if (are_entity_flags_set(entity_to_check, entity_flags::BLOCKS_MOVEMENT))
 							{
-								closest_collision = new_collision;
+								if (are_entity_flags_set(moving_entity, entity_flags::PLAYER)
+									&& are_entity_flags_set(entity_to_check, entity_flags::ENEMY))
+								{
+									if (false == ignore_player_and_enemy_collisions(level))
+									{
+										closest_collision = new_collision;
+									}
+								}
+								else
+								{
+									closest_collision = new_collision;
+								}
 							}
 						}
 					}

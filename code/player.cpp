@@ -9,6 +9,12 @@ entity* get_player(level_state* level)
 	return result;
 }
 
+b32 ignore_player_and_enemy_collisions(level_state* level)
+{
+	b32 result = (level->player_ignore_enemy_collision_cooldown > 0.0f);
+	return result;
+}
+
 b32 is_power_up_active(power_up_state power_up)
 {
 	b32 result = (power_up.time_remaining > 0.0f);
@@ -251,24 +257,16 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 		break;
 		case movement_mode::RECOIL:
 		{
-			// czy odzyskujemy kontrolę?
-			if (is_standing_at_frame_beginning)
+			if (level->player_movement.recoil_timer > 0.0f)
 			{
-				if (level->player_movement.recoil_timer > 0.0f)
-				{
-					// nie
-					level->player_movement.recoil_timer -= delta_time;
-				}
-				else
-				{
-					// tak
-					change_player_movement_mode(&level->player_movement, movement_mode::WALK);
-					stop_visual_effect(level, player, sprite_effects_types::RECOIL);
-				}
+				level->player_movement.recoil_timer -= delta_time;
 			}
-			else
-			{
-				// w tym wypadku po prostu lecimy dalej
+
+			if (is_standing_at_frame_beginning
+				&& level->player_movement.recoil_timer <= 0.0f)
+			{				
+				change_player_movement_mode(&level->player_movement, movement_mode::WALK);
+				stop_visual_effect(level, player, sprite_effects_types::RECOIL);				
 			}
 		}
 		break;
@@ -395,37 +393,42 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 void handle_player_and_enemy_collision(level_state* level, entity* player, entity* enemy)
 {
-	if (is_power_up_active(level->power_ups.invincibility))
+	if (false == ignore_player_and_enemy_collisions(level))
 	{
-		enemy->health -= 50.0f;
-	}
-	else
-	{
-		if (are_entity_flags_set(enemy, entity_flags::DESTRUCTION_ON_PLAYER_CONTACT))
+		if (is_power_up_active(level->power_ups.invincibility))
 		{
-			damage_player(level, enemy->type->damage_on_contact, true);
-			enemy->health = -1.0f;
+			enemy->health -= 50.0f;
 		}
-		else if (are_entity_flags_set(enemy, entity_flags::PLAYER_RECOIL_ON_CONTACT))
+		else
 		{
-			start_visual_effect(level, player, sprite_effects_types::RECOIL);
-			
-			damage_player(level, enemy->type->damage_on_contact, false);
+			if (are_entity_flags_set(enemy, entity_flags::DESTRUCTION_ON_PLAYER_CONTACT))
+			{
+				damage_player(level, enemy->type->damage_on_contact, true);
+				enemy->health = -1.0f;
+			}
+			else if (are_entity_flags_set(enemy, entity_flags::PLAYER_RECOIL_ON_CONTACT))
+			{
+				start_visual_effect(level, player, sprite_effects_types::RECOIL);
 
-			v2 direction = get_unit_vector(
-				get_position_difference(player->position, enemy->position));
+				damage_player(level, enemy->type->damage_on_contact, false);
 
-			r32 acceleration = enemy->type->player_acceleration_on_collision;
+				v2 direction = get_unit_vector(
+					get_position_difference(player->position, enemy->position));
 
-			level->player_movement.recoil_timer = 2.0f;
-			level->player_movement.recoil_acceleration_timer = 1.0f;
-			level->player_movement.recoil_acceleration = (direction * acceleration);
+				r32 acceleration = enemy->type->player_acceleration_on_collision;
 
-			/*printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
-				level->player_movement.recoil_acceleration.x,
-				level->player_movement.recoil_acceleration.y);*/
+				level->player_movement.recoil_timer = 2.0f;
+				level->player_movement.recoil_acceleration_timer = 1.0f;
+				level->player_movement.recoil_acceleration = (direction * acceleration);
 
-			change_player_movement_mode(&level->player_movement, movement_mode::RECOIL);
-		}		
+				level->player_ignore_enemy_collision_cooldown = 1.0f;
+
+				/*printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
+					level->player_movement.recoil_acceleration.x,
+					level->player_movement.recoil_acceleration.y);*/
+
+				change_player_movement_mode(&level->player_movement, movement_mode::RECOIL);
+			}
+		}
 	}
 }
