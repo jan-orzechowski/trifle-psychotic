@@ -63,8 +63,8 @@ void debug_render_tile_collision_boxes(render_group* render, level_state* level,
 			i32 x_coord_on_screen = x_coord_relative;
 			i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
 
-			u32 tile_value = get_tile_value(level->current_map, x_coord_in_world, y_coord_in_world);
-			if (is_tile_colliding(level->static_data->collision_reference, tile_value))
+			u32 tile_value = get_tile_value(&level->current_map, x_coord_in_world, y_coord_in_world);
+			if (is_tile_colliding(&level->current_map, tile_value))
 			{
 				tile_position tile_pos = get_tile_position(x_coord_in_world, y_coord_in_world);
 				entity_collision_data tile_collision = get_tile_collision_data(camera_pos.chunk_pos, tile_pos);

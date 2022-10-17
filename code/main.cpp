@@ -655,7 +655,7 @@ scene_change death_screen_update_and_render(game_state* game, static_game_data* 
 	return change_to_other_scene;
 }
 
-void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_time)
+void main_game_loop(game_state* game, r32 delta_time)
 {
 	scene_change scene_change = {};
 
@@ -682,14 +682,14 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 		break;
 		case scene::MAIN_MENU:
 		{
-			scene_change = menu_update_and_render(game, static_data, delta_time);
+			scene_change = menu_update_and_render(game, game->static_data, delta_time);
 		};
 		break;
 		case scene::MAP_ERRORS:
 		{
 			if (game->map_errors.string_size > 0)
 			{			
-				render_text(&game->render, game->transient_arena, static_data->ui_font, 
+				render_text(&game->render, game->transient_arena, game->static_data->ui_font, 
 					get_whole_screen_text_area(0.0f), game->map_errors);
 
 				game_input* input = get_last_frame_input(&game->input_buffer);
@@ -710,7 +710,7 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 		break;
 		case scene::DEATH:
 		{
-			scene_change = death_screen_update_and_render(game, static_data, delta_time);
+			scene_change = death_screen_update_and_render(game, game->static_data, delta_time);
 		};
 		break;
 		case scene::CREDITS:
@@ -756,12 +756,12 @@ void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_t
 				}
 				game->game_level_memory = begin_temporary_memory(game->arena);
 			
-				initialize_level_state(game->level_state, static_data, level_to_load_name, game->arena);
+				initialize_level_state(game->level_state, game->static_data, level_to_load_name, game->arena);
 				tmx_map_parsing_result parsing_result = load_map(level_to_load_name, game->arena, game->transient_arena);
 				if (parsing_result.errors->errors_count > 0)
 				{
 					game->map_errors = get_parsing_errors_message(game->arena, &game->render,
-						static_data->ui_font, get_whole_screen_text_area(0.0f), parsing_result.errors);
+						game->static_data->ui_font, get_whole_screen_text_area(0.0f), parsing_result.errors);
 
 					game->level_initialized = false;
 				} 

@@ -244,8 +244,7 @@ b32 check_if_sight_line_is_obstructed(level_state* level, world_position start, 
 			tile_x_to_check <= (i32)area_to_check.max_corner.x + 1;
 			tile_x_to_check++)
 		{
-			if (is_tile_colliding(level->current_map, level->static_data->collision_reference,
-				tile_x_to_check, tile_y_to_check))
+			if (is_tile_colliding(&level->current_map, tile_x_to_check, tile_y_to_check))
 			{
 				entity_collision_data entity_collision = get_tile_collision_data(
 					reference_chunk, get_tile_position(tile_x_to_check, tile_y_to_check));
@@ -412,8 +411,7 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 						tile_x_to_check++)
 					{
 						tile_position tile_to_check_pos = get_tile_position(tile_x_to_check, tile_y_to_check);
-						if (is_tile_colliding(level->current_map, level->static_data->collision_reference,
-							tile_x_to_check, tile_y_to_check))
+						if (is_tile_colliding(&level->current_map, tile_x_to_check, tile_y_to_check))
 						{
 							collision new_collision = check_minkowski_collision(
 								get_entity_collision_data(reference_chunk, moving_entity),
@@ -573,8 +571,7 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 					tile_x_to_check <= area_to_check.max_corner.x + 1;
 					tile_x_to_check++)
 				{
-					if (is_tile_colliding(level->current_map, level->static_data->collision_reference, 
-						tile_x_to_check, tile_y_to_check))
+					if (is_tile_colliding(&level->current_map, tile_x_to_check, tile_y_to_check))
 					{
 						rect tile_colliding_rect = get_tile_colliding_rect(reference_chunk, tile_x_to_check, tile_y_to_check);
 						if (is_point_inside_rect(tile_colliding_rect, relative_target_pos))

@@ -152,7 +152,7 @@ void render_map_layer(render_group* render, level_state* level, map_layer layer,
 				i32 x_coord_on_screen = x_coord_relative;
 				i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
 
-				u32 tile_value = get_tile_value(level->current_map, layer, x_coord_in_world, y_coord_in_world);
+				u32 tile_value = get_tile_value(layer, x_coord_in_world, y_coord_in_world);
 				if (tile_value != 0 && tile_value != 1) // przezroczyste pola
 				{
 					rect tile_bitmap = get_tile_bitmap_rect(tile_value);

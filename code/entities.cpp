@@ -125,7 +125,7 @@ void remove_bullet(level_state* level, i32* bullet_index)
 	}
 }
 
-tile_range find_walking_path(map level, map collision_ref, tile_position start_tile)
+tile_range find_walking_path(map* level, tile_position start_tile)
 {
 	b32 found_good_start_pos = false;
 	tile_position good_start_tile = {};
@@ -135,7 +135,7 @@ tile_range find_walking_path(map level, map collision_ref, tile_position start_t
 	for (i32 distance = 0; distance < distance_checking_limit; distance++)
 	{
 		test_tile.y = start_tile.y + distance;
-		if (is_good_for_walk_path(level, collision_ref, test_tile.x, test_tile.y))
+		if (is_good_for_walk_path(level, test_tile.x, test_tile.y))
 		{
 			good_start_tile = test_tile;
 			found_good_start_pos = true;
@@ -155,7 +155,7 @@ tile_range find_walking_path(map level, map collision_ref, tile_position start_t
 	for (i32 distance = 0; distance <= distance_checking_limit; distance++)
 	{
 		test_tile.x = good_start_tile.x - distance;
-		if (is_good_for_walk_path(level, collision_ref, test_tile.x, test_tile.y))
+		if (is_good_for_walk_path(level, test_tile.x, test_tile.y))
 		{
 			left_end = test_tile;
 		}
@@ -169,7 +169,7 @@ tile_range find_walking_path(map level, map collision_ref, tile_position start_t
 	for (i32 distance = 0; distance <= distance_checking_limit; distance++)
 	{
 		test_tile.x = good_start_tile.x + distance;
-		if (is_good_for_walk_path(level, collision_ref, test_tile.x, test_tile.y))
+		if (is_good_for_walk_path(level, test_tile.x, test_tile.y))
 		{
 			right_end = test_tile;
 		}
@@ -187,8 +187,7 @@ tile_range find_walking_path(map level, map collision_ref, tile_position start_t
 
 tile_range find_walking_path(level_state* level, tile_position starting_position)
 {
-	tile_range new_path = find_walking_path(
-		level->current_map, level->static_data->collision_reference, starting_position);
+	tile_range new_path = find_walking_path(&level->current_map, starting_position);
 
 	tile_range first_part = get_tile_range(starting_position, new_path.start);
 	tile_range second_part = get_tile_range(starting_position, new_path.end);
@@ -207,14 +206,12 @@ tile_range find_flying_path(level_state* level, tile_position starting_position,
 	
 	if (vertical)
 	{
-		new_path = find_vertical_range_of_free_tiles(
-			level->current_map, level->static_data->collision_reference, 
+		new_path = find_vertical_range_of_free_tiles(&level->current_map, 
 			starting_position, level->current_map.height);
 	}
 	else
 	{
-		new_path = find_horizontal_range_of_free_tiles(
-			level->current_map, level->static_data->collision_reference, 
+		new_path = find_horizontal_range_of_free_tiles(&level->current_map, 
 			starting_position, level->current_map.width);
 	}
 	
@@ -261,14 +258,11 @@ void find_path_for_moving_platform(level_state* level, entity* entity, b32 verti
 		tile_position platform_left_position = add_to_tile_position(platform_middle_position, -1, 0);
 		tile_position platform_right_position = add_to_tile_position(platform_middle_position, 1, 0);
 
-		tile_range middle_path = find_vertical_range_of_free_tiles_downwards(
-			level->current_map, level->static_data->collision_reference, 
+		tile_range middle_path = find_vertical_range_of_free_tiles_downwards(&level->current_map, 
 			platform_middle_position, level->current_map.height);
-		tile_range left_path = find_vertical_range_of_free_tiles_downwards(
-			level->current_map, level->static_data->collision_reference,
+		tile_range left_path = find_vertical_range_of_free_tiles_downwards(&level->current_map,
 			platform_left_position, level->current_map.height);
-		tile_range right_path = find_vertical_range_of_free_tiles_downwards(
-			level->current_map, level->static_data->collision_reference,
+		tile_range right_path = find_vertical_range_of_free_tiles_downwards(&level->current_map,
 			platform_right_position, level->current_map.height);
 
 		u32 min_y = max_of_three(middle_path.start.y, left_path.start.y, right_path.start.y);
@@ -286,8 +280,7 @@ void find_path_for_moving_platform(level_state* level, entity* entity, b32 verti
 			// zatrzymujemy się przed sufitem, żeby nie zmiażdżyć gracza
 			tile_position tile_above = get_tile_position(entity->path.start.x, entity->path.start.y - 1);
 			tile_position two_tiles_above = get_tile_position(entity->path.start.x, entity->path.start.y - 2);
-			if (is_tile_colliding(level->current_map, level->static_data->collision_reference, 
-				tile_above))
+			if (is_tile_colliding(&level->current_map, tile_above))
 			{
 				// przesuwamy dwa do dołu
 				if (entity->path.start.y + 2 < entity->path.end.y)
@@ -296,8 +289,7 @@ void find_path_for_moving_platform(level_state* level, entity* entity, b32 verti
 				}
 			}
 			else 
-			if (is_tile_colliding(level->current_map, level->static_data->collision_reference,
-				two_tiles_above))
+			if (is_tile_colliding(&level->current_map, two_tiles_above))
 			{
 				// przesuwamy jeden do dołu
 				if (entity->path.start.y + 1 < entity->path.end.y)
@@ -448,8 +440,8 @@ void add_next_level_transition(level_state* level, memory_arena* arena, entity_t
 	entity_type* transition_type = push_struct(arena, entity_type);
 	transition_type->type_enum = entity_type_enum::NEXT_LEVEL_TRANSITION;
 
-	tile_range occupied_tiles = find_vertical_range_of_free_tiles(
-		level->current_map, level->static_data->collision_reference, new_entity_to_spawn->position, 20);
+	tile_range occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map, 
+		new_entity_to_spawn->position, 20);
 	transition_type->collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
 
 	world_position new_position = add_to_position(
@@ -467,8 +459,8 @@ void add_message_display_entity(level_state* level, memory_arena* arena, entity_
 
 	u32 max_size = 10;
 
-	tile_range occupied_tiles = find_vertical_range_of_free_tiles(
-		level->current_map, level->static_data->collision_reference, new_entity_to_spawn->position, max_size);
+	tile_range occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map, 
+		new_entity_to_spawn->position, max_size);
 	v2 collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
 
 	new_type->collision_rect_dim = collision_rect_dim;
@@ -488,6 +480,8 @@ void initialize_current_map(game_state* game, level_state* level)
 {
 	assert(false == level->current_map_initialized);
 
+	level->current_map.collision_reference = game->static_data->collision_reference;
+
 	// add player
 	{
 		entity_type* player_type = get_entity_type_ptr(
@@ -497,7 +491,7 @@ void initialize_current_map(game_state* game, level_state* level)
 		// - z tego powodu musimy skorygować początkowe położenie
 		world_position starting_position = get_world_position(level->current_map.starting_tile);
 		starting_position = add_to_position(starting_position, 
-			get_v2(0, -(player_type->collision_rect_dim.y / 2) + 0.3f));
+			get_v2(0, -(player_type->collision_rect_dim.y / 2) + 0.25f));
 
 		add_entity(level, starting_position, player_type);
 	}
@@ -1270,8 +1264,8 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
 	tile_position entity_position = new_entity_to_spawn->position;
 	tile_position tile_to_left = get_tile_position(entity_position.x - 1, entity_position.y);
 	tile_position tile_to_right = get_tile_position(entity_position.x + 1, entity_position.y);
-	b32 left_tile_collides = is_tile_colliding(level->current_map, level->static_data->collision_reference, tile_to_left);
-	b32 right_tile_collides = is_tile_colliding(level->current_map, level->static_data->collision_reference, tile_to_right);
+	b32 left_tile_collides = is_tile_colliding(&level->current_map, tile_to_left);
+	b32 right_tile_collides = is_tile_colliding(&level->current_map, tile_to_right);
 	if (left_tile_collides && right_tile_collides)
 	{
 		// nie mamy gdzie przesunąć

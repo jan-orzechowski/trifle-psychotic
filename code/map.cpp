@@ -180,43 +180,40 @@ b32 is_in_neighbouring_chunk(chunk_position reference_chunk, world_position posi
 	return result;
 }
 
-u32 get_tile_value(map level, i32 x_coord, i32 y_coord)
+u32 get_tile_value(map_layer layer, i32 x_coord, i32 y_coord)
 {
 	u32 result = 0;
 	if (x_coord >= 0
 		&& y_coord >= 0
-		&& x_coord < (i32)level.width
-		&& y_coord < (i32)level.height)
+		&& x_coord < (i32)layer.width
+		&& y_coord < (i32)layer.height)
 	{
-		u32 tile_index = x_coord + (level.width * y_coord);
-		assert(tile_index < level.map.tiles_count);
-		result = level.map.tiles[tile_index];
-	}
-	return result;
-}
-
-u32 get_tile_value(map level, map_layer layer, i32 x_coord, i32 y_coord)
-{
-	u32 result = 0;
-	if (x_coord >= 0
-		&& y_coord >= 0
-		&& x_coord < (i32)level.width
-		&& y_coord < (i32)level.height)
-	{
-		u32 tile_index = x_coord + (level.width * y_coord);
+		u32 tile_index = x_coord + (layer.width * y_coord);
 		assert(tile_index < layer.tiles_count);
 		result = layer.tiles[tile_index];
 	}
 	return result;
 }
 
-u32 get_tile_value(map level, tile_position tile)
+u32 get_tile_value(map* level, i32 x_coord, i32 y_coord)
 {
-	u32 result = get_tile_value(level, tile.x, tile.y);
+	u32 result = get_tile_value(level->map, x_coord, y_coord);
 	return result;
 }
 
-b32 is_tile_colliding(map collision_ref, u32 tile_value)
+u32 get_tile_value(map_layer layer, tile_position tile)
+{
+	u32 result = get_tile_value(layer, tile.x, tile.y);
+	return result;
+}
+
+u32 get_tile_value(map* level, tile_position tile)
+{
+	u32 result = get_tile_value(level->map, tile.x, tile.y);
+	return result;
+}
+
+b32 is_tile_colliding(map* level, u32 tile_value)
 {
 	b32 result = false;
 	if (tile_value == 0)
@@ -226,26 +223,26 @@ b32 is_tile_colliding(map collision_ref, u32 tile_value)
 	}
 	else
 	{
-		i32 x = (tile_value - 1) % collision_ref.width;
-		i32 y = (tile_value - 1) / collision_ref.width;
-		u32 collision_tile_value = get_tile_value(collision_ref, x, y);
+		i32 x = (tile_value - 1) % level->collision_reference.width;
+		i32 y = (tile_value - 1) / level->collision_reference.width;
+		u32 collision_tile_value = get_tile_value(level->collision_reference, x, y);
 		result = (collision_tile_value == 2);
 	}
 
 	return result;
 }
 
-b32 is_tile_colliding(map level, map collision_ref, u32 tile_x, u32 tile_y)
+b32 is_tile_colliding(map* level, u32 tile_x, u32 tile_y)
 {
-	u32 tile_value = get_tile_value(level, tile_x, tile_y);
-	b32 result = is_tile_colliding(collision_ref, tile_value);
+	u32 tile_value = get_tile_value(level->map, tile_x, tile_y);
+	b32 result = is_tile_colliding(level, tile_value);
 	return result;
 }
 
-b32 is_tile_colliding(map level, map collision_ref, tile_position tile_pos)
+b32 is_tile_colliding(map* level, tile_position tile_pos)
 {
 	u32 tile_value = get_tile_value(level, tile_pos);
-	b32 result = is_tile_colliding(collision_ref, tile_value);
+	b32 result = is_tile_colliding(level, tile_value);
 	return result;
 }
 
@@ -257,7 +254,7 @@ tile_range get_tile_range(tile_position start, tile_position end)
 	return result;
 }
 
-tile_range find_horizontal_range_of_free_tiles(map level, map collision_ref, tile_position starting_tile, u32 length_limit)
+tile_range find_horizontal_range_of_free_tiles(map* level, tile_position starting_tile, u32 length_limit)
 {
 	tile_position left_end = starting_tile;
 	tile_position right_end = starting_tile;
@@ -265,7 +262,7 @@ tile_range find_horizontal_range_of_free_tiles(map level, map collision_ref, til
 	for (i32 distance = 0; distance <= length_limit; distance++)
 	{
 		test_tile.x = starting_tile.x - distance;
-		if (false == is_tile_colliding(level, collision_ref, test_tile.x, test_tile.y))
+		if (false == is_tile_colliding(level, test_tile.x, test_tile.y))
 		{
 			left_end = test_tile;
 		}
@@ -279,7 +276,7 @@ tile_range find_horizontal_range_of_free_tiles(map level, map collision_ref, til
 	for (i32 distance = 0; distance <= length_limit; distance++)
 	{
 		test_tile.x = starting_tile.x + distance;
-		if (false == is_tile_colliding(level, collision_ref, test_tile.x, test_tile.y))
+		if (false == is_tile_colliding(level, test_tile.x, test_tile.y))
 		{
 			right_end = test_tile;
 		}
@@ -295,7 +292,7 @@ tile_range find_horizontal_range_of_free_tiles(map level, map collision_ref, til
 	return result;
 }
 
-tile_range find_vertical_range_of_free_tiles(map level, map collision_ref, tile_position starting_tile, u32 length_limit)
+tile_range find_vertical_range_of_free_tiles(map* level, tile_position starting_tile, u32 length_limit)
 {
 	tile_position upper_end = starting_tile;
 	tile_position lower_end = starting_tile;
@@ -303,7 +300,7 @@ tile_range find_vertical_range_of_free_tiles(map level, map collision_ref, tile_
 	for (i32 distance = 0; distance <= length_limit; distance++)
 	{
 		test_tile.y = starting_tile.y - distance;
-		if (false == is_tile_colliding(level, collision_ref, test_tile.x, test_tile.y))
+		if (false == is_tile_colliding(level, test_tile.x, test_tile.y))
 		{
 			upper_end = test_tile;
 		}
@@ -317,7 +314,7 @@ tile_range find_vertical_range_of_free_tiles(map level, map collision_ref, tile_
 	for (i32 distance = 0; distance <= length_limit; distance++)
 	{
 		test_tile.y = starting_tile.y + distance;
-		if (false == is_tile_colliding(level, collision_ref, test_tile.x, test_tile.y))
+		if (false == is_tile_colliding(level, test_tile.x, test_tile.y))
 		{
 			lower_end = test_tile;
 		}
@@ -333,7 +330,7 @@ tile_range find_vertical_range_of_free_tiles(map level, map collision_ref, tile_
 	return result;
 }
 
-tile_range find_vertical_range_of_free_tiles_downwards(map level, map collision_ref, tile_position starting_tile, u32 length_limit)
+tile_range find_vertical_range_of_free_tiles_downwards(map* level, tile_position starting_tile, u32 length_limit)
 {
 	tile_position upper_end = starting_tile;
 	tile_position lower_end = starting_tile;
@@ -342,7 +339,7 @@ tile_range find_vertical_range_of_free_tiles_downwards(map level, map collision_
 	for (i32 distance = 0; distance <= length_limit; distance++)
 	{
 		test_tile.y = starting_tile.y + distance;
-		if (false == is_tile_colliding(level, collision_ref, test_tile.x, test_tile.y))
+		if (false == is_tile_colliding(level, test_tile.x, test_tile.y))
 		{
 			lower_end = test_tile;
 		}
@@ -358,10 +355,10 @@ tile_range find_vertical_range_of_free_tiles_downwards(map level, map collision_
 	return result;
 }
 
-b32 is_good_for_walk_path(map level, map collision_ref, u32 tile_x, u32 tile_y)
+b32 is_good_for_walk_path(map* level, u32 tile_x, u32 tile_y)
 {
-	b32 result = (false == is_tile_colliding(level, collision_ref, tile_x, tile_y)
-		&& is_tile_colliding(level, collision_ref, tile_x, tile_y + 1));
+	b32 result = (false == is_tile_colliding(level, tile_x, tile_y) 
+		&& is_tile_colliding(level, tile_x, tile_y + 1));
 	return result;
 }
 

@@ -536,6 +536,9 @@ map_layer parse_map_layer(level_parsing_context* level_parsing,
 			if (layer_width == level_parsing->level->width 
 				&& layer_height == level_parsing->level->height)
 			{			
+				layer.width = layer_width;
+				layer.height = layer_height;
+
 				xml_node* data_node = find_tag_in_children(layer_node, "data");
 				if (data_node)
 				{
@@ -749,9 +752,9 @@ end_of_read_map_from_tmx_file_function:
 	return result;
 }
 
-map read_collision_map(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file)
+map_layer read_collision_map(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file)
 {
-	map result = {};
+	map_layer result = {};
 
 	temporary_memory memory_for_parsing = begin_temporary_memory(transient_arena);
 
@@ -797,15 +800,15 @@ map read_collision_map(memory_arena* permanent_arena, memory_arena* transient_ar
 				if (compare_to_c_string(encoding_str, "csv"))
 				{
 					string_ref data = data_node->inner_text;
-					result.map.tiles_count = result.width * result.height;
-					result.map.tiles = parse_array_of_i32(permanent_arena, result.map.tiles_count, data, ',');
+					result.tiles_count = result.width * result.height;
+					result.tiles = parse_array_of_i32(permanent_arena, result.tiles_count, data, ',');
 
 					if (collision_tileset_first_gid != -1 && collision_tileset_first_gid != 1)
 					{
-						for (u32 tile_index = 0; tile_index < result.map.tiles_count; tile_index++)
+						for (u32 tile_index = 0; tile_index < result.tiles_count; tile_index++)
 						{
-							i32 original_gid = result.map.tiles[tile_index];
-							result.map.tiles[tile_index] -= (collision_tileset_first_gid - 1);
+							i32 original_gid = result.tiles[tile_index];
+							result.tiles[tile_index] -= (collision_tileset_first_gid - 1);
 						}
 					}
 				}

@@ -138,14 +138,14 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 	u32 max_size = 1; // krótsze jednak wyglądają lepiej
 	if (is_switch)
 	{
-		occupied_tiles = find_horizontal_range_of_free_tiles(
-			level->current_map, level->static_data->collision_reference, new_entity_to_spawn->position, max_size);
+		occupied_tiles = find_horizontal_range_of_free_tiles(&level->current_map, 
+			new_entity_to_spawn->position, max_size);
 		collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
 	}
 	else
 	{
-		occupied_tiles = find_vertical_range_of_free_tiles(
-			level->current_map, level->static_data->collision_reference, new_entity_to_spawn->position, max_size);
+		occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map, 
+			new_entity_to_spawn->position, max_size);
 		collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
 	}
 
@@ -155,6 +155,7 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 	world_position new_position = add_to_position(
 		get_world_position(occupied_tiles.start),
 		get_position_difference(occupied_tiles.end, occupied_tiles.start) / 2);
+
 	if (is_switch)
 	{
 		switch_graphics switch_gfx = level->static_data->switches_gfx.blue;

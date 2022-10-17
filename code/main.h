@@ -181,6 +181,8 @@ struct map_layer
 {
 	i32* tiles;
 	u32 tiles_count;
+	u32 width;
+	u32 height;
 };
 
 struct backdrop_properties
@@ -201,6 +203,7 @@ struct map
 	map_layer map;
 	map_layer background;
 	map_layer foreground;
+	map_layer collision_reference;
 	backdrop_properties first_backdrop;
 	backdrop_properties second_backdrop;
 	v2 first_backdrop_offset;
@@ -598,7 +601,7 @@ struct explosions
 
 struct static_game_data
 {
-	map collision_reference;
+	map_layer collision_reference;
 
 	r32 default_player_invincibility_cooldown;
 
@@ -766,4 +769,4 @@ struct game_state
 	static_game_data* static_data;
 };
 
-void main_game_loop(game_state* game, static_game_data* static_data, r32 delta_time);
+void main_game_loop(game_state* game, r32 delta_time);

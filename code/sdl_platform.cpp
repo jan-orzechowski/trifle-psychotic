@@ -257,7 +257,7 @@ void emscripten_main_game_loop(void* passed_data)
 	write_to_input_buffer(&(((game_state*)passed_data)->input_buffer), &new_input);
 
 	r64 delta_time = 1 / TARGET_HZ;
-	main_game_loop((game_state*)passed_data, ((game_state*)passed_data)->static_data, delta_time);
+	main_game_loop((game_state*)passed_data, delta_time);
 }
 #endif
 
@@ -324,7 +324,7 @@ int main(int argc, char* args[])
 
 				write_to_input_buffer(&game.input_buffer, &new_input);
 
-				main_game_loop(&game, static_data, delta_time);
+				main_game_loop(&game, delta_time);
 
 				if (game.exit_game)
 				{
