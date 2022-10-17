@@ -517,6 +517,20 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->menu_credits_str = copy_c_string_to_memory_arena(arena, "Credits");
 	data->menu_exit_str = copy_c_string_to_memory_arena(arena, "Exit");	
 	data->exit_warning_message = copy_c_string_to_memory_arena(arena, "Are you sure you want to exit? Press ESC again to confirm");
+	
+	data->default_death_message = copy_c_string_to_memory_arena(arena, "You died.");
+	data->death_messages_count = 10;
+	data->death_messages = push_array(arena, data->death_messages_count, string_ref);
+	data->death_messages[0] = copy_c_string_to_memory_arena(arena, "Text 0");
+	data->death_messages[1] = copy_c_string_to_memory_arena(arena, "Text 1");
+	data->death_messages[2] = copy_c_string_to_memory_arena(arena, "Text 2");
+	data->death_messages[3] = copy_c_string_to_memory_arena(arena, "Text 3");
+	data->death_messages[4] = copy_c_string_to_memory_arena(arena, "Text 4");
+	data->death_messages[5] = copy_c_string_to_memory_arena(arena, "Text 5");
+	data->death_messages[6] = copy_c_string_to_memory_arena(arena, "Text 6");
+	data->death_messages[7] = copy_c_string_to_memory_arena(arena, "Text 7");
+	data->death_messages[8] = copy_c_string_to_memory_arena(arena, "Text 8");
+	data->death_messages[9] = copy_c_string_to_memory_arena(arena, "Text 9");
 
 	std::string collision_file_path = "data/collision_map.tmx";
 	read_file_result collision_file = read_file(collision_file_path);

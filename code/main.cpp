@@ -592,6 +592,23 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	return change_to_other_scene;
 };
 
+string_ref get_death_screen_prompt(static_game_data* static_data)
+{
+	string_ref result = {};
+	i32 text_choice = rand() % 2;
+	if (text_choice == 0)
+	{
+		text_choice = rand() % static_data->death_messages_count;
+		result = static_data->death_messages[text_choice];
+	}
+	else
+	{
+		result = static_data->default_death_message;
+	}
+
+	return result;
+}
+
 scene_change death_screen_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
 {
 	scene_change change_to_other_scene = {};
@@ -599,9 +616,7 @@ scene_change death_screen_update_and_render(game_state* game, static_game_data* 
 	if (false == game->death_screen.initialized)
 	{
 		game->death_screen.timer = 1.0f;
-		// tutaj mamy alokację powodującą zwiększenie transient arena...
-		const char* prompt = "Jesli nie teraz, umarlbys za 30 lat";
-		game->death_screen.prompt = copy_c_string_to_memory_arena(game->transient_arena, prompt);
+		game->death_screen.prompt = get_death_screen_prompt(static_data);
 		game->death_screen.fade_in_perc = 1.0f;
 		game->death_screen.initialized = true;
 	}

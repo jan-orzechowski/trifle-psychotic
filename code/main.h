@@ -632,6 +632,9 @@ struct static_game_data
 	string_ref menu_exit_str;
 
 	string_ref exit_warning_message;
+	string_ref default_death_message;
+	string_ref* death_messages;
+	u32 death_messages_count;
 
 	explosions explosion_animations;
 };
