@@ -1149,6 +1149,12 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
 					move_entity_towards_player(level, entity_to_move, player, delta_time);
 				}
 			}
+
+			if (are_entity_flags_set(entity_to_move, entity_flags::ENEMY)
+				&& distance_to_player_length < 0.05f)
+			{
+				handle_player_and_enemy_collision(level, player, entity_to_move);
+			}
 		}
 	}
 }
