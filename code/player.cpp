@@ -28,28 +28,32 @@ void apply_power_up(level_state* level, entity* player, entity* power_up)
 	{
 		case entity_type_enum::POWER_UP_INVINCIBILITY:
 		{
-			level->power_ups.invincibility.time_remaining += 30.0f;
+			level->power_ups.invincibility.time_remaining = 
+				level->static_data->default_power_up_invincibility_timer;
 		}
 		break;
 		case entity_type_enum::POWER_UP_HEALTH:
 		{
-			player->type->max_health += 20.0f;
+			player->type->max_health += level->static_data->default_power_up_health_bonus;
 			player->health = player->type->max_health;
 		}
 		break;
 		case entity_type_enum::POWER_UP_SPEED:
 		{
-			level->power_ups.speed.time_remaining += 20.0f;
+			level->power_ups.speed.time_remaining = 
+				level->static_data->default_power_up_speed_timer;
 		}
 		break;
 		case entity_type_enum::POWER_UP_DAMAGE:
 		{
-			level->power_ups.damage.time_remaining += 30.0f;
+			level->power_ups.damage.time_remaining = 
+				level->static_data->default_power_up_damage_timer;
 		}
 		break;
 		case entity_type_enum::POWER_UP_SPREAD:
 		{
-			level->power_ups.spread.time_remaining += 30.0f;
+			level->power_ups.spread.time_remaining = 
+				level->static_data->default_power_up_spread_timer;
 		}
 		break;
 	}
@@ -233,9 +237,6 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 		handle_player_and_switch_collision(level, standing_on);
 	}
 
-	v2 gravity = get_v2(0, 1.0f);
-	v2 jump_acceleration = get_v2(0, -33.0f);
-
 	// zmiana statusu
 	switch (level->player_movement.current_mode)
 	{
@@ -295,7 +296,9 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 				if (get_if_was_standing(&level->player_movement.standing_history, 0)
 					&& get_if_was_standing(&level->player_movement.standing_history, 1))
 				{
-					player->acceleration = jump_acceleration;
+					player->acceleration = get_v2(0.0f, -1.0f) 
+						* level->static_data->player_jump_acceleration;
+					
 					change_player_movement_mode(&level->player_movement, movement_mode::JUMP);
 					break;
 				}
@@ -303,18 +306,20 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 			if (input->left.number_of_presses > 0)
 			{
-				player->acceleration += get_v2(-1.25f, 0);
+				player->acceleration += get_v2(-1.0f, 0.0f) 
+					* level->static_data->player_walking_acceleration;
 			}
 
 			if (input->right.number_of_presses > 0)
 			{
-				player->acceleration += get_v2(1.25f, 0);
+				player->acceleration += get_v2(1.0f, 0.0f) 
+					* level->static_data->player_walking_acceleration;
 			}
 		}
 		break;
 		case movement_mode::JUMP:
 		{
-			player->acceleration = gravity;
+			player->acceleration = level->static_data->gravity;
 
 			if (input->is_left_mouse_key_held)
 			{
@@ -323,12 +328,14 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 			if (input->left.number_of_presses > 0)
 			{
-				player->acceleration += get_v2(-1, 0);
+				player->acceleration += get_v2(-1, 0) 
+					* level->static_data->player_in_air_acceleration;
 			}
 
 			if (input->right.number_of_presses > 0)
 			{
-				player->acceleration += get_v2(1, 0);
+				player->acceleration += get_v2(1, 0)
+					* level->static_data->player_in_air_acceleration;
 			}
 		}
 		break;
@@ -336,7 +343,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 		{
 			if (false == is_standing_at_frame_beginning)
 			{
-				player->acceleration = gravity;
+				player->acceleration = level->static_data->gravity;
 			}
 
 			if (level->player_movement.recoil_acceleration_timer > 0.0f)
@@ -350,8 +357,8 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 	if (is_power_up_active(level->power_ups.speed))
 	{
-		player->acceleration.x *= 1.7f;
-		player->acceleration.y *= 1.3f;
+		player->acceleration.x *= level->static_data->power_up_speed_multipliers.x;
+		player->acceleration.y *= level->static_data->power_up_speed_multipliers.y;
 	}
 
 	player->velocity = player->type->slowdown_multiplier *
@@ -397,7 +404,7 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
 	{
 		if (is_power_up_active(level->power_ups.invincibility))
 		{
-			enemy->health -= 50.0f;
+			enemy->health = -1.0f;
 		}
 		else
 		{
@@ -417,15 +424,14 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
 
 				r32 acceleration = enemy->type->player_acceleration_on_collision;
 
-				level->player_movement.recoil_timer = 2.0f;
-				level->player_movement.recoil_acceleration_timer = 1.0f;
+				level->player_movement.recoil_timer = 
+					level->static_data->default_player_recoil_timer;
+				level->player_movement.recoil_acceleration_timer = 
+					level->static_data->default_player_recoil_acceleration_timer;
 				level->player_movement.recoil_acceleration = (direction * acceleration);
 
-				level->player_ignore_enemy_collision_cooldown = 1.0f;
-
-				/*printf("odrzut! nowe przyspieszenie: (%.02f,%.02f)\n",
-					level->player_movement.recoil_acceleration.x,
-					level->player_movement.recoil_acceleration.y);*/
+				level->player_ignore_enemy_collision_cooldown 
+					= level->static_data->default_player_ignore_enemy_collision_cooldown;
 
 				change_player_movement_mode(&level->player_movement, movement_mode::RECOIL);
 			}

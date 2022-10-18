@@ -568,7 +568,19 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->entity_types = push_array(arena, ENTITY_TYPES_MAX_COUNT, entity_type);
 	data->entity_types_count = 0;
 
+	data->gravity = get_v2(0, 1.0f);
+	data->player_jump_acceleration = 33.0f;
+	data->power_up_speed_multipliers = get_v2(1.7f, 1.3f);
+	data->player_walking_acceleration = 1.25f;
+	data->player_in_air_acceleration = 1.0f;
+
 	data->default_player_invincibility_cooldown = 0.2f;
+	data->player_as_target_offset = get_v2(0.0f, -0.3f);
+	data->default_player_ignore_enemy_collision_cooldown = 1.0f;
+	data->default_player_recoil_timer = 2.0f;
+	data->default_player_recoil_acceleration_timer = 1.0f;
+
+	data->moving_platform_velocity = 2.0f;
 
 	data->entity_types_dict = create_entity_types_dictionary(arena);
 
@@ -629,7 +641,6 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	sentry_type->max_health = 20;
 	sentry_type->damage_on_contact = 20;
 	sentry_type->velocity_multiplier = 0.0f;
-	sentry_type->player_acceleration_on_collision = 3.0f;
 	sentry_type->collision_rect_dim = get_v2(0.75f, 0.75f);
 	sentry_type->rotation_sprites = load_shooting_rotation_sprites(arena, 6);
 	add_death_animation(arena, sentry_type, data->explosion_animations.size_24x24);
@@ -683,10 +694,9 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	guardian_type->default_attack_bullet_interval_duration = 1.0f;
 
 	guardian_type->max_health = 40;
-	guardian_type->damage_on_contact = 20;
+	guardian_type->damage_on_contact = 30;
 	guardian_type->velocity_multiplier = 3.0f;
 	guardian_type->default_attack_cooldown = 0.5f;
-	guardian_type->player_acceleration_on_collision = 3.0f;
 	guardian_type->collision_rect_dim = get_v2(1.0f, 1.0f);
 	add_death_animation(arena, guardian_type, data->explosion_animations.size_32x32);
 
@@ -714,11 +724,10 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	flying_bomb_type->detection_distance = 10.0f;
 	flying_bomb_type->forget_detection_distance = 12.0f;
 
-	flying_bomb_type->max_health = 50;
-	flying_bomb_type->damage_on_contact = 70.0f;
+	flying_bomb_type->max_health = 40;
+	flying_bomb_type->damage_on_contact = 80.0f;
 	flying_bomb_type->velocity_multiplier = 2.0f;
 	flying_bomb_type->default_attack_cooldown = 0.5f;
-	flying_bomb_type->player_acceleration_on_collision = 3.0f;
 	flying_bomb_type->collision_rect_dim = get_v2(1.1f, 0.5f);
 	add_death_animation(arena, flying_bomb_type, data->explosion_animations.size_96x96);
 
@@ -740,7 +749,6 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	robot_type->walk_animation = get_walk_animation(arena, get_v2(0, 2 * 24), true, get_v2(0.0f, 1.0f));
 	robot_type->default_attack_cooldown = 0.2f;
 	robot_type->velocity_multiplier = 3.0f;
-	robot_type->player_acceleration_on_collision = 3.0f;
 	robot_type->collision_rect_dim = get_v2(0.35f, 1.6f);
 	robot_type->collision_rect_offset = get_v2(0.0f, -0.70f);
 	robot_type->default_attack_cooldown = 1.2f;
@@ -773,7 +781,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	cultist_type->looking_position_offset = get_v2(0.0f, -1.2f);
 
 	cultist_type->max_health = 100;
-	cultist_type->damage_on_contact = 5;
+	cultist_type->damage_on_contact = 10;
 	cultist_type->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
 	cultist_type->default_attack_cooldown = 1.0f;
 	cultist_type->default_attack_series_duration = 0.2f;
@@ -884,6 +892,12 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	power_up_spread_type->idle_pose = load_power_up_graphics(arena, 4);
 	power_up_spread_type->flags = power_up_flags;
 	power_up_spread_type->collision_rect_dim = power_up_size;
+
+	data->default_power_up_invincibility_timer = 30.0f;
+	data->default_power_up_speed_timer = 20.0f;
+	data->default_power_up_damage_timer = 30.0f;
+	data->default_power_up_spread_timer = 30.0f;
+	data->default_power_up_health_bonus = 20.0f;
 
 	end_temporary_memory(transient_memory, true);
 }

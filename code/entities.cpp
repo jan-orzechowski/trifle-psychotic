@@ -969,8 +969,8 @@ void enemy_attack(level_state* level, entity* enemy, entity* player, r32 delta_t
 {
 	if (enemy->type->fired_bullet_type)
 	{
-		v2 player_target_offset = get_v2(0.0f, -0.3f);
-		world_position player_as_target = add_to_position(player->position, get_v2(0.0f, -0.3f));
+		world_position player_as_target = add_to_position(player->position, 
+			level->static_data->player_as_target_offset);
 
 		if (is_point_visible_for_entity(level, enemy, player_as_target))
 		{
@@ -1006,7 +1006,7 @@ void enemy_attack(level_state* level, entity* enemy, entity* player, r32 delta_t
 					else
 					{
 						// wystrzeliwujemy jeden pocisk
-						enemy_fire_bullet(level, enemy, player, get_v2(0.0f, -0.3f));
+						enemy_fire_bullet(level, enemy, player, level->static_data->player_as_target_offset);
 						enemy->attack_bullet_interval_duration =
 							enemy->type->default_attack_bullet_interval_duration;
 					}
@@ -1138,8 +1138,8 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
 	{
 		if (are_entity_flags_set(entity_to_move, entity_flags::FLIES_TOWARDS_PLAYER))
 		{
-			v2 player_target_offset = get_v2(0.0f, -0.3f);
-			world_position player_as_target = add_to_position(player->position, get_v2(0.0f, -0.3f));
+			world_position player_as_target = add_to_position(player->position, 
+				level->static_data->player_as_target_offset);
 			if (is_point_visible_for_entity(level, entity_to_move, player_as_target))
 			{
 				entity_to_move->player_detected = true;
@@ -1245,7 +1245,7 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
 
 		type->collision_rect_dim = get_v2(3, 1);
 
-		type->velocity_multiplier = 2.0f;
+		type->velocity_multiplier = level->static_data->moving_platform_velocity;
 
 		set_flags(&type->flags, entity_flags::BLOCKS_MOVEMENT);
 		set_flags(&type->flags, entity_flags::INDESTRUCTIBLE);

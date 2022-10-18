@@ -604,8 +604,6 @@ struct static_game_data
 {
 	map_layer collision_reference;
 
-	r32 default_player_invincibility_cooldown;
-
 	entity_type_dictionary entity_types_dict;
 	entity_type* entity_types;
 	u32 entity_types_count;
@@ -622,13 +620,34 @@ struct static_game_data
 	animation_frame player_jump_pose;
 	animation_frame player_recoil_pose;
 
-	font ui_font;
-	font menu_font;
+	v2 gravity;
+	r32 player_walking_acceleration;
+	r32 player_in_air_acceleration;
+	r32 player_jump_acceleration;
+	v2 power_up_speed_multipliers;
+
+	r32 default_player_ignore_enemy_collision_cooldown;
+	r32 default_player_invincibility_cooldown;
+	r32 default_player_recoil_timer;
+	r32 default_player_recoil_acceleration_timer;
+	v2 player_as_target_offset;
+	r32 moving_platform_velocity;
+
+	r32 default_power_up_invincibility_timer;
+	r32 default_power_up_speed_timer;
+	r32 default_power_up_damage_timer;
+	r32 default_power_up_spread_timer;
+	r32 default_power_up_health_bonus;
+
 	ui_graphics ui_gfx;
 	gates_graphics gates_gfx;
 	switches_graphics switches_gfx;
 	display_graphics display_gfx;	
 	moving_platforms_graphics platforms_gfx;
+	explosions explosion_animations;
+
+	font ui_font;
+	font menu_font;
 
 	string_ref menu_new_game_str;
 	string_ref menu_continue_str;
@@ -638,9 +657,7 @@ struct static_game_data
 	string_ref exit_warning_message;
 	string_ref default_death_message;
 	string_ref* death_messages;
-	u32 death_messages_count;
-
-	explosions explosion_animations;
+	u32 death_messages_count;	
 };
 
 enum class scene
