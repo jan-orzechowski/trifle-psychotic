@@ -457,10 +457,69 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	return scene_change;
 }
 
+scene_change level_choice_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
+{
+	game_input* input = get_last_frame_input(&game->input_buffer);
+
+	if (game->level_choice_menu.time_to_first_interaction > 0.0f)
+	{
+		game->level_choice_menu.time_to_first_interaction -= delta_time;
+	}
+
+	i32 options_x = 100;
+	i32 option_y = 100;
+	i32 first_option_y = option_y;
+	i32 option_y_spacing = 20;
+
+	rect message_area = get_rect_from_corners(get_v2(30, 50), get_v2(260, 100));
+	render_text(&game->render, game->transient_arena, static_data->ui_font,
+		message_area, static_data->choose_level_message, false);
+	
+	rect option_rect = get_rect_from_corners(
+		get_v2(options_x, option_y),
+		get_v2(options_x + 160, option_y + 10));
+
+	for (u32 level_index = 0; level_index < static_data->levels_count; level_index++)
+	{
+		level_choice level = static_data->levels[level_index];
+
+		render_menu_option(static_data->ui_font, game, option_rect, level.name);
+		if (game->level_choice_menu.time_to_first_interaction <= 0.0f
+			&& was_rect_clicked(input, option_rect))
+		{
+			game->level_choice_menu.active_scene_change.change_scene = true;
+			game->level_choice_menu.active_scene_change.new_scene = scene::GAME;
+			game->level_choice_menu.active_scene_change.restore_checkpoint = false;
+			game->level_choice_menu.active_scene_change.map_to_load = level.map_name;
+		}
+
+		move_rect(&option_rect, get_v2(0.0f, option_y_spacing));
+	}
+
+	render_crosshair(static_data, &game->render, input);
+
+	if (game->level_choice_menu.active_scene_change.change_scene)
+	{
+		process_fade(&game->render, &game->level_choice_menu.fade_out_perc, delta_time, 
+			false, static_data->menu_fade_speed);
+	}
+	else
+	{
+		process_fade(&game->render, &game->level_choice_menu.fade_in_perc, delta_time, 
+			true, static_data->menu_fade_speed);
+	}
+
+	scene_change scene_change = {};
+	if (game->level_choice_menu.fade_out_perc >= 1.0f)
+	{
+		scene_change = game->level_choice_menu.active_scene_change;
+	}
+
+	return scene_change;
+}
+
 scene_change menu_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
 {
-	scene_change change_to_other_scene = {};
-
 	game_input* input = get_last_frame_input(&game->input_buffer);
 
 	render_bitmap(&game->render, textures::BACKGROUND_TITLE_SCREEN,
@@ -483,9 +542,8 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 		options_x, option_y, static_data->menu_new_game_str);
 	if (was_rect_clicked(input, option_interactive_rect))
 	{
-		change_to_other_scene.change_scene = true;
-		change_to_other_scene.new_scene = scene::GAME;
-		change_to_other_scene.restore_checkpoint = false;
+		game->main_menu.active_scene_change.change_scene = true;
+		game->main_menu.active_scene_change.new_scene = scene::LEVEL_CHOICE;
 	}
 
 	if (game->checkpoint.used)
@@ -495,9 +553,9 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 			options_x, option_y, static_data->menu_continue_str);
 		if (was_rect_clicked(input, option_interactive_rect))
 		{
-			change_to_other_scene.change_scene = true;
-			change_to_other_scene.new_scene = scene::GAME;
-			change_to_other_scene.restore_checkpoint = true;
+			game->main_menu.active_scene_change.change_scene = true;
+			game->main_menu.active_scene_change.new_scene = scene::GAME;
+			game->main_menu.active_scene_change.restore_checkpoint = true;
 		}
 	}
 
@@ -506,8 +564,8 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 		options_x, option_y, static_data->menu_credits_str);
 	if (was_rect_clicked(input, option_interactive_rect))
 	{
-		change_to_other_scene.change_scene = true;
-		change_to_other_scene.new_scene = scene::CREDITS;
+		game->main_menu.active_scene_change.change_scene = true;
+		game->main_menu.active_scene_change.new_scene = scene::CREDITS;
 	}
 
 	if (game->show_exit_game_option)
@@ -517,16 +575,30 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 			options_x, option_y, static_data->menu_exit_str);
 		if (was_rect_clicked(input, option_interactive_rect))
 		{
-			change_to_other_scene.change_scene = true;
-			change_to_other_scene.new_scene = scene::EXIT;
+			game->main_menu.active_scene_change.change_scene = true;
+			game->main_menu.active_scene_change.new_scene = scene::EXIT;
 		}
 	}
 
 	render_crosshair(static_data, &game->render, input);
 
-	process_fade(&game->render, &game->main_menu.fade_out_perc, delta_time, true, 1.5f);
-
-	return change_to_other_scene;
+	if (game->main_menu.active_scene_change.change_scene)
+	{
+		process_fade(&game->render, &game->main_menu.fade_out_perc, delta_time, 
+			false, static_data->menu_fade_speed);
+	}
+	else
+	{
+		process_fade(&game->render, &game->main_menu.fade_in_perc, delta_time, 
+			true, static_data->menu_fade_speed);
+	}
+	
+	scene_change scene_change = {};
+	if (game->main_menu.fade_out_perc >= 1.0f)
+	{
+		scene_change = game->main_menu.active_scene_change;
+	}
+	return scene_change;
 };
 
 string_ref get_death_screen_prompt(static_game_data* static_data)
@@ -620,6 +692,11 @@ void main_game_loop(game_state* game, r32 delta_time)
 		case scene::MAIN_MENU:
 		{
 			scene_change = menu_update_and_render(game, game->static_data, delta_time);
+		};
+		break;
+		case scene::LEVEL_CHOICE:
+		{
+			scene_change = level_choice_update_and_render(game, game->static_data, delta_time);
 		};
 		break;
 		case scene::MAP_ERRORS:
@@ -725,6 +802,14 @@ void main_game_loop(game_state* game, r32 delta_time)
 			case scene::MAIN_MENU:
 			{
 				game->main_menu = {};
+				game->main_menu.fade_in_perc = 1.0f;
+			}
+			break;
+			case scene::LEVEL_CHOICE:
+			{
+				game->level_choice_menu = {};
+				game->level_choice_menu.time_to_first_interaction = 1.0f;
+				game->level_choice_menu.fade_in_perc = 1.0f;
 			}
 			break;
 			case scene::MAP_ERRORS:

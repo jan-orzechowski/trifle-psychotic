@@ -603,8 +603,17 @@ struct explosions
 	animation* size_96x96;
 };
 
+struct level_choice
+{
+	string_ref name;
+	string_ref description;
+	string_ref map_name;
+};
+
 struct static_game_data
 {
+	level_choice* levels;
+	u32 levels_count;
 	map_layer collision_reference;
 
 	entity_type_dictionary entity_types_dict;
@@ -657,6 +666,9 @@ struct static_game_data
 	string_ref menu_continue_str;
 	string_ref menu_credits_str;
 	string_ref menu_exit_str;
+	string_ref choose_level_message;
+
+	r32 menu_fade_speed;
 
 	string_ref exit_warning_message;
 	string_ref default_death_message;
@@ -668,6 +680,7 @@ enum class scene
 {
 	GAME,
 	MAIN_MENU,
+	LEVEL_CHOICE,
 	DEATH,
 	CREDITS,
 	MAP_ERRORS,
@@ -746,8 +759,16 @@ struct render_group
 struct main_menu_state
 {
 	r32 fade_out_perc;
-	//r32 fade_in_perc;
+	r32 fade_in_perc;
+	scene_change active_scene_change;
 };
+
+struct level_choice_menu_state
+{
+	r32 time_to_first_interaction;
+	r32 fade_out_perc;
+	r32 fade_in_perc;
+	scene_change active_scene_change;
 };
 
 struct death_screen_state
@@ -776,6 +797,7 @@ struct game_state
 	char* level_name_buffer;
 	main_menu_state main_menu;
 	death_screen_state death_screen;
+	level_choice_menu_state level_choice_menu;
 
 	i32 message_dots_index;
 	r32 message_dots_timer;

@@ -498,6 +498,42 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	data->title_str = copy_c_string_to_memory_arena(arena, "Trifle Psychotic");
 
+	data->choose_level_message = copy_c_string_to_memory_arena(arena, "Choose a place to heal:");
+
+	data->levels_count = 6;
+	data->levels = push_array(arena, data->levels_count, level_choice);
+	data->levels[0].name = copy_c_string_to_memory_arena(arena, "1. The Outpost (Intro)");
+	data->levels[0].description = copy_c_string_to_memory_arena(arena, "Wieloliniowy opis \n\
+tutaj ciag dalszy");
+	data->levels[0].map_name = copy_c_string_to_memory_arena(arena, "map_01");
+
+	data->levels[1].name = copy_c_string_to_memory_arena(arena, "2. The Spire");
+	data->levels[1].description = copy_c_string_to_memory_arena(arena, "The Spire\n\
+Wieloliniowy opis \n\
+tutaj ciag dalszy");
+	data->levels[1].map_name = copy_c_string_to_memory_arena(arena, "map_02");
+
+	data->levels[2].name = copy_c_string_to_memory_arena(arena, "3. The Great Armada");
+	data->levels[2].description = copy_c_string_to_memory_arena(arena, "Opis The Great Armada\n\
+Wieloliniowy opis \n\
+tutaj ciag dalszy");
+	data->levels[2].map_name = copy_c_string_to_memory_arena(arena, "map_03");
+
+	data->levels[3].name = copy_c_string_to_memory_arena(arena, "4. The Orbital Fortress");
+	data->levels[3].description = copy_c_string_to_memory_arena(arena, "Opis The Orbital Fortress\n\
+Wieloliniowy opis \n\
+tutaj ciag dalszy");
+	data->levels[3].map_name = copy_c_string_to_memory_arena(arena, "map_04");
+
+	data->levels[4].name = copy_c_string_to_memory_arena(arena, "5. The Volcano Temple");
+	data->levels[4].description = copy_c_string_to_memory_arena(arena, "Opis The Volcano Temple\n\
+Wieloliniowy opis \n\
+tutaj ciag dalszy");
+	data->levels[4].map_name = copy_c_string_to_memory_arena(arena, "map_05");
+
+	data->levels[5].name = copy_c_string_to_memory_arena(arena, "Custom");
+	data->levels[5].map_name = copy_c_string_to_memory_arena(arena, "custom");
+
 	data->ui_font = {};
 	data->ui_font.height_in_pixels = 8;
 	data->ui_font.width_in_pixels = 8;
@@ -514,6 +550,8 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->title_font.line_spacing = 10;
 	data->title_font.texture = textures::TITLE_FONT;
 	data->title_font.uppercase_only = true;	
+
+	data->menu_fade_speed = 1.5f;
 
 	data->ui_gfx = load_ui_graphics();
 	data->menu_new_game_str = copy_c_string_to_memory_arena(arena, "New Game");
