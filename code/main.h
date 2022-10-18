@@ -528,6 +528,8 @@ struct switch_graphics
 
 struct ui_graphics
 {
+	rect crosshair;
+	
 	rect healthbar_icon;
 	rect healthbar_empty_bar;
 	rect healthbar_red_bar;
@@ -546,9 +548,6 @@ struct ui_graphics
 	rect msgbox_dots_1;
 	rect msgbox_dots_2;
 	rect msgbox_dots_3;
-
-	rect crosshair;
-	rect menu_indicator;	
 };
 
 struct gates_graphics
@@ -744,9 +743,6 @@ struct render_group
 
 struct main_menu_state
 {
-	i32 option_index;
-	i32 option_max_index;
-	r32 option_change_timer;
 	r32 fade_percentage;
 };
 

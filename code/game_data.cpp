@@ -375,6 +375,8 @@ ui_graphics load_ui_graphics()
 
 	ui_graphics result = {};
 
+	result.crosshair = get_rect_from_min_corner(get_v2(216, 48), get_v2(13, 13));
+
 	result.healthbar_icon = get_rect_from_min_corner(offset, get_v2(8, 8));
 	rect r = get_rect_from_min_corner(offset + get_v2(8, 0), get_v2(4, 8));
 	result.healthbar_empty_bar = r;
@@ -396,9 +398,6 @@ ui_graphics load_ui_graphics()
 	result.msgbox_dots_1 = r;
 	result.msgbox_dots_2 = move_rect(&r, get_v2(0, 5));
 	result.msgbox_dots_3 = move_rect(&r, get_v2(0, 5));
-
-	result.crosshair = get_rect_from_min_corner(get_v2(216, 48), get_v2(13, 13));
-	result.menu_indicator = get_rect_from_min_corner(136, 176, 16, 16);
 
 	return result;
 }

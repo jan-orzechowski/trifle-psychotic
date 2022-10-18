@@ -13,6 +13,17 @@ rect get_whole_screen_text_area(r32 margin)
 	return result;
 }
 
+b32 was_rect_clicked(game_input* input, rect screen_rect)
+{
+	b32 result = false;
+	if (input->is_left_mouse_key_held)
+	{
+		v2 relative_mouse_pos = get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR;
+		result = is_point_inside_rect(screen_rect, relative_mouse_pos);
+	}
+	return result;
+}
+
 void render_hitpoint_bar(static_game_data* static_data, render_group* render, entity* player, b32 draw_white_bars)
 {
 	r32 health = player->health;
@@ -58,6 +69,13 @@ void render_hitpoint_bar(static_game_data* static_data, render_group* render, en
 	}
 }
 
+void render_crosshair(static_game_data* static_data, render_group* render, game_input* input)
+{
+	v2 relative_mouse_pos = get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR;
+	rect screen_rect = get_rect_from_center(relative_mouse_pos, get_v2(13, 13));
+	render_bitmap(render, textures::CHARSET, static_data->ui_gfx.crosshair, screen_rect);
+}
+
 void render_counter(static_game_data* static_data, render_group* render, memory_arena* transient_arena,
 	i32 counter, u32 counter_max_value)
 {
@@ -83,13 +101,21 @@ void render_counter(static_game_data* static_data, render_group* render, memory_
 	render_text(render, transient_arena, static_data->ui_font, box, buffer, 10, false);
 }
 
-void render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, string_ref title)
+rect render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, string_ref title)
 {
 	rect textbox_area = get_rect_from_corners(
 		get_v2(x_coord, y_coord),
-		get_v2(x_coord + 100, y_coord + 20));
+		get_v2(x_coord + 70, y_coord + 10));
+
+#if TRIFLE_DEBUG
+	render_bitmap(&game->render, textures::BACKGROUND_CLOUDS,
+		get_rect_from_corners(get_v2(x_coord, y_coord), get_v2(x_coord + 100, y_coord + 20)), 
+		textbox_area);
+#endif
 
 	render_text(&game->render, game->transient_arena, font, textbox_area, title);
+
+	return textbox_area;
 }
 
 void render_ui_box(static_game_data* static_data, render_group* group, rect textbox_rect)

@@ -388,13 +388,9 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		render_counter(level->static_data, &game->render, game->transient_arena, level->enemies_to_kill_counter, 99);
 	}
 
-	// render crosshair
 	if (false == level->stop_player_movement)
 	{
-		game_input* input = get_last_frame_input(&game->input_buffer);
-		v2 relative_mouse_pos = get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR;
-		rect screen_rect = get_rect_from_center(relative_mouse_pos, get_v2(13, 13));
-		render_bitmap(&game->render, textures::CHARSET, level->static_data->ui_gfx.crosshair, screen_rect);
+		render_crosshair(level->static_data, &game->render, input);
 	}
 
 	if (level->show_message && level->message_to_show.string_size)
@@ -466,126 +462,63 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	scene_change change_to_other_scene = {};
 
 	game_input* input = get_last_frame_input(&game->input_buffer);
-	if (input->up.number_of_presses > 0)
-	{
-		if (game->main_menu.option_change_timer < 0.0f)
-		{
-			game->main_menu.option_index--;
-			game->main_menu.option_change_timer = 0.15f;;
-		}
-	} 
-	if (input->down.number_of_presses > 0)
-	{
-		if (game->main_menu.option_change_timer < 0.0f)
-		{
-			game->main_menu.option_index++;
-			game->main_menu.option_change_timer = 0.15f;;
-		}
-	}
 
-	game->main_menu.option_change_timer -= delta_time;
-	game->main_menu.option_max_index = 1; 
-	if (game->show_exit_game_option) game->main_menu.option_max_index++;
-	if (game->checkpoint.used) game->main_menu.option_max_index++;
+	rect title_area = get_rect_from_corners(
+		get_v2(10, 10),
+		get_v2(100, 100));
 
-	if (game->main_menu.option_index < 0)
-	{
-		game->main_menu.option_index = game->main_menu.option_max_index;
-	}
-	if (game->main_menu.option_index > game->main_menu.option_max_index)
-	{
-		game->main_menu.option_index = 0;
-	}
-
-	if (input->fire.number_of_presses > 0)
-	{
-		switch (game->main_menu.option_index)
-		{
-			case 0: 
-			{
-				// new game
-				change_to_other_scene.change_scene = true;
-				change_to_other_scene.new_scene = scene::GAME;
-				change_to_other_scene.restore_checkpoint = false;
-			} 
-			break;
-			case 1:
-			{
-				if (game->checkpoint.used)
-				{
-					// continue
-					change_to_other_scene.change_scene = true;
-					change_to_other_scene.new_scene = scene::GAME;
-					change_to_other_scene.restore_checkpoint = true;
-				}
-				else
-				{
-					change_to_other_scene.change_scene = true;
-					change_to_other_scene.new_scene = scene::CREDITS;
-				}
-			}		
-			break;
-			case 2:
-			{
-				if (game->checkpoint.used)
-				{
-					change_to_other_scene.change_scene = true;
-					change_to_other_scene.new_scene = scene::CREDITS;
-				}
-				else
-				{
-					if (game->show_exit_game_option)
-					{
-						change_to_other_scene.change_scene = true;
-						change_to_other_scene.new_scene = scene::EXIT;
-					}
-				}
-			}
-			break;
-			case 3:
-			{
-				if (game->show_exit_game_option)
-				{
-					change_to_other_scene.change_scene = true;
-					change_to_other_scene.new_scene = scene::EXIT;
-				}
-			}
-			break;
-			invalid_default_case;
-		}
-	}
+	render_text(&game->render, game->transient_arena, static_data->title_font, 
+		title_area, static_data->title_str);
 	
 	i32 options_x = 140;
 	i32 option_y = 140;
 	i32 first_option_y = option_y;
 	i32 option_y_spacing = 20;
 
-	render_menu_option(static_data->ui_font, game, 
+	rect option_interactive_rect = render_menu_option(static_data->ui_font, game, 
 		options_x, option_y, static_data->menu_new_game_str);
-	option_y += option_y_spacing;
+	if (was_rect_clicked(input, option_interactive_rect))
+	{
+		change_to_other_scene.change_scene = true;
+		change_to_other_scene.new_scene = scene::GAME;
+		change_to_other_scene.restore_checkpoint = false;
+	}
 
 	if (game->checkpoint.used)
 	{
-		render_menu_option(static_data->ui_font, game,
+		option_y += option_y_spacing;	
+		option_interactive_rect = render_menu_option(static_data->ui_font, game,
 			options_x, option_y, static_data->menu_continue_str);
-		option_y += option_y_spacing;
+		if (was_rect_clicked(input, option_interactive_rect))
+		{
+			change_to_other_scene.change_scene = true;
+			change_to_other_scene.new_scene = scene::GAME;
+			change_to_other_scene.restore_checkpoint = true;
+		}
 	}
 
-	render_menu_option(static_data->ui_font, game,
-		options_x, option_y, static_data->menu_credits_str);
 	option_y += option_y_spacing;
+	option_interactive_rect = render_menu_option(static_data->ui_font, game,
+		options_x, option_y, static_data->menu_credits_str);
+	if (was_rect_clicked(input, option_interactive_rect))
+	{
+		change_to_other_scene.change_scene = true;
+		change_to_other_scene.new_scene = scene::CREDITS;
+	}
 
 	if (game->show_exit_game_option)
 	{
-		render_menu_option(static_data->ui_font, game,
+		option_y += option_y_spacing;
+		option_interactive_rect = render_menu_option(static_data->ui_font, game,
 			options_x, option_y, static_data->menu_exit_str);
+		if (was_rect_clicked(input, option_interactive_rect))
+		{
+			change_to_other_scene.change_scene = true;
+			change_to_other_scene.new_scene = scene::EXIT;
+		}
 	}
 
-	u32 indicator_y = first_option_y + (game->main_menu.option_index * option_y_spacing) - 4;
-	u32 indicator_x = options_x - 20;
-
-	rect indicator_screen_rect = get_rect_from_min_corner(indicator_x, indicator_y, 16, 16);
-	render_bitmap(&game->render, textures::CHARSET, static_data->ui_gfx.menu_indicator, indicator_screen_rect);
+	render_crosshair(static_data, &game->render, input);
 
 	process_fade(&game->render, &game->main_menu.fade_percentage, delta_time, true, 1.5f);
 
