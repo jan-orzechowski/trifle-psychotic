@@ -91,14 +91,16 @@ void render_counter(static_game_data* static_data, render_group* render, memory_
 	
 	u32 digits_count = how_many_digits(counter_max_value);
 	v2 box_size = get_text_area_for_line_of_text(static_data->ui_font, digits_count);
-	v2 box_position = get_v2((SCREEN_WIDTH / SCALING_FACTOR) - box_size.x - 8, 12);
-	rect box = get_rect_from_min_corner(box_position, box_size);
+	v2 box_position = get_v2((SCREEN_WIDTH / SCALING_FACTOR) - box_size.x - 12, 12);
+	rect text_area = get_rect_from_min_corner(box_position, box_size);
+	rect box_area = add_side_length(text_area, get_v2(4, 4));
+	box_area = move_rect(box_area, get_v2(2, 0));
 	
 	char buffer[10];
 	snprintf(buffer, 10, "%d", counter);
 
-	render_ui_box(static_data, render, add_side_length(box, get_v2(4, 4)));
-	render_text(render, transient_arena, static_data->ui_font, box, buffer, 10, false);
+	render_ui_box(static_data, render, box_area);
+	render_text(render, transient_arena, static_data->ui_font, text_area, buffer, 10, false);
 }
 
 rect render_menu_option(font font, game_state* game, rect text_area, string_ref title)
