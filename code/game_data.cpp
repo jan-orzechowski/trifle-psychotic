@@ -643,6 +643,28 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	sentry_type->fired_bullet_type = sentry_bullet_type;
 
+	entity_type* big_sentry_type = add_entity_type(data, entity_type_enum::ENEMY_BIG_SENTRY);
+	big_sentry_type->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 3, 7));
+	big_sentry_type->flags = (entity_flags)(
+		(u32)entity_flags::BLOCKS_MOVEMENT
+		| (u32)entity_flags::ENEMY);
+	big_sentry_type->detection_type = detection_type::DETECT_360_DEGREES;
+	big_sentry_type->detection_distance = 12.0f;
+	big_sentry_type->stop_movement_distance = 4.0f;
+	big_sentry_type->forget_detection_distance = 14.0f;
+
+	big_sentry_type->default_attack_cooldown = 3.0f;
+	big_sentry_type->default_attack_series_duration = 0.8f;
+	big_sentry_type->default_attack_bullet_interval_duration = 0.025f;
+
+	big_sentry_type->max_health = 120.0f;
+	big_sentry_type->damage_on_contact = 40.0f;
+	big_sentry_type->velocity_multiplier = 0.0f;
+	big_sentry_type->collision_rect_dim = get_v2(0.9f, 0.9f);
+	add_death_animation(arena, big_sentry_type, data->explosion_animations.size_32x32);
+
+	big_sentry_type->fired_bullet_type = sentry_bullet_type;
+
 	entity_type* guardian_type = add_entity_type(data, entity_type_enum::ENEMY_GUARDIAN);
 	guardian_type->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 1, 7));
 	guardian_type->walk_animation = get_animation_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 1, 7));
