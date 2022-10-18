@@ -497,12 +497,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 {	
 	temporary_memory transient_memory = begin_temporary_memory(transient_arena);
 
-	data->menu_font = {};
-	data->menu_font.height_in_pixels = 8;
-	data->menu_font.width_in_pixels = 8;
-	data->menu_font.letter_spacing = -1;
-	data->menu_font.line_spacing = 4;
-	data->menu_font.texture = textures::FONT;
+	data->title_str = copy_c_string_to_memory_arena(arena, "Trifle Psychotic");
 
 	data->ui_font = {};
 	data->ui_font.height_in_pixels = 8;
@@ -510,6 +505,14 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->ui_font.letter_spacing = -1;
 	data->ui_font.line_spacing = 4;
 	data->ui_font.texture = textures::FONT;
+
+	data->title_font = {};
+	data->title_font.height_in_pixels = 65;
+	data->title_font.width_in_pixels = 48;
+	data->title_font.letter_spacing = -2;
+	data->title_font.line_spacing = 10;
+	data->title_font.texture = textures::TITLE_FONT;
+	data->title_font.uppercase_only = true;	
 
 	data->ui_gfx = load_ui_graphics();
 	data->menu_new_game_str = copy_c_string_to_memory_arena(arena, "New Game");

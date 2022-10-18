@@ -560,24 +560,24 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	i32 first_option_y = option_y;
 	i32 option_y_spacing = 20;
 
-	render_menu_option(static_data->menu_font, game, 
+	render_menu_option(static_data->ui_font, game, 
 		options_x, option_y, static_data->menu_new_game_str);
 	option_y += option_y_spacing;
 
 	if (game->checkpoint.used)
 	{
-		render_menu_option(static_data->menu_font, game,
+		render_menu_option(static_data->ui_font, game,
 			options_x, option_y, static_data->menu_continue_str);
 		option_y += option_y_spacing;
 	}
 
-	render_menu_option(static_data->menu_font, game, 
+	render_menu_option(static_data->ui_font, game,
 		options_x, option_y, static_data->menu_credits_str);
 	option_y += option_y_spacing;
 
 	if (game->show_exit_game_option)
 	{
-		render_menu_option(static_data->menu_font, game,
+		render_menu_option(static_data->ui_font, game,
 			options_x, option_y, static_data->menu_exit_str);
 	}
 

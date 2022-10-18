@@ -169,7 +169,8 @@ sdl_data init_sdl()
 				if (IMG_Init(img_flags) & img_flags)
 				{
 					load_image(sdl_game.renderer, &sdl_game.tileset_texture, "gfx/tileset.png", &success);
-					load_image(sdl_game.renderer, &sdl_game.font_texture, "gfx/font1.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.ui_font_texture, "gfx/ui_font.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.title_font_texture, "gfx/title_font.png", &success);
 					load_image(sdl_game.renderer, &sdl_game.charset_texture, "gfx/charset.png", &success);
 					load_image(sdl_game.renderer, &sdl_game.explosion_texture, "gfx/explosions.png", &success);
 					load_image(sdl_game.renderer, &sdl_game.background_desert_texture, "gfx/background_desert.png", &success);
@@ -373,7 +374,8 @@ int main(int argc, char* args[])
 	SDL_DestroyTexture(sdl.background_red_planet_sky_texture);
 	SDL_DestroyTexture(sdl.tileset_texture);
 	SDL_DestroyTexture(sdl.charset_texture);
-	SDL_DestroyTexture(sdl.font_texture);
+	SDL_DestroyTexture(sdl.ui_font_texture);
+	SDL_DestroyTexture(sdl.title_font_texture);
 	SDL_DestroyTexture(sdl.explosion_texture);
 	
 	SDL_DestroyRenderer(sdl.renderer);
@@ -409,7 +411,8 @@ internal SDL_Texture* get_texture(sdl_data sdl, textures type)
 	{
 		case textures::NONE: { result = NULL; }; break;
 		case textures::TILESET: { result = sdl.tileset_texture; }; break;
-		case textures::FONT: { result = sdl.font_texture; }; break;
+		case textures::FONT: { result = sdl.ui_font_texture; }; break;
+		case textures::TITLE_FONT: { result = sdl.title_font_texture; }; break;
 		case textures::CHARSET: { result = sdl.charset_texture; }; break;
 		case textures::EXPLOSION: { result = sdl.explosion_texture; }; break;
 		case textures::BACKGROUND_DESERT: { result = sdl.background_desert_texture; }; break;

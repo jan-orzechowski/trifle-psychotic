@@ -13,7 +13,8 @@ struct sdl_data
 	SDL_Renderer* renderer;
 
 	SDL_Texture* tileset_texture;
-	SDL_Texture* font_texture;
+	SDL_Texture* ui_font_texture;
+	SDL_Texture* title_font_texture;
 	SDL_Texture* charset_texture;
 	SDL_Texture* explosion_texture;
 	SDL_Texture* background_desert_texture;

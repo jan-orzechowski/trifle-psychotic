@@ -33,6 +33,7 @@ enum class textures
 	NONE,
 	TILESET,
 	FONT,
+	TITLE_FONT,
 	CHARSET,
 	EXPLOSION,
 	BACKGROUND_DESERT,
@@ -580,6 +581,7 @@ struct font
 	u32 height_in_pixels;
 	i32 letter_spacing;
 	i32 line_spacing;
+	b32 uppercase_only;
 	textures texture;
 };
 
@@ -647,8 +649,9 @@ struct static_game_data
 	explosions explosion_animations;
 
 	font ui_font;
-	font menu_font;
+	font title_font;
 
+	string_ref title_str;
 	string_ref menu_new_game_str;
 	string_ref menu_continue_str;
 	string_ref menu_credits_str;
