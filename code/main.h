@@ -41,7 +41,8 @@ enum class textures
 	BACKGROUND_CLOUDS,
 	BACKGROUND_RED_PLANET_SKY,
 	BACKGROUND_RED_PLANET_DESERT,
-	BACKGROUND_PLANET_ORBIT
+	BACKGROUND_PLANET_ORBIT,
+	BACKGROUND_TITLE_SCREEN
 };
 
 struct tile_position
@@ -578,6 +579,7 @@ struct font
 {
 	u32 width_in_pixels;
 	u32 height_in_pixels;
+	u32 glyph_spacing_width;
 	i32 letter_spacing;
 	i32 line_spacing;
 	b32 uppercase_only;
@@ -743,7 +745,9 @@ struct render_group
 
 struct main_menu_state
 {
-	r32 fade_percentage;
+	r32 fade_out_perc;
+	//r32 fade_in_perc;
+};
 };
 
 struct death_screen_state

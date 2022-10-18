@@ -463,9 +463,13 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 
 	game_input* input = get_last_frame_input(&game->input_buffer);
 
+	render_bitmap(&game->render, textures::BACKGROUND_TITLE_SCREEN,
+		get_rect_from_corners(get_v2(0, 0), get_v2(384, 320)),
+		get_rect_from_corners(get_v2(0, 0), get_v2(SCREEN_WIDTH, SCREEN_HEIGHT) / SCALING_FACTOR));
+
 	rect title_area = get_rect_from_corners(
-		get_v2(10, 10),
-		get_v2(100, 100));
+		get_v2(30, 20),
+		get_v2(300, 100));
 
 	render_text(&game->render, game->transient_arena, static_data->title_font, 
 		title_area, static_data->title_str);
@@ -520,7 +524,7 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 
 	render_crosshair(static_data, &game->render, input);
 
-	process_fade(&game->render, &game->main_menu.fade_percentage, delta_time, true, 1.5f);
+	process_fade(&game->render, &game->main_menu.fade_out_perc, delta_time, true, 1.5f);
 
 	return change_to_other_scene;
 };
@@ -651,7 +655,6 @@ void main_game_loop(game_state* game, r32 delta_time)
 			
 		};
 		break;
-		invalid_default_case;
 	}
 
 	if (scene_change.change_scene)
@@ -744,7 +747,6 @@ void main_game_loop(game_state* game, r32 delta_time)
 				game->exit_game = true;
 			}
 			break;
-			invalid_default_case;
 		}
 	}
 

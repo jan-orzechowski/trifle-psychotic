@@ -101,19 +101,26 @@ void render_counter(static_game_data* static_data, render_group* render, memory_
 	render_text(render, transient_arena, static_data->ui_font, box, buffer, 10, false);
 }
 
-rect render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, string_ref title)
+rect render_menu_option(font font, game_state* game, rect text_area, string_ref title)
+{
+#if TRIFLE_DEBUG
+	render_bitmap(&game->render, textures::BACKGROUND_CLOUDS,
+		get_rect_from_corners(get_zero_v2(), get_v2(100, 20)),
+		text_area);
+#endif
+
+	render_text(&game->render, game->transient_arena, font, text_area, title);
+
+	return text_area;
+}
+
+rect render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, string_ref caption)
 {
 	rect textbox_area = get_rect_from_corners(
 		get_v2(x_coord, y_coord),
 		get_v2(x_coord + 70, y_coord + 10));
 
-#if TRIFLE_DEBUG
-	render_bitmap(&game->render, textures::BACKGROUND_CLOUDS,
-		get_rect_from_corners(get_v2(x_coord, y_coord), get_v2(x_coord + 100, y_coord + 20)), 
-		textbox_area);
-#endif
-
-	render_text(&game->render, game->transient_arena, font, textbox_area, title);
+	render_menu_option(font, game, textbox_area, caption);
 
 	return textbox_area;
 }

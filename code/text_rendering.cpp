@@ -49,7 +49,19 @@ rect get_glyph_rect(font font, u32 code)
 {
     assert(is_letter(code));
     u32 index = code - 33;
-    v2 position = get_v2(1 + (index * (font.width_in_pixels + 1)), 1);
+
+    if (font.uppercase_only)
+    {
+        //zamiana liter małych na duże
+        if (index > 63)
+        {
+            index -= 32;
+        }
+    }
+
+    v2 position = get_v2(
+        font.glyph_spacing_width + (index * (font.width_in_pixels + font.glyph_spacing_width)),
+        font.glyph_spacing_width);
     v2 dimensions = get_v2(font.width_in_pixels, font.height_in_pixels);
     rect result = get_rect_from_min_corner(position, dimensions);
     return result;

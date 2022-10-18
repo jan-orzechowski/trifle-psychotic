@@ -501,14 +501,16 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->ui_font = {};
 	data->ui_font.height_in_pixels = 8;
 	data->ui_font.width_in_pixels = 8;
+	data->ui_font.glyph_spacing_width = 1;
 	data->ui_font.letter_spacing = -1;
 	data->ui_font.line_spacing = 4;
 	data->ui_font.texture = textures::FONT;
 
 	data->title_font = {};
-	data->title_font.height_in_pixels = 65;
-	data->title_font.width_in_pixels = 48;
-	data->title_font.letter_spacing = -2;
+	data->title_font.height_in_pixels = 32;
+	data->title_font.width_in_pixels = 24;
+	data->title_font.glyph_spacing_width = 0;
+	data->title_font.letter_spacing = 0;
 	data->title_font.line_spacing = 10;
 	data->title_font.texture = textures::TITLE_FONT;
 	data->title_font.uppercase_only = true;	

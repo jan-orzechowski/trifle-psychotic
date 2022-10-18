@@ -23,6 +23,7 @@ struct sdl_data
 	SDL_Texture* background_red_planet_sky_texture;
 	SDL_Texture* background_red_planet_desert_texture;
 	SDL_Texture* background_planet_orbit_texture;
+	SDL_Texture* background_title_screen_texture;
 };
 
 read_file_result read_file(std::string path);

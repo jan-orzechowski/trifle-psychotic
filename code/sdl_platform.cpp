@@ -179,6 +179,7 @@ sdl_data init_sdl()
 					load_image(sdl_game.renderer, &sdl_game.background_red_planet_sky_texture, "gfx/background_red_planet_sky.png", &success);
 					load_image(sdl_game.renderer, &sdl_game.background_red_planet_desert_texture, "gfx/background_red_planet_desert.png", &success);
 					load_image(sdl_game.renderer, &sdl_game.background_planet_orbit_texture, "gfx/background_planet_orbit.png", &success);
+					load_image(sdl_game.renderer, &sdl_game.background_title_screen_texture, "gfx/background_title_screen.png", &success);
 				}
 				else
 				{
@@ -372,6 +373,7 @@ int main(int argc, char* args[])
 	SDL_DestroyTexture(sdl.background_planet_orbit_texture);
 	SDL_DestroyTexture(sdl.background_red_planet_desert_texture);
 	SDL_DestroyTexture(sdl.background_red_planet_sky_texture);
+	SDL_DestroyTexture(sdl.background_title_screen_texture);
 	SDL_DestroyTexture(sdl.tileset_texture);
 	SDL_DestroyTexture(sdl.charset_texture);
 	SDL_DestroyTexture(sdl.ui_font_texture);
@@ -421,6 +423,7 @@ internal SDL_Texture* get_texture(sdl_data sdl, textures type)
 		case textures::BACKGROUND_RED_PLANET_SKY: { result = sdl.background_red_planet_sky_texture; }; break;
 		case textures::BACKGROUND_RED_PLANET_DESERT: { result = sdl.background_red_planet_desert_texture; }; break;
 		case textures::BACKGROUND_PLANET_ORBIT: { result = sdl.background_planet_orbit_texture; }; break;
+		case textures::BACKGROUND_TITLE_SCREEN: { result = sdl.background_title_screen_texture; }; break;
 		invalid_default_case;
 	}
 	return result;
