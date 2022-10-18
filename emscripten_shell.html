@@ -4,9 +4,20 @@
         <meta charset="utf-8">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <style>
-            #body { margin: 0px !important; }
+            #body { 
+                margin: 0px !important; 
+                background: black;
+            }
             /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
-            #canvas { border: 0px none !important; background-color: black; }
+            #canvas { 
+                border: 0px none !important; 
+                background-color: black;
+                user-select: none;
+                -moz-user-select: none;
+                -khtml-user-select: none;
+                -webkit-user-select: none;
+                -o-user-select: none; 
+            }
         </style>
     </head>
     <body id="body">
