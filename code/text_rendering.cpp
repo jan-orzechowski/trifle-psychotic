@@ -67,12 +67,11 @@ rect get_glyph_rect(font font, u32 code)
     return result;
 }
 
-void render_text_line(render_group* render, font font, rect area, string_ref line)
+void render_text_line(render_group* render, render_text_options options, string_ref line)
 {
-    i32 letter_spacing = -1;
-
-    u32 x = area.min_corner.x;
-    u32 y = area.min_corner.y;
+    font font = options.font;
+    u32 x = options.writing_area.min_corner.x;
+    u32 y = options.writing_area.min_corner.y;
     for (u32 char_index = 0;
         char_index < line.string_size;
         char_index++)
@@ -82,23 +81,31 @@ void render_text_line(render_group* render, font font, rect area, string_ref lin
         {
             rect src_rect = get_glyph_rect(font, (u32)char_to_render);
             rect dst_rect = get_rect_from_min_corner(get_v2(x, y), get_v2(font.width_in_pixels, font.height_in_pixels));
-            render_bitmap(render, font.texture, src_rect, dst_rect);
+            if (options.add_tint)
+            {
+                render_bitmap_with_effects(render, font.texture, src_rect, dst_rect, options.text_tint, false, false);
+            }
+            else
+            {
+                render_bitmap(render, font.texture, src_rect, dst_rect);
+            }
         }
-        x += font.width_in_pixels + letter_spacing;
+        x += font.width_in_pixels + font.letter_spacing;
     }
 }
 
-void render_text_lines(render_group* render, font font, rect area, lines_to_render lines)
+void render_text_lines(render_group* render, render_text_options options, lines_to_render lines)
 {
+    font font = options.font;
     u32 x = 0;
     u32 y = 0;
 
-    y = area.min_corner.y;
+    y = options.writing_area.min_corner.y;
     for (u32 line_index = 0; line_index < lines.used_lines_count; line_index++)
     {
         string_ref line = lines.lines[line_index];
         
-        x = area.min_corner.x;
+        x = options.writing_area.min_corner.x;
         for (u32 char_index = 0;
             char_index < line.string_size;
             char_index++)
@@ -108,8 +115,16 @@ void render_text_lines(render_group* render, font font, rect area, lines_to_rend
             {
                 rect src_rect = get_glyph_rect(font, (u32)char_to_render);
                 rect dst_rect = get_rect_from_min_corner(get_v2(x, y), get_v2(font.width_in_pixels, font.height_in_pixels));
-                render_bitmap(render, font.texture, src_rect, dst_rect);
+                if (options.add_tint)
+                {
+                    render_bitmap_with_effects(render, font.texture, src_rect, dst_rect, options.text_tint, false, false);
+                }
+                else
+                {
+                    render_bitmap(render, font.texture, src_rect, dst_rect);
+                }
             }
+
             x += font.width_in_pixels + font.letter_spacing;
         }
 
@@ -154,17 +169,17 @@ v2 get_text_area_for_line_of_text(font font, u32 character_count)
     return result; 
 }
 
-void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, string_ref text, b32 wrap)
+void render_text(render_group* render, memory_arena* transient_arena, render_text_options options, string_ref text)
 {
     temporary_memory writing_memory = begin_temporary_memory(transient_arena);
     
-    text_area_limits limits = get_text_area_limits(font, writing_area);
+    text_area_limits limits = get_text_area_limits(options.font, options.writing_area);
     if (text.string_size > limits.max_character_count)
     {
         text.string_size = limits.max_character_count;
     }
 
-    if (wrap) 
+    if (options.wrap)
     {        
         lines_to_render text_lines = {};
         text_lines.max_lines_count = limits.max_lines_count;
@@ -245,7 +260,7 @@ void render_text(render_group* render, memory_arena* transient_arena, font font,
             }
         }
 
-        render_text_lines(render, font, writing_area, text_lines);
+        render_text_lines(render, options, text_lines);
     }
     else
     {
@@ -258,15 +273,33 @@ void render_text(render_group* render, memory_arena* transient_arena, font font,
             line_to_render.string_size = limits.max_line_length;
         }
 
-        render_text_line(render, font, writing_area, line_to_render);
+        render_text_line(render, options, line_to_render);
     }
 
     end_temporary_memory(writing_memory, true);
 }
 
-void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, const char* buffer, u32 buffer_size, b32 wrap)
+void render_text(render_group* render, memory_arena* transient_arena, render_text_options options, const char* buffer, u32 buffer_size)
 {
     u32 string_length = get_c_string_length(buffer, buffer_size);
     string_ref str_to_render = get_string_ref(buffer, string_length);
-    render_text(render, transient_arena, font, writing_area, str_to_render, wrap);
+    render_text(render, transient_arena, options, str_to_render);
+}
+
+void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, string_ref text, b32 wrap)
+{
+    render_text_options options = {};
+    options.font = font;
+    options.writing_area = writing_area;
+    options.wrap = wrap;
+    render_text(render, transient_arena, options, text);
+}
+
+void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, const char* buffer, u32 buffer_size, b32 wrap)
+{
+    render_text_options options = {};
+    options.font = font;
+    options.writing_area = writing_area;
+    options.wrap = wrap;
+    render_text(render, transient_arena, options, buffer, buffer_size);
 }
