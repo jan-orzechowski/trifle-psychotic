@@ -215,6 +215,7 @@ struct map
 	//linked lista entities to spawn jest usuwana po zakończeniu inicjalizacji
 	entity_to_spawn* first_entity_to_spawn;
 	entity_to_spawn* last_entity_to_spawn;
+	r32 initial_max_player_health;
 
 	tile_position starting_tile;
 	string_ref next_map;
@@ -637,6 +638,8 @@ struct static_game_data
 	r32 player_in_air_acceleration;
 	r32 player_jump_acceleration;
 	v2 power_up_speed_multipliers;
+
+	r32 default_player_max_health;
 
 	r32 default_player_ignore_enemy_collision_cooldown;
 	r32 default_player_invincibility_cooldown;

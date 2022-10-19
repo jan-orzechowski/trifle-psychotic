@@ -511,6 +511,17 @@ void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_
 					// bład
 				}
 			}
+			else if (compare_to_c_string(name, "initial_health"))
+			{
+				if (compare_to_c_string(type, "int"))
+				{
+					level->initial_max_player_health = (r32)parse_i32(value);
+				}
+				else
+				{
+					// bład
+				}
+			}
 			else
 			{
 				snprintf(errors->message_buffer, errors->message_buffer_size,

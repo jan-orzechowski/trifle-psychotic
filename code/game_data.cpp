@@ -629,15 +629,17 @@ tutaj ciag dalszy");
 	data->bullet_types = push_array(arena, BULLET_TYPES_MAX_COUNT, entity_type);
 	data->bullet_types_count = 0;
 
+	data->default_player_max_health = 100.0f;
+
 	entity_type* player_entity_type = add_entity_type(data, entity_type_enum::PLAYER);
 	player_entity_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT | (u32)entity_flags::PLAYER);
-	player_entity_type->max_health = 100; //40;
+	player_entity_type->max_health = data->default_player_max_health;
 	player_entity_type->velocity_multiplier = 40.0f;
 	player_entity_type->slowdown_multiplier = 0.80f;
 	player_entity_type->default_attack_cooldown = 0.2f;
 	player_entity_type->walk_animation = get_walk_animation(arena, get_zero_v2(), false);
-	player_entity_type->collision_rect_dim = get_v2(0.35f, 1.7f); //get_v2(0.35f, 1.6f);
-	player_entity_type->collision_rect_offset = get_v2(0.0f, -0.1f); //get_v2(0.35f, 1.6f);
+	player_entity_type->collision_rect_dim = get_v2(0.35f, 1.7f);
+	player_entity_type->collision_rect_offset = get_v2(0.0f, -0.1f);
 	player_entity_type->death_animation_offset = get_v2(0.0f, -0.75f);
 	player_entity_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 0);
 	add_death_animation(arena, player_entity_type, data->explosion_animations.size_48x48);

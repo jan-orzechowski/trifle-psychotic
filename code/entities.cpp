@@ -487,11 +487,20 @@ void initialize_current_map(game_state* game, level_state* level)
 		entity_type* player_type = get_entity_type_ptr(
 			level->static_data->entity_types_dict, entity_type_enum::PLAYER);
 
+		if (level->current_map.initial_max_player_health > 0.0f)
+		{
+			player_type->max_health = level->current_map.initial_max_player_health;
+		}
+		else
+		{
+			player_type->max_health = game->static_data->default_player_max_health;
+		}
+
 		// gracz ma środek w innym miejscu niż pozostałe entities 
 		// - z tego powodu musimy skorygować początkowe położenie
 		world_position starting_position = get_world_position(level->current_map.starting_tile);
 		starting_position = add_to_position(starting_position, 
-			get_v2(0, -(player_type->collision_rect_dim.y / 2) + 0.25f));
+			get_v2(0, -(player_type->collision_rect_dim.y / 2) + 0.55f));
 
 		add_entity(level, starting_position, player_type);
 	}

@@ -22,11 +22,12 @@ void save_checkpoint(game_state* game)
 
 	game->checkpoint = {};
 	game->checkpoint.used = true;
+	game->checkpoint.map_name = copy_string_to_buffer(game->level_name_buffer, MAX_LEVEL_NAME_LENGTH,
+		game->level_state->current_map_name);
+
 	entity* player = get_player(game->level_state);
 	if (player->type)
-	{
-		game->checkpoint.map_name = copy_string_to_buffer(game->level_name_buffer, MAX_LEVEL_NAME_LENGTH, 
-			game->level_state->current_map_name);
+	{		
 		game->checkpoint.player_max_health = player->type->max_health;
 	}
 }
