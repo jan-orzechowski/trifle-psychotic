@@ -64,11 +64,11 @@ void load_image(SDL_Renderer* renderer, SDL_Texture** place_to_load, const char*
 	}
 }
 
-read_file_result read_file(std::string path)
+read_file_result read_file(const char* path)
 {
 	read_file_result result = {};
 
-	SDL_RWops* file = SDL_RWFromFile(path.c_str(), "r");
+	SDL_RWops* file = SDL_RWFromFile(path, "r");
 	if (file)
 	{
 		int64_t file_size = SDL_RWsize(file);
@@ -100,6 +100,53 @@ read_file_result read_file(std::string path)
 	return result;
 }
 
+
+
+void save_file(const char* path, write_to_tile contents)
+{
+	SDL_RWops* file = SDL_RWFromFile(path, "w+b");
+	if (file != NULL)
+	{				
+		int bytes_written = SDL_RWwrite(file, contents.buffer, sizeof(char), contents.length);
+		if (bytes_written < contents.length)
+		{
+			print_sdl_error();
+		}
+
+		SDL_RWclose(file);
+	}
+}
+
+#include <string>
+
+read_file_result load_prefs()
+{
+	read_file_result result = {};
+	char* path = SDL_GetPrefPath("Trifle Psychotic", "Trifle Psychotic");
+	if (path != NULL)
+	{
+		std::string path2 = path;
+		path2.append("prefs.txt");
+
+		result = read_file(path2.c_str());
+		SDL_free(path);
+	}
+	return result;
+}
+
+void save_prefs(write_to_tile contents)
+{
+	char* path = SDL_GetPrefPath("Trifle Psychotic", "Trifle Psychotic");
+	if (path != NULL)
+	{
+		std::string path2 = path;
+		path2.append("prefs.txt");
+
+		save_file(path2.c_str(), contents);
+		SDL_free(path);
+	}	
+}
+
 SDL_Renderer* get_renderer(SDL_Window* window)
 {
 	SDL_Renderer* renderer = NULL;
@@ -108,10 +155,10 @@ SDL_Renderer* get_renderer(SDL_Window* window)
 		SDL_RendererInfo renderer_info = {};
 		SDL_GetRenderDriverInfo(driver_index, &renderer_info);
 		// direct3d11 i direct3d powoduje freeze
-		if (renderer_info.name == 0 || renderer_info.name != std::string("direct3d11"))
+		/*if (renderer_info.name == 0 || renderer_info.name != std::string("direct3d11"))
 		{
 			continue;
-		}
+		}*/
 
 		//renderer = SDL_CreateRenderer(window, driver_index, 0);
 		//printf("found direct3d11\n");

@@ -260,11 +260,14 @@ tmx_map_parsing_result load_map(string_ref map_name, memory_arena* arena, memory
 {
 	tmx_map_parsing_result result = {};
 	
-	std::string map_file_path = "data/";
-	map_file_path.append(map_name.ptr, map_name.string_size);
-	map_file_path.append(".tmx");
+	char path_buffer_a[1000];
+	copy_string_to_buffer(path_buffer_a, 1000, map_name);
+	path_buffer_a[map_name.string_size] = '\0';
 
-	read_file_result map_file = read_file(map_file_path);
+	char path_buffer[1000];
+	snprintf(path_buffer, 1000, "data/%s.tmx", path_buffer_a);
+
+	read_file_result map_file = read_file(path_buffer);
 	result = read_map_from_tmx_file(arena, transient_arena, map_file, "map", false);
 	delete map_file.contents;
 
@@ -493,6 +496,29 @@ shooting_rotation_sprites* load_shooting_rotation_sprites(memory_arena* arena, u
 	return result;
 }
 
+void save_levels(static_game_data* data, memory_arena* transient_arena)
+{
+	string_builder builder = get_string_builder(transient_arena, 1000);
+
+	for (u32 level_index = 0; level_index < data->levels_count; level_index++)
+	{
+		level_choice* level = data->levels + level_index;
+		if (level->completed)
+		{
+			push_string(&builder, level->map_name);
+			push_string(&builder, ",");
+		}		
+	}
+
+	string_ref text_to_save = get_string_from_string_builder(&builder);
+
+	write_to_tile save_test = {};
+	save_test.buffer = text_to_save.ptr;
+	save_test.length = text_to_save.string_size;
+
+	save_prefs(save_test);
+}
+
 void mark_level_as_completed(static_game_data* data, char* name_buffer)
 {
 	if (strcmp(name_buffer, "custom") != 0)
@@ -623,8 +649,15 @@ tutaj ciag dalszy");
 	data->levels[5].name = copy_c_string_to_memory_arena(arena, "Custom");
 	data->levels[5].map_name = copy_c_string_to_memory_arena(arena, "custom");
 
-	const char* save_test = "   map_01,  map_02  map_03, ,";
-	load_completed_levels(data, save_test);
+	write_to_tile save_test = {};
+	save_test.buffer = (void*)"   map_01,  map_02  map_03, ,";
+	save_test.length = 30;
+
+	save_prefs(save_test);
+	read_file_result prefs = load_prefs();
+	load_completed_levels(data, (char*)prefs.contents);
+
+	save_levels(data, transient_arena);
 
 	data->menu_fade_speed = 1.5f;
 
@@ -649,8 +682,7 @@ tutaj ciag dalszy");
 	data->death_messages[8] = copy_c_string_to_memory_arena(arena, "Text 8");
 	data->death_messages[9] = copy_c_string_to_memory_arena(arena, "Text 9");
 
-	std::string collision_file_path = "data/collision_map.tmx";
-	read_file_result collision_file = read_file(collision_file_path);
+	read_file_result collision_file = read_file("data/collision_map.tmx");
 	data->collision_reference = read_collision_map(arena, transient_arena, collision_file);
 	delete collision_file.contents;
 

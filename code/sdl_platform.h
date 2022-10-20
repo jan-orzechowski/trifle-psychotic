@@ -26,7 +26,17 @@ struct sdl_data
 	SDL_Texture* background_title_screen_texture;
 };
 
-read_file_result read_file(std::string path);
+struct write_to_tile
+{
+	void* buffer;
+	u32 length;
+};
+
+read_file_result read_file(const char* path);
+void save_file(const char* path, write_to_tile contents);
+read_file_result load_prefs();
+void save_prefs(write_to_tile contents);
+
 SDL_Color get_sdl_color(v4 color);
 SDL_Rect get_sdl_rect(rect rect);
 void print_sdl_error();
