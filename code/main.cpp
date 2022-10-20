@@ -467,7 +467,7 @@ scene_change level_choice_update_and_render(game_state* game, static_game_data* 
 		game->level_choice_menu.time_to_first_interaction -= delta_time;
 	}
 
-	i32 options_x = 100;
+	i32 options_x = 80;
 	i32 option_y = 100;
 	i32 first_option_y = option_y;
 	i32 option_y_spacing = 20;
@@ -478,13 +478,14 @@ scene_change level_choice_update_and_render(game_state* game, static_game_data* 
 	
 	rect option_rect = get_rect_from_corners(
 		get_v2(options_x, option_y),
-		get_v2(options_x + 160, option_y + 10));
+		get_v2(options_x + 165, option_y + 10));
 
 	for (u32 level_index = 0; level_index < static_data->levels_count; level_index++)
 	{
 		level_choice level = static_data->levels[level_index];
 
-		render_menu_option(static_data->ui_font, game, option_rect, level.name);
+
+		render_menu_option(static_data->ui_font, game, option_rect, level.name, level.completed);
 		if (game->level_choice_menu.time_to_first_interaction <= 0.0f
 			&& was_rect_clicked(input, option_rect))
 		{

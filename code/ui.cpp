@@ -1,4 +1,4 @@
-#include "main.h"
+﻿#include "main.h"
 #include "rendering.h"
 #include "text_rendering.h"
 #include "ui.h"
@@ -103,7 +103,7 @@ void render_counter(static_game_data* static_data, render_group* render, memory_
 	render_text(render, transient_arena, static_data->ui_font, text_area, buffer, 10, false);
 }
 
-rect render_menu_option(font font, game_state* game, rect text_area, string_ref title)
+rect render_menu_option(font font, game_state* game, rect text_area, string_ref title, b32 tint_completed)
 {
 #if TRIFLE_DEBUG
 	render_bitmap(&game->render, textures::BACKGROUND_CLOUDS,
@@ -111,18 +111,31 @@ rect render_menu_option(font font, game_state* game, rect text_area, string_ref 
 		text_area);
 #endif
 
-	render_text(&game->render, game->transient_arena, font, text_area, title);
+	if (tint_completed)
+	{
+		render_text_options options = {};
+		options.font = font;
+		options.writing_area = text_area;
+		options.allow_horizontal_overflow = false;
+		options.add_tint = true;
+		options.text_tint = get_v4(0.0f, 0.8f, 0.0f, 0.0f);
+		render_text(&game->render, game->transient_arena, &options, title);
+	}
+	else
+	{
+		render_text(&game->render, game->transient_arena, font, text_area, title, false);
+	}
 
 	return text_area;
 }
 
-rect render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, string_ref caption)
+rect render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, string_ref caption, b32 tint_completed)
 {
 	rect textbox_area = get_rect_from_corners(
 		get_v2(x_coord, y_coord),
 		get_v2(x_coord + 70, y_coord + 10));
 
-	render_menu_option(font, game, textbox_area, caption);
+	render_menu_option(font, game, textbox_area, caption, tint_completed);
 
 	return textbox_area;
 }

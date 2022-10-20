@@ -492,6 +492,57 @@ shooting_rotation_sprites* load_shooting_rotation_sprites(memory_arena* arena, u
 	return result;
 }
 
+void mark_level_as_completed(static_game_data* data, char* name_buffer)
+{
+	if (strcmp(name_buffer, "custom") != 0)
+	{
+		for (u32 level_index = 0; level_index < data->levels_count; level_index++)
+		{
+			level_choice* level = data->levels + level_index;
+			if (compare_to_c_string(level->map_name, name_buffer))
+			{
+				level->completed = true;
+				break;
+			}
+		}
+	}
+}
+
+void load_completed_levels(static_game_data* data, const char* str)
+{
+	// forma: oddzielona przecinkami lista map bez rozszerzenia, np. map_01,map02
+
+	char buffer[MAX_LEVEL_NAME_LENGTH + 1];
+	u32 current_char_index = 0;
+	while (*str)
+	{
+		if (current_char_index == MAX_LEVEL_NAME_LENGTH)
+		{
+			buffer[current_char_index] = '\0';
+			mark_level_as_completed(data, buffer);
+			current_char_index = 0;
+		}
+
+		char c = *str;
+		if (is_whitespace(c) || c == ',')
+		{
+			if (current_char_index > 0)
+			{
+				buffer[current_char_index] = '\0';
+				mark_level_as_completed(data, buffer);
+				current_char_index = 0;
+			}
+		}
+		else
+		{
+			buffer[current_char_index] = c;
+			current_char_index++;
+		}
+
+		str++;
+	}	
+}
+
 void load_static_game_data(static_game_data* data, memory_arena* arena, memory_arena* transient_arena)
 {	
 	temporary_memory transient_memory = begin_temporary_memory(transient_arena);
@@ -533,6 +584,9 @@ tutaj ciag dalszy");
 
 	data->levels[5].name = copy_c_string_to_memory_arena(arena, "Custom");
 	data->levels[5].map_name = copy_c_string_to_memory_arena(arena, "custom");
+
+	const char* save_test = "   map_01,  map_02  map_03, ,";
+	load_completed_levels(data, save_test);
 
 	data->ui_font = {};
 	data->ui_font.height_in_pixels = 8;

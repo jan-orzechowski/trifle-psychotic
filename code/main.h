@@ -609,6 +609,7 @@ struct level_choice
 	string_ref name;
 	string_ref description;
 	string_ref map_name;
+	b32 completed;
 };
 
 struct static_game_data
