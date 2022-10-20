@@ -39,8 +39,12 @@ void debug_render_player_information(game_state* game, level_state* level)
 		get_v2(10, 200), get_v2((SCREEN_WIDTH / 2) - 10, 260)
 	);
 
+	string_ref debug_str = {};
+	debug_str.ptr = buffer;
+	debug_str.string_size = 200;
+
 	render_text(&game->render, game->transient_arena,
-		game->level_state->static_data->ui_font, area, buffer, 200, true);
+		game->level_state->static_data->ui_font, area, debug_str, true);
 }
 
 void debug_render_tile_collision_boxes(render_group* render, level_state* level, world_position camera_pos)

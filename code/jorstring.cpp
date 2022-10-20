@@ -249,6 +249,13 @@ b32 is_digit(char c)
 	return result;
 }
 
+b32 is_letter(char c)
+{
+	u32 code = (u32)c;
+	b32 result = (code >= 33 && code <= 126);
+	return result;
+}
+
 b32 is_all_digits(string_ref str)
 {
 	b32 result = true;

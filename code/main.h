@@ -1,7 +1,8 @@
 ﻿#pragma once
 
 #include <stdio.h>
-#include <string>
+#include <string.h>
+#include <stdlib.h>
 #include "jorutils.h"
 #include "jormath.h"
 #include "jorstring.h"
@@ -587,6 +588,16 @@ struct font
 	textures texture;
 };
 
+struct render_text_options
+{
+	font font;
+	rect writing_area;
+	b32 allow_horizontal_overflow;
+	b32 allow_vertical_overflow;
+	b32 add_tint;
+	v4 text_tint;
+};
+
 struct explosions
 {
 	animation* size_16x16_variant_1;
@@ -604,10 +615,12 @@ struct explosions
 	animation* size_96x96;
 };
 
+struct text_lines;
+
 struct level_choice
 {
 	string_ref name;
-	string_ref description;
+	text_lines* description;
 	string_ref map_name;
 	b32 completed;
 };
@@ -664,6 +677,9 @@ struct static_game_data
 
 	font ui_font;
 	font title_font;
+
+	render_text_options scrolling_text_options;
+	render_text_options parsing_errors_text_options;
 
 	string_ref title_str;
 	string_ref menu_new_game_str;

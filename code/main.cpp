@@ -480,10 +480,19 @@ scene_change level_choice_update_and_render(game_state* game, static_game_data* 
 		get_v2(options_x, option_y),
 		get_v2(options_x + 165, option_y + 10));
 
+	text_lines* test_scrolling_text = static_data->levels[0].description;
+	local_persist r32 y_offset = (SCREEN_HEIGHT / SCALING_FACTOR);
+	render_large_text(&game->render, game->transient_arena, 
+		&static_data->scrolling_text_options, *test_scrolling_text, y_offset);
+	
+	y_offset -= delta_time * 20;
+
 	for (u32 level_index = 0; level_index < static_data->levels_count; level_index++)
 	{
 		level_choice level = static_data->levels[level_index];
 
+		r32 new_width = get_text_area_for_single_line(static_data->ui_font, level.name).x;
+		option_rect.max_corner.x = option_rect.min_corner.x + new_width;
 
 		render_menu_option(static_data->ui_font, game, option_rect, level.name, level.completed);
 		if (game->level_choice_menu.time_to_first_interaction <= 0.0f
@@ -533,7 +542,7 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 		get_v2(300, 100));
 
 	render_text(&game->render, game->transient_arena, static_data->title_font, 
-		title_area, static_data->title_str);
+		title_area, static_data->title_str, true);
 	
 	i32 options_x = 140;
 	i32 option_y = 140;
@@ -632,8 +641,9 @@ scene_change death_screen_update_and_render(game_state* game, static_game_data* 
 		game->death_screen.initialized = true;
 	}
 	
+	rect prompt_area = get_whole_screen_text_area(50.0f);
 	render_text(&game->render, game->transient_arena, static_data->ui_font,
-		get_whole_screen_text_area(50.0f), game->death_screen.prompt);
+		prompt_area, game->death_screen.prompt, true);
 
 	if (game->death_screen.timer > 0.0f)
 	{
@@ -705,8 +715,8 @@ void main_game_loop(game_state* game, r32 delta_time)
 		{
 			if (game->map_errors.string_size > 0)
 			{			
-				render_text(&game->render, game->transient_arena, game->static_data->ui_font, 
-					get_whole_screen_text_area(0.0f), game->map_errors);
+				render_text(&game->render, game->transient_arena, 
+					&game->static_data->parsing_errors_text_options, game->map_errors);
 
 				game_input* input = get_last_frame_input(&game->input_buffer);
 				if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
@@ -774,9 +784,9 @@ void main_game_loop(game_state* game, r32 delta_time)
 				initialize_level_state(game->level_state, game->static_data, level_to_load_name, game->arena);
 				tmx_map_parsing_result parsing_result = load_map(level_to_load_name, game->arena, game->transient_arena);
 				if (parsing_result.errors->errors_count > 0)
-				{
-					game->map_errors = get_parsing_errors_message(game->arena, &game->render,
-						game->static_data->ui_font, get_whole_screen_text_area(0.0f), parsing_result.errors);
+				{					
+					game->map_errors = get_parsing_errors_message(game->arena, &game->render, 
+						&game->static_data->parsing_errors_text_options, parsing_result.errors);
 
 					game->level_initialized = false;
 				} 

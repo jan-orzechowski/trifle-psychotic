@@ -1,6 +1,7 @@
 #pragma once
 
 #include "main.h"
+#include "text_rendering.h"
 
 struct tmx_parsing_error
 {
@@ -25,4 +26,4 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 	read_file_result file, const char* layer_name, b32 clean_up_transient_arena);
 map_layer read_collision_map(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file);
 string_ref get_parsing_errors_message(memory_arena* arena, render_group* render,
-	font font, rect textbox_area, tmx_parsing_error_report* errors);
+	render_text_options* text_options, tmx_parsing_error_report* errors);

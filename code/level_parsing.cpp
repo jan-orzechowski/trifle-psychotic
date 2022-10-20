@@ -833,10 +833,10 @@ map_layer read_collision_map(memory_arena* permanent_arena, memory_arena* transi
 	return result;
 }
 
-string_ref get_parsing_errors_message(memory_arena* arena, render_group* render,
-	font font, rect textbox_area, tmx_parsing_error_report* errors)
+string_ref get_parsing_errors_message(memory_arena* arena, render_group* render, 
+	render_text_options* text_options, tmx_parsing_error_report* errors)
 {
-	text_area_limits limits = get_text_area_limits(font, textbox_area);
+	text_area_limits limits = get_text_area_limits(text_options);
 
 	string_builder builder = get_string_builder(arena, limits.max_character_count);
 	push_string(&builder, "Unable to read a level from the TMX file! Errors:\n");
