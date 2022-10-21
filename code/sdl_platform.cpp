@@ -122,33 +122,37 @@ void save_file(const char* path, write_to_tile contents)
 	}
 }
 
-#include <string>
+void store_preferences_file_path(sdl_data* sdl, memory_arena* permanent_arena)
+{
+	char* preferences_folder_path = SDL_GetPrefPath("Trifle Psychotic", "Data");
+	if (preferences_folder_path != NULL)
+	{
+		empty_string_builder(&sdl->path_buffer);
+		push_string(&sdl->path_buffer, preferences_folder_path);
+		push_string(&sdl->path_buffer, "completed_levels.txt");
+		safe_push_null_terminator(&sdl->path_buffer);
+		string_ref path = get_string_from_string_builder(&sdl->path_buffer);
+		sdl->preferences_file_path = copy_string(permanent_arena, path);
+
+		SDL_free(preferences_folder_path);
+	}
+}
 
 read_file_result load_prefs()
 {
 	read_file_result result = {};
-	char* path = SDL_GetPrefPath("Trifle Psychotic", "Trifle Psychotic");
-	if (path != NULL)
-	{
-		std::string path2 = path;
-		path2.append("prefs.txt");
-
-		result = read_file(path2.c_str());
-		SDL_free(path);
+	if (GLOBAL_SDL_DATA.preferences_file_path.ptr != NULL)
+	{		
+		result = read_file(GLOBAL_SDL_DATA.preferences_file_path.ptr);
 	}
 	return result;
 }
 
 void save_prefs(write_to_tile contents)
 {
-	char* path = SDL_GetPrefPath("Trifle Psychotic", "Trifle Psychotic");
-	if (path != NULL)
+	if (GLOBAL_SDL_DATA.preferences_file_path.ptr != NULL)
 	{
-		std::string path2 = path;
-		path2.append("prefs.txt");
-
-		save_file(path2.c_str(), contents);
-		SDL_free(path);
+		save_file(GLOBAL_SDL_DATA.preferences_file_path.ptr, contents);
 	}	
 }
 
@@ -193,34 +197,6 @@ void stop_playing_music(int fade_out_ms)
 	}
 }
 
-SDL_Renderer* get_renderer(SDL_Window* window)
-{
-	SDL_Renderer* renderer = NULL;
-	for (int driver_index = 0; driver_index < SDL_GetNumRenderDrivers(); ++driver_index)
-	{
-		SDL_RendererInfo renderer_info = {};
-		SDL_GetRenderDriverInfo(driver_index, &renderer_info);
-		// direct3d11 i direct3d powoduje freeze
-		/*if (renderer_info.name == 0 || renderer_info.name != std::string("direct3d11"))
-		{
-			continue;
-		}*/
-
-		//renderer = SDL_CreateRenderer(window, driver_index, 0);
-		//printf("found direct3d11\n");
-		break;
-	}
-
-	if (renderer == 0)
-	{
-		// SDL_RENDERER_ACCELERATED powoduje na moim komputerze freeze - trzeba zbadać sprawę
-		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
-		printf("direct3d11 not found - software renderer used\n");
-	}
-
-	return renderer;
-}
-
 sdl_data init_sdl()
 {
 	sdl_data sdl_game = {};
@@ -242,7 +218,6 @@ sdl_data init_sdl()
 		if (sdl_game.window)
 		{
 			sdl_game.renderer = SDL_CreateRenderer(sdl_game.window, -1, SDL_RENDERER_SOFTWARE);
-			//get_renderer(sdl_game.window);
 			if (sdl_game.renderer)
 			{
 				SDL_RenderSetScale(sdl_game.renderer, SCALING_FACTOR, SCALING_FACTOR);
@@ -383,6 +358,9 @@ int main(int argc, char* args[])
 
 		int max_path_length = 4048; // maksymalna długość ścieżki na Linuksie, Windowsach i MacOS
 		sdl->path_buffer = get_string_builder(&transient_arena, max_path_length);
+
+		store_preferences_file_path(sdl, &permanent_arena);
+
 		game_state game = {};
 
 		game.arena = &permanent_arena;
@@ -391,7 +369,7 @@ int main(int argc, char* args[])
 		game.render.max_push_buffer_size = megabytes_to_bytes(10);
 		game.render.push_buffer_base = (u8*)push_size(&permanent_arena, game.render.max_push_buffer_size);
 
-		game.current_scene = scene::GAME;
+		game.current_scene = scene::MAIN_MENU;
 
 		game.level_state = push_struct(&permanent_arena, level_state);
 		game.level_name_buffer = (char*)push_size(&permanent_arena, MAX_LEVEL_NAME_LENGTH);
@@ -405,7 +383,7 @@ int main(int argc, char* args[])
 #ifdef __EMSCRIPTEN__
 		game.show_exit_game_option = false;
 
-		emscripten_set_main_loop_arg(emscripten_main_game_loop, (void*)&game, TARGET_HZ, true);
+		emscripten_set_main_loop_arg(emscripten_main_game_loop, (void*)&game, TARGET_HZ * 1.5f, true);
 #else		
 		game.show_exit_game_option = true;
 
