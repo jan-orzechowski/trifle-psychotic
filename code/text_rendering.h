@@ -9,12 +9,6 @@ struct text_area_limits
     u32 max_character_count;
 };
 
-struct text_lines
-{
-    string_ref* lines;
-    u32 lines_count;
-};
-
 struct text_viewport
 {
     rect cropped_writing_area;

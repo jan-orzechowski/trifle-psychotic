@@ -592,8 +592,8 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->title_font.uppercase_only = true;
 
 	data->parsing_errors_text_options.font = data->ui_font;
-	data->parsing_errors_text_options.allow_horizontal_overflow = true;
-	data->parsing_errors_text_options.allow_vertical_overflow = false;
+	data->parsing_errors_text_options.allow_horizontal_overflow = false;
+	data->parsing_errors_text_options.allow_vertical_overflow = true;
 	data->parsing_errors_text_options.writing_area = get_whole_screen_text_area(2.0f);
 
 	data->scrolling_text_options.font = data->ui_font;
@@ -608,45 +608,21 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->levels_count = 6;
 	data->levels = push_array(arena, data->levels_count, level_choice);
 	data->levels[0].name = copy_c_string_to_memory_arena(arena, "1. The Outpost (Intro)");
-	string_ref level_description = copy_c_string_to_memory_arena(arena, 
-"Wieloliniowy opis \n\
-tutaj ciag dalszy");
-	data->levels[0].description = get_division_of_text_into_lines(arena, &data->scrolling_text_options, level_description);
 	data->levels[0].map_name = copy_c_string_to_memory_arena(arena, "map_01");
 
 	data->levels[1].name = copy_c_string_to_memory_arena(arena, "2. The Spire");
-	level_description = copy_c_string_to_memory_arena(arena, 
-"The Spire\n\
-Wieloliniowy opis \n\
-tutaj ciag dalszy");
-	data->levels[1].description = get_division_of_text_into_lines(arena, &data->scrolling_text_options, level_description);
 	data->levels[1].map_name = copy_c_string_to_memory_arena(arena, "map_02");
 
 	data->levels[2].name = copy_c_string_to_memory_arena(arena, "3. The Great Armada");
-	level_description = copy_c_string_to_memory_arena(arena, 
-"Opis The Great Armada\n\
-Wieloliniowy opis \n\
-tutaj ciag dalszy");
-	data->levels[2].description = get_division_of_text_into_lines(arena, &data->scrolling_text_options, level_description);
 	data->levels[2].map_name = copy_c_string_to_memory_arena(arena, "map_03");
 
 	data->levels[3].name = copy_c_string_to_memory_arena(arena, "4. The Orbital Fortress");
-	level_description = copy_c_string_to_memory_arena(arena, 
-"Opis The Orbital Fortress\n\
-Wieloliniowy opis \n\
-tutaj ciag dalszy");
-	data->levels[3].description = get_division_of_text_into_lines(arena, &data->scrolling_text_options, level_description);
 	data->levels[3].map_name = copy_c_string_to_memory_arena(arena, "map_04");
 
 	data->levels[4].name = copy_c_string_to_memory_arena(arena, "5. The Volcano Temple");
-	level_description = copy_c_string_to_memory_arena(arena, 
-"Opis The Volcano Temple\n\
-Wieloliniowy opis \n\
-tutaj ciag dalszy");
-	data->levels[4].description = get_division_of_text_into_lines(arena, &data->scrolling_text_options, level_description);
 	data->levels[4].map_name = copy_c_string_to_memory_arena(arena, "map_05");
 
-	data->levels[5].name = copy_c_string_to_memory_arena(arena, "Custom");
+	data->levels[5].name = copy_c_string_to_memory_arena(arena, "Custom level");
 	data->levels[5].map_name = copy_c_string_to_memory_arena(arena, "custom");
 
 	write_to_tile save_test = {};

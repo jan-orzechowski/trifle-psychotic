@@ -16,6 +16,12 @@ struct string_builder
 	u32 max_size;
 };
 
+struct text_lines
+{
+	string_ref* lines;
+	u32 lines_count;
+};
+
 string_ref get_string_ref(const char*, u32);
 string_ref get_string_ref(const char*);
 b32 is_empty_string(string_ref);

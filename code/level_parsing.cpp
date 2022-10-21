@@ -62,15 +62,15 @@ void add_error(memory_arena* arena, tmx_errors_buffer* errors, const char* error
 	errors->report->last_error->message = copy_c_string_buffer_to_memory_arena(arena, error_message, errors->message_buffer_size);
 }
 
-void add_error(level_parsing_context* level_parsing, const char* message = NULL)
+void add_error(level_parsing_context* parsing, const char* message = NULL)
 {
 	if (message == NULL)
 	{
-		add_error(level_parsing->transient_arena, level_parsing->errors, level_parsing->errors->message_buffer);
+		add_error(parsing->transient_arena, parsing->errors, parsing->errors->message_buffer);
 	}
 	else
 	{
-		add_error(level_parsing->transient_arena, level_parsing->errors, message);
+		add_error(parsing->transient_arena, parsing->errors, message);
 	}
 }
 
@@ -116,11 +116,11 @@ entity_type_enum get_entity_type_enum_from_gid(i32 gid, i32 entity_tileset_first
 	return result;
 }
 
-void parse_entity_from_tile(level_parsing_context* level_parsing, u32 tile_index, i32 gid)
+void parse_entity_from_tile(level_parsing_context* parsing, u32 tile_index, i32 gid)
 {
-	tile_position entity_position = get_tile_position_from_index(level_parsing->level, tile_index);
+	tile_position entity_position = get_tile_position_from_index(parsing->level, tile_index);
 
-	entity_type_enum type = get_entity_type_enum_from_gid(gid, level_parsing->entity_tileset_first_gid);
+	entity_type_enum type = get_entity_type_enum_from_gid(gid, parsing->entity_tileset_first_gid);
 	switch (type)
 	{
 		case entity_type_enum::GATE_BLUE:
@@ -134,7 +134,7 @@ void parse_entity_from_tile(level_parsing_context* level_parsing, u32 tile_index
 		case entity_type_enum::NEXT_LEVEL_TRANSITION:
 		case entity_type_enum::MESSAGE_DISPLAY:
 		{
-			snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
+			snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
 				"Entity added as a tile at (%d, %d) is a switch, gate, next level transition or a message.\
 				It needs to be added in the entity layer with properties set istead",
 				entity_position.x, entity_position.y);
@@ -142,17 +142,17 @@ void parse_entity_from_tile(level_parsing_context* level_parsing, u32 tile_index
 		break;
 		case entity_type_enum::PLAYER:
 		{
-			if (level_parsing->level->starting_tile.x == -1 
-				&& level_parsing->level->starting_tile.y == -1)
+			if (parsing->level->starting_tile.x == -1
+				&& parsing->level->starting_tile.y == -1)
 			{
-				level_parsing->level->starting_tile = entity_position;
+				parsing->level->starting_tile = entity_position;
 			}
 			else
 			{
-				snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
-					"More than one starting point set. Starting point added as a tile at (%d, %d) ignored",
+				snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+					"More than one starting point set. The second starting point was added as a tile at (%d, %d)",
 					entity_position.x, entity_position.y);
-				add_error(level_parsing);
+				add_error(parsing);
 			}
 		}
 		break;
@@ -164,13 +164,13 @@ void parse_entity_from_tile(level_parsing_context* level_parsing, u32 tile_index
 		break;
 		default:
 		{
-			add_entity_to_spawn(level_parsing->level, level_parsing->transient_arena, type, entity_position);
+			add_entity_to_spawn(parsing->level, parsing->transient_arena, type, entity_position);
 		}
 		break;
 	}
 }
 
-void parse_entity(level_parsing_context* level_parsing, xml_node* node)
+void parse_entity(level_parsing_context* parsing, xml_node* node)
 {
 	string_ref gid_str = get_attribute_value(node, "gid");
 	string_ref x_str = get_attribute_value(node, "x");
@@ -199,7 +199,7 @@ void parse_entity(level_parsing_context* level_parsing, xml_node* node)
 		gid = parse_i32(gid_str);	
 	}
 
-	entity_type_enum type = get_entity_type_enum_from_gid(gid, level_parsing->entity_tileset_first_gid);
+	entity_type_enum type = get_entity_type_enum_from_gid(gid, parsing->entity_tileset_first_gid);
 	switch (type)
 	{
 		case entity_type_enum::GATE_BLUE:
@@ -216,7 +216,7 @@ void parse_entity(level_parsing_context* level_parsing, xml_node* node)
 			if (properties_parent_node)
 			{
 				xml_node_search_result* properties = find_all_nodes_with_tag(
-					level_parsing->transient_arena, properties_parent_node, "property");
+					parsing->transient_arena, properties_parent_node, "property");
 
 				for (u32 property_index = 0;
 					property_index < properties->found_nodes_count;
@@ -266,31 +266,31 @@ void parse_entity(level_parsing_context* level_parsing, xml_node* node)
 
 			if (false == is_zero(gate_color))
 			{
-				add_entity_to_spawn(level_parsing->level, level_parsing->transient_arena, type, position, gate_color);
+				add_entity_to_spawn(parsing->level, parsing->transient_arena, type, position, gate_color);
 			}
 		}
 		break;
 		case entity_type_enum::PLAYER:
 		{
-			if (level_parsing->level->starting_tile.x == -1 
-				&& level_parsing->level->starting_tile.y == -1)
+			if (parsing->level->starting_tile.x == -1
+				&& parsing->level->starting_tile.y == -1)
 			{
-				level_parsing->level->starting_tile = position;
+				parsing->level->starting_tile = position;
 			}
 			else
 			{
-				snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
-					"More than one starting point set. Starting point at (%d, %d) ignored",
+				snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+					"More than one starting point set. The second starting point was added at (%d, %d)",
 					position.x, position.y);
-				add_error(level_parsing);
+				add_error(parsing);
 			}
 		}
 		break;
 		case entity_type_enum::NEXT_LEVEL_TRANSITION:
 		{
-			if (level_parsing->level->next_map.string_size > 0)
+			if (parsing->level->next_map.string_size > 0)
 			{
-				add_error(level_parsing, "More than one starting points set. Point at () ignored");
+				add_error(parsing, "More than one level transition points set.");
 				break;
 			}
 
@@ -300,7 +300,7 @@ void parse_entity(level_parsing_context* level_parsing, xml_node* node)
 			if (properties_parent_node)
 			{
 				xml_node_search_result* properties = find_all_nodes_with_tag(
-					level_parsing->transient_arena, properties_parent_node, "property");
+					parsing->transient_arena, properties_parent_node, "property");
 
 				for (u32 property_index = 0;
 					property_index < properties->found_nodes_count;
@@ -326,8 +326,8 @@ void parse_entity(level_parsing_context* level_parsing, xml_node* node)
 
 			if (next_level_name.string_size)
 			{
-				add_entity_to_spawn(level_parsing->level, level_parsing->transient_arena, type, position);
-				level_parsing->level->next_map = copy_string(level_parsing->permanent_arena, next_level_name);
+				add_entity_to_spawn(parsing->level, parsing->transient_arena, type, position);
+				parsing->level->next_map = copy_string(parsing->permanent_arena, next_level_name);
 			}
 		}
 		break;
@@ -337,7 +337,7 @@ void parse_entity(level_parsing_context* level_parsing, xml_node* node)
 			if (properties_parent_node)
 			{
 				xml_node_search_result* properties = find_all_nodes_with_tag(
-					level_parsing->transient_arena, properties_parent_node, "property");
+					parsing->transient_arena, properties_parent_node, "property");
 
 				for (u32 property_index = 0;
 					property_index < properties->found_nodes_count;
@@ -353,15 +353,15 @@ void parse_entity(level_parsing_context* level_parsing, xml_node* node)
 							if (message_str.string_size < 1000)
 							{
 								entity_to_spawn* message_entity = 
-									add_entity_to_spawn(level_parsing->level, level_parsing->transient_arena, type, position);
-								message_entity->message = copy_string(level_parsing->permanent_arena, message_str);
+									add_entity_to_spawn(parsing->level, parsing->transient_arena, type, position);
+								message_entity->message = copy_string(parsing->permanent_arena, message_str);
 							}
 							else
 							{
-								snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
+								snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
 									"Next level name is longer than %d characters",
 									MAX_LEVEL_NAME_LENGTH);
-								add_error(level_parsing);
+								add_error(parsing);
 							}
 						}
 					}
@@ -376,7 +376,7 @@ void parse_entity(level_parsing_context* level_parsing, xml_node* node)
 		break;
 		default:
 		{
-			add_entity_to_spawn(level_parsing->level, level_parsing->transient_arena, type, position);
+			add_entity_to_spawn(parsing->level, parsing->transient_arena, type, position);
 		}
 		break;
 	}
@@ -422,12 +422,13 @@ void parse_backdrop_texture_property(backdrop_properties* backdrop, string_ref n
 	}
 }
 
-void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_buffer* errors, xml_node* map_node)
+void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 {
 	xml_node* properties_node = find_tag_in_children(map_node, "properties");
 	if (properties_node)
 	{
-		xml_node_search_result* map_properties = find_all_nodes_with_tag(transient_arena, properties_node, "property");
+		xml_node_search_result* map_properties = find_all_nodes_with_tag(
+			parsing->transient_arena, properties_node, "property");
 		for (u32 property_index = 0;
 			property_index < map_properties->found_nodes_count;
 			property_index++)
@@ -437,15 +438,29 @@ void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_
 			string_ref type = get_attribute_value(property_node, "type");
 			string_ref value = get_attribute_value(property_node, "value");
 
+			if (compare_to_c_string(name, "description"))
+			{
+				// wyjątek
+				value = property_node->inner_text;
+			}
+
+			if (value.string_size == 0)
+			{				
+				snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+					"Property '%s' has no value set", get_c_string(parsing->transient_arena, name));
+				add_error(parsing);
+				break;
+			}
+
 			if (compare_to_c_string(name, "backdrop"))
 			{
-				parse_backdrop_texture_property(&level->first_backdrop, value);
+				parse_backdrop_texture_property(&parsing->level->first_backdrop, value);
 			}
 			else if (compare_to_c_string(name, "backdrop_slowdown_x"))
 			{
 				if (compare_to_c_string(type, "int"))
 				{
-					level->first_backdrop.x_slowdown = parse_i32(value);
+					parsing->level->first_backdrop.x_slowdown = parse_i32(value);
 				}
 				else
 				{
@@ -456,7 +471,7 @@ void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_
 			{
 				if (compare_to_c_string(type, "int"))
 				{
-					level->first_backdrop.y_slowdown = parse_i32(value);
+					parsing->level->first_backdrop.y_slowdown = parse_i32(value);
 				}
 				else
 				{
@@ -467,7 +482,7 @@ void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_
 			{
 				if (compare_to_c_string(type, "float"))
 				{
-					level->first_backdrop.x_speed = parse_r32(value, '.');
+					parsing->level->first_backdrop.x_speed = parse_r32(value, '.');
 				}
 				else
 				{
@@ -478,7 +493,7 @@ void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_
 			{
 				if (compare_to_c_string(type, "float"))
 				{
-					level->first_backdrop.y_speed = parse_r32(value, '.');
+					parsing->level->first_backdrop.y_speed = parse_r32(value, '.');
 				}
 				else
 				{
@@ -487,13 +502,13 @@ void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_
 			}
 			else if (compare_to_c_string(name, "second_backdrop"))
 			{
-				parse_backdrop_texture_property(&level->second_backdrop, value);
+				parse_backdrop_texture_property(&parsing->level->second_backdrop, value);
 			}
 			else if (compare_to_c_string(name, "second_backdrop_slowdown_x"))
 			{
 				if (compare_to_c_string(type, "int"))
 				{
-					level->second_backdrop.x_slowdown = parse_i32(value);
+					parsing->level->second_backdrop.x_slowdown = parse_i32(value);
 				}
 				else
 				{
@@ -504,7 +519,7 @@ void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_
 			{
 				if (compare_to_c_string(type, "int"))
 				{
-					level->second_backdrop.y_slowdown = parse_i32(value);
+					parsing->level->second_backdrop.y_slowdown = parse_i32(value);
 				}
 				else
 				{
@@ -515,24 +530,35 @@ void parse_map_properties(map* level, memory_arena* transient_arena, tmx_errors_
 			{
 				if (compare_to_c_string(type, "int"))
 				{
-					level->initial_max_player_health = (r32)parse_i32(value);
+					parsing->level->initial_max_player_health = (r32)parse_i32(value);
 				}
 				else
 				{
 					// bład
 				}
 			}
+			else if (compare_to_c_string(name, "description"))
+			{
+				if (type.string_size == 0)
+				{
+					parsing->level->description = copy_string(parsing->permanent_arena, value);
+				}
+				else
+				{
+					// jest ustawiony jakiś typ - błąd
+				}
+			}
 			else
 			{
-				snprintf(errors->message_buffer, errors->message_buffer_size,
-					"Unknown map property: '%s'", name.ptr);
-				add_error(transient_arena, errors, errors->message_buffer);
+				snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+					"Unknown map property: '%s'", get_c_string(parsing->transient_arena, name));
+				add_error(parsing->transient_arena, parsing->errors, parsing->errors->message_buffer);
 			}
 		}
 	}
 }
 
-map_layer parse_map_layer(level_parsing_context* level_parsing,
+map_layer parse_map_layer(level_parsing_context* parsing,
 	xml_node* root_node, const char* layer_name, b32 is_layer_required)
 {
 	map_layer layer = {};
@@ -545,8 +571,8 @@ map_layer parse_map_layer(level_parsing_context* level_parsing,
 		{
 			i32 layer_width = parse_i32(layer_width_str);
 			i32 layer_height = parse_i32(layer_height_str);
-			if (layer_width == level_parsing->level->width 
-				&& layer_height == level_parsing->level->height)
+			if (layer_width == parsing->level->width
+				&& layer_height == parsing->level->height)
 			{			
 				layer.width = layer_width;
 				layer.height = layer_height;
@@ -559,60 +585,60 @@ map_layer parse_map_layer(level_parsing_context* level_parsing,
 					if (compare_to_c_string(encoding_str, "csv"))
 					{
 						layer.tiles_count = layer_width * layer_height;
-						layer.tiles = parse_array_of_i32(level_parsing->permanent_arena, layer.tiles_count, data, ',');
+						layer.tiles = parse_array_of_i32(parsing->permanent_arena, layer.tiles_count, data, ',');
 
 						for (u32 tile_index = 0; tile_index < layer.tiles_count; tile_index++)
 						{
 							i32 gid = layer.tiles[tile_index];
-							if (gid >= level_parsing->entity_tileset_first_gid
-								&& gid <= level_parsing->entity_tileset_last_gid)
+							if (gid >= parsing->entity_tileset_first_gid
+								&& gid <= parsing->entity_tileset_last_gid)
 							{
-								parse_entity_from_tile(level_parsing, tile_index, gid);
+								parse_entity_from_tile(parsing, tile_index, gid);
 								// dodajemy puste pole w miejscu, gdzie zostało zdefiniowane entity
 								layer.tiles[tile_index] = 1;
 							}
 							else
 							{
-								layer.tiles[tile_index] -= (level_parsing->tileset_first_gid - 1);
+								layer.tiles[tile_index] -= (parsing->tileset_first_gid - 1);
 							}
 						}						
 					}
 					else
 					{
-						snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
+						snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
 							"Format of the layer '%s' is not set to 'csv'", layer_name);
-						add_error(level_parsing);
+						add_error(parsing);
 					}
 				}
 				else
 				{
-					snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
+					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
 						"The 'data' element is missing in the layer '%s'", layer_name);
-					add_error(level_parsing);
+					add_error(parsing);
 				}
 			}
 			else
 			{
-				snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
+				snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
 					"Size of the layer '%s' (%d, %d) doesn't match the map size (%d, %d)",
-					layer_name, layer_width, layer_height, level_parsing->level->width, level_parsing->level->height);
-				add_error(level_parsing);
+					layer_name, layer_width, layer_height, parsing->level->width, parsing->level->height);
+				add_error(parsing);
 			}
 		}
 		else
 		{
-			snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
+			snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
 				"Layer '%s' doesn't have defined width or height", layer_name);
-			add_error(level_parsing);
+			add_error(parsing);
 		}
 	}
 	else
 	{
 		if (is_layer_required)
 		{
-			snprintf(level_parsing->errors->message_buffer, level_parsing->errors->message_buffer_size,
+			snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
 				"Layer '%s' not found", layer_name);
-			add_error(level_parsing);
+			add_error(parsing);
 		}
 	}
 
@@ -683,14 +709,14 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 			goto end_of_read_map_from_tmx_file_function;
 		}
 
-		level_parsing_context level_parsing = {};
-		level_parsing.tileset_first_gid = tileset_first_gid;
-		level_parsing.entity_tileset_first_gid = entity_first_gid;
-		level_parsing.entity_tileset_last_gid = entity_first_gid + 35;
-		level_parsing.errors = &errors;
-		level_parsing.permanent_arena = permanent_arena;
-		level_parsing.transient_arena = transient_arena;
-		level_parsing.level = &level;
+		level_parsing_context parsing = {};
+		parsing.tileset_first_gid = tileset_first_gid;
+		parsing.entity_tileset_first_gid = entity_first_gid;
+		parsing.entity_tileset_last_gid = entity_first_gid + 35;
+		parsing.errors = &errors;
+		parsing.permanent_arena = permanent_arena;
+		parsing.transient_arena = transient_arena;
+		parsing.level = &level;
 
 		xml_node* map_node = find_tag_in_children(root, "map");
 		if (map_node)
@@ -702,9 +728,9 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 				level.width = parse_i32(width);
 				level.height = parse_i32(height);
 
-				level.map = parse_map_layer(&level_parsing, map_node, "map", true);
-				level.background = parse_map_layer(&level_parsing, map_node, "background", true);
-				level.foreground = parse_map_layer(&level_parsing, map_node, "foreground", true);
+				level.map = parse_map_layer(&parsing, map_node, "map", true);
+				level.background = parse_map_layer(&parsing, map_node, "background", true);
+				level.foreground = parse_map_layer(&parsing, map_node, "foreground", true);
 			}
 			else
 			{
@@ -712,7 +738,7 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 				goto end_of_read_map_from_tmx_file_function;
 			}
 
-			parse_map_properties(&level, transient_arena, &errors, map_node);
+			parse_map_properties(&parsing, map_node);
 		}
 		else
 		{
@@ -731,7 +757,7 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 					xml_node* node = *(objects->found_nodes + xml_node_index);
 					if (node)
 					{
-						parse_entity(&level_parsing, node);
+						parse_entity(&parsing, node);
 					}
 				}
 			}

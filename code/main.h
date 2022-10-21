@@ -208,6 +208,7 @@ struct map
 	map_layer background;
 	map_layer foreground;
 	map_layer collision_reference;
+
 	backdrop_properties first_backdrop;
 	backdrop_properties second_backdrop;
 	v2 first_backdrop_offset;
@@ -220,6 +221,8 @@ struct map
 
 	tile_position starting_tile;
 	string_ref next_map;
+	string_ref description;
+	text_lines* description_lines;
 };
 
 // polegamy na tym, by _FIRST było pierwsze, a _LAST ostatnie, dla policzenia ile potrzebujemy miejsc w słowniku
@@ -615,12 +618,9 @@ struct explosions
 	animation* size_96x96;
 };
 
-struct text_lines;
-
 struct level_choice
 {
-	string_ref name;
-	text_lines* description;
+	string_ref name;	
 	string_ref map_name;
 	b32 completed;
 };

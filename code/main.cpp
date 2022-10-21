@@ -441,6 +441,14 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		}
 	}
 
+	text_lines* test_scrolling_text = level->current_map.description_lines;
+	local_persist r32 y_offset = (SCREEN_HEIGHT / SCALING_FACTOR);
+	render_large_text(&game->render, game->transient_arena,
+		&level->static_data->scrolling_text_options, *test_scrolling_text, y_offset);
+
+	y_offset -= delta_time * 20;
+
+	
 	if (level->active_scene_change.change_scene)
 	{
 		assert(level->active_scene_change.fade_out_speed > 0.0f);
@@ -479,13 +487,6 @@ scene_change level_choice_update_and_render(game_state* game, static_game_data* 
 	rect option_rect = get_rect_from_corners(
 		get_v2(options_x, option_y),
 		get_v2(options_x + 165, option_y + 10));
-
-	text_lines* test_scrolling_text = static_data->levels[0].description;
-	local_persist r32 y_offset = (SCREEN_HEIGHT / SCALING_FACTOR);
-	render_large_text(&game->render, game->transient_arena, 
-		&static_data->scrolling_text_options, *test_scrolling_text, y_offset);
-	
-	y_offset -= delta_time * 20;
 
 	for (u32 level_index = 0; level_index < static_data->levels_count; level_index++)
 	{
@@ -803,6 +804,12 @@ void main_game_loop(game_state* game, r32 delta_time)
 					}
 
 					save_checkpoint(game);
+
+					if (game->level_state->current_map.description_lines == NULL)
+					{
+						game->level_state->current_map.description_lines = get_division_of_text_into_lines(
+							game->arena, &game->static_data->scrolling_text_options, game->level_state->current_map.description);
+					}
 				}
 
 				end_temporary_memory(auxillary_memory_for_loading, true);
