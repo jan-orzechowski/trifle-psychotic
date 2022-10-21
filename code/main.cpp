@@ -67,6 +67,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 						level->active_scene_change.change_scene = true;
 						level->active_scene_change.new_scene = scene::MAIN_MENU;
 						level->active_scene_change.fade_out_speed = 0.5f;
+						stop_playing_music(2000);
 					}
 				}
 			}
@@ -112,6 +113,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				start_screen_shake(level, 0.6f, 30.0f);
 				start_death_animation(level, player);
 				start_visual_effect(level, player, sprite_effects_types::DEATH);
+				stop_playing_music(2000);
 			}
 		}
 
@@ -122,6 +124,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			level->active_scene_change.new_scene = scene::DEATH;
 			level->active_scene_change.fade_out_speed = 0.5f;
 			level->stop_player_movement = true;
+			stop_playing_music(2000);
 		}
 
 		if (level->player_invincibility_cooldown > 0.0f)
@@ -804,6 +807,8 @@ void main_game_loop(game_state* game, r32 delta_time)
 					}
 
 					save_checkpoint(game);
+
+					start_playing_music(game->level_state->current_map.music_file_name);
 
 					if (game->level_state->current_map.description_lines == NULL)
 					{

@@ -54,7 +54,10 @@ void string_function_test(memory_arena*);
 string_builder get_string_builder(memory_arena* arena, u32 max_size);
 void push_string(string_builder* builder, string_ref str);
 void push_string(string_builder* builder, const char* str);
+void push_char(string_builder* builder, char c);
+void safe_push_null_terminator(string_builder* builder);
 string_ref get_string_from_string_builder(string_builder* builder);
+void empty_string_builder(string_builder* builder);
 
 #define JORSTRING
 #endif

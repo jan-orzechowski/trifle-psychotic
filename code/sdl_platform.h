@@ -26,6 +26,9 @@ struct sdl_data
 	SDL_Texture* background_planet_orbit_texture;
 	SDL_Texture* background_title_screen_texture;
 
+	string_builder path_buffer;
+
+	string_ref preferences_file_path;
 	Mix_Music* music;
 };
 
@@ -40,9 +43,7 @@ void save_file(const char* path, write_to_tile contents);
 read_file_result load_prefs();
 void save_prefs(write_to_tile contents);
 
-SDL_Color get_sdl_color(v4 color);
-SDL_Rect get_sdl_rect(rect rect);
-void print_sdl_error();
-void print_sdl_image_error();
+void start_playing_music(string_ref audio_file_name);
+void stop_playing_music(int fade_out_ms);
 
 void render_group_to_output(render_group* render_group);

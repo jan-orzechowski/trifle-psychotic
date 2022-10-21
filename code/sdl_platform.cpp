@@ -49,6 +49,13 @@ void print_sdl_image_error()
 	invalid_code_path;
 }
 
+void print_sdl_mixer_error()
+{
+	const char* error = Mix_GetError();
+	printf("SDL_mixer error: %s\n", error);
+	invalid_code_path;
+}
+
 void load_image(SDL_Renderer* renderer, SDL_Texture** place_to_load, const char* file_path, b32* success)
 {
 	SDL_Surface* loaded_surface = IMG_Load(file_path);
@@ -100,8 +107,6 @@ read_file_result read_file(const char* path)
 	return result;
 }
 
-
-
 void save_file(const char* path, write_to_tile contents)
 {
 	SDL_RWops* file = SDL_RWFromFile(path, "w+b");
@@ -145,6 +150,47 @@ void save_prefs(write_to_tile contents)
 		save_file(path2.c_str(), contents);
 		SDL_free(path);
 	}	
+}
+
+void start_playing_music(string_ref audio_file_name)
+{
+	if (audio_file_name.string_size > 0)
+	{
+		sdl_data* sdl = &GLOBAL_SDL_DATA;
+		if (sdl->music != NULL)
+		{
+			Mix_HaltMusic();
+			Mix_FreeMusic(sdl->music);
+			sdl->music = NULL;
+		}
+
+		empty_string_builder(&sdl->path_buffer);
+		push_string(&sdl->path_buffer, "audio\\");
+		push_string(&sdl->path_buffer, audio_file_name);
+		if (false == ends_with(audio_file_name, ".mp3"))
+		{
+			push_string(&sdl->path_buffer, ".mp3");
+		}
+		safe_push_null_terminator(&sdl->path_buffer);
+
+		sdl->music = Mix_LoadMUS(sdl->path_buffer.ptr);
+		if (sdl->music == NULL)
+		{
+			print_sdl_mixer_error();
+		}
+		else
+		{
+			Mix_FadeInMusic(GLOBAL_SDL_DATA.music, -1, 4000); // -1 means loop infinitely
+		}
+	}
+}
+
+void stop_playing_music(int fade_out_ms)
+{
+	if (Mix_PlayingMusic() != 0)
+	{
+		Mix_FadeOutMusic(fade_out_ms);
+	}
 }
 
 SDL_Renderer* get_renderer(SDL_Window* window)
@@ -234,6 +280,12 @@ sdl_data init_sdl()
 					print_sdl_image_error();
 					success = false;
 				}
+
+				if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+				{
+					print_sdl_mixer_error();
+					success = false;
+				}				
 			}
 			else
 			{
@@ -313,11 +365,10 @@ void emscripten_main_game_loop(void* passed_data)
 
 int main(int argc, char* args[])
 {
-	sdl_data sdl = init_sdl();
-	if (sdl.initialized)
+	GLOBAL_SDL_DATA = init_sdl();
+	sdl_data* sdl = &GLOBAL_SDL_DATA;
+	if (sdl->initialized)
 	{
-		GLOBAL_SDL_DATA = sdl;
-
 		bool run = true;
 
 		u32 memory_for_permanent_arena_size = megabytes_to_bytes(20);
@@ -330,6 +381,8 @@ int main(int argc, char* args[])
 		void* memory_for_transient_arena = SDL_malloc(memory_for_transient_arena_size);
 		initialize_memory_arena(&transient_arena, memory_for_transient_arena_size, (byte*)memory_for_transient_arena);
 
+		int max_path_length = 4048; // maksymalna długość ścieżki na Linuksie, Windowsach i MacOS
+		sdl->path_buffer = get_string_builder(&transient_arena, max_path_length);
 		game_state game = {};
 
 		game.arena = &permanent_arena;
@@ -415,22 +468,26 @@ int main(int argc, char* args[])
 		invalid_code_path;
 	}
 
-	SDL_DestroyTexture(sdl.background_clouds_texture);
-	SDL_DestroyTexture(sdl.background_desert_texture);
-	SDL_DestroyTexture(sdl.background_ice_desert_texture);
-	SDL_DestroyTexture(sdl.background_planet_orbit_texture);
-	SDL_DestroyTexture(sdl.background_red_planet_desert_texture);
-	SDL_DestroyTexture(sdl.background_red_planet_sky_texture);
-	SDL_DestroyTexture(sdl.background_title_screen_texture);
-	SDL_DestroyTexture(sdl.tileset_texture);
-	SDL_DestroyTexture(sdl.charset_texture);
-	SDL_DestroyTexture(sdl.ui_font_texture);
-	SDL_DestroyTexture(sdl.title_font_texture);
-	SDL_DestroyTexture(sdl.explosion_texture);
+	SDL_DestroyTexture(sdl->background_clouds_texture);
+	SDL_DestroyTexture(sdl->background_desert_texture);
+	SDL_DestroyTexture(sdl->background_ice_desert_texture);
+	SDL_DestroyTexture(sdl->background_planet_orbit_texture);
+	SDL_DestroyTexture(sdl->background_red_planet_desert_texture);
+	SDL_DestroyTexture(sdl->background_red_planet_sky_texture);
+	SDL_DestroyTexture(sdl->background_title_screen_texture);
+	SDL_DestroyTexture(sdl->tileset_texture);
+	SDL_DestroyTexture(sdl->charset_texture);
+	SDL_DestroyTexture(sdl->ui_font_texture);
+	SDL_DestroyTexture(sdl->title_font_texture);
+	SDL_DestroyTexture(sdl->explosion_texture);
 	
-	SDL_DestroyRenderer(sdl.renderer);
-	SDL_DestroyWindow(sdl.window);
+	Mix_HaltMusic();
+	Mix_FreeMusic(sdl->music);
 
+	SDL_DestroyRenderer(sdl->renderer);
+	SDL_DestroyWindow(sdl->window);
+
+	Mix_Quit();
 	IMG_Quit();
 	SDL_Quit();
 

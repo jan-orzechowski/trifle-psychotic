@@ -746,12 +746,43 @@ void push_string(string_builder* builder, const char* str)
 	}
 }
 
+void push_char(string_builder* builder, char c)
+{
+	if (builder->current_size < builder->max_size)
+	{
+		*(builder->ptr + builder->current_size) = c;
+		builder->current_size++;
+	}
+}
+
+void safe_push_null_terminator(string_builder* builder)
+{
+	if (builder->current_size < builder->max_size)
+	{
+		*(builder->ptr + builder->current_size) = '\0';
+		builder->current_size++;
+	}
+	else
+	{
+		*(builder->ptr + builder->max_size - 1) = '\0';
+	}
+}
+
 string_ref get_string_from_string_builder(string_builder* builder)
 {
 	string_ref result = {};
 	result.ptr = builder->ptr;
 	result.string_size = builder->current_size;
 	return result;
+}
+
+void empty_string_builder(string_builder* builder)
+{
+	if (builder->current_size > 0)
+	{
+		zero_memory(builder->current_size, builder->ptr);
+		builder->current_size = 0;
+	}
 }
 
 #define JORSTRING

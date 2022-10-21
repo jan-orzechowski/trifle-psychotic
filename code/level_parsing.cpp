@@ -438,9 +438,14 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 			string_ref type = get_attribute_value(property_node, "type");
 			string_ref value = get_attribute_value(property_node, "value");
 
-			if (compare_to_c_string(name, "description"))
+			if (name.string_size == 0)
 			{
-				// wyjątek
+				add_error(parsing, "TMX contains map property without name");
+				continue;
+			}
+
+			if (value.string_size == 0)
+			{	
 				value = property_node->inner_text;
 			}
 
@@ -449,7 +454,7 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
 					"Property '%s' has no value set", get_c_string(parsing->transient_arena, name));
 				add_error(parsing);
-				break;
+				continue;
 			}
 
 			if (compare_to_c_string(name, "backdrop"))
@@ -542,6 +547,17 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				if (type.string_size == 0)
 				{
 					parsing->level->description = copy_string(parsing->permanent_arena, value);
+				}
+				else
+				{
+					// jest ustawiony jakiś typ - błąd
+				}
+			}
+			else if (compare_to_c_string(name, "music"))
+			{
+				if (type.string_size == 0)
+				{	
+					parsing->level->music_file_name = copy_string(parsing->permanent_arena, value);
 				}
 				else
 				{
