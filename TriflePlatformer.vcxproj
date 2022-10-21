@@ -78,14 +78,14 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>sdl\SDL2\include;sdl\SDL2_image\include;$(IncludePath)</IncludePath>
-    <LibraryPath>sdl\SDL2\lib\x64;sdl\SDL2_image\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>sdl\SDL2\include;sdl\SDL2_mixer\include;sdl\SDL2_image\include;$(IncludePath)</IncludePath>
+    <LibraryPath>sdl\SDL2\lib\x64;sdl\SDL2_mixer\lib\x64;sdl\SDL2_image\lib\x64;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>sdl\SDL2\include;sdl\SDL2_image\include;$(IncludePath)</IncludePath>
-    <LibraryPath>sdl\SDL2\lib\x64;sdl\SDL2_image\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>sdl\SDL2\include;sdl\SDL2_mixer\include;sdl\SDL2_image\include;$(IncludePath)</IncludePath>
+    <LibraryPath>sdl\SDL2\lib\x64;sdl\SDL2_mixer\lib\x64;sdl\SDL2_image\lib\x64;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\build\$(Platform)\$(Configuration)\</OutDir>
     <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
@@ -129,7 +129,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>sdl\SDL2\lib\x64\*.lib;sdl\SDL2_image\lib\x64\*.lib;sdl\SDL2_ttf\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>sdl\SDL2\lib\x64\*.lib;sdl\SDL2_image\lib\x64\*.lib;sdl\SDL2_mixer\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -148,21 +148,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>sdl\SDL2\lib\x64\*.lib;sdl\SDL2_image\lib\x64\*.lib;sdl\SDL2_ttf\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>sdl\SDL2\lib\x64\*.lib;sdl\SDL2_image\lib\x64\*.lib;sdl\SDL2_mixer\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <None Include="data\trifle_map_01.tmx" />
-    <None Include="data\trifle_tileset.tsx" />
-    <None Include="SDL2.dll" />
-    <None Include="SDL2_image.dll" />
-  </ItemGroup>
-  <ItemGroup>
-    <Font Include="gfx\kenney_pixel.ttf" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="gfx\surt_tileset.png" />
-  </ItemGroup>
   <ItemGroup>
     <ClCompile Include="code\animation.cpp" />
     <ClCompile Include="code\backdrops.cpp" />
@@ -205,6 +193,11 @@
     <ClInclude Include="code\jorstring.h" />
     <ClInclude Include="code\game_data.h" />
     <ClInclude Include="code\ui.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SDL2.dll" />
+    <None Include="SDL2_image.dll" />
+    <None Include="SDL2_mixer.dll" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

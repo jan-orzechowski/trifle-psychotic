@@ -36,10 +36,12 @@ bld
 sdl
 SDL2.dll
 SDL2_image.dll
+SDL2_mixer.dll
 
 # dev folders
 build
 gfx
+audio
 _dev_files
 
 # Visual Studio 20152017 cacheoptions directory

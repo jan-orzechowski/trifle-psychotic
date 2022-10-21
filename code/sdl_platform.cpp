@@ -180,7 +180,8 @@ sdl_data init_sdl()
 	sdl_data sdl_game = {};
 	b32 success = true;
 
-	int init = SDL_Init(SDL_INIT_VIDEO); // SDL_INIT_EVERYTHING powoduje błąd w Emscripten
+	// SDL_INIT_EVERYTHING powoduje błąd w Emscripten
+	int init = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO); 
 	if (init == 0) // wg dokumentacji oznacza to sukces
 	{
 		if (false == SDL_ShowCursor(SDL_DISABLE))

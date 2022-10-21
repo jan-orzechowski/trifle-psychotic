@@ -15,20 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="SDL2.dll" />
-    <None Include="SDL2_image.dll" />
-    <None Include="data\trifle_map_01.tmx" />
-    <None Include="data\trifle_tileset.tsx" />
-  </ItemGroup>
-  <ItemGroup>
-    <Font Include="gfx\kenney_pixel.ttf" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="gfx\surt_tileset.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="code\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -148,5 +134,10 @@
     <ClInclude Include="code\backdrops.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SDL2.dll" />
+    <None Include="SDL2_image.dll" />
+    <None Include="SDL2_mixer.dll" />
   </ItemGroup>
 </Project>

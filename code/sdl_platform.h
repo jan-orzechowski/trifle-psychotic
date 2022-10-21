@@ -3,6 +3,7 @@
 #include "main.h"
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_mixer.h>
 
 struct sdl_data
 {
@@ -24,6 +25,8 @@ struct sdl_data
 	SDL_Texture* background_red_planet_desert_texture;
 	SDL_Texture* background_planet_orbit_texture;
 	SDL_Texture* background_title_screen_texture;
+
+	Mix_Music* music;
 };
 
 struct write_to_tile
