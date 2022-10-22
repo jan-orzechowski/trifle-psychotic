@@ -524,6 +524,13 @@ scene_change level_choice_update_and_render(game_state* game, static_game_data* 
 			true, static_data->menu_fade_speed);
 	}
 
+	if (game->level_choice_menu.time_to_first_interaction <= 0.0f
+		&& input->escape.number_of_presses > 0)
+	{
+		game->level_choice_menu.active_scene_change.change_scene = true;
+		game->level_choice_menu.active_scene_change.new_scene = scene::MAIN_MENU;
+	}
+
 	scene_change scene_change = {};
 	if (game->level_choice_menu.fade_out_perc >= 1.0f)
 	{
