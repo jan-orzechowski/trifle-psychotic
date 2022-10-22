@@ -331,6 +331,12 @@ game_input get_input_from_sdl_events()
 
 #ifdef __EMSCRIPTEN__
 
+EM_JS(bool, is_browser_fullscreen, (),
+{
+	let fullscreen = document.fullScreen || document.mozFullScreen || document.webkitIsFullScreen;
+	return fullscreen;
+});
+
 EM_JS(bool, is_browser_firefox, (),
 {
 	let is_firefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
@@ -342,9 +348,28 @@ void emscripten_main_game_loop(void* passed_data)
 	game_input new_input = get_input_from_sdl_events();
 	write_to_input_buffer(&(((game_state*)passed_data)->input_buffer), &new_input);
 
+	bool is_sdl_set_to_fullscreen = SDL_GetWindowFlags(GLOBAL_SDL_DATA.window) & SDL_WINDOW_FULLSCREEN_DESKTOP;
+	if (is_browser_fullscreen())
+	{
+		if (false == is_sdl_set_to_fullscreen)
+		{
+			SDL_SetWindowFullscreen(GLOBAL_SDL_DATA.window, SDL_WINDOW_FULLSCREEN);
+		}
+		GLOBAL_SDL_DATA.fullscreen = true;	
+	}
+	else
+	{
+		if (is_sdl_set_to_fullscreen)
+		{
+			SDL_SetWindowFullscreen(GLOBAL_SDL_DATA.window, 0);
+		}
+		GLOBAL_SDL_DATA.fullscreen = false;
+	}
+
 	r64 delta_time = 1 / TARGET_HZ;
 	main_game_loop((game_state*)passed_data, delta_time);
 }
+
 #endif
 
 int main(int argc, char* args[])
