@@ -330,6 +330,13 @@ game_input get_input_from_sdl_events()
 }
 
 #ifdef __EMSCRIPTEN__
+
+EM_JS(bool, is_browser_firefox, (),
+{
+	let is_firefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+	return is_firefox;
+});
+
 void emscripten_main_game_loop(void* passed_data)
 {
 	game_input new_input = get_input_from_sdl_events();
@@ -385,7 +392,14 @@ int main(int argc, char* args[])
 #ifdef __EMSCRIPTEN__
 		game.show_exit_game_option = false;
 
-		emscripten_set_main_loop_arg(emscripten_main_game_loop, (void*)&game, TARGET_HZ * 1.5f, true);
+		r32 target_hz = TARGET_HZ;
+		if (is_browser_firefox())
+		{
+			// hack poprawiający szybkość w Firefoksie - bez tego gra jest bardzo spowolniona
+			target_hz *= 1.5f;
+		}
+
+		emscripten_set_main_loop_arg(emscripten_main_game_loop, (void*)&game, target_hz, true);
 #else		
 		game.show_exit_game_option = true;
 
