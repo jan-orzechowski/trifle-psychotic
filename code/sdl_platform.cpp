@@ -38,22 +38,28 @@ SDL_Rect get_sdl_rect(rect rect)
 void print_sdl_error()
 {
 	const char* error = SDL_GetError();
+#ifdef TRIFLE_DEBUG
 	printf("SDL error: %s\n", error);
 	invalid_code_path;
+#endif
 }
 
 void print_sdl_image_error()
 {
 	const char* error = IMG_GetError();
+#ifdef TRIFLE_DEBUG
 	printf("SDL_image error: %s\n", error);
 	invalid_code_path;
+#endif
 }
 
 void print_sdl_mixer_error()
 {
 	const char* error = Mix_GetError();
+#ifdef TRIFLE_DEBUG
 	printf("SDL_mixer error: %s\n", error);
 	invalid_code_path;
+#endif
 }
 
 void load_image(SDL_Renderer* renderer, SDL_Texture** place_to_load, const char* file_path, b32* success)
@@ -98,10 +104,6 @@ read_file_result read_file(const char* path)
 		}
 
 		SDL_RWclose(file);
-	}
-	else
-	{
-		print_sdl_error();
 	}
 
 	return result;
