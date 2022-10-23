@@ -1,10 +1,10 @@
-﻿#include "main.h"
+﻿#include "game_data.h"
 #include "level_parsing.h"
 #include "jorutils.h"
-#include "sdl_platform.h"
 #include "entities.h"
 #include "rendering.h"
 #include "ui.h"
+#include "sdl_platform.h"
 
 #define ENTITY_TYPES_MAX_COUNT 20
 #define BULLET_TYPES_MAX_COUNT 10
@@ -252,24 +252,6 @@ entity_type* add_bullet_type(static_game_data* data)
 
 	entity_type* result = &data->bullet_types[data->bullet_types_count];
 	data->bullet_types_count++;
-
-	return result;
-}
-
-tmx_map_parsing_result load_map(string_ref map_name, memory_arena* arena, memory_arena* transient_arena)
-{
-	tmx_map_parsing_result result = {};
-	
-	char path_buffer_a[1000];
-	copy_string_to_buffer(path_buffer_a, 1000, map_name);
-	path_buffer_a[map_name.string_size] = '\0';
-
-	char path_buffer[1000];
-	snprintf(path_buffer, 1000, "data/%s.tmx", path_buffer_a);
-
-	read_file_result map_file = read_file(path_buffer);
-	result = read_map_from_tmx_file(arena, transient_arena, map_file, "map", false);
-	delete map_file.contents;
 
 	return result;
 }
@@ -669,7 +651,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	data->death_messages[9] = copy_c_string_to_memory_arena(arena, "Text 9");
 
 	read_file_result collision_file = read_file("data/collision_map.tmx");
-	data->collision_reference = read_collision_map(arena, transient_arena, collision_file);
+	data->collision_reference = load_collision_map(arena, transient_arena, collision_file);
 	delete collision_file.contents;
 
 	data->gates_gfx.blue = load_gate_graphics(0);

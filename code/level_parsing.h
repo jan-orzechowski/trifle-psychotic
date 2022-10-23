@@ -22,8 +22,7 @@ struct tmx_map_parsing_result
 	tmx_parsing_error_report* errors;
 };
 
-tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, memory_arena* transient_arena,
-	read_file_result file, const char* layer_name, b32 clean_up_transient_arena);
-map_layer read_collision_map(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file);
+tmx_map_parsing_result load_map(string_ref map_name, memory_arena* arena, memory_arena* transient_arena);
+map_layer load_collision_map(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file);
 string_ref get_parsing_errors_message(memory_arena* arena, render_group* render,
 	render_text_options* text_options, tmx_parsing_error_report* errors);

@@ -3,6 +3,7 @@
 #include "tmx_parsing.h"
 #include "level_parsing.h"
 #include "text_rendering.h"
+#include "sdl_platform.h"
 
 struct tmx_errors_buffer
 {
@@ -676,7 +677,7 @@ map_layer parse_map_layer(level_parsing_context* parsing,
 }
 
 tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, memory_arena* transient_arena, 
-	read_file_result file, const char* layer_name, b32 clean_up_transient_arena)
+	read_file_result file, string_ref map_name, b32 clean_up_transient_arena)
 {
 	tmx_map_parsing_result result = {};
 	map level = {};
@@ -804,7 +805,16 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 	}
 	else
 	{
-		add_error(transient_arena, &errors, "File is not a proper TMX format file");
+		if (file.contents)
+		{
+			add_error(transient_arena, &errors, "File is not a valid TMX format file");
+		}
+		else
+		{
+			snprintf(errors.message_buffer, errors.message_buffer_size,
+				"File '%.*s.tmx' not found", map_name.string_size, map_name.ptr);
+			add_error(transient_arena, &errors, errors.message_buffer);
+		}
 	}
 
 end_of_read_map_from_tmx_file_function:
@@ -820,7 +830,7 @@ end_of_read_map_from_tmx_file_function:
 	return result;
 }
 
-map_layer read_collision_map(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file)
+map_layer load_collision_map(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file)
 {
 	map_layer result = {};
 
@@ -885,6 +895,20 @@ map_layer read_collision_map(memory_arena* permanent_arena, memory_arena* transi
 	}
 
 	end_temporary_memory(memory_for_parsing, true);
+
+	return result;
+}
+
+tmx_map_parsing_result load_map(string_ref map_name, memory_arena* arena, memory_arena* transient_arena)
+{
+	tmx_map_parsing_result result = {};
+
+	char path_buffer[1000];
+	snprintf(path_buffer, 1000, "data/%.*s.tmx", map_name.string_size, map_name.ptr);
+
+	read_file_result map_file = read_file(path_buffer);
+	result = read_map_from_tmx_file(arena, transient_arena, map_file, map_name, false);
+	delete map_file.contents;
 
 	return result;
 }
