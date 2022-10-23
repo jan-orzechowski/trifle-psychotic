@@ -553,6 +553,20 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 					// jest ustawiony jakiś typ - błąd
 				}
 			}
+			else if (compare_to_c_string(name, "win_when_all_messengers_killed"))
+			{
+				if (compare_to_c_string(type, "bool"))
+				{
+					if (compare_to_c_string(value, "true"))
+					{
+						parsing->level->complete_when_all_messengers_killed = true;
+					}					
+				}
+				else
+				{
+					// bład
+				}
+			}
 			else if (compare_to_c_string(name, "music"))
 			{
 				if (type.string_size == 0)

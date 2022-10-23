@@ -77,7 +77,7 @@ void render_crosshair(static_game_data* static_data, render_group* render, game_
 }
 
 void render_counter(static_game_data* static_data, render_group* render, memory_arena* transient_arena,
-	i32 counter, u32 counter_max_value)
+	i32 counter, i32 counter_max_value)
 {
 	if (counter > counter_max_value)
 	{

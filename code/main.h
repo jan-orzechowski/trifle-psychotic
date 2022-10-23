@@ -224,6 +224,7 @@ struct map
 	string_ref description;
 	text_lines* description_lines;
 	string_ref music_file_name;
+	b32 complete_when_all_messengers_killed;
 };
 
 // polegamy na tym, by _FIRST było pierwsze, a _LAST ostatnie, dla policzenia ile potrzebujemy miejsc w słowniku

@@ -127,6 +127,29 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			stop_playing_music(2000);
 		}
 
+		if (level->current_map.complete_when_all_messengers_killed
+			&& level->enemies_to_kill_counter <= 0)
+		{
+			mark_level_as_completed(level->static_data, level->current_map_name);
+			save_completed_levels(level->static_data, game->transient_arena);
+
+			level->active_scene_change.change_scene = true;
+			level->active_scene_change.fade_out_speed = 1.5f;
+			level->stop_player_movement = true;
+			
+			if (level->current_map.next_map.string_size == 0)
+			{
+				level->active_scene_change.new_scene = scene::LEVEL_CHOICE;
+			}
+			else
+			{
+				level->active_scene_change.new_scene = scene::GAME;
+				level->active_scene_change.map_to_load = level->current_map.next_map;
+			}
+
+			stop_playing_music(2000);
+		}
+
 		if (level->player_invincibility_cooldown > 0.0f)
 		{
 			level->player_invincibility_cooldown -= delta_time;
@@ -174,6 +197,9 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		if (collision.collided_transition 
 			&& false == level->active_scene_change.change_scene)
 		{
+			mark_level_as_completed(level->static_data, level->current_map_name);
+			save_completed_levels(level->static_data, game->transient_arena);
+
 			level->active_scene_change.change_scene = true;
 			level->active_scene_change.new_scene = scene::GAME;
 			level->active_scene_change.map_to_load = level->current_map.next_map;
@@ -389,7 +415,10 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 		render_hitpoint_bar(level->static_data, &game->render, player, is_power_up_active(level->power_ups.invincibility));
 
-		render_counter(level->static_data, &game->render, game->transient_arena, level->enemies_to_kill_counter, 99);
+		if (level->current_map.complete_when_all_messengers_killed)
+		{
+			render_counter(level->static_data, &game->render, game->transient_arena, level->enemies_to_kill_counter, 99);
+		}
 	}
 
 	if (false == level->stop_player_movement)
@@ -841,6 +870,8 @@ void main_game_loop(game_state* game, r32 delta_time)
 				game->level_choice_menu = {};
 				game->level_choice_menu.time_to_first_interaction = 1.0f;
 				game->level_choice_menu.fade_in_perc = 1.0f;
+
+				load_completed_levels(game->static_data);
 			}
 			break;
 			case scene::MAP_ERRORS:

@@ -496,8 +496,10 @@ shooting_rotation_sprites* load_shooting_rotation_sprites(memory_arena* arena, u
 	return result;
 }
 
-void save_levels(static_game_data* data, memory_arena* transient_arena)
+void save_completed_levels(static_game_data* data, memory_arena* transient_arena)
 {
+	temporary_memory memory_for_string_builder = begin_temporary_memory(transient_arena);
+
 	string_builder builder = get_string_builder(transient_arena, 1000);
 
 	for (u32 level_index = 0; level_index < data->levels_count; level_index++)
@@ -517,16 +519,18 @@ void save_levels(static_game_data* data, memory_arena* transient_arena)
 	save_test.length = text_to_save.string_size;
 
 	save_prefs(save_test);
+
+	end_temporary_memory(memory_for_string_builder, true);
 }
 
-void mark_level_as_completed(static_game_data* data, char* name_buffer)
+void mark_level_as_completed(static_game_data* data, string_ref name)
 {
-	if (strcmp(name_buffer, "custom") != 0)
+	if (compare_to_c_string(name, "custom") == false)
 	{
 		for (u32 level_index = 0; level_index < data->levels_count; level_index++)
 		{
 			level_choice* level = data->levels + level_index;
-			if (compare_to_c_string(level->map_name, name_buffer))
+			if (level->map_name == name)
 			{
 				level->completed = true;
 				break;
@@ -535,18 +539,28 @@ void mark_level_as_completed(static_game_data* data, char* name_buffer)
 	}
 }
 
-void load_completed_levels(static_game_data* data, const char* str)
+void mark_level_as_completed(static_game_data* data, char* name_buffer, i32 string_size)
 {
-	// forma: oddzielona przecinkami lista map bez rozszerzenia, np. map_01,map02
+	string_ref name = {};
+	name.ptr = name_buffer;
+	name.string_size = string_size;
+	mark_level_as_completed(data, name);
+}
 
-	char buffer[MAX_LEVEL_NAME_LENGTH + 1];
+void load_completed_levels(static_game_data* data)
+{
+	read_file_result prefs = load_prefs();
+	char* str = (char*)prefs.contents;
+
+	// forma pliku: oddzielona przecinkami lista map bez rozszerzenia, np. map_01,map02
+
+	char buffer[MAX_LEVEL_NAME_LENGTH] = {};
 	u32 current_char_index = 0;
 	while (*str)
 	{
 		if (current_char_index == MAX_LEVEL_NAME_LENGTH)
 		{
-			buffer[current_char_index] = '\0';
-			mark_level_as_completed(data, buffer);
+			mark_level_as_completed(data, buffer, current_char_index);
 			current_char_index = 0;
 		}
 
@@ -555,8 +569,7 @@ void load_completed_levels(static_game_data* data, const char* str)
 		{
 			if (current_char_index > 0)
 			{
-				buffer[current_char_index] = '\0';
-				mark_level_as_completed(data, buffer);
+				mark_level_as_completed(data, buffer, current_char_index);
 				current_char_index = 0;
 			}
 		}
@@ -567,7 +580,9 @@ void load_completed_levels(static_game_data* data, const char* str)
 		}
 
 		str++;
-	}	
+	}
+
+	delete prefs.contents;
 }
 
 void load_static_game_data(static_game_data* data, memory_arena* arena, memory_arena* transient_arena)
@@ -624,16 +639,11 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	data->levels[5].name = copy_c_string_to_memory_arena(arena, "Custom level");
 	data->levels[5].map_name = copy_c_string_to_memory_arena(arena, "custom");
-
-	write_to_tile save_test = {};
-	save_test.buffer = (void*)"   map_01,  map_02  map_03, ,";
-	save_test.length = 30;
-
-	save_prefs(save_test);
-	read_file_result prefs = load_prefs();
-	load_completed_levels(data, (char*)prefs.contents);
-
-	save_levels(data, transient_arena);
+	
+#if TRIFLE_DEBUG
+	// kasujemy progres
+	save_completed_levels(data, transient_arena);
+#endif
 
 	data->menu_fade_speed = 1.5f;
 
