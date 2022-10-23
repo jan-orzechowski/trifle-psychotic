@@ -86,27 +86,27 @@ entity_type_enum get_entity_type_enum_from_gid(i32 gid, i32 entity_tileset_first
 		case 7:  result = entity_type_enum::ENEMY_GUARDIAN; break;
 		case 8:  result = entity_type_enum::ENEMY_FLYING_BOMB; break;
 		case 9:  result = entity_type_enum::ENEMY_ROBOT; break;
-		case 10: result = entity_type_enum::ENEMY_CULTIST; break;
+		case 10: result = entity_type_enum::ENEMY_MESSENGER; break;
 		case 20: result = entity_type_enum::ENEMY_BIG_SENTRY; break;
 		case 11: result = entity_type_enum::POWER_UP_HEALTH; break;
 		case 12: result = entity_type_enum::POWER_UP_SPEED; break;
 		case 13: result = entity_type_enum::POWER_UP_SPREAD; break;
 		case 14: result = entity_type_enum::POWER_UP_DAMAGE; break;
 		case 15: result = entity_type_enum::POWER_UP_INVINCIBILITY; break;
-		case 16: result = entity_type_enum::GATE_BLUE; break;
-		case 17: result = entity_type_enum::GATE_GREY; break;
+		case 16: result = entity_type_enum::GATE_SILVER; break;
+		case 17: result = entity_type_enum::GATE_GOLD; break;
 		case 18: result = entity_type_enum::GATE_RED; break;
 		case 19: result = entity_type_enum::GATE_GREEN; break;
-		case 21: result = entity_type_enum::SWITCH_BLUE; break;
-		case 22: result = entity_type_enum::SWITCH_GREY; break;
+		case 21: result = entity_type_enum::SWITCH_SILVER; break;
+		case 22: result = entity_type_enum::SWITCH_GOLD; break;
 		case 23: result = entity_type_enum::SWITCH_RED; break;
 		case 24: result = entity_type_enum::SWITCH_GREEN; break;
-		case 26: result = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE; break;
-		case 27: result = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY; break;
+		case 26: result = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_SILVER; break;
+		case 27: result = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GOLD; break;
 		case 28: result = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED; break;
 		case 29: result = entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN; break;
-		case 31: result = entity_type_enum::MOVING_PLATFORM_VERTICAL_BLUE; break;
-		case 32: result = entity_type_enum::MOVING_PLATFORM_VERTICAL_GREY; break;
+		case 31: result = entity_type_enum::MOVING_PLATFORM_VERTICAL_SILVER; break;
+		case 32: result = entity_type_enum::MOVING_PLATFORM_VERTICAL_GOLD; break;
 		case 33: result = entity_type_enum::MOVING_PLATFORM_VERTICAL_RED; break;
 		case 34: result = entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN; break;
 		case 2:  result = entity_type_enum::PLAYER; break;
@@ -124,12 +124,12 @@ void parse_entity_from_tile(level_parsing_context* parsing, u32 tile_index, i32 
 	entity_type_enum type = get_entity_type_enum_from_gid(gid, parsing->entity_tileset_first_gid);
 	switch (type)
 	{
-		case entity_type_enum::GATE_BLUE:
-		case entity_type_enum::GATE_GREY:
+		case entity_type_enum::GATE_SILVER:
+		case entity_type_enum::GATE_GOLD:
 		case entity_type_enum::GATE_RED:
 		case entity_type_enum::GATE_GREEN:
-		case entity_type_enum::SWITCH_BLUE:
-		case entity_type_enum::SWITCH_GREY:
+		case entity_type_enum::SWITCH_SILVER:
+		case entity_type_enum::SWITCH_GOLD:
 		case entity_type_enum::SWITCH_RED:
 		case entity_type_enum::SWITCH_GREEN:
 		case entity_type_enum::NEXT_LEVEL_TRANSITION:
@@ -203,12 +203,12 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
 	entity_type_enum type = get_entity_type_enum_from_gid(gid, parsing->entity_tileset_first_gid);
 	switch (type)
 	{
-		case entity_type_enum::GATE_BLUE:
-		case entity_type_enum::GATE_GREY:
+		case entity_type_enum::GATE_SILVER:
+		case entity_type_enum::GATE_GOLD:
 		case entity_type_enum::GATE_RED:
 		case entity_type_enum::GATE_GREEN:
-		case entity_type_enum::SWITCH_BLUE:
-		case entity_type_enum::SWITCH_GREY:
+		case entity_type_enum::SWITCH_SILVER:
+		case entity_type_enum::SWITCH_GOLD:
 		case entity_type_enum::SWITCH_RED:
 		case entity_type_enum::SWITCH_GREEN:
 		{

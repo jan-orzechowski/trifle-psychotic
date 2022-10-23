@@ -161,8 +161,8 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 		switch_graphics switch_gfx = level->static_data->switches_gfx.blue;
 		switch (new_entity_to_spawn->type)
 		{
-			case entity_type_enum::SWITCH_BLUE:  switch_gfx = level->static_data->switches_gfx.blue; break;
-			case entity_type_enum::SWITCH_GREY:  switch_gfx = level->static_data->switches_gfx.grey; break;
+			case entity_type_enum::SWITCH_SILVER:  switch_gfx = level->static_data->switches_gfx.blue; break;
+			case entity_type_enum::SWITCH_GOLD:  switch_gfx = level->static_data->switches_gfx.grey; break;
 			case entity_type_enum::SWITCH_RED:   switch_gfx = level->static_data->switches_gfx.red; break;
 			case entity_type_enum::SWITCH_GREEN: switch_gfx = level->static_data->switches_gfx.green; break;
 		}
@@ -200,8 +200,8 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 		gate_graphics gate_gfx = level->static_data->gates_gfx.blue;
 		switch (new_entity_to_spawn->type)
 		{
-			case entity_type_enum::GATE_BLUE:  gate_gfx = level->static_data->gates_gfx.blue; break;
-			case entity_type_enum::GATE_GREY:  gate_gfx = level->static_data->gates_gfx.grey; break;
+			case entity_type_enum::GATE_SILVER:  gate_gfx = level->static_data->gates_gfx.blue; break;
+			case entity_type_enum::GATE_GOLD:  gate_gfx = level->static_data->gates_gfx.grey; break;
 			case entity_type_enum::GATE_RED:   gate_gfx = level->static_data->gates_gfx.red; break;
 			case entity_type_enum::GATE_GREEN: gate_gfx = level->static_data->gates_gfx.green; break;
 		}

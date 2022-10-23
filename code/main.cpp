@@ -253,7 +253,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 			if (entity->health < 0.0f)
 			{
-				if (entity->type->type_enum == entity_type_enum::ENEMY_CULTIST)
+				if (entity->type->type_enum == entity_type_enum::ENEMY_MESSENGER)
 				{
 					level->enemies_to_kill_counter--;
 				}

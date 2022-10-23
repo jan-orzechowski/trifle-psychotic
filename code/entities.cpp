@@ -517,16 +517,16 @@ void initialize_current_map(game_state* game, level_state* level)
 	{
 		switch (new_entity->type)
 		{
-			case entity_type_enum::GATE_BLUE:
-			case entity_type_enum::GATE_GREY:
+			case entity_type_enum::GATE_SILVER:
+			case entity_type_enum::GATE_GOLD:
 			case entity_type_enum::GATE_RED:
 			case entity_type_enum::GATE_GREEN:
 			{
 				add_gate_entity(level, game->arena, new_entity, false);
 			}
 			break;
-			case entity_type_enum::SWITCH_BLUE:
-			case entity_type_enum::SWITCH_GREY:
+			case entity_type_enum::SWITCH_SILVER:
+			case entity_type_enum::SWITCH_GOLD:
 			case entity_type_enum::SWITCH_RED:
 			case entity_type_enum::SWITCH_GREEN:
 			{
@@ -543,12 +543,12 @@ void initialize_current_map(game_state* game, level_state* level)
 				add_message_display_entity(level, game->arena, new_entity);
 			}
 			break;	
-			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE:
-			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY:
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_SILVER:
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GOLD:
 			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED:
 			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN:
-			case entity_type_enum::MOVING_PLATFORM_VERTICAL_BLUE:
-			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREY:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_SILVER:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GOLD:
 			case entity_type_enum::MOVING_PLATFORM_VERTICAL_RED:
 			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN:
 			{
@@ -568,7 +568,7 @@ void initialize_current_map(game_state* game, level_state* level)
 
 				add_entity(level, position, type);
 
-				if (new_entity->type == entity_type_enum::ENEMY_CULTIST)
+				if (new_entity->type == entity_type_enum::ENEMY_MESSENGER)
 				{
 					level->enemies_to_kill_counter++;
 				}
@@ -1184,10 +1184,10 @@ u32 get_moving_platform_type_index(entity_type_enum type)
 	u32 result = 0;
 	switch (type)
 	{
-		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE:  result = 0; break;
-		case entity_type_enum::MOVING_PLATFORM_VERTICAL_BLUE:    result = 1; break;
-		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY:  result = 2; break;
-		case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREY:    result = 3; break;
+		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_SILVER:  result = 0; break;
+		case entity_type_enum::MOVING_PLATFORM_VERTICAL_SILVER:    result = 1; break;
+		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GOLD:  result = 2; break;
+		case entity_type_enum::MOVING_PLATFORM_VERTICAL_GOLD:    result = 3; break;
 		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED:   result = 4; break;
 		case entity_type_enum::MOVING_PLATFORM_VERTICAL_RED:     result = 5; break;
 		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN: result = 6; break;
@@ -1203,8 +1203,8 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
 	entity_type* type = level->moving_platform_types[type_index];
 
 	b32 is_horizontal = 
-		  (new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE
-		|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY
+		  (new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_SILVER
+		|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GOLD
 		|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED
 		|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN);
 
@@ -1215,14 +1215,14 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
 		moving_platform_graphics platform_gfx = level->static_data->platforms_gfx.blue;
 		switch (new_entity_to_spawn->type)
 		{
-			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_BLUE:
-			case entity_type_enum::MOVING_PLATFORM_VERTICAL_BLUE:
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_SILVER:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_SILVER:
 			{
 				platform_gfx = level->static_data->platforms_gfx.blue;
 			}
 			break;
-			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREY:
-			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREY:
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GOLD:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GOLD:
 			{
 				platform_gfx = level->static_data->platforms_gfx.grey;
 			}

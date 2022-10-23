@@ -887,41 +887,41 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	robot_type->fired_bullet_type = robot_bullet_type;
 
-	entity_type* cultist_type = add_entity_type(data, entity_type_enum::ENEMY_CULTIST);
-	cultist_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
-	cultist_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT
+	entity_type* messenger_type = add_entity_type(data, entity_type_enum::ENEMY_MESSENGER);
+	messenger_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
+	messenger_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT
 		| (u32)entity_flags::WALKS_HORIZONTALLY
 		| (u32)entity_flags::ENEMY
 		| (u32)entity_flags::PLAYER_RECOIL_ON_CONTACT);
-	cultist_type->detection_type = detection_type::DETECT_180_DEGREES_IN_FRONT;
-	cultist_type->detection_distance = 14.0f;
-	cultist_type->stop_movement_distance = 0.0f;
-	cultist_type->forget_detection_distance = 18.0f;
-	cultist_type->looking_position_offset = get_v2(0.0f, -1.2f);
+	messenger_type->detection_type = detection_type::DETECT_180_DEGREES_IN_FRONT;
+	messenger_type->detection_distance = 14.0f;
+	messenger_type->stop_movement_distance = 0.0f;
+	messenger_type->forget_detection_distance = 18.0f;
+	messenger_type->looking_position_offset = get_v2(0.0f, -1.2f);
 
-	cultist_type->max_health = 100;
-	cultist_type->damage_on_contact = 10;
-	cultist_type->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
-	cultist_type->default_attack_cooldown = 1.0f;
-	cultist_type->default_attack_series_duration = 0.2f;
-	cultist_type->default_attack_bullet_interval_duration = 0.05f;
+	messenger_type->max_health = 100;
+	messenger_type->damage_on_contact = 10;
+	messenger_type->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
+	messenger_type->default_attack_cooldown = 1.0f;
+	messenger_type->default_attack_series_duration = 0.2f;
+	messenger_type->default_attack_bullet_interval_duration = 0.05f;
 		
-	cultist_type->velocity_multiplier = 4.0f;
-	cultist_type->player_acceleration_on_collision = 3.0f;
-	cultist_type->collision_rect_dim = get_v2(0.4f, 1.7f);
-	cultist_type->collision_rect_offset = get_v2(0.0f, -0.4f);
-	add_death_animation(arena, cultist_type, data->explosion_animations.size_48x48);
-	cultist_type->death_animation_offset = get_v2(0.0f, -0.75f);
-	cultist_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 4, get_v2(0, -4));
+	messenger_type->velocity_multiplier = 4.0f;
+	messenger_type->player_acceleration_on_collision = 3.0f;
+	messenger_type->collision_rect_dim = get_v2(0.4f, 1.7f);
+	messenger_type->collision_rect_offset = get_v2(0.0f, -0.4f);
+	add_death_animation(arena, messenger_type, data->explosion_animations.size_48x48);
+	messenger_type->death_animation_offset = get_v2(0.0f, -0.75f);
+	messenger_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 4, get_v2(0, -4));
 
-	entity_type* cultist_bullet_type = add_bullet_type(data);
-	cultist_bullet_type->damage_on_contact = 10;
-	cultist_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
-	cultist_bullet_type->constant_velocity = 10.0f;
-	cultist_bullet_type->idle_pose = get_bullet_graphics(arena, 3, 0);
-	add_death_animations_standard(arena, cultist_bullet_type, data);
+	entity_type* messenger_bullet_type = add_bullet_type(data);
+	messenger_bullet_type->damage_on_contact = 10;
+	messenger_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
+	messenger_bullet_type->constant_velocity = 10.0f;
+	messenger_bullet_type->idle_pose = get_bullet_graphics(arena, 3, 0);
+	add_death_animations_standard(arena, messenger_bullet_type, data);
 
-	cultist_type->fired_bullet_type = cultist_bullet_type;
+	messenger_type->fired_bullet_type = messenger_bullet_type;
 
 
 	// sprite effects
