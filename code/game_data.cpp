@@ -571,452 +571,486 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 {	
 	temporary_memory transient_memory = begin_temporary_memory(transient_arena);
 
-	data->ui_font = {};
-	data->ui_font.height_in_pixels = 8;
-	data->ui_font.width_in_pixels = 8;
-	data->ui_font.glyph_spacing_width = 1;
-	data->ui_font.letter_spacing = -1;
-	data->ui_font.line_spacing = 4;
-	data->ui_font.texture = textures::FONT;
+	// UI and fonts
+	{
+		data->ui_gfx = load_ui_graphics();
 
-	data->title_font = {};
-	data->title_font.height_in_pixels = 32;
-	data->title_font.width_in_pixels = 24;
-	data->title_font.glyph_spacing_width = 0;
-	data->title_font.letter_spacing = 0;
-	data->title_font.line_spacing = 10;
-	data->title_font.texture = textures::TITLE_FONT;
-	data->title_font.uppercase_only = true;
+		data->ui_font = {};
+		data->ui_font.height_in_pixels = 8;
+		data->ui_font.width_in_pixels = 8;
+		data->ui_font.glyph_spacing_width = 1;
+		data->ui_font.letter_spacing = -1;
+		data->ui_font.line_spacing = 4;
+		data->ui_font.texture = textures::FONT;
 
-	data->parsing_errors_text_options.font = data->ui_font;
-	data->parsing_errors_text_options.allow_horizontal_overflow = false;
-	data->parsing_errors_text_options.allow_vertical_overflow = true;
-	data->parsing_errors_text_options.writing_area = get_whole_screen_text_area(2.0f);
+		data->title_font = {};
+		data->title_font.height_in_pixels = 32;
+		data->title_font.width_in_pixels = 24;
+		data->title_font.glyph_spacing_width = 0;
+		data->title_font.letter_spacing = 0;
+		data->title_font.line_spacing = 10;
+		data->title_font.texture = textures::TITLE_FONT;
+		data->title_font.uppercase_only = true;
 
-	data->scrolling_text_options.font = data->ui_font;
-	data->scrolling_text_options.allow_horizontal_overflow = false;
-	data->scrolling_text_options.allow_vertical_overflow = true;
-	data->scrolling_text_options.writing_area = get_whole_screen_text_area(5.0f);
+		data->parsing_errors_text_options.font = data->ui_font;
+		data->parsing_errors_text_options.allow_horizontal_overflow = false;
+		data->parsing_errors_text_options.allow_vertical_overflow = true;
+		data->parsing_errors_text_options.writing_area = get_whole_screen_text_area(2.0f);
 
-	data->title_str = copy_c_string_to_memory_arena(arena, "Trifle Psychotic");
-
-	data->choose_level_message = copy_c_string_to_memory_arena(arena, "Choose a place to heal:");
-
-	data->levels_count = 6;
-	data->levels = push_array(arena, data->levels_count, level_choice);
-	data->levels[0].name = copy_c_string_to_memory_arena(arena, "1. The Outpost (Intro)");
-	data->levels[0].map_name = copy_c_string_to_memory_arena(arena, "map_01");
-
-	data->levels[1].name = copy_c_string_to_memory_arena(arena, "2. The Spire");
-	data->levels[1].map_name = copy_c_string_to_memory_arena(arena, "map_02");
-
-	data->levels[2].name = copy_c_string_to_memory_arena(arena, "3. The Great Armada");
-	data->levels[2].map_name = copy_c_string_to_memory_arena(arena, "map_03");
-
-	data->levels[3].name = copy_c_string_to_memory_arena(arena, "4. The Orbital Fortress");
-	data->levels[3].map_name = copy_c_string_to_memory_arena(arena, "map_04");
-
-	data->levels[4].name = copy_c_string_to_memory_arena(arena, "5. The Volcano Temple");
-	data->levels[4].map_name = copy_c_string_to_memory_arena(arena, "map_05");
-
-	data->levels[5].name = copy_c_string_to_memory_arena(arena, "Custom level");
-	data->levels[5].map_name = copy_c_string_to_memory_arena(arena, "custom");
+		data->scrolling_text_options.font = data->ui_font;
+		data->scrolling_text_options.allow_horizontal_overflow = false;
+		data->scrolling_text_options.allow_vertical_overflow = true;
+		data->scrolling_text_options.writing_area = get_whole_screen_text_area(5.0f);
+	}
 	
-#if TRIFLE_DEBUG
-	// kasujemy progres
-	save_completed_levels(data, transient_arena);
-#endif
+	// messages and captions
+	{
+		data->title_str = copy_c_string_to_memory_arena(arena, "Trifle Psychotic");
 
-	data->menu_fade_speed = 1.5f;
+		data->menu_new_game_str = copy_c_string_to_memory_arena(arena, "New Game");
+		data->menu_continue_str = copy_c_string_to_memory_arena(arena, "Continue");
+		data->menu_credits_str = copy_c_string_to_memory_arena(arena, "Credits");
+		data->menu_exit_str = copy_c_string_to_memory_arena(arena, "Exit");
 
-	data->ui_gfx = load_ui_graphics();
-	data->menu_new_game_str = copy_c_string_to_memory_arena(arena, "New Game");
-	data->menu_continue_str = copy_c_string_to_memory_arena(arena, "Continue");
-	data->menu_credits_str = copy_c_string_to_memory_arena(arena, "Credits");
-	data->menu_exit_str = copy_c_string_to_memory_arena(arena, "Exit");	
-	data->exit_warning_message = copy_c_string_to_memory_arena(arena, "Are you sure you want to exit? Press ESC again to confirm");
-	
-	data->default_death_message = copy_c_string_to_memory_arena(arena, "You died.");
-	data->death_messages_count = 10;
-	data->death_messages = push_array(arena, data->death_messages_count, string_ref);
-	data->death_messages[0] = copy_c_string_to_memory_arena(arena, "Text 0");
-	data->death_messages[1] = copy_c_string_to_memory_arena(arena, "Text 1");
-	data->death_messages[2] = copy_c_string_to_memory_arena(arena, "Text 2");
-	data->death_messages[3] = copy_c_string_to_memory_arena(arena, "Text 3");
-	data->death_messages[4] = copy_c_string_to_memory_arena(arena, "Text 4");
-	data->death_messages[5] = copy_c_string_to_memory_arena(arena, "Text 5");
-	data->death_messages[6] = copy_c_string_to_memory_arena(arena, "Text 6");
-	data->death_messages[7] = copy_c_string_to_memory_arena(arena, "Text 7");
-	data->death_messages[8] = copy_c_string_to_memory_arena(arena, "Text 8");
-	data->death_messages[9] = copy_c_string_to_memory_arena(arena, "Text 9");
-
-	read_file_result collision_file = read_file("data/collision_map.tmx");
-	data->collision_reference = load_collision_map(arena, transient_arena, collision_file);
-	delete collision_file.contents;
-
-	data->gates_gfx.blue = load_gate_graphics(0);
-	data->gates_gfx.grey = load_gate_graphics(1);
-	data->gates_gfx.red = load_gate_graphics(2);
-	data->gates_gfx.green = load_gate_graphics(3);
-	data->switches_gfx.blue = load_switch_graphics(0);
-	data->switches_gfx.grey = load_switch_graphics(1);
-	data->switches_gfx.red = load_switch_graphics(2);
-	data->switches_gfx.green = load_switch_graphics(3);
-	data->display_gfx = load_gate_switch_displays();
-	data->platforms_gfx.blue = load_moving_platform_graphics(0, 0);
-	data->platforms_gfx.grey = load_moving_platform_graphics(0, 1);
-	data->platforms_gfx.red = load_moving_platform_graphics(1, 0);
-	data->platforms_gfx.green = load_moving_platform_graphics(1, 1);
-
-	data->explosion_animations.size_16x16_variant_1 = load_explosion_animation(arena, get_v2(464, 0), 16, 7, 0.1f);
-	data->explosion_animations.size_16x16_variant_2 = load_explosion_animation(arena, get_v2(464, 16), 16, 7, 0.1f);
-	data->explosion_animations.size_16x16_variant_3 = load_explosion_animation(arena, get_v2(464, 32), 16, 7, 0.1f);
-	data->explosion_animations.size_16x16_variant_4 = load_explosion_animation(arena, get_v2(464 + (16 * 7), 0), 16, 7, 0.1f);
-	data->explosion_animations.size_16x16_variant_5 = load_explosion_animation(arena, get_v2(464 + (16 * 7), 16), 16, 7, 0.1f);
-	data->explosion_animations.size_16x16_variant_6 = load_explosion_animation(arena, get_v2(464 + (16 * 7), 32), 16, 7, 0.1f);
-	data->explosion_animations.size_16x16_variant_7_blue = load_explosion_animation(arena, get_v2(464 + (16 * 7) * 2, 32), 16, 7, 0.1f);
-	data->explosion_animations.size_16x16_variant_8_blue = load_explosion_animation(arena, get_v2(464 + (16 * 7) * 2, 32), 16, 7, 0.1f);
-	data->explosion_animations.size_16x16_variant_9_blue = load_explosion_animation(arena, get_v2(464 + (16 * 7) * 2, 32), 16, 7, 0.1f);
-	data->explosion_animations.size_24x24 = load_explosion_animation(arena, get_v2(0, 0), 24, 12, 0.15f);
-	data->explosion_animations.size_32x32 = load_explosion_animation(arena, get_v2(0, 24), 32, 12, 0.15f);
-	data->explosion_animations.size_48x48 = load_explosion_animation(arena, get_v2(0, 24 + 32), 48, 12, 0.15f);
-	data->explosion_animations.size_96x96 = load_explosion_animation(arena, get_v2(0, 24 + 32 + 48), 96, 12, 0.2f);
-	
-	data->entity_types = push_array(arena, ENTITY_TYPES_MAX_COUNT, entity_type);
-	data->entity_types_count = 0;
-
-	data->gravity = get_v2(0, 1.0f);
-	data->player_jump_acceleration = 33.0f;
-	data->power_up_speed_multipliers = get_v2(1.7f, 1.3f);
-	data->player_walking_acceleration = 1.25f;
-	data->player_in_air_acceleration = 1.0f;
-
-	data->default_player_invincibility_cooldown = 0.2f;
-	data->player_as_target_offset = get_v2(0.0f, -0.3f);
-	data->default_player_ignore_enemy_collision_cooldown = 1.0f;
-	data->default_player_recoil_timer = 2.0f;
-	data->default_player_recoil_acceleration_timer = 1.0f;
-
-	data->moving_platform_velocity = 2.0f;
-
-	data->entity_types_dict = create_entity_types_dictionary(arena);
-
-	data->bullet_types = push_array(arena, BULLET_TYPES_MAX_COUNT, entity_type);
-	data->bullet_types_count = 0;
-
-	data->default_player_max_health = 100.0f;
-
-	entity_type* player_entity_type = add_entity_type(data, entity_type_enum::PLAYER);
-	player_entity_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT | (u32)entity_flags::PLAYER);
-	player_entity_type->max_health = data->default_player_max_health;
-	player_entity_type->velocity_multiplier = 40.0f;
-	player_entity_type->slowdown_multiplier = 0.80f;
-	player_entity_type->default_attack_cooldown = 0.2f;
-	player_entity_type->walk_animation = get_walk_animation(arena, get_zero_v2(), false);
-	player_entity_type->collision_rect_dim = get_v2(0.35f, 1.7f);
-	player_entity_type->collision_rect_offset = get_v2(0.0f, -0.1f);
-	player_entity_type->death_animation_offset = get_v2(0.0f, -0.75f);
-	player_entity_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 0);
-	add_death_animation(arena, player_entity_type, data->explosion_animations.size_48x48);
-
-	data->player_idle_pose = get_player_pose(arena, 0);
-	data->player_jump_pose = get_player_pose(arena, 3);
-	data->player_recoil_pose = get_player_pose(arena, 3);
-
-	entity_type* player_bullet_type = add_bullet_type(data);
-	player_bullet_type->damage_on_contact = 10.0f;
-	player_bullet_type->constant_velocity = 14.0f;
-	player_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 1);
-	add_death_animations_standard(arena, player_bullet_type, data);
-
-	player_entity_type->fired_bullet_type = player_bullet_type;
-
-	entity_type* power_up_bullet_type = add_bullet_type(data);
-	power_up_bullet_type->damage_on_contact = 30.0f;
-	power_up_bullet_type->constant_velocity = 18.0f;
-	power_up_bullet_type->idle_pose = get_bullet_graphics(arena, 3, 1);
-	add_death_animations(arena, power_up_bullet_type,
-		data->explosion_animations.size_16x16_variant_7_blue,
-		data->explosion_animations.size_16x16_variant_8_blue,
-		data->explosion_animations.size_16x16_variant_9_blue);
-
-	data->player_normal_bullet_type = player_bullet_type;
-	data->player_power_up_bullet_type = power_up_bullet_type;
-
-	entity_type* sentry_type = add_entity_type(data, entity_type_enum::ENEMY_SENTRY);
-	sentry_type->flags = (entity_flags)(
-		(u32)entity_flags::BLOCKS_MOVEMENT 
-		| (u32)entity_flags::ENEMY
-		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
-	sentry_type->detection_type = detection_type::DETECT_360_DEGREES;
-	sentry_type->detection_distance = 12.0f;
-	sentry_type->stop_movement_distance = 4.0f;
-	sentry_type->forget_detection_distance = 14.0f;
-
-	sentry_type->default_attack_cooldown = 3.0f;
-	sentry_type->default_attack_series_duration = 0.4f;
-	sentry_type->default_attack_bullet_interval_duration = 0.15f;
-
-	sentry_type->max_health = 20;
-	sentry_type->damage_on_contact = 20;
-	sentry_type->velocity_multiplier = 0.0f;
-	sentry_type->collision_rect_dim = get_v2(0.75f, 0.75f);
-	sentry_type->rotation_sprites = load_shooting_rotation_sprites(arena, 6);
-	add_death_animation(arena, sentry_type, data->explosion_animations.size_24x24);
-
-	entity_type* sentry_bullet_type = add_bullet_type(data);
-	sentry_bullet_type->damage_on_contact = 10;
-	sentry_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
-	sentry_bullet_type->constant_velocity = 7.0f;
-	sentry_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 0);
-	add_death_animations_standard(arena, sentry_bullet_type, data);
-
-	sentry_type->fired_bullet_type = sentry_bullet_type;
-
-	entity_type* big_sentry_type = add_entity_type(data, entity_type_enum::ENEMY_BIG_SENTRY);
-	big_sentry_type->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 3, 7));
-	big_sentry_type->flags = (entity_flags)(
-		(u32)entity_flags::BLOCKS_MOVEMENT
-		| (u32)entity_flags::ENEMY);
-	big_sentry_type->detection_type = detection_type::DETECT_360_DEGREES;
-	big_sentry_type->detection_distance = 12.0f;
-	big_sentry_type->stop_movement_distance = 4.0f;
-	big_sentry_type->forget_detection_distance = 14.0f;
-
-	big_sentry_type->default_attack_cooldown = 3.0f;
-	big_sentry_type->default_attack_series_duration = 0.8f;
-	big_sentry_type->default_attack_bullet_interval_duration = 0.025f;
-
-	big_sentry_type->max_health = 120.0f;
-	big_sentry_type->damage_on_contact = 40.0f;
-	big_sentry_type->velocity_multiplier = 0.0f;
-	big_sentry_type->collision_rect_dim = get_v2(0.9f, 0.9f);
-	add_death_animation(arena, big_sentry_type, data->explosion_animations.size_32x32);
-
-	big_sentry_type->fired_bullet_type = sentry_bullet_type;
-
-	entity_type* guardian_type = add_entity_type(data, entity_type_enum::ENEMY_GUARDIAN);
-	guardian_type->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 1, 7));
-	guardian_type->walk_animation = get_animation_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 1, 7));
-	guardian_type->flags = (entity_flags)(
-		(u32)entity_flags::BLOCKS_MOVEMENT 
-		| (u32)entity_flags::ENEMY
-		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT
-		| (u32)entity_flags::FLIES_VERTICALLY);
-	guardian_type->detection_type = detection_type::DETECT_360_DEGREES;
-	guardian_type->detection_distance = 10.0f;
-	guardian_type->stop_movement_distance = 4.0f;
-	guardian_type->forget_detection_distance = 12.0f;
-
-	guardian_type->default_attack_cooldown = 1.0f;
-	guardian_type->default_attack_series_duration = 2.0f;
-	guardian_type->default_attack_bullet_interval_duration = 1.0f;
-
-	guardian_type->max_health = 40;
-	guardian_type->damage_on_contact = 30;
-	guardian_type->velocity_multiplier = 3.0f;
-	guardian_type->default_attack_cooldown = 0.5f;
-	guardian_type->collision_rect_dim = get_v2(1.0f, 1.0f);
-	add_death_animation(arena, guardian_type, data->explosion_animations.size_32x32);
-
-	entity_type* guardian_bullet_type = add_bullet_type(data);
-	guardian_bullet_type->damage_on_contact = 20;
-	guardian_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
-	guardian_bullet_type->constant_velocity = 4.0f;
-	guardian_bullet_type->idle_pose = get_bullet_graphics(arena, 0, 3);
-	add_death_animations(arena, guardian_bullet_type,
-		data->explosion_animations.size_16x16_variant_7_blue,
-		data->explosion_animations.size_16x16_variant_8_blue,
-		data->explosion_animations.size_16x16_variant_9_blue);
-
-	guardian_type->fired_bullet_type = guardian_bullet_type;
-	guardian_type->fired_bullet_offset = get_v2(0.0f, 0.6f);
-
-	entity_type* flying_bomb_type = add_entity_type(data, entity_type_enum::ENEMY_FLYING_BOMB);
-	flying_bomb_type->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 0, 7));
-	flying_bomb_type->flags = (entity_flags)(
-		(u32)entity_flags::BLOCKS_MOVEMENT 
-		| (u32)entity_flags::ENEMY
-		| (u32)entity_flags::FLIES_TOWARDS_PLAYER
-		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
-	flying_bomb_type->detection_type = detection_type::DETECT_360_DEGREES;
-	flying_bomb_type->detection_distance = 10.0f;
-	flying_bomb_type->forget_detection_distance = 12.0f;
-
-	flying_bomb_type->max_health = 40;
-	flying_bomb_type->damage_on_contact = 80.0f;
-	flying_bomb_type->velocity_multiplier = 2.0f;
-	flying_bomb_type->default_attack_cooldown = 0.5f;
-	flying_bomb_type->collision_rect_dim = get_v2(1.1f, 0.5f);
-	add_death_animation(arena, flying_bomb_type, data->explosion_animations.size_96x96);
-
-	entity_type* robot_type = add_entity_type(data, entity_type_enum::ENEMY_ROBOT);
-	robot_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 2 * 24), true, get_v2(0.0f, 1.0f));
-	robot_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT
-		| (u32)entity_flags::WALKS_HORIZONTALLY
-		| (u32)entity_flags::ENEMY
-		| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
-
-	robot_type->detection_type = detection_type::DETECT_90_DEGREES_IN_FRONT;
-	robot_type->detection_distance = 10.0f;
-	robot_type->stop_movement_distance = 4.0f;
-	robot_type->forget_detection_distance = 15.0f;
-	robot_type->looking_position_offset = get_v2(0.0f, -1.0f);
-
-	robot_type->max_health = 40;
-	robot_type->damage_on_contact = 30;
-	robot_type->walk_animation = get_walk_animation(arena, get_v2(0, 2 * 24), true, get_v2(0.0f, 1.0f));
-	robot_type->default_attack_cooldown = 0.2f;
-	robot_type->velocity_multiplier = 3.0f;
-	robot_type->collision_rect_dim = get_v2(0.35f, 1.6f);
-	robot_type->collision_rect_offset = get_v2(0.0f, -0.70f);
-	robot_type->default_attack_cooldown = 1.2f;
-	robot_type->default_attack_series_duration = 0.6f;
-	robot_type->default_attack_bullet_interval_duration = 0.15f;
-	robot_type->fired_bullet_offset = get_v2(0.75f, -0.75f);
-
-	add_death_animation(arena, robot_type, data->explosion_animations.size_48x48);
-	robot_type->death_animation_offset = get_v2(0.0f, -0.75f);
-
-	entity_type* robot_bullet_type = add_bullet_type(data);
-	robot_bullet_type->damage_on_contact = 10;
-	robot_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
-	robot_bullet_type->constant_velocity = 9.0f;
-	robot_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 0);
-	add_death_animations_standard(arena, robot_bullet_type, data);
-
-	robot_type->fired_bullet_type = robot_bullet_type;
-
-	entity_type* messenger_type = add_entity_type(data, entity_type_enum::ENEMY_MESSENGER);
-	messenger_type->idle_pose = get_walk_idle_pose(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
-	messenger_type->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT
-		| (u32)entity_flags::WALKS_HORIZONTALLY
-		| (u32)entity_flags::ENEMY
-		| (u32)entity_flags::PLAYER_RECOIL_ON_CONTACT);
-	messenger_type->detection_type = detection_type::DETECT_180_DEGREES_IN_FRONT;
-	messenger_type->detection_distance = 14.0f;
-	messenger_type->stop_movement_distance = 0.0f;
-	messenger_type->forget_detection_distance = 18.0f;
-	messenger_type->looking_position_offset = get_v2(0.0f, -1.2f);
-
-	messenger_type->max_health = 100;
-	messenger_type->damage_on_contact = 10;
-	messenger_type->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
-	messenger_type->default_attack_cooldown = 1.0f;
-	messenger_type->default_attack_series_duration = 0.2f;
-	messenger_type->default_attack_bullet_interval_duration = 0.05f;
+		data->choose_level_message = copy_c_string_to_memory_arena(arena, "Choose a place to heal:");
 		
-	messenger_type->velocity_multiplier = 4.0f;
-	messenger_type->player_acceleration_on_collision = 3.0f;
-	messenger_type->collision_rect_dim = get_v2(0.4f, 1.7f);
-	messenger_type->collision_rect_offset = get_v2(0.0f, -0.4f);
-	add_death_animation(arena, messenger_type, data->explosion_animations.size_48x48);
-	messenger_type->death_animation_offset = get_v2(0.0f, -0.75f);
-	messenger_type->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 4, get_v2(0, -4));
+		data->exit_warning_message = copy_c_string_to_memory_arena(arena, "Are you sure you want to exit? Press ESC again to confirm");
 
-	entity_type* messenger_bullet_type = add_bullet_type(data);
-	messenger_bullet_type->damage_on_contact = 10;
-	messenger_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
-	messenger_bullet_type->constant_velocity = 10.0f;
-	messenger_bullet_type->idle_pose = get_bullet_graphics(arena, 3, 0);
-	add_death_animations_standard(arena, messenger_bullet_type, data);
+		data->default_death_message = copy_c_string_to_memory_arena(arena, "You died.");
+		data->death_messages_count = 10;
+		data->death_messages = push_array(arena, data->death_messages_count, string_ref);
+		data->death_messages[0] = copy_c_string_to_memory_arena(arena, "Text 0");
+		data->death_messages[1] = copy_c_string_to_memory_arena(arena, "Text 1");
+		data->death_messages[2] = copy_c_string_to_memory_arena(arena, "Text 2");
+		data->death_messages[3] = copy_c_string_to_memory_arena(arena, "Text 3");
+		data->death_messages[4] = copy_c_string_to_memory_arena(arena, "Text 4");
+		data->death_messages[5] = copy_c_string_to_memory_arena(arena, "Text 5");
+		data->death_messages[6] = copy_c_string_to_memory_arena(arena, "Text 6");
+		data->death_messages[7] = copy_c_string_to_memory_arena(arena, "Text 7");
+		data->death_messages[8] = copy_c_string_to_memory_arena(arena, "Text 8");
+		data->death_messages[9] = copy_c_string_to_memory_arena(arena, "Text 9");
+	}
 
-	messenger_type->fired_bullet_type = messenger_bullet_type;
+	// levels in level choice screen
+	{
+		data->levels_count = 6;
+		data->levels = push_array(arena, data->levels_count, level_choice);
+		data->levels[0].name = copy_c_string_to_memory_arena(arena, "1. The Outpost (Intro)");
+		data->levels[0].map_name = copy_c_string_to_memory_arena(arena, "map_01");
 
+		data->levels[1].name = copy_c_string_to_memory_arena(arena, "2. The Spire");
+		data->levels[1].map_name = copy_c_string_to_memory_arena(arena, "map_02");
+
+		data->levels[2].name = copy_c_string_to_memory_arena(arena, "3. The Great Armada");
+		data->levels[2].map_name = copy_c_string_to_memory_arena(arena, "map_03");
+
+		data->levels[3].name = copy_c_string_to_memory_arena(arena, "4. The Orbital Fortress");
+		data->levels[3].map_name = copy_c_string_to_memory_arena(arena, "map_04");
+
+		data->levels[4].name = copy_c_string_to_memory_arena(arena, "5. The Volcano Temple");
+		data->levels[4].map_name = copy_c_string_to_memory_arena(arena, "map_05");
+
+		data->levels[5].name = copy_c_string_to_memory_arena(arena, "Custom level");
+		data->levels[5].map_name = copy_c_string_to_memory_arena(arena, "custom");
+	}
+	
+	// special entities graphics
+	{
+		data->gates_gfx.blue = load_gate_graphics(0);
+		data->gates_gfx.grey = load_gate_graphics(1);
+		data->gates_gfx.red = load_gate_graphics(2);
+		data->gates_gfx.green = load_gate_graphics(3);
+		data->switches_gfx.blue = load_switch_graphics(0);
+		data->switches_gfx.grey = load_switch_graphics(1);
+		data->switches_gfx.red = load_switch_graphics(2);
+		data->switches_gfx.green = load_switch_graphics(3);
+		data->display_gfx = load_gate_switch_displays();
+		data->platforms_gfx.blue = load_moving_platform_graphics(0, 0);
+		data->platforms_gfx.grey = load_moving_platform_graphics(0, 1);
+		data->platforms_gfx.red = load_moving_platform_graphics(1, 0);
+		data->platforms_gfx.green = load_moving_platform_graphics(1, 1);
+	}
+
+	// explosion animations
+	{
+		data->explosion_animations.size_16x16_variant_1 = load_explosion_animation(arena, get_v2(464, 0), 16, 7, 0.1f);
+		data->explosion_animations.size_16x16_variant_2 = load_explosion_animation(arena, get_v2(464, 16), 16, 7, 0.1f);
+		data->explosion_animations.size_16x16_variant_3 = load_explosion_animation(arena, get_v2(464, 32), 16, 7, 0.1f);
+		data->explosion_animations.size_16x16_variant_4 = load_explosion_animation(arena, get_v2(464 + (16 * 7), 0), 16, 7, 0.1f);
+		data->explosion_animations.size_16x16_variant_5 = load_explosion_animation(arena, get_v2(464 + (16 * 7), 16), 16, 7, 0.1f);
+		data->explosion_animations.size_16x16_variant_6 = load_explosion_animation(arena, get_v2(464 + (16 * 7), 32), 16, 7, 0.1f);
+		data->explosion_animations.size_16x16_variant_7_blue = load_explosion_animation(arena, get_v2(464 + (16 * 7) * 2, 32), 16, 7, 0.1f);
+		data->explosion_animations.size_16x16_variant_8_blue = load_explosion_animation(arena, get_v2(464 + (16 * 7) * 2, 32), 16, 7, 0.1f);
+		data->explosion_animations.size_16x16_variant_9_blue = load_explosion_animation(arena, get_v2(464 + (16 * 7) * 2, 32), 16, 7, 0.1f);
+		data->explosion_animations.size_24x24 = load_explosion_animation(arena, get_v2(0, 0), 24, 12, 0.15f);
+		data->explosion_animations.size_32x32 = load_explosion_animation(arena, get_v2(0, 24), 32, 12, 0.15f);
+		data->explosion_animations.size_48x48 = load_explosion_animation(arena, get_v2(0, 24 + 32), 48, 12, 0.15f);
+		data->explosion_animations.size_96x96 = load_explosion_animation(arena, get_v2(0, 24 + 32 + 48), 96, 12, 0.2f);
+	}
+	
+	// other constants
+	{
+		data->gravity = get_v2(0, 1.0f);
+		data->menu_fade_speed = 1.5f;
+		data->moving_platform_velocity = 2.0f;
+	}
+
+	// collision data
+	{
+		read_file_result collision_file = read_file("data/collision_map.tmx");
+		data->collision_reference = load_collision_map(arena, transient_arena, collision_file);
+		delete collision_file.contents;
+	}
+
+	// entity types arrays
+	{
+		data->entity_types = push_array(arena, ENTITY_TYPES_MAX_COUNT, entity_type);
+		data->entity_types_count = 0;
+
+		data->bullet_types = push_array(arena, BULLET_TYPES_MAX_COUNT, entity_type);
+		data->bullet_types_count = 0;
+
+		data->entity_types_dict = create_entity_types_dictionary(arena);
+	}
+	
+	// player entity type and player constants
+	{	
+		data->player_jump_acceleration = 33.0f;
+		data->player_walking_acceleration = 1.25f;
+		data->player_in_air_acceleration = 1.0f;
+		
+		data->power_up_speed_multipliers = get_v2(1.7f, 1.3f);
+		
+		data->default_player_invincibility_cooldown = 0.2f;
+		data->default_player_ignore_enemy_collision_cooldown = 1.0f;
+		data->default_player_recoil_timer = 2.0f;
+		data->default_player_recoil_acceleration_timer = 1.0f;
+
+		data->player_idle_pose = get_player_pose(arena, 0);
+		data->player_jump_pose = get_player_pose(arena, 3);
+		data->player_recoil_pose = get_player_pose(arena, 3);
+		data->player_as_target_offset = get_v2(0.0f, -0.3f);
+
+		data->default_player_max_health = 100.0f;
+
+		entity_type* player = add_entity_type(data, entity_type_enum::PLAYER);
+		player->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT | (u32)entity_flags::PLAYER);
+		player->max_health = data->default_player_max_health;
+		player->velocity_multiplier = 40.0f;
+		player->slowdown_multiplier = 0.8f;
+		player->default_attack_cooldown = 0.2f;
+		player->collision_rect_dim = get_v2(0.35f, 1.7f);
+		player->collision_rect_offset = get_v2(0.0f, -0.1f);
+		player->walk_animation = get_walk_animation(arena, get_zero_v2(), false);
+		player->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 0);
+		player->death_animation_offset = get_v2(0.0f, -0.75f);
+		add_death_animation(arena, player, data->explosion_animations.size_48x48);
+
+		entity_type* player_bullet = add_bullet_type(data);	
+		player_bullet->damage_on_contact = 10.0f;
+		player_bullet->constant_velocity = 14.0f;
+		player_bullet->idle_pose = get_bullet_graphics(arena, 1, 1);
+		add_death_animations_standard(arena, player_bullet, data);
+
+		entity_type* power_up_bullet = add_bullet_type(data);
+		power_up_bullet->damage_on_contact = 30.0f;
+		power_up_bullet->constant_velocity = 18.0f;	
+		power_up_bullet->idle_pose = get_bullet_graphics(arena, 3, 1);
+		add_death_animations(arena, power_up_bullet,
+			data->explosion_animations.size_16x16_variant_7_blue,
+			data->explosion_animations.size_16x16_variant_8_blue,
+			data->explosion_animations.size_16x16_variant_9_blue);
+
+		data->player_normal_bullet_type = player_bullet;
+		data->player_power_up_bullet_type = power_up_bullet;
+		player->fired_bullet_type = data->player_normal_bullet_type;
+	}
+
+	// enemies entity types
+	{
+		{
+			entity_type* sentry = add_entity_type(data, entity_type_enum::ENEMY_SENTRY);
+			sentry->flags = (entity_flags)(
+				(u32)entity_flags::BLOCKS_MOVEMENT
+				| (u32)entity_flags::ENEMY
+				| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
+			sentry->max_health = 20.0f;
+			sentry->damage_on_contact = 20.0f;
+			sentry->velocity_multiplier = 0.0f;
+			sentry->detection_type = detection_type::DETECT_360_DEGREES;
+			sentry->detection_distance = 12.0f;
+			sentry->stop_movement_distance = 4.0f;
+			sentry->forget_detection_distance = 14.0f;
+			sentry->default_attack_cooldown = 3.0f;
+			sentry->default_attack_series_duration = 0.4f;
+			sentry->default_attack_bullet_interval_duration = 0.15f;	
+			sentry->collision_rect_dim = get_v2(0.75f, 0.75f);
+			sentry->rotation_sprites = load_shooting_rotation_sprites(arena, 6);
+			add_death_animation(arena, sentry, data->explosion_animations.size_24x24);
+
+			entity_type* sentry_bullet_type = add_bullet_type(data);
+			sentry_bullet_type->flags = entity_flags::DAMAGES_PLAYER;
+			sentry_bullet_type->damage_on_contact = 10.0f;
+			sentry_bullet_type->constant_velocity = 7.0f;
+			sentry_bullet_type->idle_pose = get_bullet_graphics(arena, 1, 0);
+			add_death_animations_standard(arena, sentry_bullet_type, data);
+
+			sentry->fired_bullet_type = sentry_bullet_type;
+		}
+
+		{
+			entity_type* big_sentry = add_entity_type(data, entity_type_enum::ENEMY_BIG_SENTRY);
+			big_sentry->flags = (entity_flags)(
+				(u32)entity_flags::BLOCKS_MOVEMENT
+				| (u32)entity_flags::ENEMY);
+			big_sentry->max_health = 120.0f;
+			big_sentry->damage_on_contact = 40.0f;
+			big_sentry->velocity_multiplier = 0.0f;
+			big_sentry->detection_type = detection_type::DETECT_360_DEGREES;
+			big_sentry->detection_distance = 12.0f;
+			big_sentry->stop_movement_distance = 4.0f;
+			big_sentry->forget_detection_distance = 14.0f;
+			big_sentry->default_attack_cooldown = 3.0f;
+			big_sentry->default_attack_series_duration = 0.8f;
+			big_sentry->default_attack_bullet_interval_duration = 0.025f;			
+			big_sentry->collision_rect_dim = get_v2(0.9f, 0.9f);
+			big_sentry->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 3, 7));
+			add_death_animation(arena, big_sentry, data->explosion_animations.size_32x32);
+
+			entity_type* big_sentry_bullet = add_bullet_type(data);
+			big_sentry_bullet->flags = entity_flags::DAMAGES_PLAYER;
+			big_sentry_bullet->damage_on_contact = 10.0f;
+			big_sentry_bullet->constant_velocity = 7.0f;
+			big_sentry_bullet->idle_pose = get_bullet_graphics(arena, 1, 0);
+			add_death_animations_standard(arena, big_sentry_bullet, data);
+
+			big_sentry->fired_bullet_type = big_sentry_bullet;
+		}
+
+		{
+			entity_type* guardian = add_entity_type(data, entity_type_enum::ENEMY_GUARDIAN);
+			guardian->flags = (entity_flags)(
+				(u32)entity_flags::BLOCKS_MOVEMENT
+				| (u32)entity_flags::ENEMY
+				| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT
+				| (u32)entity_flags::FLIES_VERTICALLY);
+			guardian->max_health = 40.0f;
+			guardian->damage_on_contact = 30.0f;
+			guardian->velocity_multiplier = 3.0f;
+			guardian->detection_type = detection_type::DETECT_360_DEGREES;
+			guardian->detection_distance = 10.0f;
+			guardian->stop_movement_distance = 4.0f;
+			guardian->forget_detection_distance = 12.0f;
+			guardian->default_attack_cooldown = 0.5f;
+			guardian->default_attack_series_duration = 2.0f;
+			guardian->default_attack_bullet_interval_duration = 1.0f;		
+			guardian->collision_rect_dim = get_v2(1.0f, 1.0f);
+			guardian->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 1, 7));
+			guardian->walk_animation = get_animation_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 1, 7));
+			add_death_animation(arena, guardian, data->explosion_animations.size_32x32);
+			guardian->fired_bullet_offset = get_v2(0.0f, 0.6f);
+
+			entity_type* guardian_bullet = add_bullet_type(data);
+			guardian_bullet->flags = entity_flags::DAMAGES_PLAYER;
+			guardian_bullet->damage_on_contact = 20.0f;
+			guardian_bullet->constant_velocity = 4.0f;
+			guardian_bullet->idle_pose = get_bullet_graphics(arena, 0, 3);
+			add_death_animations(arena, guardian_bullet,
+				data->explosion_animations.size_16x16_variant_7_blue,
+				data->explosion_animations.size_16x16_variant_8_blue,
+				data->explosion_animations.size_16x16_variant_9_blue);
+
+			guardian->fired_bullet_type = guardian_bullet;	
+		}
+
+		{
+			entity_type* flying_bomb = add_entity_type(data, entity_type_enum::ENEMY_FLYING_BOMB);
+
+			flying_bomb->flags = (entity_flags)(
+				(u32)entity_flags::BLOCKS_MOVEMENT
+				| (u32)entity_flags::ENEMY
+				| (u32)entity_flags::FLIES_TOWARDS_PLAYER
+				| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
+			flying_bomb->max_health = 40.0f;
+			flying_bomb->damage_on_contact = 80.0f;
+			flying_bomb->velocity_multiplier = 2.0f;
+			flying_bomb->detection_type = detection_type::DETECT_360_DEGREES;
+			flying_bomb->detection_distance = 10.0f;
+			flying_bomb->forget_detection_distance = 12.0f;
+			flying_bomb->collision_rect_dim = get_v2(1.1f, 0.5f);
+			flying_bomb->idle_pose = get_animation_frame_from_sprite(arena, get_square_sprite(arena, 24, textures::CHARSET, 0, 7));
+			add_death_animation(arena, flying_bomb, data->explosion_animations.size_96x96);
+		}
+
+		{
+			entity_type* robot = add_entity_type(data, entity_type_enum::ENEMY_ROBOT);
+
+			robot->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT
+				| (u32)entity_flags::WALKS_HORIZONTALLY
+				| (u32)entity_flags::ENEMY
+				| (u32)entity_flags::DESTRUCTION_ON_PLAYER_CONTACT);
+			robot->max_health = 40.0f;
+			robot->damage_on_contact = 30.0f;
+			robot->velocity_multiplier = 3.0f;
+			robot->detection_type = detection_type::DETECT_90_DEGREES_IN_FRONT;
+			robot->detection_distance = 10.0f;
+			robot->stop_movement_distance = 4.0f;
+			robot->forget_detection_distance = 15.0f;
+			robot->default_attack_cooldown = 1.2f;
+			robot->default_attack_series_duration = 0.6f;
+			robot->default_attack_bullet_interval_duration = 0.15f;	
+			robot->collision_rect_dim = get_v2(0.35f, 1.6f);
+			robot->collision_rect_offset = get_v2(0.0f, -0.70f);	
+			robot->idle_pose = get_walk_idle_pose(arena, get_v2(0, 2 * 24), true, get_v2(0.0f, 1.0f));
+			robot->walk_animation = get_walk_animation(arena, get_v2(0, 2 * 24), true, get_v2(0.0f, 1.0f));
+			robot->looking_position_offset = get_v2(0.0f, -1.0f);
+			add_death_animation(arena, robot, data->explosion_animations.size_48x48);
+			robot->death_animation_offset = get_v2(0.0f, -0.75f);
+			robot->fired_bullet_offset = get_v2(0.75f, -0.75f);
+
+			entity_type* robot_bullet = add_bullet_type(data);
+			robot_bullet->flags = entity_flags::DAMAGES_PLAYER;
+			robot_bullet->damage_on_contact = 10.0f;
+			robot_bullet->constant_velocity = 9.0f;
+			robot_bullet->idle_pose = get_bullet_graphics(arena, 1, 0);
+			add_death_animations_standard(arena, robot_bullet, data);
+
+			robot->fired_bullet_type = robot_bullet;
+		}
+
+		{
+			entity_type* messenger = add_entity_type(data, entity_type_enum::ENEMY_MESSENGER);
+			messenger->flags = (entity_flags)((u32)entity_flags::BLOCKS_MOVEMENT
+				| (u32)entity_flags::WALKS_HORIZONTALLY
+				| (u32)entity_flags::ENEMY
+				| (u32)entity_flags::PLAYER_RECOIL_ON_CONTACT);
+			messenger->max_health = 100.0f;
+			messenger->damage_on_contact = 10.0f;
+			messenger->velocity_multiplier = 4.0f;
+			messenger->player_acceleration_on_collision = 3.0f;
+			messenger->detection_type = detection_type::DETECT_180_DEGREES_IN_FRONT;
+			messenger->detection_distance = 14.0f;
+			messenger->stop_movement_distance = 0.0f;
+			messenger->forget_detection_distance = 18.0f;
+			messenger->default_attack_cooldown = 1.0f;
+			messenger->default_attack_series_duration = 0.2f;
+			messenger->default_attack_bullet_interval_duration = 0.05f;	
+			messenger->collision_rect_dim = get_v2(0.4f, 1.7f);
+			messenger->collision_rect_offset = get_v2(0.0f, -0.4f);
+			messenger->idle_pose = get_walk_idle_pose(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
+			messenger->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
+			messenger->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 4, get_v2(0, -4));
+			add_death_animation(arena, messenger, data->explosion_animations.size_48x48);
+			messenger->death_animation_offset = get_v2(0.0f, -0.75f);
+			messenger->looking_position_offset = get_v2(0.0f, -1.2f);
+
+			entity_type* messenger_bullet = add_bullet_type(data);
+			messenger_bullet->flags = entity_flags::DAMAGES_PLAYER;
+			messenger_bullet->damage_on_contact = 10.0f;
+			messenger_bullet->constant_velocity = 10.0f;
+			messenger_bullet->idle_pose = get_bullet_graphics(arena, 3, 0);
+			add_death_animations_standard(arena, messenger_bullet, data);
+
+			messenger->fired_bullet_type = messenger_bullet;
+		}
+	}
 
 	// sprite effects
 	{
 		data->visual_effects_count = count_sprite_effects_types();
 		data->visual_effects = push_array(arena, data->visual_effects_count, sprite_effect);
 
-		sprite_effect* death_effect = add_sprite_effect(data, sprite_effects_types::DEATH);
-		death_effect->stages_count = 1;
-		death_effect->stages = push_array(arena, death_effect->stages_count, sprite_effect_stage);
-		death_effect->stages[0].period = 0.0f;
-		death_effect->stages[0].amplitude = 1.0f;
-		death_effect->total_duration = 0.0f;
-		death_effect->color = get_v4(255, 0, 0, 0);
+		sprite_effect* death = add_sprite_effect(data, sprite_effects_types::DEATH);
+		death->stages_count = 1;
+		death->stages = push_array(arena, death->stages_count, sprite_effect_stage);
+		death->stages[0].period = 0.0f;
+		death->stages[0].amplitude = 1.0f;
+		death->total_duration = 0.0f;
+		death->color = get_v4(255, 0, 0, 0);
 
-		sprite_effect* bullet_hit_effect = add_sprite_effect(data, sprite_effects_types::BULLET_HIT);
-		bullet_hit_effect->stages_count = 1;
-		bullet_hit_effect->stages = push_array(arena, bullet_hit_effect->stages_count, sprite_effect_stage);
-		bullet_hit_effect->stages[0].period = 1.0f;
-		bullet_hit_effect->stages[0].amplitude = 0.8f;
-		bullet_hit_effect->total_duration = 1.0f;
-		bullet_hit_effect->flags = sprite_effect_flags::ADDITIVE_MODE;
-		bullet_hit_effect->color = get_v4(255, 95, 31, 0);
+		sprite_effect* bullet_hit = add_sprite_effect(data, sprite_effects_types::BULLET_HIT);
+		bullet_hit->stages_count = 1;
+		bullet_hit->stages = push_array(arena, bullet_hit->stages_count, sprite_effect_stage);
+		bullet_hit->stages[0].period = 1.0f;
+		bullet_hit->stages[0].amplitude = 0.8f;
+		bullet_hit->total_duration = 1.0f;
+		bullet_hit->flags = sprite_effect_flags::ADDITIVE_MODE;
+		bullet_hit->color = get_v4(255, 95, 31, 0);
 
-		sprite_effect* invinvibility_effect = add_sprite_effect(data, sprite_effects_types::INVINCIBILITY);
-		invinvibility_effect->stages_count = 1;
-		invinvibility_effect->stages = push_array(arena, invinvibility_effect->stages_count, sprite_effect_stage);
-		invinvibility_effect->stages[0].period = 10.0f;
-		invinvibility_effect->stages[0].amplitude = 1.5f;
-		invinvibility_effect->flags = (sprite_effect_flags)((u32)sprite_effect_flags::REPEATS | (u32)sprite_effect_flags::ADDITIVE_MODE);
-		invinvibility_effect->color = get_v4(0, 0, 255, 0);
+		sprite_effect* invinvibility = add_sprite_effect(data, sprite_effects_types::INVINCIBILITY);
+		invinvibility->stages_count = 1;
+		invinvibility->stages = push_array(arena, invinvibility->stages_count, sprite_effect_stage);
+		invinvibility->stages[0].period = 10.0f;
+		invinvibility->stages[0].amplitude = 1.5f;
+		invinvibility->flags = (sprite_effect_flags)((u32)sprite_effect_flags::REPEATS | (u32)sprite_effect_flags::ADDITIVE_MODE);
+		invinvibility->color = get_v4(0, 0, 255, 0);
 
-		sprite_effect* shock_effect = add_sprite_effect(data, sprite_effects_types::SHOCK);
-		shock_effect->stages_count = 1;
-		shock_effect->stages = push_array(arena, shock_effect->stages_count, sprite_effect_stage);
-		shock_effect->stages[0].period = 1.5f;
-		shock_effect->stages[0].amplitude = 1.5f;
-		shock_effect->total_duration = 1.5f;
-		shock_effect->flags = sprite_effect_flags::ADDITIVE_MODE;
-		shock_effect->color = get_v4(255, 255, 255, 0);
+		sprite_effect* shock = add_sprite_effect(data, sprite_effects_types::SHOCK);
+		shock->stages_count = 1;
+		shock->stages = push_array(arena, shock->stages_count, sprite_effect_stage);
+		shock->stages[0].period = 1.5f;
+		shock->stages[0].amplitude = 1.5f;
+		shock->total_duration = 1.5f;
+		shock->flags = sprite_effect_flags::ADDITIVE_MODE;
+		shock->color = get_v4(255, 255, 255, 0);
 
-		sprite_effect* recoil_effect = add_sprite_effect(data, sprite_effects_types::RECOIL);
-		recoil_effect->stages_count = 1;
-		recoil_effect->stages = push_array(arena, shock_effect->stages_count, sprite_effect_stage);
-		recoil_effect->stages[0].period = 0.5f;
-		recoil_effect->stages[0].amplitude = 1.5f;
-		recoil_effect->flags = (sprite_effect_flags)((u32)sprite_effect_flags::REPEATS | (u32)sprite_effect_flags::ADDITIVE_MODE);
-		recoil_effect->color = get_v4(255, 255, 255, 0);
+		sprite_effect* recoil = add_sprite_effect(data, sprite_effects_types::RECOIL);
+		recoil->stages_count = 1;
+		recoil->stages = push_array(arena, recoil->stages_count, sprite_effect_stage);
+		recoil->stages[0].period = 0.5f;
+		recoil->stages[0].amplitude = 1.5f;
+		recoil->flags = (sprite_effect_flags)((u32)sprite_effect_flags::REPEATS | (u32)sprite_effect_flags::ADDITIVE_MODE);
+		recoil->color = get_v4(255, 255, 255, 0);
 
-		sprite_effect* gate_display_fade_effect = add_sprite_effect(data, sprite_effects_types::GATE_DISPLAY_INACTIVE);
-		gate_display_fade_effect->stages_count = 1;
-		gate_display_fade_effect->stages = push_array(arena, gate_display_fade_effect->stages_count, sprite_effect_stage);
-		gate_display_fade_effect->stages[0].amplitude = 1.2f;
-		gate_display_fade_effect->color = get_v4(100, 100, 100, 0);
+		sprite_effect* gate_display_fade = add_sprite_effect(data, sprite_effects_types::GATE_DISPLAY_INACTIVE);
+		gate_display_fade->stages_count = 1;
+		gate_display_fade->stages = push_array(arena, gate_display_fade->stages_count, sprite_effect_stage);
+		gate_display_fade->stages[0].amplitude = 1.2f;
+		gate_display_fade->color = get_v4(100, 100, 100, 0);
 
-		sprite_effect* speedup_effect = add_sprite_effect(data, sprite_effects_types::SPEED);
-		speedup_effect->stages_count = 1;
-		speedup_effect->stages = push_array(arena, shock_effect->stages_count, sprite_effect_stage);
-		speedup_effect->stages[0].amplitude = 1.2f;
-		speedup_effect->flags = (sprite_effect_flags)((u32)sprite_effect_flags::REPEATS | (u32)sprite_effect_flags::ADDITIVE_MODE);
-		speedup_effect->color = get_v4(0, 120, 0, 0);
+		sprite_effect* speed_up = add_sprite_effect(data, sprite_effects_types::SPEED);
+		speed_up->stages_count = 1;
+		speed_up->stages = push_array(arena, speed_up->stages_count, sprite_effect_stage);
+		speed_up->stages[0].amplitude = 1.2f;
+		speed_up->flags = (sprite_effect_flags)((u32)sprite_effect_flags::REPEATS | (u32)sprite_effect_flags::ADDITIVE_MODE);
+		speed_up->color = get_v4(0, 120, 0, 0);
 	}
 	
-	entity_flags power_up_flags = (entity_flags)((u32)entity_flags::POWER_UP | (u32)entity_flags::INDESTRUCTIBLE);
-	v2 power_up_size = get_v2(0.5f, 0.5f);
-	entity_type* power_up_invincibility_type = add_entity_type(data, entity_type_enum::POWER_UP_INVINCIBILITY);
-	power_up_invincibility_type->idle_pose = load_power_up_graphics(arena, 1);
-	power_up_invincibility_type->flags = power_up_flags;
-	power_up_invincibility_type->collision_rect_dim = power_up_size;
+	// power ups
+	{
+		entity_flags power_up_flags = (entity_flags)((u32)entity_flags::POWER_UP | (u32)entity_flags::INDESTRUCTIBLE);
+		v2 power_up_size = get_v2(0.5f, 0.5f);
+		entity_type* invincibility = add_entity_type(data, entity_type_enum::POWER_UP_INVINCIBILITY);
+		invincibility->idle_pose = load_power_up_graphics(arena, 1);
+		invincibility->flags = power_up_flags;
+		invincibility->collision_rect_dim = power_up_size;
 
-	entity_type* power_up_health_type = add_entity_type(data, entity_type_enum::POWER_UP_HEALTH);
-	power_up_health_type->idle_pose = load_power_up_graphics(arena, 0);
-	power_up_health_type->flags = power_up_flags;
-	power_up_health_type->collision_rect_dim = power_up_size;
+		entity_type* health = add_entity_type(data, entity_type_enum::POWER_UP_HEALTH);
+		health->idle_pose = load_power_up_graphics(arena, 0);
+		health->flags = power_up_flags;
+		health->collision_rect_dim = power_up_size;
 
-	entity_type* power_up_speed_type = add_entity_type(data, entity_type_enum::POWER_UP_SPEED);
-	power_up_speed_type->idle_pose = load_power_up_graphics(arena, 2);
-	power_up_speed_type->flags = power_up_flags;
-	power_up_speed_type->collision_rect_dim = power_up_size;
+		entity_type* speed = add_entity_type(data, entity_type_enum::POWER_UP_SPEED);
+		speed->idle_pose = load_power_up_graphics(arena, 2);
+		speed->flags = power_up_flags;
+		speed->collision_rect_dim = power_up_size;
 
-	entity_type* power_up_damage_type = add_entity_type(data, entity_type_enum::POWER_UP_DAMAGE);
-	power_up_damage_type->idle_pose = load_power_up_graphics(arena, 3);
-	power_up_damage_type->flags = power_up_flags;
-	power_up_damage_type->collision_rect_dim = power_up_size;
+		entity_type* damage = add_entity_type(data, entity_type_enum::POWER_UP_DAMAGE);
+		damage->idle_pose = load_power_up_graphics(arena, 3);
+		damage->flags = power_up_flags;
+		damage->collision_rect_dim = power_up_size;
 
-	entity_type* power_up_spread_type = add_entity_type(data, entity_type_enum::POWER_UP_SPREAD);
-	power_up_spread_type->idle_pose = load_power_up_graphics(arena, 4);
-	power_up_spread_type->flags = power_up_flags;
-	power_up_spread_type->collision_rect_dim = power_up_size;
+		entity_type* spread = add_entity_type(data, entity_type_enum::POWER_UP_SPREAD);
+		spread->idle_pose = load_power_up_graphics(arena, 4);
+		spread->flags = power_up_flags;
+		spread->collision_rect_dim = power_up_size;
 
-	data->default_power_up_invincibility_timer = 30.0f;
-	data->default_power_up_speed_timer = 20.0f;
-	data->default_power_up_damage_timer = 30.0f;
-	data->default_power_up_spread_timer = 30.0f;
-	data->default_power_up_health_bonus = 20.0f;
+		data->default_power_up_invincibility_timer = 30.0f;
+		data->default_power_up_speed_timer = 20.0f;
+		data->default_power_up_damage_timer = 30.0f;
+		data->default_power_up_spread_timer = 30.0f;
+		data->default_power_up_health_bonus = 20.0f;
+	}
 
 	end_temporary_memory(transient_memory, true);
 }
