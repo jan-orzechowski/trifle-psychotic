@@ -1,4 +1,4 @@
-﻿#if !defined(JORMATH)
+﻿#pragma once
 
 #include "jorutils.h"
 
@@ -216,6 +216,3 @@ v4 lerp(v4, r32, v4);
 v2 perp(v2);
 i32 multiply(i32, i32, u32);
 i32 power(i32, u32);
-
-#define JORMATH
-#endif

@@ -1,6 +1,4 @@
-﻿#if !defined(JORSTRING)
-
-#include "jorutils.h"
+﻿#include "jorutils.h"
 #include "jorstring.h"
 #include "jormath.h"
 
@@ -784,6 +782,3 @@ void empty_string_builder(string_builder* builder)
 		builder->current_size = 0;
 	}
 }
-
-#define JORSTRING
-#endif

@@ -1,4 +1,4 @@
-﻿#if !defined(JORUTILS)
+﻿#pragma once
 
 #define internal static 
 #define local_persist static 
@@ -183,6 +183,3 @@ inline void unset_flags(u32* flags, u32 flag_values_to_check)
 {
 	*flags &= ~flag_values_to_check;
 }
-
-#define JORUTILS
-#endif
