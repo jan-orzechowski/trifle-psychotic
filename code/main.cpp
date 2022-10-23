@@ -14,40 +14,8 @@
 #include "sdl_platform.h"
 #include "debug.h"
 #include "backdrops.h"
-
-void save_checkpoint(game_state* game)
-{
-	assert(game->level_initialized);	
-	assert(game->level_state->current_map_initialized);	
-
-	game->checkpoint = {};
-	game->checkpoint.used = true;
-	game->checkpoint.map_name = copy_string_to_buffer(game->level_name_buffer, MAX_LEVEL_NAME_LENGTH,
-		game->level_state->current_map_name);
-
-	entity* player = get_player(game->level_state);
-	if (player->type)
-	{		
-		game->checkpoint.player_max_health = player->type->max_health;
-	}
-}
-
-void restore_checkpoint(game_state* game)
-{
-	assert(game->level_initialized);
-	assert(game->level_state->current_map_initialized);
-
-	entity* player = get_player(game->level_state);
-	if (player->type && game->checkpoint.used)
-	{
-		player->type->max_health = game->checkpoint.player_max_health;
-		player->health = player->type->max_health;
-
-#if TRIFLE_DEBUG
-		printf("wczytane max health: %d\n", game->checkpoint.player_max_health);
-#endif
-	}
-}
+#include "progress.h"
+#include "level_initialization.h"
 
 scene_change game_update_and_render(game_state* game, level_state* level, r32 delta_time)
 {	
@@ -793,70 +761,7 @@ void main_game_loop(game_state* game, r32 delta_time)
 		{
 			case scene::GAME:
 			{				
-				/*printf("przed inicjalizacja permanent arena: %d, transient arena: %d\n",
-					game->arena->size_used, game->transient_arena->size_used);*/
-
-				temporary_memory auxillary_memory_for_loading = begin_temporary_memory(game->transient_arena);
-					
-				string_ref level_to_load_name = {};
-				if (scene_change.restore_checkpoint 
-					&& game->checkpoint.used
-					&& game->checkpoint.map_name.string_size > 0)
-				{
-					level_to_load_name = copy_string(game->transient_arena, game->checkpoint.map_name);
-				}
-				else if (scene_change.map_to_load.string_size)
-				{
-					level_to_load_name = copy_string(game->transient_arena, scene_change.map_to_load);
-				}
-
-				if (level_to_load_name.string_size == 0)
-				{
-					level_to_load_name = copy_c_string_to_memory_arena(game->transient_arena, "map_01");
-				}
-
-				if (game->game_level_memory.size_used_at_creation != 0)
-				{
-					end_temporary_memory(game->game_level_memory, true);
-				}
-				game->game_level_memory = begin_temporary_memory(game->arena);
-			
-				initialize_level_state(game->level_state, game->static_data, level_to_load_name, game->arena);
-				tmx_map_parsing_result parsing_result = load_map(level_to_load_name, game->arena, game->transient_arena);
-				if (parsing_result.errors->errors_count > 0)
-				{					
-					game->map_errors = get_parsing_errors_message(game->arena, &game->render, 
-						&game->static_data->parsing_errors_text_options, parsing_result.errors);
-
-					game->level_initialized = false;
-				} 
-				else
-				{
-					game->map_errors = {};
-					game->level_state->current_map = parsing_result.parsed_map;
-					initialize_current_map(game, game->level_state);
-					game->level_initialized = true;
-						
-					if (scene_change.restore_checkpoint && game->checkpoint.used)
-					{
-						restore_checkpoint(game);
-					}
-
-					save_checkpoint(game);
-
-					start_playing_music(game->level_state->current_map.music_file_name);
-
-					if (game->level_state->current_map.description_lines == NULL)
-					{
-						game->level_state->current_map.description_lines = get_division_of_text_into_lines(
-							game->arena, &game->static_data->scrolling_text_options, game->level_state->current_map.description);
-					}
-				}
-
-				end_temporary_memory(auxillary_memory_for_loading, true);
-				
-			/*	printf("po inicjalizacji permanent arena: %d, transient arena: %d\n",
-					game->arena->size_used, game->transient_arena->size_used);*/
+				change_level(game, scene_change);
 			}
 			break;
 			case scene::MAIN_MENU:

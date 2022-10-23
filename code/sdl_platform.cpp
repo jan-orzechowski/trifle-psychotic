@@ -3,6 +3,7 @@
 #include "game_data.h"
 #include "rendering.h"
 #include "input.h"
+#include "progress.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -415,6 +416,11 @@ int main(int argc, char* args[])
 
 		load_static_game_data(static_data, &permanent_arena, &transient_arena);
 		game.input_buffer = initialize_input_buffer(&permanent_arena);
+
+#if TRIFLE_DEBUG
+		// kasujemy progres
+		save_completed_levels(game.static_data, &transient_arena);
+#endif
 
 #ifdef __EMSCRIPTEN__
 		game.show_exit_game_option = false;

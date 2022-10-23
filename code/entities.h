@@ -27,6 +27,9 @@ void remove_bullet(level_state* level, i32* bullet_index);
 entity* add_explosion(level_state* level, world_position position, animation* explosion_animation);
 void remove_explosion(level_state* level, i32* explosion_index);
 
+void add_next_level_transition_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn);
+void add_message_display_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn);
+
 void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn);
 b32 is_entity_moving_type_entity(entity* entity);
 
@@ -39,7 +42,6 @@ void find_flying_path_for_enemy(level_state* level, entity* entity, b32 vertical
 
 b32 is_point_visible_within_90_degrees(world_position looking_point, direction looking_direction, r32 max_looking_distance, world_position point_to_check);
 b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, world_position point);
-void initialize_current_map(game_state* game, level_state* level);
 
 void enemy_attack(level_state* level, entity* enemy, entity* player, r32 delta_time);
 void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bullet, entity* hit_entity);

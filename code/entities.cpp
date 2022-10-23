@@ -435,7 +435,7 @@ b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, worl
 	return result;
 };
 
-void add_next_level_transition(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+void add_next_level_transition_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
 {
 	entity_type* transition_type = push_struct(arena, entity_type);
 	transition_type->type_enum = entity_type_enum::NEXT_LEVEL_TRANSITION;
@@ -474,112 +474,6 @@ void add_message_display_entity(level_state* level, memory_arena* arena, entity_
 	set_flags(&new_type->flags, entity_flags::MESSAGE_DISPLAY);
 
 	entity* new_entity = add_entity(level, new_position, new_type);
-}
-
-void initialize_current_map(game_state* game, level_state* level)
-{
-	assert(false == level->current_map_initialized);
-
-	level->current_map.collision_reference = game->static_data->collision_reference;
-
-	// add player
-	{
-		entity_type* player_type = get_entity_type_ptr(
-			level->static_data->entity_types_dict, entity_type_enum::PLAYER);
-
-		if (level->current_map.initial_max_player_health > 0.0f)
-		{
-			player_type->max_health = level->current_map.initial_max_player_health;
-		}
-		else
-		{
-			player_type->max_health = game->static_data->default_player_max_health;
-		}
-
-		// gracz ma środek w innym miejscu niż pozostałe entities 
-		// - z tego powodu musimy skorygować początkowe położenie
-		world_position starting_position = get_world_position(level->current_map.starting_tile);
-		starting_position = add_to_position(starting_position, 
-			get_v2(0, -(player_type->collision_rect_dim.y / 2) + 0.55f));
-
-		add_entity(level, starting_position, player_type);
-	}
-	
-	level->gates_dict.entries_count = 100;
-	level->gates_dict.entries = push_array(game->arena, level->gates_dict.entries_count, gate_dictionary_entry);
-
-	level->gate_tints_dict.sprite_effects_count = 100;
-	level->gate_tints_dict.sprite_effects = push_array(game->arena, level->gate_tints_dict.sprite_effects_count, sprite_effect*);
-	level->gate_tints_dict.probing_jump = 7;
-
-	entity_to_spawn* new_entity = level->current_map.first_entity_to_spawn;
-	while(new_entity)
-	{
-		switch (new_entity->type)
-		{
-			case entity_type_enum::GATE_SILVER:
-			case entity_type_enum::GATE_GOLD:
-			case entity_type_enum::GATE_RED:
-			case entity_type_enum::GATE_GREEN:
-			{
-				add_gate_entity(level, game->arena, new_entity, false);
-			}
-			break;
-			case entity_type_enum::SWITCH_SILVER:
-			case entity_type_enum::SWITCH_GOLD:
-			case entity_type_enum::SWITCH_RED:
-			case entity_type_enum::SWITCH_GREEN:
-			{
-				add_gate_entity(level, game->arena, new_entity, true);
-			}
-			break;
-			case entity_type_enum::NEXT_LEVEL_TRANSITION:
-			{
-				add_next_level_transition(level, game->arena, new_entity);
-			}
-			break;
-			case entity_type_enum::MESSAGE_DISPLAY:
-			{
-				add_message_display_entity(level, game->arena, new_entity);
-			}
-			break;	
-			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_SILVER:
-			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GOLD:
-			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED:
-			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN:
-			case entity_type_enum::MOVING_PLATFORM_VERTICAL_SILVER:
-			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GOLD:
-			case entity_type_enum::MOVING_PLATFORM_VERTICAL_RED:
-			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN:
-			{
-				add_moving_platform_entity(level, game->arena, new_entity);
-			}
-			break;
-			case entity_type_enum::UNKNOWN:
-			{
-				// ignorujemy
-			}
-			break;
-			default:
-			{
-				entity_type* type = get_entity_type_ptr(
-					level->static_data->entity_types_dict, new_entity->type);
-				world_position position = get_world_position(new_entity->position);
-
-				add_entity(level, position, type);
-
-				if (new_entity->type == entity_type_enum::ENEMY_MESSENGER)
-				{
-					level->enemies_to_kill_counter++;
-				}
-			}
-			break;
-		}
-
-		new_entity = new_entity->next;
-	}
-
-	level->current_map_initialized = true;
 }
 
 entity* add_explosion(level_state* level, world_position position, animation* explosion_animation)

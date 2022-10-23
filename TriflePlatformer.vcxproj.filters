@@ -72,6 +72,12 @@
     <ClCompile Include="code\backdrops.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="code\level_initialization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\progress.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\tmx_parsing.h">
@@ -132,6 +138,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="code\backdrops.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\level_initialization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\progress.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
