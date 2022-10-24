@@ -136,9 +136,9 @@ void parse_entity_from_tile(level_parsing_context* parsing, u32 tile_index, i32 
 		case entity_type_enum::MESSAGE_DISPLAY:
 		{
 			snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
-				"Entity added as a tile at (%d, %d) is a switch, gate, next level transition or a message.\
-				It needs to be added in the entity layer with properties set istead",
+				"Entity added as a tile at (%d, %d) is a switch, gate, next level transition or a message. Instead, it needs to be added in the entity layer with valid properties set.",
 				entity_position.x, entity_position.y);
+			add_error(parsing);
 		}
 		break;
 		case entity_type_enum::PLAYER:
@@ -151,7 +151,7 @@ void parse_entity_from_tile(level_parsing_context* parsing, u32 tile_index, i32 
 			else
 			{
 				snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
-					"More than one starting point set. The second starting point was added as a tile at (%d, %d)",
+					"More than one starting point set. The second starting point was added as a tile at (%d, %d).",
 					entity_position.x, entity_position.y);
 				add_error(parsing);
 			}
@@ -191,13 +191,19 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
 	}
 	else
 	{
-		// błąd
+		add_error(parsing, "There is an entity with no position set.");
 	}
 
 	i32 gid = -1;
 	if (gid_str.string_size)
 	{
-		gid = parse_i32(gid_str);	
+		gid = parse_i32(gid_str);
+	}
+	else
+	{
+		snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+			"There is an entity with no ID at position (%d, %d).", position.x, position.y);
+		add_error(parsing);
 	}
 
 	entity_type_enum type = get_entity_type_enum_from_gid(gid, parsing->entity_tileset_first_gid);
@@ -250,17 +256,23 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
 							}
 							else
 							{
-								// błąd
+								snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+									"Gate/switch at position (%d, %d) has color property with zero value.", position.x, position.y);
+								add_error(parsing);
 							}
 						}
 						else
 						{
-							// błąd
+							snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+								"Gate/switch at position (%d, %d) has color property with no value.", position.x, position.y);
+							add_error(parsing);
 						}
 					}
 					else
 					{
-						// błąd
+						snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+							"Gate/switch at position (%d, %d) has no 'color' property.", position.x, position.y);
+						add_error(parsing);
 					}
 				}
 			}
@@ -281,7 +293,7 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
 			else
 			{
 				snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
-					"More than one starting point set. The second starting point was added at (%d, %d)",
+					"More than one starting point set. The second starting point was added at (%d, %d).",
 					position.x, position.y);
 				add_error(parsing);
 			}
@@ -291,7 +303,10 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
 		{
 			if (parsing->level->next_map.string_size > 0)
 			{
-				add_error(parsing, "More than one level transition points set.");
+				snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+					"More than one next level transition entity set. The second transition entity was added at (%d, %d).",
+					position.x, position.y);
+				add_error(parsing);
 				break;
 			}
 
@@ -318,8 +333,25 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
 							{
 								next_level_str.string_size -= 4;
 							}
-							next_level_name = next_level_str;
-							break;
+
+							if (next_level_str.string_size < MAX_LEVEL_NAME_LENGTH)
+							{
+								next_level_name = next_level_str;
+								break;
+							}
+							else
+							{
+								snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+									"Next level name set in transition entity at (%d, %d) is longer than %d characters.",
+									position.x, position.y, MAX_LEVEL_NAME_LENGTH);
+								add_error(parsing);
+							}							
+						}
+						else
+						{
+							snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+								"Transition entity at (%d, %d) has no 'next_level' property set.", position.x, position.y);
+							add_error(parsing);
 						}
 					}
 				}
@@ -351,7 +383,7 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
 						string_ref message_str = get_attribute_value(prop, "value");
 						if (message_str.string_size)
 						{
-							if (message_str.string_size < 1000)
+							if (message_str.string_size <= 1000)
 							{
 								entity_to_spawn* message_entity = 
 									add_entity_to_spawn(parsing->level, parsing->transient_arena, type, position);
@@ -360,10 +392,17 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
 							else
 							{
 								snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
-									"Next level name is longer than %d characters",
-									MAX_LEVEL_NAME_LENGTH);
+									"The message display entity at position (%d, %d) has message longer than 1000 characters.",
+									position.x, position.y);
 								add_error(parsing);
 							}
+						}
+						else
+						{
+							snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+								"There is a message display entity with no 'message' property set at position (%d, %d).",
+								position.x, position.y);
+							add_error(parsing);
 						}
 					}
 				}
@@ -441,7 +480,7 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 
 			if (name.string_size == 0)
 			{
-				add_error(parsing, "TMX contains map property without name");
+				add_error(parsing, "TMX contains map property without name.");
 				continue;
 			}
 
@@ -453,7 +492,7 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 			if (value.string_size == 0)
 			{				
 				snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
-					"Property '%s' has no value set", get_c_string(parsing->transient_arena, name));
+					"Property '%s' has no value set.", get_c_string(parsing->transient_arena, name));
 				add_error(parsing);
 				continue;
 			}
@@ -470,7 +509,10 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				}
 				else
 				{
-					// bład
+					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+						"Property '%s' should have type '%s' set, has '%s' instead.",
+						"backdrop_slowdown_x", "int", get_c_string(parsing->transient_arena, type));
+					add_error(parsing);
 				}
 			}
 			else if (compare_to_c_string(name, "backdrop_slowdown_y"))
@@ -481,7 +523,10 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				}
 				else
 				{
-					// bład
+					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+						"Property '%s' should have type '%s' set, has '%s' instead.",
+						"backdrop_slowdown_y", "int", get_c_string(parsing->transient_arena, type));
+					add_error(parsing);
 				}
 			}
 			else if (compare_to_c_string(name, "backdrop_speed_x"))
@@ -492,7 +537,10 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				}
 				else
 				{
-					// bład
+					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+						"Property '%s' should have type '%s' set, has '%s' instead.",
+						"backdrop_speed_x", "float", get_c_string(parsing->transient_arena, type));
+					add_error(parsing);
 				}
 			}
 			else if (compare_to_c_string(name, "backdrop_speed_y"))
@@ -503,7 +551,10 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				}
 				else
 				{
-					// bład
+					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+						"Property '%s' should have type '%s' set, has '%s' instead.",
+						"backdrop_speed_y", "float", get_c_string(parsing->transient_arena, type));
+					add_error(parsing);
 				}
 			}
 			else if (compare_to_c_string(name, "second_backdrop"))
@@ -518,7 +569,10 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				}
 				else
 				{
-					// bład
+					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+						"Property '%s' should have type '%s' set, has '%s' instead.",
+						"second_backdrop_slowdown_x", "int", get_c_string(parsing->transient_arena, type));
+					add_error(parsing);
 				}
 			}
 			else if (compare_to_c_string(name, "second_backdrop_slowdown_y"))
@@ -529,7 +583,10 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				}
 				else
 				{
-					// bład
+					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+						"Property '%s' should have type '%s' set, has '%s' instead.",
+						"second_backdrop_slowdown_y", "int", get_c_string(parsing->transient_arena, type));
+					add_error(parsing);
 				}
 			}
 			else if (compare_to_c_string(name, "initial_health"))
@@ -540,7 +597,10 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				}
 				else
 				{
-					// bład
+					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+						"Property '%s' should have type '%s' set, has '%s' instead.",
+						"initial_health", "int", get_c_string(parsing->transient_arena, type));
+					add_error(parsing);
 				}
 			}
 			else if (compare_to_c_string(name, "description"))
@@ -551,7 +611,10 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				}
 				else
 				{
-					// jest ustawiony jakiś typ - błąd
+					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+						"Property '%s' should have type '%s' set, has '%s' instead.",
+						"description", "string", get_c_string(parsing->transient_arena, type));
+					add_error(parsing);
 				}
 			}
 			else if (compare_to_c_string(name, "win_when_all_messengers_killed"))
@@ -565,7 +628,10 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				}
 				else
 				{
-					// bład
+					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+						"Property '%s' should have type '%s' set, has '%s' instead.",
+						"win_when_all_messengers_killed", "bool", get_c_string(parsing->transient_arena, type));
+					add_error(parsing);
 				}
 			}
 			else if (compare_to_c_string(name, "music"))
@@ -576,7 +642,10 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 				}
 				else
 				{
-					// jest ustawiony jakiś typ - błąd
+					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+						"Property '%s' should have type '%s' set, has '%s' instead.",
+						"music", "string", get_c_string(parsing->transient_arena, type));
+					add_error(parsing);
 				}
 			}
 			else
@@ -600,8 +669,8 @@ map_layer parse_map_layer(level_parsing_context* parsing,
 		string_ref layer_height_str = get_attribute_value(layer_node, "height");
 		if (layer_width_str.ptr && layer_height_str.ptr)
 		{
-			i32 layer_width = parse_i32(layer_width_str);
-			i32 layer_height = parse_i32(layer_height_str);
+			u32 layer_width = (u32)parse_i32(layer_width_str);
+			u32 layer_height = (u32)parse_i32(layer_height_str);
 			if (layer_width == parsing->level->width
 				&& layer_height == parsing->level->height)
 			{			
@@ -637,21 +706,21 @@ map_layer parse_map_layer(level_parsing_context* parsing,
 					else
 					{
 						snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
-							"Format of the layer '%s' is not set to 'csv'", layer_name);
+							"Format of the layer '%s' is not set to 'csv'.", layer_name);
 						add_error(parsing);
 					}
 				}
 				else
 				{
 					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
-						"The 'data' element is missing in the layer '%s'", layer_name);
+						"The 'data' element is missing in the layer '%s'.", layer_name);
 					add_error(parsing);
 				}
 			}
 			else
 			{
 				snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
-					"Size of the layer '%s' (%d, %d) doesn't match the map size (%d, %d)",
+					"Size of the layer '%s' (%d, %d) doesn't match the map size (%d, %d).",
 					layer_name, layer_width, layer_height, parsing->level->width, parsing->level->height);
 				add_error(parsing);
 			}
@@ -659,7 +728,7 @@ map_layer parse_map_layer(level_parsing_context* parsing,
 		else
 		{
 			snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
-				"Layer '%s' doesn't have defined width or height", layer_name);
+				"Layer '%s' doesn't have defined width or height.", layer_name);
 			add_error(parsing);
 		}
 	}
@@ -668,7 +737,7 @@ map_layer parse_map_layer(level_parsing_context* parsing,
 		if (is_layer_required)
 		{
 			snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
-				"Layer '%s' not found", layer_name);
+				"Layer '%s' not found.", layer_name);
 			add_error(parsing);
 		}
 	}
@@ -730,13 +799,13 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 
 		if (tileset_first_gid == -1 || tileset_first_gid == 0)
 		{
-			add_error(transient_arena, &errors, "Tileset 'map_tileset.tsx' not added");
+			add_error(transient_arena, &errors, "Tileset 'map_tileset.tsx' not added.");
 			goto end_of_read_map_from_tmx_file_function;
 		}
 
 		if (entity_first_gid == -1 || entity_first_gid == 0)
 		{
-			add_error(transient_arena, &errors, "Tileset 'entities_tileset.tsx' not added");
+			add_error(transient_arena, &errors, "Tileset 'entities_tileset.tsx' not added.");
 			goto end_of_read_map_from_tmx_file_function;
 		}
 
@@ -752,6 +821,34 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 		xml_node* map_node = find_tag_in_children(root, "map");
 		if (map_node)
 		{
+			string_ref renderorder = get_attribute_value(map_node, "renderorder");
+			if (renderorder.string_size == 0
+				|| false == compare_to_c_string(renderorder, "right-down"))
+			{
+				add_error(transient_arena, &errors, "Map property 'Tile Render Order' should be set to 'Right Down'.");
+			}
+
+			string_ref orientation = get_attribute_value(map_node, "orientation");
+			if (orientation.string_size == 0
+				|| false == compare_to_c_string(orientation, "orthogonal"))
+			{
+				add_error(transient_arena, &errors, "Map property 'Orientation' should be set to 'Orthogonal'.");
+			}
+
+			string_ref tilewidth = get_attribute_value(map_node, "tilewidth");
+			if (tilewidth.string_size == 0
+				|| false == compare_to_c_string(tilewidth, "16"))
+			{
+				add_error(transient_arena, &errors, "Map property 'Tile Width' should be set to 16.");
+			}
+
+			string_ref tileheight = get_attribute_value(map_node, "tileheight");
+			if (tileheight.string_size == 0
+				|| false == compare_to_c_string(tileheight, "16"))
+			{
+				add_error(transient_arena, &errors, "Map property 'Tile Height' should be set to 16.");
+			}
+
 			string_ref width = get_attribute_value(map_node, "width");
 			string_ref height = get_attribute_value(map_node, "height");
 			if (width.ptr && height.ptr)
@@ -765,16 +862,14 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 			}
 			else
 			{
-				add_error(transient_arena, &errors, "Map doesn't have defined width or height");
-				goto end_of_read_map_from_tmx_file_function;
+				add_error(transient_arena, &errors, "Map doesn't have defined width or height.");
 			}
-
-			parse_map_properties(&parsing, map_node);
+			
+			parse_map_properties(&parsing, map_node);	
 		}
 		else
 		{
-			add_error(transient_arena, &errors, "The 'map' element is missing");
-			goto end_of_read_map_from_tmx_file_function;
+			add_error(transient_arena, &errors, "The 'map' element is missing.");
 		}
 
 		xml_node* objectgroup_node = find_tag_in_children(root, "objectgroup");
@@ -795,24 +890,24 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
 
 			if (level.starting_tile.x == -1 || level.starting_tile.y == -1)
 			{
-				add_error(transient_arena, &errors, "Starting position not set");
+				add_error(transient_arena, &errors, "Starting position is not set.");
 			}
 		}
 		else
 		{
-			add_error(transient_arena, &errors, "The 'objectgroup' element is missing");
+			add_error(transient_arena, &errors, "The 'objectgroup' element is missing.");
 		}
 	}
 	else
 	{
 		if (file.contents)
 		{
-			add_error(transient_arena, &errors, "File is not a valid TMX format file");
+			add_error(transient_arena, &errors, "File is not a valid TMX format file.");
 		}
 		else
 		{
 			snprintf(errors.message_buffer, errors.message_buffer_size,
-				"File '%.*s.tmx' not found", map_name.string_size, map_name.ptr);
+				"File '%.*s.tmx' not found.", map_name.string_size, map_name.ptr);
 			add_error(transient_arena, &errors, errors.message_buffer);
 		}
 	}
@@ -941,7 +1036,11 @@ string_ref get_parsing_errors_message(memory_arena* arena,
 
 		push_string(&builder, counter_buffer);
 		push_string(&builder, error->message);
-		push_string(&builder, "\n");
+		if (false == ends_with(error->message, "."))
+		{
+			push_char(&builder, '.');
+		}
+		push_char(&builder, '\n');
 
 		printed_errors_count++;
 		error = error->next;
