@@ -60,7 +60,7 @@ void add_error(memory_arena* arena, tmx_errors_buffer* errors, const char* error
 		errors->report->last_error = errors->report->last_error->next;
 	}
 
-	errors->report->last_error->message = copy_c_string_buffer_to_memory_arena(arena, error_message, errors->message_buffer_size);
+	errors->report->last_error->message = copy_c_string_buffer(arena, error_message, errors->message_buffer_size);
 }
 
 void add_error(level_parsing_context* parsing, const char* message = NULL)

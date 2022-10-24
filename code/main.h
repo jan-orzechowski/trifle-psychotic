@@ -640,8 +640,8 @@ struct static_game_data
 	entity_type* bullet_types;
 	u32 bullet_types_count;
 
-	sprite_effect* visual_effects;
-	u32 visual_effects_count;
+	sprite_effect* sprite_effects;
+	u32 sprite_effects_count;
 
 	entity_type* player_normal_bullet_type;
 	entity_type* player_power_up_bullet_type;

@@ -159,7 +159,7 @@ void change_level(game_state* game, scene_change scene_change)
 
 		if (level_to_load_name.string_size == 0)
 		{
-			level_to_load_name = copy_c_string_to_memory_arena(game->transient_arena, "map_01");
+			level_to_load_name = copy_c_string(game->transient_arena, "map_01");
 		}
 
 		if (game->game_level_memory.size_used_at_creation != 0)

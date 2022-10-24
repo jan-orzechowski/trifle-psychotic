@@ -82,8 +82,8 @@ u32 count_sprite_effects_types()
 sprite_effect* add_sprite_effect(static_game_data* data, sprite_effects_types type)
 {
 	i32 index = (i32)type;
-	assert(index > 0 && index < data->visual_effects_count);
-	sprite_effect* result = &data->visual_effects[index];
+	assert(index > 0 && index < data->sprite_effects_count);
+	sprite_effect* result = &data->sprite_effects[index];
 	assert((i32)result->type == 0); // sprawdzamy, czy typ był nieużywany
 	result->type = type;
 	return result;
@@ -488,53 +488,53 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 	
 	// messages and captions
 	{
-		data->title_str = copy_c_string_to_memory_arena(arena, "Trifle Psychotic");
+		data->title_str = copy_c_string(arena, "Trifle Psychotic");
 
-		data->menu_new_game_str = copy_c_string_to_memory_arena(arena, "New Game");
-		data->menu_continue_str = copy_c_string_to_memory_arena(arena, "Continue");
-		data->menu_credits_str = copy_c_string_to_memory_arena(arena, "Credits");
-		data->menu_exit_str = copy_c_string_to_memory_arena(arena, "Exit");
+		data->menu_new_game_str = copy_c_string(arena, "New Game");
+		data->menu_continue_str = copy_c_string(arena, "Continue");
+		data->menu_credits_str = copy_c_string(arena, "Credits");
+		data->menu_exit_str = copy_c_string(arena, "Exit");
 
-		data->choose_level_message = copy_c_string_to_memory_arena(arena, "Choose a place to heal:");
+		data->choose_level_message = copy_c_string(arena, "Choose a place to heal:");
 		
-		data->exit_warning_message = copy_c_string_to_memory_arena(arena, "Are you sure you want to exit? Press ESC again to confirm");
+		data->exit_warning_message = copy_c_string(arena, "Are you sure you want to exit? Press ESC again to confirm");
 
-		data->default_death_message = copy_c_string_to_memory_arena(arena, "You died.");
+		data->default_death_message = copy_c_string(arena, "You died.");
 		data->death_messages_count = 10;
 		data->death_messages = push_array(arena, data->death_messages_count, string_ref);
-		data->death_messages[0] = copy_c_string_to_memory_arena(arena, "Text 0");
-		data->death_messages[1] = copy_c_string_to_memory_arena(arena, "Text 1");
-		data->death_messages[2] = copy_c_string_to_memory_arena(arena, "Text 2");
-		data->death_messages[3] = copy_c_string_to_memory_arena(arena, "Text 3");
-		data->death_messages[4] = copy_c_string_to_memory_arena(arena, "Text 4");
-		data->death_messages[5] = copy_c_string_to_memory_arena(arena, "Text 5");
-		data->death_messages[6] = copy_c_string_to_memory_arena(arena, "Text 6");
-		data->death_messages[7] = copy_c_string_to_memory_arena(arena, "Text 7");
-		data->death_messages[8] = copy_c_string_to_memory_arena(arena, "Text 8");
-		data->death_messages[9] = copy_c_string_to_memory_arena(arena, "Text 9");
+		data->death_messages[0] = copy_c_string(arena, "Text 0");
+		data->death_messages[1] = copy_c_string(arena, "Text 1");
+		data->death_messages[2] = copy_c_string(arena, "Text 2");
+		data->death_messages[3] = copy_c_string(arena, "Text 3");
+		data->death_messages[4] = copy_c_string(arena, "Text 4");
+		data->death_messages[5] = copy_c_string(arena, "Text 5");
+		data->death_messages[6] = copy_c_string(arena, "Text 6");
+		data->death_messages[7] = copy_c_string(arena, "Text 7");
+		data->death_messages[8] = copy_c_string(arena, "Text 8");
+		data->death_messages[9] = copy_c_string(arena, "Text 9");
 	}
 
 	// levels in level choice screen
 	{
 		data->levels_count = 6;
 		data->levels = push_array(arena, data->levels_count, level_choice);
-		data->levels[0].name = copy_c_string_to_memory_arena(arena, "1. The Outpost (Intro)");
-		data->levels[0].map_name = copy_c_string_to_memory_arena(arena, "map_01");
+		data->levels[0].name = copy_c_string(arena, "1. The Outpost (Intro)");
+		data->levels[0].map_name = copy_c_string(arena, "map_01");
 
-		data->levels[1].name = copy_c_string_to_memory_arena(arena, "2. The Spire");
-		data->levels[1].map_name = copy_c_string_to_memory_arena(arena, "map_02");
+		data->levels[1].name = copy_c_string(arena, "2. The Spire");
+		data->levels[1].map_name = copy_c_string(arena, "map_02");
 
-		data->levels[2].name = copy_c_string_to_memory_arena(arena, "3. The Great Armada");
-		data->levels[2].map_name = copy_c_string_to_memory_arena(arena, "map_03");
+		data->levels[2].name = copy_c_string(arena, "3. The Great Armada");
+		data->levels[2].map_name = copy_c_string(arena, "map_03");
 
-		data->levels[3].name = copy_c_string_to_memory_arena(arena, "4. The Orbital Fortress");
-		data->levels[3].map_name = copy_c_string_to_memory_arena(arena, "map_04");
+		data->levels[3].name = copy_c_string(arena, "4. The Orbital Fortress");
+		data->levels[3].map_name = copy_c_string(arena, "map_04");
 
-		data->levels[4].name = copy_c_string_to_memory_arena(arena, "5. The Volcano Temple");
-		data->levels[4].map_name = copy_c_string_to_memory_arena(arena, "map_05");
+		data->levels[4].name = copy_c_string(arena, "5. The Volcano Temple");
+		data->levels[4].map_name = copy_c_string(arena, "map_05");
 
-		data->levels[5].name = copy_c_string_to_memory_arena(arena, "Custom level");
-		data->levels[5].map_name = copy_c_string_to_memory_arena(arena, "custom");
+		data->levels[5].name = copy_c_string(arena, "Custom level");
+		data->levels[5].map_name = copy_c_string(arena, "custom");
 	}
 	
 	// special entities graphics
@@ -840,8 +840,8 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	// sprite effects
 	{
-		data->visual_effects_count = count_sprite_effects_types();
-		data->visual_effects = push_array(arena, data->visual_effects_count, sprite_effect);
+		data->sprite_effects_count = count_sprite_effects_types();
+		data->sprite_effects = push_array(arena, data->sprite_effects_count, sprite_effect);
 
 		sprite_effect* death = add_sprite_effect(data, sprite_effects_types::DEATH);
 		death->stages_count = 1;

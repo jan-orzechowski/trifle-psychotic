@@ -161,16 +161,16 @@ void stop_visual_effect(entity* entity, sprite_effect* effect_to_stop)
 void start_visual_effect(level_state* level, entity* entity, sprite_effects_types type)
 {
 	i32 index = (i32)type;
-	assert(index > 0 && index < level->static_data->visual_effects_count);
-	sprite_effect* effect = &level->static_data->visual_effects[index];
+	assert(index > 0 && index < level->static_data->sprite_effects_count);
+	sprite_effect* effect = &level->static_data->sprite_effects[index];
 	start_visual_effect(entity, effect);
 }
 
 void stop_visual_effect(level_state* level, entity* entity, sprite_effects_types type)
 {
 	i32 index = (i32)type;
-	assert(index > 0 && index < level->static_data->visual_effects_count);
-	sprite_effect* effect_to_stop = &level->static_data->visual_effects[index];
+	assert(index > 0 && index < level->static_data->sprite_effects_count);
+	sprite_effect* effect_to_stop = &level->static_data->sprite_effects[index];
 	stop_visual_effect(entity, effect_to_stop);
 }
 
