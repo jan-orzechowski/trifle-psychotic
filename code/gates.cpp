@@ -135,15 +135,16 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 
 	v2 collision_rect_dim;
 	tile_range occupied_tiles;
-	u32 max_size = 1; // krótsze jednak wyglądają lepiej
 	if (is_switch)
 	{
+		u32 max_size = 1; // krótsze jednak wyglądają lepiej
 		occupied_tiles = find_horizontal_range_of_free_tiles(&level->current_map, 
 			new_entity_to_spawn->position, max_size);
 		collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
 	}
 	else
 	{
+		u32 max_size = 30;
 		occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map, 
 			new_entity_to_spawn->position, max_size);
 		collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
