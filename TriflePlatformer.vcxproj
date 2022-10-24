@@ -81,6 +81,7 @@
     <IncludePath>sdl\SDL2\include;sdl\SDL2_mixer\include;sdl\SDL2_image\include;$(IncludePath)</IncludePath>
     <LibraryPath>sdl\SDL2\lib\x64;sdl\SDL2_mixer\lib\x64;sdl\SDL2_image\lib\x64;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>build\intermediate\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -88,6 +89,7 @@
     <LibraryPath>sdl\SDL2\lib\x64;sdl\SDL2_mixer\lib\x64;sdl\SDL2_image\lib\x64;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\build\$(Platform)\$(Configuration)\</OutDir>
     <TargetName>$(ProjectName)</TargetName>
+    <IntDir>build\intermediate\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -119,11 +121,11 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalOptions>-wd26812 -wd4244 -wd4018 -wd4267 -MTd -DTRIFLE_DEBUG=1 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-wd26812 -wd4244 -wd4018 -wd4267 -wd4201 -wd4505 -MTd -DTRIFLE_DEBUG=1 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
@@ -131,6 +133,15 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>sdl\SDL2\lib\x64\*.lib;sdl\SDL2_image\lib\x64\*.lib;sdl\SDL2_mixer\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /I "$(SolutionDir)audio" "$(TargetDir)audio"
+xcopy /Y /I "$(SolutionDir)gfx" "$(TargetDir)gfx"
+xcopy /Y /I "$(SolutionDir)data" "$(TargetDir)data"
+xcopy /Y /I "$(SolutionDir)mapmaking" "$(TargetDir)mapmaking"
+
+del "$(TargetDir)trifle_psychotic_windows.zip"
+"C:\Program Files\7-Zip\7z.exe" a -tzip "$(TargetDir)trifle_psychotic_windows.zip" $(TargetDir)\* -x!*.pdb</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -141,7 +152,9 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp14</LanguageStandard>
-      <AdditionalOptions>-MT -wd4244 -wd4018 -wd4267 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-MT -wd4244 -wd4018 -wd4267 -wd4201 -wd4505 %(AdditionalOptions)</AdditionalOptions>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -150,6 +163,15 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>sdl\SDL2\lib\x64\*.lib;sdl\SDL2_image\lib\x64\*.lib;sdl\SDL2_mixer\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /I "$(SolutionDir)audio" "$(TargetDir)audio"
+xcopy /Y /I "$(SolutionDir)gfx" "$(TargetDir)gfx"
+xcopy /Y /I "$(SolutionDir)data" "$(TargetDir)data"
+xcopy /Y /I "$(SolutionDir)mapmaking" "$(TargetDir)mapmaking"
+
+del "$(TargetDir)trifle_psychotic_windows.zip"
+"C:\Program Files\7-Zip\7z.exe" a -tzip "$(TargetDir)trifle_psychotic_windows.zip" $(TargetDir)\* -x!*.pdb</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="code\animation.cpp" />
@@ -199,9 +221,21 @@
     <ClInclude Include="code\ui.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="SDL2.dll" />
-    <None Include="SDL2_image.dll" />
-    <None Include="SDL2_mixer.dll" />
+    <CopyFileToFolders Include="SDL2.dll">
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="SDL2_image.dll">
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="SDL2_mixer.dll">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

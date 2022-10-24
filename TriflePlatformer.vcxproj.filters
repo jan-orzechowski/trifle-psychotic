@@ -148,8 +148,8 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="SDL2.dll" />
-    <None Include="SDL2_image.dll" />
-    <None Include="SDL2_mixer.dll" />
+    <CopyFileToFolders Include="SDL2.dll" />
+    <CopyFileToFolders Include="SDL2_image.dll" />
+    <CopyFileToFolders Include="SDL2_mixer.dll" />
   </ItemGroup>
 </Project>
