@@ -31,7 +31,7 @@ void debug_render_player_information(game_state* game, level_state* level)
 
 	char buffer[200];
 	v4 text_color = get_v4(1, 1, 1, 0);
-	int error = snprintf(buffer, 200, "Chunk:(%d,%d),Pos:(%0.2f,%0.2f),Acc: (%0.2f,%0.2f) Standing: %d, Platform: %d, Direction: %s",
+	snprintf(buffer, 200, "Chunk:(%d,%d),Pos:(%0.2f,%0.2f),Acc: (%0.2f,%0.2f) Standing: %d, Platform: %d, Direction: %s",
 		player->position.chunk_pos.x, player->position.chunk_pos.y, player->position.pos_in_chunk.x, player->position.pos_in_chunk.y,
 		player->acceleration.x, player->acceleration.y, is_standing, is_standing_on_platform, (player->direction == direction::W ? "W" : "E"));
 
@@ -57,14 +57,12 @@ void debug_render_tile_collision_boxes(render_group* render, level_state* level,
 		y_coord_relative < screen_half_height;
 		y_coord_relative++)
 	{
-		i32 y_coord_on_screen = y_coord_relative;
 		i32 y_coord_in_world = camera_tile_pos.y + y_coord_relative;
 
 		for (i32 x_coord_relative = -screen_half_width;
 			x_coord_relative < screen_half_width;
 			x_coord_relative++)
 		{
-			i32 x_coord_on_screen = x_coord_relative;
 			i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
 
 			u32 tile_value = get_tile_value(&level->current_map, x_coord_in_world, y_coord_in_world);

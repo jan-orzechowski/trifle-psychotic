@@ -885,7 +885,6 @@ map_layer load_collision_map(memory_arena* permanent_arena, memory_arena* transi
 					{
 						for (u32 tile_index = 0; tile_index < result.tiles_count; tile_index++)
 						{
-							i32 original_gid = result.tiles[tile_index];
 							result.tiles[tile_index] -= (collision_tileset_first_gid - 1);
 						}
 					}
@@ -915,7 +914,7 @@ tmx_map_parsing_result load_map(string_ref map_name, memory_arena* arena, memory
 	else
 	{
 		snprintf(path_buffer, 1000, "mapmaking/%.*s.tmx", map_name.string_size, map_name.ptr);
-		read_file_result map_file = read_file(path_buffer);
+		map_file = read_file(path_buffer);
 		result = read_map_from_tmx_file(arena, transient_arena, map_file, map_name, false);
 		delete map_file.contents;
 	}	
@@ -923,7 +922,7 @@ tmx_map_parsing_result load_map(string_ref map_name, memory_arena* arena, memory
 	return result;
 }
 
-string_ref get_parsing_errors_message(memory_arena* arena, render_group* render, 
+string_ref get_parsing_errors_message(memory_arena* arena, 
 	render_text_options* text_options, tmx_parsing_error_report* errors)
 {
 	text_area_limits limits = get_text_area_limits(text_options);

@@ -75,13 +75,13 @@ void circular_buffer_test(memory_arena* arena)
 {
 	temporary_memory test_memory = begin_temporary_memory(arena);
 
-	u32 test_input_count = 200;
+	i32 test_input_count = 200;
 
 	input_buffer* input_buf = push_struct(test_memory.arena, input_buffer);
 	input_buf->size = 100;
 	input_buf->buffer = push_array(test_memory.arena, input_buf->size, game_input);
 
-	for (u32 input_index = 0; input_index < test_input_count; input_index++)
+	for (i32 input_index = 0; input_index < test_input_count; input_index++)
 	{
 		game_input* new_test_input = push_struct(test_memory.arena, game_input);
 		new_test_input->up.number_of_presses = input_index;

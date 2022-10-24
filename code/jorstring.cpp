@@ -106,7 +106,7 @@ b32 compare_to_c_string(string_ref my_str, const char* c_str)
 		invalid_code_path;
 	}
 
-	u32 my_str_char_index = 0;
+	i32 my_str_char_index = 0;
 	while (*c_str)
 	{
 		if (my_str_char_index == my_str.string_size)

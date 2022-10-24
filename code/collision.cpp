@@ -547,7 +547,7 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 	return result;
 }
 
-b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, world_position target_pos)
+b32 move_bullet(level_state* level, bullet* moving_bullet, world_position target_pos)
 {
 	v2 movement_delta = get_position_difference(target_pos, moving_bullet->position);
 	chunk_position reference_chunk = get_tile_chunk_position(get_tile_position(moving_bullet->position));
@@ -669,8 +669,6 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, u32 bullet_index, wor
 b32 is_standing_on_ground(level_state* level, entity* entity_to_check, collision_result* collision_to_fill)
 {
 	b32 result = false;
-	r32 corner_distance_apron = 0.0f;
-	r32 max_distance_to_tile = 0.05f;
 
 	entity test_entity = *entity_to_check;
 	world_position target_pos = add_to_position(test_entity.position, get_v2(0.0f, 0.1f));

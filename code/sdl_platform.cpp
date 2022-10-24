@@ -38,8 +38,8 @@ SDL_Rect get_sdl_rect(rect rect)
 
 void print_sdl_error()
 {
-	const char* error = SDL_GetError();
 #ifdef TRIFLE_DEBUG
+	const char* error = SDL_GetError();
 	printf("SDL error: %s\n", error);
 	invalid_code_path;
 #endif
@@ -47,8 +47,8 @@ void print_sdl_error()
 
 void print_sdl_image_error()
 {
-	const char* error = IMG_GetError();
 #ifdef TRIFLE_DEBUG
+	const char* error = IMG_GetError();
 	printf("SDL_image error: %s\n", error);
 	invalid_code_path;
 #endif
@@ -56,8 +56,8 @@ void print_sdl_image_error()
 
 void print_sdl_mixer_error()
 {
-	const char* error = Mix_GetError();
 #ifdef TRIFLE_DEBUG
+	const char* error = Mix_GetError();
 	printf("SDL_mixer error: %s\n", error);
 	invalid_code_path;
 #endif
@@ -668,7 +668,18 @@ void render_group_to_output(render_group* render_group)
 			{
 				render_group_entry_clear* entry = (render_group_entry_clear*)data;
 
+				if (false == is_zero(entry->color))
+				{
+					v4 sdl_tint = entry->color * 255;
+					SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, sdl_tint.r, sdl_tint.g, sdl_tint.b, sdl_tint.a);
+				}
+
 				SDL_RenderClear(GLOBAL_SDL_DATA.renderer);
+
+				if (false == is_zero(entry->color))
+				{
+					SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, 255, 255, 255, 0);
+				}
 
 				base_address += sizeof(render_group_entry_clear);
 			}

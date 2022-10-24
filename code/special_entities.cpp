@@ -72,7 +72,7 @@ void set_sprite_effect_for_color(sprite_effect_dictionary dict, sprite_effect* e
 	}
 }
 
-void invalidate_paths_in_neighbouring_chunks(level_state* level, world_position position)
+void invalidate_paths_after_gate_opening(level_state* level)
 {
 	for (u32 entity_index = 1; entity_index < level->entities_count; entity_index++)
 	{
@@ -113,7 +113,7 @@ void open_gates_with_given_color(level_state* level, v4 color)
 						sprite->parts[sprite_index].texture = textures::NONE;
 					}
 				
-					invalidate_paths_in_neighbouring_chunks(level, entry->entity->position);
+					invalidate_paths_after_gate_opening(level);
 				}
 				else if (are_entity_flags_set(entry->entity, entity_flags::TINTED_DISPLAY))
 				{
@@ -479,5 +479,5 @@ void add_message_display_entity(level_state* level, memory_arena* arena, entity_
 	set_flags(&new_type->flags, entity_flags::INDESTRUCTIBLE);
 	set_flags(&new_type->flags, entity_flags::MESSAGE_DISPLAY);
 
-	entity* new_entity = add_entity(level, new_position, new_type);
+	add_entity(level, new_position, new_type);
 }

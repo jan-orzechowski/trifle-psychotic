@@ -274,7 +274,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				if (bullet->type)
 				{
 					world_position bullet_target_pos = add_to_position(bullet->position, bullet->velocity * delta_time);
-					b32 hit = move_bullet(level, bullet, bullet_index, bullet_target_pos);
+					b32 hit = move_bullet(level, bullet, bullet_target_pos);
 					if (hit)
 					{
 						remove_bullet(level, &bullet_index);
@@ -477,7 +477,6 @@ scene_change level_choice_update_and_render(game_state* game, static_game_data* 
 
 	i32 options_x = 80;
 	i32 option_y = 100;
-	i32 first_option_y = option_y;
 	i32 option_y_spacing = 20;
 
 	rect message_area = get_rect_from_corners(get_v2(30, 50), get_v2(260, 100));
@@ -554,7 +553,6 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	
 	i32 options_x = 140;
 	i32 option_y = 140;
-	i32 first_option_y = option_y;
 	i32 option_y_spacing = 20;
 
 	rect option_interactive_rect = render_menu_option(static_data->ui_font, game, 
@@ -726,7 +724,6 @@ void main_game_loop(game_state* game, r32 delta_time)
 				render_text(&game->render, game->transient_arena, 
 					&game->static_data->parsing_errors_text_options, game->map_errors);
 
-				game_input* input = get_last_frame_input(&game->input_buffer);
 				if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
 				{
 					scene_change.change_scene = true;

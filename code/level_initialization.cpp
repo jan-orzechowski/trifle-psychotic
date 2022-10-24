@@ -173,7 +173,7 @@ void change_level(game_state* game, scene_change scene_change)
 		tmx_map_parsing_result parsing_result = load_map(level_to_load_name, game->arena, game->transient_arena);
 		if (parsing_result.errors->errors_count > 0)
 		{
-			game->map_errors = get_parsing_errors_message(game->arena, &game->render,
+			game->map_errors = get_parsing_errors_message(game->arena,
 				&game->static_data->parsing_errors_text_options, parsing_result.errors);
 
 			game->level_initialized = false;

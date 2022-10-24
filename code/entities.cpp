@@ -201,7 +201,6 @@ tile_range find_walking_path(level_state* level, tile_position starting_position
 
 tile_range find_flying_path(level_state* level, tile_position starting_position, b32 vertical)
 {
-	u32 length_limit = 15;
 	tile_range new_path;
 	
 	if (vertical)
@@ -487,15 +486,15 @@ shooting_rotation get_entity_shooting_rotation(shooting_rotation_sprites* rotati
 	assert(rotation_sprites);
 	shooting_rotation result = {};
 
-	r32 angle = atan2(shooting_direction.y, shooting_direction.x) * (180 / pi32);
+	r32 angle = atan2(shooting_direction.y, shooting_direction.x) * (180.0f / pi32);
 	angle += 45.0f / 2.0f;
 	
-	if (angle > 180)
+	if (angle > 180.0f)
 	{
 		angle = -360.0f + angle;
 	}
 
-	if (angle < -180)
+	if (angle < -180.0f)
 	{
 		angle = 360.0f + angle;
 	}

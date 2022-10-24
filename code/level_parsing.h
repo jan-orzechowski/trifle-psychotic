@@ -24,5 +24,4 @@ struct tmx_map_parsing_result
 
 tmx_map_parsing_result load_map(string_ref map_name, memory_arena* arena, memory_arena* transient_arena);
 map_layer load_collision_map(memory_arena* permanent_arena, memory_arena* transient_arena, read_file_result file);
-string_ref get_parsing_errors_message(memory_arena* arena, render_group* render,
-	render_text_options* text_options, tmx_parsing_error_report* errors);
+string_ref get_parsing_errors_message(memory_arena* arena, render_text_options* text_options, tmx_parsing_error_report* errors);

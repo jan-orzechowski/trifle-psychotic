@@ -2,8 +2,7 @@
 #include "rendering.h"
 #include "map.h"
 
-void render_static_repeated_backdrop(render_group* render, level_state* level,
-	world_position camera_position, backdrop_properties backdrop)
+void render_static_repeated_backdrop(render_group* render, backdrop_properties backdrop)
 {
 	assert(backdrop.texture != textures::NONE);
 	assert(false == is_zero(backdrop.size));
@@ -21,8 +20,8 @@ void render_static_repeated_backdrop(render_group* render, level_state* level,
 	}
 }
 
-void render_scrolling_repeated_backdrop(render_group* render, level_state* level,
-	world_position camera_position, backdrop_properties backdrop, v2 offset_in_tiles, b32 repeat_only_horizontally)
+void render_scrolling_repeated_backdrop(render_group* render, backdrop_properties backdrop,
+	v2 offset_in_tiles, b32 repeat_only_horizontally, world_position camera_position)
 {
 	assert(backdrop.texture != textures::NONE);
 	assert(false == is_zero(backdrop.size));
@@ -79,16 +78,16 @@ void render_scrolling_repeated_backdrop(render_group* render, level_state* level
 	i32 starting_x = -(backdrop_offset.x * TILE_SIDE_IN_PIXELS);
 	if (starting_x > 0)
 	{
-		starting_x -= backdrop.size.x;
+		starting_x -= size_x;
 	}
 	if (starting_y > 0)
 	{
-		starting_y -= backdrop.size.y;
+		starting_y -= size_y;
 	}
 
-	for (i32 y = starting_y; y < SCREEN_HEIGHT; y += backdrop.size.y)
+	for (i32 y = starting_y; y < SCREEN_HEIGHT; y += size_y)
 	{
-		for (i32 x = starting_x; x < SCREEN_WIDTH; x += backdrop.size.x)
+		for (i32 x = starting_x; x < SCREEN_WIDTH; x += size_x)
 		{
 			render_bitmap(render, backdrop.texture,
 				get_rect_from_corners(get_zero_v2(), backdrop.size),
@@ -136,12 +135,12 @@ void render_backdrops(render_group* render, level_state* level, world_position c
 		if (level->current_map.second_backdrop.x_slowdown == 0
 			&& level->current_map.second_backdrop.y_slowdown == 0)
 		{
-			render_static_repeated_backdrop(render, level, camera_position, level->current_map.second_backdrop);
+			render_static_repeated_backdrop(render, level->current_map.second_backdrop);
 		}
 		else
 		{
-			render_scrolling_repeated_backdrop(render, level, camera_position, level->current_map.second_backdrop,
-				level->current_map.second_backdrop_offset, true);
+			render_scrolling_repeated_backdrop(render, level->current_map.second_backdrop,
+				level->current_map.second_backdrop_offset, true, camera_position);
 		}
 	}
 
@@ -150,12 +149,12 @@ void render_backdrops(render_group* render, level_state* level, world_position c
 		if (level->current_map.first_backdrop.x_slowdown == 0
 			&& level->current_map.first_backdrop.y_slowdown == 0)
 		{
-			render_static_repeated_backdrop(render, level, camera_position, level->current_map.first_backdrop);
+			render_static_repeated_backdrop(render, level->current_map.first_backdrop);
 		}
 		else
 		{
-			render_scrolling_repeated_backdrop(render, level, camera_position, level->current_map.first_backdrop,
-				level->current_map.first_backdrop_offset, true);
+			render_scrolling_repeated_backdrop(render, level->current_map.first_backdrop,
+				level->current_map.first_backdrop_offset, true, camera_position);
 		}
 	}
 }
