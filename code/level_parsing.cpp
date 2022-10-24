@@ -906,9 +906,19 @@ tmx_map_parsing_result load_map(string_ref map_name, memory_arena* arena, memory
 	char path_buffer[1000];
 	snprintf(path_buffer, 1000, "data/%.*s.tmx", map_name.string_size, map_name.ptr);
 
-	read_file_result map_file = read_file(path_buffer);
-	result = read_map_from_tmx_file(arena, transient_arena, map_file, map_name, false);
-	delete map_file.contents;
+	read_file_result map_file = read_file(path_buffer);	
+	if (map_file.contents)
+	{
+		result = read_map_from_tmx_file(arena, transient_arena, map_file, map_name, false);
+		delete map_file.contents;
+	}
+	else
+	{
+		snprintf(path_buffer, 1000, "mapmaking/%.*s.tmx", map_name.string_size, map_name.ptr);
+		read_file_result map_file = read_file(path_buffer);
+		result = read_map_from_tmx_file(arena, transient_arena, map_file, map_name, false);
+		delete map_file.contents;
+	}	
 
 	return result;
 }
