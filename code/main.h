@@ -627,6 +627,34 @@ struct level_choice
 	b32 completed;
 };
 
+struct write_to_tile
+{
+	void* buffer;
+	u32 length;
+};
+
+struct render_group;
+
+typedef read_file_result read_file_func(const char* path);
+typedef void save_file_func(const char* path, write_to_tile contents);
+typedef read_file_result load_prefs_func();
+typedef void save_prefs_func(write_to_tile contents);
+typedef void start_playing_music_func(string_ref audio_file_name);
+typedef void stop_playing_music_func(int fade_out_ms);
+typedef void render_group_to_output_func(render_group* render_group);
+typedef void render_group_to_output_func(render_group* render_group);
+
+struct platform_api
+{
+	read_file_func* read_file;
+	save_file_func* save_file;
+	load_prefs_func* load_prefs;
+	save_prefs_func* save_prefs;
+	start_playing_music_func* start_playing_music;
+	stop_playing_music_func* stop_playing_music;
+	render_group_to_output_func* render_group_to_output;
+};
+
 struct static_game_data
 {
 	level_choice* levels;
@@ -832,6 +860,7 @@ struct game_state
 	render_group render;
 
 	static_game_data* static_data;
+	platform_api platform;
 };
 
 void main_game_loop(game_state* game, r32 delta_time);

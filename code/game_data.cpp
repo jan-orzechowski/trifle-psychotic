@@ -4,7 +4,6 @@
 #include "entities.h"
 #include "rendering.h"
 #include "ui.h"
-#include "sdl_platform.h"
 
 #define ENTITY_TYPES_MAX_COUNT 20
 #define BULLET_TYPES_MAX_COUNT 10
@@ -450,7 +449,7 @@ shooting_rotation_sprites* load_shooting_rotation_sprites(memory_arena* arena, u
 	return result;
 }
 
-void load_static_game_data(static_game_data* data, memory_arena* arena, memory_arena* transient_arena)
+void load_static_game_data(platform_api* platform, static_game_data* data, memory_arena* arena, memory_arena* transient_arena)
 {	
 	temporary_memory transient_memory = begin_temporary_memory(transient_arena);
 
@@ -580,7 +579,7 @@ void load_static_game_data(static_game_data* data, memory_arena* arena, memory_a
 
 	// collision data
 	{
-		read_file_result collision_file = read_file("data/collision_map.tmx");
+		read_file_result collision_file = platform->read_file("data/collision_map.tmx");
 		data->collision_reference = load_collision_map(arena, transient_arena, collision_file);
 		delete collision_file.contents;
 	}

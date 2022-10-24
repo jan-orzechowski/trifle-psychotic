@@ -3,7 +3,6 @@
 #include "tmx_parsing.h"
 #include "level_parsing.h"
 #include "text_rendering.h"
-#include "sdl_platform.h"
 
 struct tmx_errors_buffer
 {
@@ -993,14 +992,14 @@ map_layer load_collision_map(memory_arena* permanent_arena, memory_arena* transi
 	return result;
 }
 
-tmx_map_parsing_result load_map(string_ref map_name, memory_arena* arena, memory_arena* transient_arena)
+tmx_map_parsing_result load_map(platform_api* platform, string_ref map_name, memory_arena* arena, memory_arena* transient_arena)
 {
 	tmx_map_parsing_result result = {};
 
 	char path_buffer[1000];
 	snprintf(path_buffer, 1000, "data/%.*s.tmx", map_name.string_size, map_name.ptr);
 
-	read_file_result map_file = read_file(path_buffer);	
+	read_file_result map_file = platform->read_file(path_buffer);	
 	if (map_file.contents)
 	{
 		result = read_map_from_tmx_file(arena, transient_arena, map_file, map_name, false);
@@ -1009,7 +1008,7 @@ tmx_map_parsing_result load_map(string_ref map_name, memory_arena* arena, memory
 	else
 	{
 		snprintf(path_buffer, 1000, "mapmaking/%.*s.tmx", map_name.string_size, map_name.ptr);
-		map_file = read_file(path_buffer);
+		map_file = platform->read_file(path_buffer);
 		result = read_map_from_tmx_file(arena, transient_arena, map_file, map_name, false);
 		delete map_file.contents;
 	}	

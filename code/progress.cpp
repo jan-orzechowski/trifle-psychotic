@@ -1,5 +1,4 @@
 #include "progress.h"
-#include "sdl_platform.h"
 #include "player.h"
 
 void save_checkpoint(game_state* game)
@@ -36,7 +35,7 @@ void restore_checkpoint(game_state* game)
 	}
 }
 
-void save_completed_levels(static_game_data* data, memory_arena* transient_arena)
+void save_completed_levels(platform_api* platform, static_game_data* data, memory_arena* transient_arena)
 {
 	temporary_memory memory_for_string_builder = begin_temporary_memory(transient_arena);
 
@@ -58,7 +57,7 @@ void save_completed_levels(static_game_data* data, memory_arena* transient_arena
 	save_test.buffer = text_to_save.ptr;
 	save_test.length = text_to_save.string_size;
 
-	save_prefs(save_test);
+	platform->save_prefs(save_test);
 
 	end_temporary_memory(memory_for_string_builder, true);
 }
@@ -87,9 +86,9 @@ void mark_level_as_completed(static_game_data* data, char* name_buffer, i32 stri
 	mark_level_as_completed(data, name);
 }
 
-void load_completed_levels(static_game_data* data)
+void load_completed_levels(platform_api* platform, static_game_data* data)
 {
-	read_file_result prefs = load_prefs();
+	read_file_result prefs = platform->load_prefs();
 	char* str = (char*)prefs.contents;
 
 	// forma pliku: oddzielona przecinkami lista map bez rozszerzenia, np. map_01,map02

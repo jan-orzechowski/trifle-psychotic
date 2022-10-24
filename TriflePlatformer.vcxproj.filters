@@ -110,9 +110,6 @@
     <ClInclude Include="code\map.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="code\sdl_platform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="code\collision.h">
       <Filter>Header Files</Filter>
     </ClInclude>

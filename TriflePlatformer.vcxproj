@@ -213,7 +213,6 @@ del "$(TargetDir)trifle_psychotic_windows.zip"
     <ClInclude Include="code\player.h" />
     <ClInclude Include="code\progress.h" />
     <ClInclude Include="code\rendering.h" />
-    <ClInclude Include="code\sdl_platform.h" />
     <ClInclude Include="code\text_rendering.h" />
     <ClInclude Include="code\tmx_parsing.h" />
     <ClInclude Include="code\jorstring.h" />

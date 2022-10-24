@@ -3,7 +3,6 @@
 #include "special_entities.h"
 #include "level_parsing.h"
 #include "progress.h"
-#include "sdl_platform.h"
 
 void initialize_level_state(level_state* level, static_game_data* static_data, string_ref map_name, memory_arena* arena)
 {
@@ -170,7 +169,7 @@ void change_level(game_state* game, scene_change scene_change)
 		game->game_level_memory = begin_temporary_memory(game->arena);
 
 		initialize_level_state(game->level_state, game->static_data, level_to_load_name, game->arena);
-		tmx_map_parsing_result parsing_result = load_map(level_to_load_name, game->arena, game->transient_arena);
+		tmx_map_parsing_result parsing_result = load_map(&game->platform, level_to_load_name, game->arena, game->transient_arena);
 		if (parsing_result.errors->errors_count > 0)
 		{
 			game->map_errors = get_parsing_errors_message(game->arena,
@@ -192,7 +191,7 @@ void change_level(game_state* game, scene_change scene_change)
 
 			save_checkpoint(game);
 
-			start_playing_music(game->level_state->current_map.music_file_name);
+			game->platform.start_playing_music(game->level_state->current_map.music_file_name);
 
 			if (game->level_state->current_map.description_lines == NULL)
 			{

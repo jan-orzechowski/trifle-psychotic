@@ -1,4 +1,7 @@
-﻿#include "sdl_platform.h"
+﻿#include <SDL.h>
+#include <SDL_image.h>
+#include <SDL_mixer.h>
+
 #include "main.h"
 #include "game_data.h"
 #include "rendering.h"
@@ -12,7 +15,36 @@
 
 #define TARGET_HZ 30.0f
 
+struct sdl_data
+{
+	b32 initialized;
+	b32 fullscreen;
+
+	SDL_Window* window;
+	SDL_Renderer* renderer;
+
+	SDL_Texture* tileset_texture;
+	SDL_Texture* ui_font_texture;
+	SDL_Texture* title_font_texture;
+	SDL_Texture* charset_texture;
+	SDL_Texture* explosion_texture;
+	SDL_Texture* background_desert_texture;
+	SDL_Texture* background_ice_desert_texture;
+	SDL_Texture* background_clouds_texture;
+	SDL_Texture* background_red_planet_sky_texture;
+	SDL_Texture* background_red_planet_desert_texture;
+	SDL_Texture* background_planet_orbit_texture;
+	SDL_Texture* background_title_screen_texture;
+
+	string_builder path_buffer;
+
+	string_ref preferences_file_path;
+	Mix_Music* music;
+};
+
 sdl_data GLOBAL_SDL_DATA;
+
+void render_group_to_output(render_group* render_group);
 
 r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
 {
@@ -400,6 +432,14 @@ int main(int argc, char* args[])
 
 		game_state game = {};
 
+		game.platform.read_file = &read_file;
+		game.platform.save_file = &save_file;
+		game.platform.load_prefs = &load_prefs;
+		game.platform.save_prefs = &save_prefs;
+		game.platform.start_playing_music = &start_playing_music;
+		game.platform.stop_playing_music = &stop_playing_music;
+		game.platform.render_group_to_output = &render_group_to_output;
+
 		game.arena = &permanent_arena;
 		game.transient_arena = &transient_arena;
 
@@ -414,12 +454,12 @@ int main(int argc, char* args[])
 		static_game_data* static_data = push_struct(&permanent_arena, static_game_data);
 		game.static_data = static_data;
 
-		load_static_game_data(static_data, &permanent_arena, &transient_arena);
+		load_static_game_data(&game.platform, static_data, &permanent_arena, &transient_arena);
 		game.input_buffer = initialize_input_buffer(&permanent_arena);
 
 #if TRIFLE_DEBUG
 		// kasujemy progres
-		save_completed_levels(game.static_data, &transient_arena);
+		save_completed_levels(&game.platform, game.static_data, &transient_arena);
 #endif
 
 #ifdef __EMSCRIPTEN__

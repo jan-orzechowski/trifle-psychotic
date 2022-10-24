@@ -11,7 +11,6 @@
 #include "rendering.h"
 #include "ui.h"
 #include "input.h"
-#include "sdl_platform.h"
 #include "debug.h"
 #include "backdrops.h"
 #include "progress.h"
@@ -35,7 +34,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 						level->active_scene_change.change_scene = true;
 						level->active_scene_change.new_scene = scene::MAIN_MENU;
 						level->active_scene_change.fade_out_speed = 0.5f;
-						stop_playing_music(2000);
+						game->platform.stop_playing_music(2000);
 					}
 				}
 			}
@@ -81,7 +80,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				start_screen_shake(level, 0.6f, 30.0f);
 				start_death_animation(level, player);
 				start_visual_effect(level, player, sprite_effects_types::DEATH);
-				stop_playing_music(2000);
+				game->platform.stop_playing_music(2000);
 			}
 		}
 
@@ -92,14 +91,14 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			level->active_scene_change.new_scene = scene::DEATH;
 			level->active_scene_change.fade_out_speed = 0.5f;
 			level->stop_player_movement = true;
-			stop_playing_music(2000);
+			game->platform.stop_playing_music(2000);
 		}
 
 		if (level->current_map.complete_when_all_messengers_killed
 			&& level->enemies_to_kill_counter <= 0)
 		{
 			mark_level_as_completed(level->static_data, level->current_map_name);
-			save_completed_levels(level->static_data, game->transient_arena);
+			save_completed_levels(&game->platform, level->static_data, game->transient_arena);
 
 			level->active_scene_change.change_scene = true;
 			level->active_scene_change.fade_out_speed = 1.5f;
@@ -115,7 +114,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 				level->active_scene_change.map_to_load = level->current_map.next_map;
 			}
 
-			stop_playing_music(2000);
+			game->platform.stop_playing_music(2000);
 		}
 
 		if (level->player_invincibility_cooldown > 0.0f)
@@ -166,7 +165,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			&& false == level->active_scene_change.change_scene)
 		{
 			mark_level_as_completed(level->static_data, level->current_map_name);
-			save_completed_levels(level->static_data, game->transient_arena);
+			save_completed_levels(&game->platform, level->static_data, game->transient_arena);
 
 			level->active_scene_change.change_scene = true;
 			level->active_scene_change.new_scene = scene::GAME;
@@ -773,7 +772,7 @@ void main_game_loop(game_state* game, r32 delta_time)
 				game->level_choice_menu.time_to_first_interaction = 1.0f;
 				game->level_choice_menu.fade_in_perc = 1.0f;
 
-				load_completed_levels(game->static_data);
+				load_completed_levels(&game->platform, game->static_data);
 			}
 			break;
 			case scene::MAP_ERRORS:
@@ -799,5 +798,5 @@ void main_game_loop(game_state* game, r32 delta_time)
 		}
 	}
 
-	render_group_to_output(&game->render);
+	game->platform.render_group_to_output(&game->render);
 }
