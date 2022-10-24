@@ -156,7 +156,7 @@
     <ClCompile Include="code\backdrops.cpp" />
     <ClCompile Include="code\debug.cpp" />
     <ClCompile Include="code\entities.cpp" />
-    <ClCompile Include="code\gates.cpp" />
+    <ClCompile Include="code\special_entities.cpp" />
     <ClCompile Include="code\level_initialization.cpp" />
     <ClCompile Include="code\input.cpp" />
     <ClCompile Include="code\jormath.cpp" />
@@ -179,7 +179,7 @@
     <ClInclude Include="code\backdrops.h" />
     <ClInclude Include="code\debug.h" />
     <ClInclude Include="code\entities.h" />
-    <ClInclude Include="code\gates.h" />
+    <ClInclude Include="code\special_entities.h" />
     <ClInclude Include="code\level_initialization.h" />
     <ClInclude Include="code\input.h" />
     <ClInclude Include="code\jormath.h" />

@@ -1,6 +1,7 @@
 ﻿#include "main.h"
 #include "animation.h"
 #include "entities.h"
+#include "special_entities.h"
 #include "player.h"
 
 entity* get_player(level_state* level)

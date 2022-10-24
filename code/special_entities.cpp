@@ -325,3 +325,159 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 
 	start_visual_effect(display_entity, tint_effect);
 }
+
+u32 get_moving_platform_type_index(entity_type_enum type)
+{
+	u32 result = 0;
+	switch (type)
+	{
+		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_SILVER:  result = 0; break;
+		case entity_type_enum::MOVING_PLATFORM_VERTICAL_SILVER:    result = 1; break;
+		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GOLD:  result = 2; break;
+		case entity_type_enum::MOVING_PLATFORM_VERTICAL_GOLD:    result = 3; break;
+		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED:   result = 4; break;
+		case entity_type_enum::MOVING_PLATFORM_VERTICAL_RED:     result = 5; break;
+		case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN: result = 6; break;
+		case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN:   result = 7; break;
+			invalid_default_case;
+	}
+	return result;
+}
+
+void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+{
+	u32 type_index = get_moving_platform_type_index(new_entity_to_spawn->type);
+	entity_type* type = level->moving_platform_types[type_index];
+
+	b32 is_horizontal =
+		(new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_SILVER
+			|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GOLD
+			|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED
+			|| new_entity_to_spawn->type == entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN);
+
+	if (type == NULL)
+	{
+		type = push_struct(arena, entity_type);
+
+		moving_platform_graphics platform_gfx = level->static_data->platforms_gfx.blue;
+		switch (new_entity_to_spawn->type)
+		{
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_SILVER:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_SILVER:
+			{
+				platform_gfx = level->static_data->platforms_gfx.blue;
+			}
+			break;
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GOLD:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GOLD:
+			{
+				platform_gfx = level->static_data->platforms_gfx.grey;
+			}
+			break;
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_RED:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_RED:
+			{
+				platform_gfx = level->static_data->platforms_gfx.red;
+			}
+			break;
+			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_GREEN:
+			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN:
+			{
+				platform_gfx = level->static_data->platforms_gfx.green;
+			}
+			break;
+			invalid_default_case;
+		}
+
+		animation_frame frame = {};
+		frame.sprite.parts_count = 3;
+		frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
+		frame.sprite.parts[0] = platform_gfx.left;
+		frame.sprite.parts[0].offset_in_pixels = get_v2(-1, 0) * TILE_SIDE_IN_PIXELS;
+		frame.sprite.parts[1] = platform_gfx.middle;
+		frame.sprite.parts[2] = platform_gfx.right;
+		frame.sprite.parts[2].offset_in_pixels = get_v2(1, 0) * TILE_SIDE_IN_PIXELS;
+		type->idle_pose = frame;
+
+		type->collision_rect_dim = get_v2(3, 1);
+
+		type->velocity_multiplier = level->static_data->moving_platform_velocity;
+
+		set_flags(&type->flags, entity_flags::BLOCKS_MOVEMENT);
+		set_flags(&type->flags, entity_flags::INDESTRUCTIBLE);
+
+		if (is_horizontal)
+		{
+			set_flags(&type->flags, entity_flags::MOVING_PLATFORM_HORIZONTAL);
+		}
+		else
+		{
+			set_flags(&type->flags, entity_flags::MOVING_PLATFORM_VERTICAL);
+		}
+	}
+
+	// jeśli znajdujemy się przy ścianie, odsuwamy się
+	tile_position entity_position = new_entity_to_spawn->position;
+	tile_position tile_to_left = get_tile_position(entity_position.x - 1, entity_position.y);
+	tile_position tile_to_right = get_tile_position(entity_position.x + 1, entity_position.y);
+	b32 left_tile_collides = is_tile_colliding(&level->current_map, tile_to_left);
+	b32 right_tile_collides = is_tile_colliding(&level->current_map, tile_to_right);
+	if (left_tile_collides && right_tile_collides)
+	{
+		// nie mamy gdzie przesunąć
+	}
+	else
+	{
+		if (left_tile_collides && false == right_tile_collides)
+		{
+			entity_position.x++;
+		}
+		else if (right_tile_collides && false == left_tile_collides)
+		{
+			entity_position.x--;
+		}
+	}
+
+	add_entity(level, entity_position, type);
+}
+
+void add_next_level_transition_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+{
+	entity_type* transition_type = push_struct(arena, entity_type);
+	transition_type->type_enum = entity_type_enum::NEXT_LEVEL_TRANSITION;
+
+	tile_range occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map,
+		new_entity_to_spawn->position, 20);
+	transition_type->collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
+
+	world_position new_position = add_to_position(
+		get_world_position(occupied_tiles.start),
+		get_position_difference(occupied_tiles.end, occupied_tiles.start) / 2);
+
+	set_flags(&transition_type->flags, entity_flags::INDESTRUCTIBLE);
+
+	add_entity(level, new_position, transition_type);
+}
+
+void add_message_display_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+{
+	entity_type* new_type = push_struct(arena, entity_type);
+
+	u32 max_size = 10;
+
+	tile_range occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map,
+		new_entity_to_spawn->position, max_size);
+	v2 collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
+
+	new_type->collision_rect_dim = collision_rect_dim;
+	new_type->message = new_entity_to_spawn->message;
+
+	world_position new_position = add_to_position(
+		get_world_position(occupied_tiles.start),
+		get_position_difference(occupied_tiles.end, occupied_tiles.start) / 2);
+
+	set_flags(&new_type->flags, entity_flags::INDESTRUCTIBLE);
+	set_flags(&new_type->flags, entity_flags::MESSAGE_DISPLAY);
+
+	entity* new_entity = add_entity(level, new_position, new_type);
+}

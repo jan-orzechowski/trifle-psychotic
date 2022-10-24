@@ -1,5 +1,6 @@
 ﻿#include "level_initialization.h"
 #include "entities.h"
+#include "special_entities.h"
 #include "level_parsing.h"
 #include "progress.h"
 #include "sdl_platform.h"

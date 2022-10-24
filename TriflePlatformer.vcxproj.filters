@@ -36,7 +36,7 @@
     <ClCompile Include="code\animation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\gates.cpp">
+    <ClCompile Include="code\special_entities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="code\map.cpp">
@@ -104,7 +104,7 @@
     <ClInclude Include="code\animation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="code\gates.h">
+    <ClInclude Include="code\special_entities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="code\map.h">

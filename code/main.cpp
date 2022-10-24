@@ -3,7 +3,7 @@
 #include "text_rendering.h"
 #include "map.h"
 #include "animation.h"
-#include "gates.h"
+#include "special_entities.h"
 #include "collision.h"
 #include "entities.h"
 #include "player.h"
