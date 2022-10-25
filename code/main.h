@@ -800,6 +800,9 @@ struct level_state
 	string_ref message_to_show;
 	v2 messagebox_dimensions;
 	r32 min_message_timer;
+	i32 message_skippable_indicator_index;
+	r32 message_skippable_indicator_timer;
+
 	b32 stop_player_movement;
 
 	scene_change active_scene_change;
@@ -866,9 +869,6 @@ struct game_state
 	main_menu_state main_menu;
 	death_screen_state death_screen;
 	level_choice_menu_state level_choice_menu;
-
-	i32 message_dots_index;
-	r32 message_dots_timer;
 
 	input_buffer input_buffer;
 

@@ -216,3 +216,60 @@ void render_ui_box(static_game_data* static_data, render_group* group, rect text
 		}
 	}
 }
+
+void update_and_render_skippable_indicator(render_group* render, static_game_data* static_data,
+	r32* message_dots_timer, i32* message_dots_index, r32 delta_time, v2 indicator_position)
+{
+	*message_dots_timer += delta_time;
+	if (*message_dots_timer > 0.4f)
+	{
+		*message_dots_timer = 0.0f;
+		(*message_dots_index)++;
+		if (*message_dots_index > 2)
+		{
+			*message_dots_index = 0;
+		}
+	}
+
+	rect dots_indicator_rect = get_rect_from_center(indicator_position, get_v2(15.0f, 5.0f));
+	switch (*message_dots_index)
+	{
+		case 0: render_bitmap(render, textures::CHARSET,
+			static_data->ui_gfx.msgbox_dots_1, dots_indicator_rect);
+			break;
+		case 1: render_bitmap(render, textures::CHARSET,
+			static_data->ui_gfx.msgbox_dots_2, dots_indicator_rect);
+			break;
+		case 2: render_bitmap(render, textures::CHARSET,
+			static_data->ui_gfx.msgbox_dots_3, dots_indicator_rect);
+			break;
+	}
+}
+
+void update_and_render_message_box(render_group* render, level_state* level, memory_arena* transient_arena, r32 delta_time)
+{
+	if (level->show_message && level->message_to_show.string_size)
+	{
+		if (is_zero(level->messagebox_dimensions))
+		{
+			level->messagebox_dimensions = get_v2(150, 120);
+		}
+
+		rect text_area = get_rect_from_center(SCREEN_CENTER_IN_PIXELS, level->messagebox_dimensions);
+		v2 margin = get_v2(8, 8);
+		
+		render_ui_box(level->static_data, render, add_side_length(text_area, margin));
+
+		render_text(render, transient_arena, level->static_data->ui_font,
+			text_area, level->message_to_show, true);
+
+		if (level->min_message_timer <= 0.0f)
+		{
+			v2 dots_indicator_position = get_v2(SCREEN_CENTER_IN_PIXELS.x, text_area.max_corner.y - 4.5f);
+			update_and_render_skippable_indicator(render, level->static_data,
+				&level->message_skippable_indicator_timer,
+				&level->message_skippable_indicator_index,
+				delta_time, dots_indicator_position);
+		}
+	}
+}

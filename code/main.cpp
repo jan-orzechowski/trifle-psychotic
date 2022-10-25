@@ -393,60 +393,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		render_crosshair(level->static_data, &game->render, input);
 	}
 
-	if (level->show_message && level->message_to_show.string_size)
-	{
-		if (is_zero(level->messagebox_dimensions))
-		{
-			level->messagebox_dimensions = get_v2(150, 120);
-		}
-
-		rect text_area = get_rect_from_center(SCREEN_CENTER_IN_PIXELS, level->messagebox_dimensions);
-
-		v2 margin = get_v2(8, 8);
-		render_ui_box(level->static_data, &game->render, add_side_length(text_area, margin));
-
-		render_text(&game->render, game->transient_arena, level->static_data->ui_font, 
-			text_area, level->message_to_show, true);
-
-		if (level->min_message_timer <= 0.0f)
-		{
-			game->message_dots_timer += delta_time;
-			if (game->message_dots_timer > 0.4f)
-			{
-				game->message_dots_timer = 0.0f;
-				game->message_dots_index++;
-				if (game->message_dots_index > 2)
-				{
-					game->message_dots_index = 0;
-				}
-			}
-			
-			rect dots_indicator_rect = get_rect_from_center(
-				get_v2(text_area.min_corner.x + (level->messagebox_dimensions.x / 2), text_area.max_corner.y - 4.5f),
-				get_v2(15, 5));
-
-			switch (game->message_dots_index)
-			{
-				case 0: render_bitmap(&game->render, textures::CHARSET, 
-					level->static_data->ui_gfx.msgbox_dots_1, dots_indicator_rect); 
-					break;
-				case 1: render_bitmap(&game->render, textures::CHARSET, 
-					level->static_data->ui_gfx.msgbox_dots_2, dots_indicator_rect); 
-					break;
-				case 2: render_bitmap(&game->render, textures::CHARSET, 
-					level->static_data->ui_gfx.msgbox_dots_3, dots_indicator_rect); 
-					break;
-			}	
-		}
-	}
-
-	text_lines* test_scrolling_text = level->current_map.description_lines;
-	local_persist r32 y_offset = (SCREEN_HEIGHT / SCALING_FACTOR);
-	render_large_text(&game->render, game->transient_arena,
-		&level->static_data->scrolling_text_options, *test_scrolling_text, y_offset);
-
-	y_offset -= delta_time * 20;
-
+	update_and_render_message_box(&game->render, level, game->transient_arena, delta_time);
 	
 	if (level->active_scene_change.change_scene)
 	{

@@ -8,3 +8,6 @@ void render_counter(static_game_data* static_data, render_group* render, memory_
 rect render_menu_option(font font, game_state* game, rect text_area, string_ref title, b32 tint_completed = false);
 rect render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, string_ref caption, b32 tint_completed = false);
 void render_ui_box(static_game_data* static_data, render_group* group, rect textbox_rect);
+void update_and_render_skippable_indicator(render_group* render, static_game_data* static_data,
+    r32* message_dots_timer, i32* message_dots_index, r32 delta_time, v2 indicator_position);
+void update_and_render_message_box(render_group* render, level_state* level, memory_arena* transient_arena, r32 delta_time);
