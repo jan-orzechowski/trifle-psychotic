@@ -30,7 +30,7 @@ void set_rect_length_to_fit_text(rect* option_rect, font font, string_ref text)
 	option_rect->max_corner.x = option_rect->min_corner.x + new_width;
 }
 
-void render_hitpoint_bar(static_game_data* static_data, render_group* render, entity* player, b32 draw_white_bars)
+void render_hitpoint_bar(static_game_data* static_data, render_list* render, entity* player, b32 draw_white_bars)
 {
 	r32 health = player->health;
 	if (health < 0.0f)
@@ -75,14 +75,14 @@ void render_hitpoint_bar(static_game_data* static_data, render_group* render, en
 	}
 }
 
-void render_crosshair(static_game_data* static_data, render_group* render, game_input* input)
+void render_crosshair(static_game_data* static_data, render_list* render, game_input* input)
 {
 	v2 relative_mouse_pos = get_v2(input->mouse_x, input->mouse_y) / SCALING_FACTOR;
 	rect screen_rect = get_rect_from_center(relative_mouse_pos, get_v2(13, 13));
 	render_bitmap(render, textures::CHARSET, static_data->ui_gfx.crosshair, screen_rect);
 }
 
-void render_counter(static_game_data* static_data, render_group* render, memory_arena* transient_arena,
+void render_counter(static_game_data* static_data, render_list* render, memory_arena* transient_arena,
 	i32 counter, i32 counter_max_value)
 {
 	if (counter > counter_max_value)
@@ -151,12 +151,12 @@ rect render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, s
 	return textbox_area;
 }
 
-void render_ui_box(static_game_data* static_data, render_group* group, rect textbox_rect)
+void render_ui_box(static_game_data* static_data, render_list* render, rect textbox_rect)
 {
 	v2 dimensions = get_rect_dimensions(textbox_rect);
 
 	v4 background_color = get_v4(255, 255, 255, 255);
-	render_rectangle(group, textbox_rect, background_color, false);
+	render_rectangle(render, textbox_rect, background_color, false);
 
 	v2 tile_dimensions = get_v2(4, 4);
 	u32 tile_x_count = ceil(dimensions.x / tile_dimensions.x);
@@ -189,7 +189,7 @@ void render_ui_box(static_game_data* static_data, render_group* group, rect text
 					source_bitmap = static_data->ui_gfx.msgbox_frame_upper;
 				}
 
-				render_bitmap(group, textures::CHARSET, source_bitmap, destination_rect);
+				render_bitmap(render, textures::CHARSET, source_bitmap, destination_rect);
 				move_rect(&destination_rect, get_v2(tile_dimensions.x, 0));
 			}
 		}
@@ -211,21 +211,21 @@ void render_ui_box(static_game_data* static_data, render_group* group, rect text
 					source_bitmap = static_data->ui_gfx.msgbox_frame_lower;
 				}
 
-				render_bitmap(group, textures::CHARSET, source_bitmap, destination_rect);
+				render_bitmap(render, textures::CHARSET, source_bitmap, destination_rect);
 				move_rect(&destination_rect, get_v2(tile_dimensions.x, 0));
 			}
 		}
 		else
 		{
-			render_bitmap(group, textures::CHARSET, static_data->ui_gfx.msgbox_frame_left, destination_rect);
+			render_bitmap(render, textures::CHARSET, static_data->ui_gfx.msgbox_frame_left, destination_rect);
 
 			destination_rect = move_rect(destination_rect, get_v2(tile_x_count * tile_dimensions.x, 0));
-			render_bitmap(group, textures::CHARSET, static_data->ui_gfx.msgbox_frame_right, destination_rect);
+			render_bitmap(render, textures::CHARSET, static_data->ui_gfx.msgbox_frame_right, destination_rect);
 		}
 	}
 }
 
-void update_and_render_skippable_indicator(render_group* render, static_game_data* static_data,
+void update_and_render_skippable_indicator(render_list* render, static_game_data* static_data,
 	r32* message_dots_timer, i32* message_dots_index, r32 delta_time, v2 indicator_position)
 {
 	*message_dots_timer += delta_time;
@@ -254,7 +254,7 @@ void update_and_render_skippable_indicator(render_group* render, static_game_dat
 	}
 }
 
-void update_and_render_message_box(render_group* render, level_state* level, memory_arena* transient_arena, r32 delta_time)
+void update_and_render_message_box(render_list* render, level_state* level, memory_arena* transient_arena, r32 delta_time)
 {
 	if (level->show_message && level->message_to_show.string_size)
 	{

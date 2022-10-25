@@ -303,7 +303,7 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r
 	}
 }
 
-void render_entity_animation_frame(render_group* render, world_position camera_position, entity* entity)
+void render_entity_animation_frame(render_list* render, world_position camera_position, entity* entity)
 {
 	sprite* sprite_to_render = NULL;
 	if (entity->current_animation && entity->current_animation->frames)
@@ -333,7 +333,7 @@ void start_screen_shake(level_state* level, r32 duration_in_seconds, r32 strengt
 	level->screen_shake_multiplier = strength;
 }
 
-void process_fade(render_group* render, r32* percentage, r32 delta_time, b32 fade_in, r32 delta_time_multiplier)
+void process_fade(render_list* render, r32* percentage, r32 delta_time, b32 fade_in, r32 delta_time_multiplier)
 {
 	v4 fade_color = get_zero_v4();
 	if (fade_in)

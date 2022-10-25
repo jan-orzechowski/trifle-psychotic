@@ -44,7 +44,7 @@ struct sdl_data
 
 sdl_data GLOBAL_SDL_DATA;
 
-void render_group_to_output(render_group* render_group);
+void render_list_to_output(render_list* render_list);
 
 r32 get_elapsed_miliseconds(u32 start_counter, u32 end_counter)
 {
@@ -438,7 +438,7 @@ int main(int argc, char* args[])
 		game.platform.save_prefs = &save_prefs;
 		game.platform.start_playing_music = &start_playing_music;
 		game.platform.stop_playing_music = &stop_playing_music;
-		game.platform.render_group_to_output = &render_group_to_output;
+		game.platform.render_list_to_output = &render_list_to_output;
 
 		game.arena = &permanent_arena;
 		game.transient_arena = &transient_arena;
@@ -446,7 +446,7 @@ int main(int argc, char* args[])
 		game.render.max_push_buffer_size = megabytes_to_bytes(10);
 		game.render.push_buffer_base = (u8*)push_size(&permanent_arena, game.render.max_push_buffer_size);
 
-		game.current_scene = scene::MAIN_MENU;
+		game.current_scene = scene::GAME;
 
 		game.level_state = push_struct(&permanent_arena, level_state);
 		game.level_name_buffer = (char*)push_size(&permanent_arena, MAX_LEVEL_NAME_LENGTH);
@@ -601,7 +601,7 @@ internal SDL_Texture* get_texture(sdl_data sdl, textures type)
 	return result;
 }
 
-void render_group_to_output(render_group* render_group)
+void render_list_to_output(render_list* render)
 {
 	SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, 0, 0, 0, 0);
 	SDL_RenderClear(GLOBAL_SDL_DATA.renderer);
@@ -609,31 +609,31 @@ void render_group_to_output(render_group* render_group)
 
 	assert(GLOBAL_SDL_DATA.initialized);
 	for (u32 base_address = 0;
-		base_address < render_group->push_buffer_size;
+		base_address < render->push_buffer_size;
 		)
 	{
-		render_group_entry_header* header = (render_group_entry_header*)(render_group->push_buffer_base + base_address);
+		render_list_entry_header* header = (render_list_entry_header*)(render->push_buffer_base + base_address);
 
-		void* data = (u8*)header + sizeof(render_group_entry_header);
-		base_address += sizeof(render_group_entry_header);
+		void* data = (u8*)header + sizeof(render_list_entry_header);
+		base_address += sizeof(render_list_entry_header);
 
 		switch (header->type)
 		{
-			case render_group_entry_type::BITMAP:
+			case render_list_entry_type::BITMAP:
 			{
-				render_group_entry_bitmap* entry = (render_group_entry_bitmap*)data;
+				render_list_entry_bitmap* entry = (render_list_entry_bitmap*)data;
 
 				SDL_Texture* texture = get_texture(GLOBAL_SDL_DATA, entry->texture);
 				SDL_Rect src = get_sdl_rect(entry->source_rect);
 				SDL_Rect dst = get_sdl_rect(entry->destination_rect);
 				SDL_RenderCopy(GLOBAL_SDL_DATA.renderer, texture, &src, &dst);
 
-				base_address += sizeof(render_group_entry_bitmap);
+				base_address += sizeof(render_list_entry_bitmap);
 			}
 			break;
-			case render_group_entry_type::BITMAP_WITH_EFFECTS:
+			case render_list_entry_type::BITMAP_WITH_EFFECTS:
 			{
-				render_group_entry_bitmap_with_effects* entry = (render_group_entry_bitmap_with_effects*)data;
+				render_list_entry_bitmap_with_effects* entry = (render_list_entry_bitmap_with_effects*)data;
 
 				SDL_Texture* texture = get_texture(GLOBAL_SDL_DATA, entry->texture);
 				SDL_Rect src = get_sdl_rect(entry->source_rect);
@@ -673,12 +673,12 @@ void render_group_to_output(render_group* render_group)
 					}
 				}
 
-				base_address += sizeof(render_group_entry_bitmap_with_effects);
+				base_address += sizeof(render_list_entry_bitmap_with_effects);
 			}
 			break;
-			case render_group_entry_type::DEBUG_RECTANGLE:
+			case render_list_entry_type::DEBUG_RECTANGLE:
 			{
-				render_group_entry_debug_rectangle* entry = (render_group_entry_debug_rectangle*)data;
+				render_list_entry_debug_rectangle* entry = (render_list_entry_debug_rectangle*)data;
 
 				if (false == is_zero(entry->color))
 				{
@@ -701,12 +701,12 @@ void render_group_to_output(render_group* render_group)
 					SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, 255, 255, 255, 0);
 				}
 
-				base_address += sizeof(render_group_entry_debug_rectangle);
+				base_address += sizeof(render_list_entry_debug_rectangle);
 			}
 			break;
-			case render_group_entry_type::CLEAR:
+			case render_list_entry_type::CLEAR:
 			{
-				render_group_entry_clear* entry = (render_group_entry_clear*)data;
+				render_list_entry_clear* entry = (render_list_entry_clear*)data;
 
 				if (false == is_zero(entry->color))
 				{
@@ -721,12 +721,12 @@ void render_group_to_output(render_group* render_group)
 					SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, 255, 255, 255, 0);
 				}
 
-				base_address += sizeof(render_group_entry_clear);
+				base_address += sizeof(render_list_entry_clear);
 			}
 			break;
-			case render_group_entry_type::FADE:
+			case render_list_entry_type::FADE:
 			{
-				render_group_entry_fade* entry = (render_group_entry_fade*)data;
+				render_list_entry_fade* entry = (render_list_entry_fade*)data;
 
 				v4 sdl_color = entry->color * 255;
 				sdl_color.a = entry->percentage * 255;
@@ -738,7 +738,7 @@ void render_group_to_output(render_group* render_group)
 				SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, 255, 255, 255, 0);
 				SDL_SetRenderDrawBlendMode(GLOBAL_SDL_DATA.renderer, SDL_BlendMode::SDL_BLENDMODE_NONE);
 
-				base_address += sizeof(render_group_entry_fade);
+				base_address += sizeof(render_list_entry_fade);
 			}
 			break;
 
@@ -749,5 +749,5 @@ void render_group_to_output(render_group* render_group)
 	SDL_RenderPresent(GLOBAL_SDL_DATA.renderer);
 
 	// zapisujemy od nowa - nie trzeba zerować
-	render_group->push_buffer_size = 0;
+	render->push_buffer_size = 0;
 }

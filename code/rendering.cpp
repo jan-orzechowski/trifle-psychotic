@@ -4,19 +4,19 @@
 #include "map.h"
 #include "animation.h"
 
-void* push_render_element(render_group* group, u32 size, render_group_entry_type type)
+void* push_render_element(render_list* render, u32 size, render_list_entry_type type)
 {
-	render_group_entry_header* result = 0;
-	u32 header_size = sizeof(render_group_entry_header);
+	render_list_entry_header* result = 0;
+	u32 header_size = sizeof(render_list_entry_header);
 
-	if ((group->push_buffer_size + size + header_size) < group->max_push_buffer_size)
+	if ((render->push_buffer_size + size + header_size) < render->max_push_buffer_size)
 	{
-		result = (render_group_entry_header*)(group->push_buffer_base + group->push_buffer_size);
+		result = (render_list_entry_header*)(render->push_buffer_base + render->push_buffer_size);
 		result->type = type;
 
-		// dajemy wskaźnik do elementu, nie do headera - ten zostanie odczytany w render_group_to_output
+		// dajemy wskaźnik do elementu, nie do headera - ten zostanie odczytany w render_list_to_output
 		result = result + 1; // przesuwamy się o rozmiar headera
-		group->push_buffer_size += (size + header_size);
+		render->push_buffer_size += (size + header_size);
 	}
 	else
 	{
@@ -26,54 +26,54 @@ void* push_render_element(render_group* group, u32 size, render_group_entry_type
 	return result;
 }
 
-void render_bitmap(render_group* group, textures texture, rect source_rect, rect destination_rect)
+void render_bitmap(render_list* render, textures texture, rect source_rect, rect destination_rect)
 {
-	render_group_entry_bitmap* entry = (render_group_entry_bitmap*)push_render_element(
-		group, sizeof(render_group_entry_bitmap), render_group_entry_type::BITMAP);
+	render_list_entry_bitmap* entry = (render_list_entry_bitmap*)push_render_element(
+		render, sizeof(render_list_entry_bitmap), render_list_entry_type::BITMAP);
 
 	entry->source_rect = source_rect;
 	entry->destination_rect = destination_rect;
 	entry->texture = texture;
 }
 
-void render_rectangle(render_group* group, rect screen_rect_to_fill, v4 color, b32 render_outline_only)
+void render_rectangle(render_list* render, rect screen_rect_to_fill, v4 color, b32 render_outline_only)
 {
-	render_group_entry_debug_rectangle* entry = (render_group_entry_debug_rectangle*)push_render_element(
-		group, sizeof(render_group_entry_debug_rectangle), render_group_entry_type::DEBUG_RECTANGLE);
+	render_list_entry_debug_rectangle* entry = (render_list_entry_debug_rectangle*)push_render_element(
+		render, sizeof(render_list_entry_debug_rectangle), render_list_entry_type::DEBUG_RECTANGLE);
 
 	entry->destination_rect = screen_rect_to_fill;
 	entry->color = color;
 	entry->render_outline_only = render_outline_only;
 }
 
-void render_point(render_group* group, v2 point, v4 color)
+void render_point(render_list* render, v2 point, v4 color)
 {
 	rect screen_rect = get_rect_from_center(point, get_v2(2.0f, 2.0f));
-	render_rectangle(group, screen_rect, color, false);
+	render_rectangle(render, screen_rect, color, false);
 }
 
-void render_clear(render_group* group, v4 color)
+void render_clear(render_list* render, v4 color)
 {
-	render_group_entry_clear* entry = (render_group_entry_clear*)push_render_element(
-		group, sizeof(render_group_entry_clear), render_group_entry_type::CLEAR);
+	render_list_entry_clear* entry = (render_list_entry_clear*)push_render_element(
+		render, sizeof(render_list_entry_clear), render_list_entry_type::CLEAR);
 
 	entry->color = color;
 }
 
-void render_fade(render_group* group, v4 color, r32 percentage)
+void render_fade(render_list* render, v4 color, r32 percentage)
 {
-	render_group_entry_fade* entry = (render_group_entry_fade*)push_render_element(
-		group, sizeof(render_group_entry_fade), render_group_entry_type::FADE);
+	render_list_entry_fade* entry = (render_list_entry_fade*)push_render_element(
+		render, sizeof(render_list_entry_fade), render_list_entry_type::FADE);
 
 	entry->color = color;
 	entry->percentage = percentage;
 }
 
-void render_bitmap_with_effects(render_group* group,
+void render_bitmap_with_effects(render_list* render,
 	textures texture, rect source_rect, rect destination_rect, v4 tint_color, b32 render_in_additive_mode, b32 flip_horizontally)
 {
-	render_group_entry_bitmap_with_effects* entry = (render_group_entry_bitmap_with_effects*)push_render_element(
-		group, sizeof(render_group_entry_bitmap_with_effects), render_group_entry_type::BITMAP_WITH_EFFECTS);
+	render_list_entry_bitmap_with_effects* entry = (render_list_entry_bitmap_with_effects*)push_render_element(
+		render, sizeof(render_list_entry_bitmap_with_effects), render_list_entry_type::BITMAP_WITH_EFFECTS);
 
 	entry->source_rect = source_rect;
 	entry->destination_rect = destination_rect;
@@ -131,7 +131,7 @@ rect get_tile_screen_rect(v2 position_relative_to_camera)
 	return result;
 }
 
-void render_map_layer(render_group* render, level_state* level, map_layer layer, tile_position camera_tile_pos, v2 camera_offset_in_tile)
+void render_map_layer(render_list* render, map_layer layer, tile_position camera_tile_pos, v2 camera_offset_in_tile)
 {
 	if (layer.tiles_count > 0)
 	{
@@ -166,7 +166,7 @@ void render_map_layer(render_group* render, level_state* level, map_layer layer,
 	}
 }
 
-void render_entity_sprite(render_group* render, world_position camera_position, world_position entity_position, direction entity_direction,
+void render_entity_sprite(render_list* render, world_position camera_position, world_position entity_position, direction entity_direction,
 	sprite_effect* visual_effect, r32 visual_effect_duration, sprite sprite)
 {
 	b32 tint_modified = false;

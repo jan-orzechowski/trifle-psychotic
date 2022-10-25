@@ -266,7 +266,7 @@ rect get_glyph_rect(font font, u32 code)
     return result;
 }
 
-void render_text_line(render_group* render, render_text_options* options, string_ref line)
+void render_text_line(render_list* render, render_text_options* options, string_ref line)
 {
     font font = options->font;
     r32 x = options->writing_area.min_corner.x;
@@ -295,7 +295,7 @@ void render_text_line(render_group* render, render_text_options* options, string
     }
 }
 
-void render_text_lines(render_group* render, render_text_options* options, text_viewport* viewport, text_lines* lines)
+void render_text_lines(render_list* render, render_text_options* options, text_viewport* viewport, text_lines* lines)
 {    
     assert(viewport != NULL || lines != NULL);
 
@@ -355,7 +355,7 @@ void render_text_lines(render_group* render, render_text_options* options, text_
     }
 }
 
-void render_text(render_group* render, memory_arena* transient_arena, render_text_options* options, string_ref text)
+void render_text(render_list* render, memory_arena* transient_arena, render_text_options* options, string_ref text)
 {
     temporary_memory writing_memory = begin_temporary_memory(transient_arena);
     
@@ -387,7 +387,7 @@ void render_text(render_group* render, memory_arena* transient_arena, render_tex
     end_temporary_memory(writing_memory, true);
 }
 
-void render_text(render_group* render, memory_arena* transient_arena, font font, rect writing_area, string_ref text, b32 wrap)
+void render_text(render_list* render, memory_arena* transient_arena, font font, rect writing_area, string_ref text, b32 wrap)
 {
     render_text_options options = {};
     options.font = font;
@@ -396,7 +396,7 @@ void render_text(render_group* render, memory_arena* transient_arena, font font,
     render_text(render, transient_arena, &options, text);
 }
 
-void render_large_text(render_group* render, render_text_options* options, text_lines text_lines, r32 y_offset)
+void render_large_text(render_list* render, render_text_options* options, text_lines text_lines, r32 y_offset)
 {
     text_area_limits limits = get_text_area_limits(options);
     rect new_writing_area = move_rect(options->writing_area, get_v2(0.0f, y_offset));

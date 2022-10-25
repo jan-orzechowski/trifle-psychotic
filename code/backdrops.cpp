@@ -2,7 +2,7 @@
 #include "rendering.h"
 #include "map.h"
 
-void render_static_repeated_backdrop(render_group* render, backdrop_properties backdrop)
+void render_static_repeated_backdrop(render_list* render, backdrop_properties backdrop)
 {
 	assert(backdrop.texture != textures::NONE);
 	assert(false == is_zero(backdrop.size));
@@ -20,7 +20,7 @@ void render_static_repeated_backdrop(render_group* render, backdrop_properties b
 	}
 }
 
-void render_scrolling_repeated_backdrop(render_group* render, backdrop_properties backdrop,
+void render_scrolling_repeated_backdrop(render_list* render, backdrop_properties backdrop,
 	v2 offset_in_tiles, b32 repeat_only_horizontally, world_position camera_position)
 {
 	assert(backdrop.texture != textures::NONE);
@@ -128,7 +128,7 @@ void update_backdrops_movement(backdrop_properties* backdrop, v2* backdrop_offse
 	}
 }
 
-void render_backdrops(render_group* render, level_state* level, world_position camera_position)
+void render_backdrops(render_list* render, level_state* level, world_position camera_position)
 {
 	if (level->current_map.second_backdrop.texture != textures::NONE)
 	{

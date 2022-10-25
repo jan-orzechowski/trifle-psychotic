@@ -19,8 +19,8 @@ void stop_visual_effect(level_state* level, entity* entity, sprite_effects_types
 u32 get_current_animation_frame_index(animation* animation, r32 elapsed_time, r32 frame_duration_modifier = 1.0f);
 animation_frame* get_current_animation_frame(entity* entity);
 void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r32 frame_duration_modifier = 1.0f);
-void render_entity_animation_frame(render_group* render, world_position camera_position, entity* entity);
+void render_entity_animation_frame(render_list* render, world_position camera_position, entity* entity);
 void start_screen_shake(level_state* level, r32 duration_in_seconds, r32 strength);
-void process_fade(render_group* render, r32* percentage, r32 delta_time, b32 fade_in, r32 delta_time_multiplier = 1.5f);
+void process_fade(render_list* render, r32* percentage, r32 delta_time, b32 fade_in, r32 delta_time_multiplier = 1.5f);
 void start_death_animation(level_state* level, entity* entity);
 void start_death_animation(level_state* level, bullet* bullet);

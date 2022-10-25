@@ -320,8 +320,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	
 		render_backdrops(&game->render, level, camera_position);
 
-		render_map_layer(&game->render, level, level->current_map.background, camera_tile_pos, camera_offset_in_tile);
-		render_map_layer(&game->render, level, level->current_map.map, camera_tile_pos, camera_offset_in_tile);
+		render_map_layer(&game->render, level->current_map.background, camera_tile_pos, camera_offset_in_tile);
+		render_map_layer(&game->render, level->current_map.map, camera_tile_pos, camera_offset_in_tile);
 		
 #if TRIFLE_DEBUG
 		debug_render_tile_collision_boxes(&game->render, level, camera_position);
@@ -370,7 +370,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			}
 		}
 
-		render_map_layer(&game->render, level, level->current_map.foreground, camera_tile_pos, camera_offset_in_tile);
+		render_map_layer(&game->render, level->current_map.foreground, camera_tile_pos, camera_offset_in_tile);
 
 #if TRIFLE_DEBUG
 
@@ -821,5 +821,5 @@ void main_game_loop(game_state* game, r32 delta_time)
 		}
 	}
 
-	game->platform.render_group_to_output(&game->render);
+	game->platform.render_list_to_output(&game->render);
 }

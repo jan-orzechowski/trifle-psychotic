@@ -9,7 +9,7 @@
 #include "ui.h"
 #include "player.h"
 
-void debug_render_tile(render_group* render, tile_position tile_pos, v4 color, world_position camera_pos)
+void debug_render_tile(render_list* render, tile_position tile_pos, v4 color, world_position camera_pos)
 {
 	v2 position = get_position_difference(tile_pos, camera_pos);
 	rect screen_rect = get_tile_screen_rect(position);
@@ -47,7 +47,7 @@ void debug_render_player_information(game_state* game, level_state* level)
 		game->level_state->static_data->ui_font, area, debug_str, true);
 }
 
-void debug_render_tile_collision_boxes(render_group* render, level_state* level, world_position camera_pos)
+void debug_render_tile_collision_boxes(render_list* render, level_state* level, world_position camera_pos)
 {
 	i32 screen_half_width = ceil(HALF_SCREEN_WIDTH_IN_TILES) + 2;
 	i32 screen_half_height = ceil(HALF_SCREEN_HEIGHT_IN_TILES) + 2;
@@ -83,7 +83,7 @@ void debug_render_tile_collision_boxes(render_group* render, level_state* level,
 	}
 }
 
-void debug_render_entity_collision_boxes(render_group* render, level_state* level, world_position camera_pos)
+void debug_render_entity_collision_boxes(render_list* render, level_state* level, world_position camera_pos)
 {
 	for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
 	{
@@ -111,7 +111,7 @@ void debug_render_entity_collision_boxes(render_group* render, level_state* leve
 	}
 }
 
-void debug_render_bullet_collision_boxes(render_group* render, level_state* level, world_position camera_pos)
+void debug_render_bullet_collision_boxes(render_list* render, level_state* level, world_position camera_pos)
 {
 	for (i32 bullet_index = 0; bullet_index < level->bullets_count; bullet_index++)
 	{

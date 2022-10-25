@@ -633,7 +633,7 @@ struct write_to_tile
 	u32 length;
 };
 
-struct render_group;
+struct render_list;
 
 typedef read_file_result read_file_func(const char* path);
 typedef void save_file_func(const char* path, write_to_tile contents);
@@ -641,8 +641,8 @@ typedef read_file_result load_prefs_func();
 typedef void save_prefs_func(write_to_tile contents);
 typedef void start_playing_music_func(string_ref audio_file_name);
 typedef void stop_playing_music_func(int fade_out_ms);
-typedef void render_group_to_output_func(render_group* render_group);
-typedef void render_group_to_output_func(render_group* render_group);
+typedef void render_list_to_output_func(render_list* render);
+typedef void render_list_to_output_func(render_list* render);
 
 struct platform_api
 {
@@ -652,7 +652,7 @@ struct platform_api
 	save_prefs_func* save_prefs;
 	start_playing_music_func* start_playing_music;
 	stop_playing_music_func* stop_playing_music;
-	render_group_to_output_func* render_group_to_output;
+	render_list_to_output_func* render_list_to_output;
 };
 
 struct static_game_data
@@ -823,7 +823,7 @@ struct save
 	u32 player_max_health;
 };
 
-struct render_group
+struct render_list
 {
 	u32 max_push_buffer_size;
 	u32 push_buffer_size;
@@ -882,7 +882,7 @@ struct game_state
 	string_ref map_errors;
 	temporary_memory game_level_memory;	
 
-	render_group render;
+	render_list render;
 
 	static_game_data* static_data;
 	platform_api platform;
