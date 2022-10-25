@@ -2,6 +2,7 @@
 
 rect get_whole_screen_text_area(r32 margin);
 b32 was_rect_clicked(game_input* input, rect screen_rect);
+void set_rect_length_to_fit_text(rect* option_rect, font font, string_ref text);
 void render_hitpoint_bar(static_game_data* static_data, render_group* render, entity* player, b32 draw_white_bars);
 void render_crosshair(static_game_data* static_data, render_group* render, game_input* input);
 void render_counter(static_game_data* static_data, render_group* render, memory_arena* transient_arena, i32 counter, i32 counter_max_value);

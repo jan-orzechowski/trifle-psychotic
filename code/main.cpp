@@ -490,9 +490,7 @@ scene_change level_choice_update_and_render(game_state* game, static_game_data* 
 	{
 		level_choice level = static_data->levels[level_index];
 
-		r32 new_width = get_text_area_for_single_line(static_data->ui_font, level.name).x;
-		option_rect.max_corner.x = option_rect.min_corner.x + new_width;
-
+		set_rect_length_to_fit_text(&option_rect, static_data->ui_font, level.name);
 		render_menu_option(static_data->ui_font, game, option_rect, level.name, level.completed);
 		if (game->level_choice_menu.time_to_first_interaction <= 0.0f
 			&& was_rect_clicked(input, option_rect))
@@ -539,6 +537,11 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 {
 	game_input* input = get_last_frame_input(&game->input_buffer);
 
+	if (game->main_menu.time_to_first_interaction > 0.0f)
+	{
+		game->main_menu.time_to_first_interaction -= delta_time;
+	}
+
 	render_bitmap(&game->render, textures::BACKGROUND_TITLE_SCREEN,
 		get_rect_from_corners(get_v2(0, 0), get_v2(384, 320)),
 		get_rect_from_corners(get_v2(0, 0), get_v2(SCREEN_WIDTH, SCREEN_HEIGHT) / SCALING_FACTOR));
@@ -556,7 +559,8 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 
 	rect option_interactive_rect = render_menu_option(static_data->ui_font, game, 
 		options_x, option_y, static_data->menu_new_game_str);
-	if (was_rect_clicked(input, option_interactive_rect))
+	if (game->main_menu.time_to_first_interaction <= 0.0f
+		&& was_rect_clicked(input, option_interactive_rect))
 	{
 		game->main_menu.active_scene_change.change_scene = true;
 		game->main_menu.active_scene_change.new_scene = scene::LEVEL_CHOICE;
@@ -567,7 +571,8 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 		option_y += option_y_spacing;	
 		option_interactive_rect = render_menu_option(static_data->ui_font, game,
 			options_x, option_y, static_data->menu_continue_str);
-		if (was_rect_clicked(input, option_interactive_rect))
+		if (game->main_menu.time_to_first_interaction <= 0.0f
+			&& was_rect_clicked(input, option_interactive_rect))
 		{
 			game->main_menu.active_scene_change.change_scene = true;
 			game->main_menu.active_scene_change.new_scene = scene::GAME;
@@ -578,7 +583,8 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	option_y += option_y_spacing;
 	option_interactive_rect = render_menu_option(static_data->ui_font, game,
 		options_x, option_y, static_data->menu_credits_str);
-	if (was_rect_clicked(input, option_interactive_rect))
+	if (game->main_menu.time_to_first_interaction <= 0.0f
+		&& was_rect_clicked(input, option_interactive_rect))
 	{
 		game->main_menu.active_scene_change.change_scene = true;
 		game->main_menu.active_scene_change.new_scene = scene::CREDITS;
@@ -589,7 +595,8 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 		option_y += option_y_spacing;
 		option_interactive_rect = render_menu_option(static_data->ui_font, game,
 			options_x, option_y, static_data->menu_exit_str);
-		if (was_rect_clicked(input, option_interactive_rect))
+		if (game->main_menu.time_to_first_interaction <= 0.0f
+			&& was_rect_clicked(input, option_interactive_rect))
 		{
 			game->main_menu.active_scene_change.change_scene = true;
 			game->main_menu.active_scene_change.new_scene = scene::EXIT;
@@ -778,13 +785,14 @@ void main_game_loop(game_state* game, r32 delta_time)
 			case scene::MAIN_MENU:
 			{
 				game->main_menu = {};
+				game->main_menu.time_to_first_interaction = game->static_data->default_time_to_first_menu_interaction;
 				game->main_menu.fade_in_perc = 1.0f;
 			}
 			break;
 			case scene::LEVEL_CHOICE:
 			{
 				game->level_choice_menu = {};
-				game->level_choice_menu.time_to_first_interaction = 1.0f;
+				game->level_choice_menu.time_to_first_interaction = game->static_data->default_time_to_first_menu_interaction;
 				game->level_choice_menu.fade_in_perc = 1.0f;
 
 				load_completed_levels(&game->platform, game->static_data);

@@ -832,6 +832,7 @@ struct render_group
 
 struct main_menu_state
 {
+	r32 time_to_first_interaction;
 	r32 fade_out_perc;
 	r32 fade_in_perc;
 	scene_change active_scene_change;

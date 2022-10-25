@@ -24,6 +24,12 @@ b32 was_rect_clicked(game_input* input, rect screen_rect)
 	return result;
 }
 
+void set_rect_length_to_fit_text(rect* option_rect, font font, string_ref text)
+{
+	r32 new_width = get_text_area_for_single_line(font, text).x;
+	option_rect->max_corner.x = option_rect->min_corner.x + new_width;
+}
+
 void render_hitpoint_bar(static_game_data* static_data, render_group* render, entity* player, b32 draw_white_bars)
 {
 	r32 health = player->health;
@@ -137,6 +143,8 @@ rect render_menu_option(font font, game_state* game, u32 x_coord, u32 y_coord, s
 	rect textbox_area = get_rect_from_corners(
 		get_v2(x_coord, y_coord),
 		get_v2(x_coord + 70, y_coord + 10));
+
+	set_rect_length_to_fit_text(&textbox_area, font, caption);
 
 	render_menu_option(font, game, textbox_area, caption, tint_completed);
 
