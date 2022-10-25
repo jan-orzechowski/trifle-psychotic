@@ -436,6 +436,14 @@ void level_introduction_update_and_render(game_state* game, level_state* level, 
 
 	if (level->introduction.can_be_skipped)
 	{
+		v2 dots_indicator_position = get_v2(
+			SCREEN_WIDTH / SCALING_FACTOR / 2, 
+			(SCREEN_HEIGHT / SCALING_FACTOR) - 20.0f);
+		update_and_render_skippable_indicator(&game->render, level->static_data,
+			&level->introduction.skippable_indicator_timer,
+			&level->introduction.skippable_indicator_index,
+			delta_time, dots_indicator_position);
+
 		if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
 		{
 			level->introduction.skipped = true;
@@ -648,6 +656,14 @@ scene_change death_screen_update_and_render(game_state* game, static_game_data* 
 	}
 	else
 	{
+		v2 dots_indicator_position = get_v2(
+			SCREEN_WIDTH / SCALING_FACTOR / 2,
+			(SCREEN_HEIGHT / SCALING_FACTOR) - 20.0f);
+		update_and_render_skippable_indicator(&game->render, static_data,
+			&game->death_screen.skippable_indicator_timer,
+			&game->death_screen.skippable_indicator_index,
+			delta_time, dots_indicator_position);
+
 		if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
 		{
 			game->death_screen.transition_to_game = true;

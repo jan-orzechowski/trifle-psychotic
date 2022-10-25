@@ -759,6 +759,9 @@ struct introduction_scene_state
 	r32 fade_out_perc;
 	r32 fade_in_perc;
 	b32 skipped;
+
+	i32 skippable_indicator_index;
+	r32 skippable_indicator_timer;
 };
 
 struct level_state
@@ -850,6 +853,9 @@ struct death_screen_state
 	b32 transition_to_game;
 	r32 fade_out_perc;
 	r32 fade_in_perc;
+
+	i32 skippable_indicator_index;
+	r32 skippable_indicator_timer;
 };
 
 struct game_state
