@@ -571,9 +571,16 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
 	}
 	
 	// other constants
-	{
-		data->gravity = get_v2(0, 1.0f);
+	{		
 		data->menu_fade_speed = 1.5f;
+		data->game_fade_in_speed = 1.0f;
+		data->introduction_fade_speed = 0.5f;
+		data->introduction_text_speed = 20.0f;
+		
+		data->default_time_to_first_menu_interaction = 1.5f;
+		data->default_introduction_can_be_skipped_timer = 1.5f;
+		
+		data->gravity = get_v2(0, 1.0f);
 		data->moving_platform_velocity = 2.0f;
 	}
 

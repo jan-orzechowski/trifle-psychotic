@@ -396,7 +396,7 @@ void render_text(render_group* render, memory_arena* transient_arena, font font,
     render_text(render, transient_arena, &options, text);
 }
 
-void render_large_text(render_group* render, memory_arena* transient_arena, render_text_options* options, text_lines text_lines, r32 y_offset)
+void render_large_text(render_group* render, render_text_options* options, text_lines text_lines, r32 y_offset)
 {
     text_area_limits limits = get_text_area_limits(options);
     rect new_writing_area = move_rect(options->writing_area, get_v2(0.0f, y_offset));

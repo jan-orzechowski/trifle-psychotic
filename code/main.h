@@ -719,6 +719,11 @@ struct static_game_data
 	string_ref choose_level_message;
 
 	r32 menu_fade_speed;
+	r32 game_fade_in_speed;
+	r32 introduction_fade_speed;
+	r32 introduction_text_speed;
+	r32 default_introduction_can_be_skipped_timer;
+	r32 default_time_to_first_menu_interaction;
 
 	string_ref exit_warning_message;
 	string_ref default_death_message;
@@ -744,6 +749,16 @@ struct scene_change
 	b32 restore_checkpoint;
 	string_ref map_to_load;
 	r32 fade_out_speed;
+};
+
+struct introduction_scene_state
+{
+	r32 text_y_offset;
+	b32 can_be_skipped;
+	r32 can_be_skipped_timer;
+	r32 fade_out_perc;
+	r32 fade_in_perc;
+	b32 skipped;
 };
 
 struct level_state
@@ -790,6 +805,9 @@ struct level_state
 	scene_change active_scene_change;
 	r32 fade_out_perc;
 	r32 fade_in_perc;
+
+	b32 show_level_introduction;
+	introduction_scene_state introduction;
 };
 
 struct save

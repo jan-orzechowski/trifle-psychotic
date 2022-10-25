@@ -29,7 +29,28 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
 	level->player_movement.standing_history.buffer = push_array(arena,
 		level->player_movement.standing_history.buffer_size, b32);
 
-	level->fade_in_perc = 1.0f;
+	level->fade_in_perc = static_data->game_fade_in_speed;
+}
+
+void initialize_level_introduction(game_state* game, level_state* level)
+{
+	level->show_level_introduction = false;
+	level->introduction = {};
+
+	if (level->current_map.description.string_size > 0)
+	{
+		level->introduction.can_be_skipped_timer = game->static_data->default_introduction_can_be_skipped_timer;
+		level->introduction.fade_in_perc = game->static_data->game_fade_in_speed;
+		level->introduction.text_y_offset = (SCREEN_HEIGHT / SCALING_FACTOR);
+		level->show_level_introduction = true;
+
+		if (level->current_map.description_lines == NULL)
+		{
+			level->current_map.description_lines = get_division_of_text_into_lines(
+				game->arena, &game->static_data->scrolling_text_options, 
+				game->level_state->current_map.description);
+		}
+	}
 }
 
 void initialize_current_map(game_state* game, level_state* level)
@@ -188,16 +209,15 @@ void change_level(game_state* game, scene_change scene_change)
 			{
 				restore_checkpoint(game);
 			}
+			else
+			{
+				// wstęp pokazujemy tylko za pierwszym razem
+				initialize_level_introduction(game, game->level_state);
+			}
 
 			save_checkpoint(game);
 
 			game->platform.start_playing_music(game->level_state->current_map.music_file_name);
-
-			if (game->level_state->current_map.description_lines == NULL)
-			{
-				game->level_state->current_map.description_lines = get_division_of_text_into_lines(
-					game->arena, &game->static_data->scrolling_text_options, game->level_state->current_map.description);
-			}
 		}
 
 		end_temporary_memory(auxillary_memory_for_loading, true);

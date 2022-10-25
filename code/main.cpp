@@ -465,6 +465,51 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	return scene_change;
 }
 
+void level_introduction_update_and_render(game_state* game, level_state* level, r32 delta_time)
+{
+	world_position camera_position = get_world_position(get_tile_position(10, 10));
+	render_backdrops(&game->render, level, camera_position);
+
+	if (level->introduction.fade_in_perc == 0.0f)
+	{
+		render_large_text(&game->render, &level->static_data->scrolling_text_options,
+			*level->current_map.description_lines, level->introduction.text_y_offset);
+
+		level->introduction.text_y_offset -= delta_time * level->static_data->introduction_text_speed;
+	}
+
+	if (level->introduction.can_be_skipped_timer > 0.0f)
+	{
+		level->introduction.can_be_skipped_timer -= delta_time;
+		if (level->introduction.can_be_skipped_timer <= 0.0f)
+		{
+			level->introduction.can_be_skipped = true;
+		}
+	}
+
+	if (level->introduction.can_be_skipped)
+	{
+		if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
+		{
+			level->introduction.skipped = true;
+		}
+	}
+
+	if (level->introduction.skipped == true)
+	{
+		process_fade(&game->render, &level->introduction.fade_out_perc, delta_time, false, 
+			level->static_data->introduction_fade_speed);
+	}
+
+	if (level->introduction.fade_out_perc >= 1.0f)
+	{
+		level->show_level_introduction = false;
+	}
+
+	process_fade(&game->render, &level->introduction.fade_in_perc, delta_time, true,
+		level->static_data->introduction_fade_speed);
+}
+
 scene_change level_choice_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
 {
 	game_input* input = get_last_frame_input(&game->input_buffer);
@@ -702,7 +747,14 @@ void main_game_loop(game_state* game, r32 delta_time)
 			}
 			else
 			{
-				scene_change = game_update_and_render(game, game->level_state, delta_time);
+				if (game->level_state->show_level_introduction)
+				{
+					level_introduction_update_and_render(game, game->level_state, delta_time);
+				}
+				else
+				{
+					scene_change = game_update_and_render(game, game->level_state, delta_time);
+				}
 			}			
 		};
 		break;
