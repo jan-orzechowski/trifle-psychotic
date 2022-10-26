@@ -142,7 +142,7 @@ read_file_result read_file(const char* path)
 	return result;
 }
 
-void save_file(const char* path, write_to_tile contents)
+void save_file(const char* path, write_to_file contents)
 {
 	SDL_RWops* file = SDL_RWFromFile(path, "w+b");
 	if (file != NULL)
@@ -183,7 +183,7 @@ read_file_result load_prefs()
 	return result;
 }
 
-void save_prefs(write_to_tile contents)
+void save_prefs(write_to_file contents)
 {
 	if (GLOBAL_SDL_DATA.preferences_file_path.ptr != NULL)
 	{

@@ -104,7 +104,7 @@ void update_power_up_timers(level_state* level, r32 delta_time)
 	}
 }
 
-void write_to_standing_history(standing_history* buffer, b32 was_standing)
+void write_to_standing_history(player_standing_history* buffer, b32 was_standing)
 {
 	buffer->buffer[buffer->current_index] = was_standing;
 	buffer->current_index++;
@@ -114,7 +114,7 @@ void write_to_standing_history(standing_history* buffer, b32 was_standing)
 	}
 }
 
-b32 get_if_was_standing(standing_history* buffer, u32 how_many_frames_backwards)
+b32 get_if_was_standing(player_standing_history* buffer, u32 how_many_frames_backwards)
 {
 	i32 input_index = buffer->current_index - 1 - how_many_frames_backwards;
 	while (input_index < 0)
@@ -125,23 +125,23 @@ b32 get_if_was_standing(standing_history* buffer, u32 how_many_frames_backwards)
 	return result;
 }
 
-void change_player_movement_mode(player_movement* movement, movement_mode mode)
+void change_player_movement_mode(player_movement* movement, player_movement_mode new_mode)
 {
 	movement->previous_mode = movement->current_mode;
 	movement->previous_mode_frame_duration = movement->frame_duration;
-	movement->current_mode = mode;
+	movement->current_mode = new_mode;
 	movement->frame_duration = 0;
 
 #if TRIFLE_DEBUG
-	switch (mode)
+	switch (new_mode)
 	{
-		case movement_mode::WALK:
+		case player_movement_mode::WALK:
 		printf("switch to WALK after %d frames\n", movement->previous_mode_frame_duration);
 		break;
-		case movement_mode::JUMP:
+		case player_movement_mode::JUMP:
 		printf("switch to JUMP after %d frames\n", movement->previous_mode_frame_duration);
 		break;
-		case movement_mode::RECOIL:
+		case player_movement_mode::RECOIL:
 		printf("switch to RECOIL after %d frames\n", movement->previous_mode_frame_duration);
 		break;
 	}
@@ -203,13 +203,20 @@ void set_player_rotated_graphics_based_on_mouse_position(game_input* input, enti
 	}
 }
 
-void set_player_legs_graphics_based_on_movement_mode(static_game_data* static_data, entity* player, movement_mode current_mode)
+void set_player_legs_graphics_based_on_movement_mode(static_game_data* static_data, 
+	entity* player, player_movement_mode current_mode)
 {
 	switch (current_mode)
 	{
-		case movement_mode::JUMP: player->type->idle_pose = static_data->player_jump_pose; break;
-		case movement_mode::RECOIL: player->type->idle_pose = static_data->player_recoil_pose; break;
-		default: player->type->idle_pose = static_data->player_idle_pose;
+		case player_movement_mode::JUMP: 
+			player->type->idle_pose = static_data->player_jump_pose; 
+		break;
+		case player_movement_mode::RECOIL: 
+			player->type->idle_pose = static_data->player_recoil_pose; 
+		break;
+		default: 
+			player->type->idle_pose = static_data->player_idle_pose;
+		break;
 	}
 }
 
@@ -249,23 +256,23 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 	// zmiana statusu
 	switch (level->player_movement.current_mode)
 	{
-		case movement_mode::WALK:
+		case player_movement_mode::WALK:
 		{
 			if (false == is_standing_at_frame_beginning)
 			{
-				change_player_movement_mode(&level->player_movement, movement_mode::JUMP);
+				change_player_movement_mode(&level->player_movement, player_movement_mode::JUMP);
 			}
 		}
 		break;
-		case movement_mode::JUMP:
+		case player_movement_mode::JUMP:
 		{
 			if (is_standing_at_frame_beginning)
 			{
-				change_player_movement_mode(&level->player_movement, movement_mode::WALK);
+				change_player_movement_mode(&level->player_movement, player_movement_mode::WALK);
 			}
 		}
 		break;
-		case movement_mode::RECOIL:
+		case player_movement_mode::RECOIL:
 		{
 			if (level->player_movement.recoil_timer > 0.0f)
 			{
@@ -275,7 +282,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 			if (is_standing_at_frame_beginning
 				&& level->player_movement.recoil_timer <= 0.0f)
 			{				
-				change_player_movement_mode(&level->player_movement, movement_mode::WALK);
+				change_player_movement_mode(&level->player_movement, player_movement_mode::WALK);
 				stop_visual_effect(level, player, sprite_effects_types::RECOIL);				
 			}
 		}
@@ -293,7 +300,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 	player->acceleration = get_zero_v2();
 	switch (level->player_movement.current_mode)
 	{
-		case movement_mode::WALK:
+		case player_movement_mode::WALK:
 		{
 			if (input->is_left_mouse_key_held)
 			{
@@ -308,7 +315,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 					player->acceleration = get_v2(0.0f, -1.0f) 
 						* level->static_data->player_jump_acceleration;
 					
-					change_player_movement_mode(&level->player_movement, movement_mode::JUMP);
+					change_player_movement_mode(&level->player_movement, player_movement_mode::JUMP);
 					break;
 				}
 			}
@@ -326,7 +333,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 			}
 		}
 		break;
-		case movement_mode::JUMP:
+		case player_movement_mode::JUMP:
 		{
 			player->acceleration = level->static_data->gravity;
 
@@ -348,7 +355,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 			}
 		}
 		break;
-		case movement_mode::RECOIL:
+		case player_movement_mode::RECOIL:
 		{
 			if (false == is_standing_at_frame_beginning)
 			{
@@ -378,7 +385,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 
 	if (standing_on.collided_platform)
 	{
-		if (level->player_movement.current_mode != movement_mode::JUMP)
+		if (level->player_movement.current_mode != player_movement_mode::JUMP)
 		{
 			// jeśli platforma porusza się w dół, "przyklejamy" gracza do platformy
 			if (standing_on.collided_platform->velocity.y > 0.1f)
@@ -442,7 +449,7 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
 				level->player_ignore_enemy_collision_cooldown 
 					= level->static_data->default_player_ignore_enemy_collision_cooldown;
 
-				change_player_movement_mode(&level->player_movement, movement_mode::RECOIL);
+				change_player_movement_mode(&level->player_movement, player_movement_mode::RECOIL);
 			}
 		}
 	}

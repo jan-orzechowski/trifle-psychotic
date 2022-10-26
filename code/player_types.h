@@ -3,14 +3,14 @@
 #include "jorutils.h"
 #include "jormath.h"
 
-enum class movement_mode
+enum class player_movement_mode
 {
 	JUMP,
 	WALK,
 	RECOIL
 };
 
-struct standing_history
+struct player_standing_history
 {
 	b32* buffer;
 	u32 current_index;
@@ -19,16 +19,16 @@ struct standing_history
 
 struct player_movement
 {
-	movement_mode current_mode;
+	player_movement_mode current_mode;
 	u32 frame_duration; // 0 oznacza bieżącą klatkę
-	movement_mode previous_mode;
+	player_movement_mode previous_mode;
 	u32 previous_mode_frame_duration;
 
 	r32 recoil_timer;
 	r32 recoil_acceleration_timer;
 	v2 recoil_acceleration;
 
-	standing_history standing_history;
+	player_standing_history standing_history;
 };
 
 struct power_up_state

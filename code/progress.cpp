@@ -53,11 +53,11 @@ void save_completed_levels(platform_api* platform, static_game_data* data, memor
 
 	string_ref text_to_save = get_string_from_string_builder(&builder);
 
-	write_to_tile save_test = {};
-	save_test.buffer = text_to_save.ptr;
-	save_test.length = text_to_save.string_size;
+	write_to_file save = {};
+	save.buffer = text_to_save.ptr;
+	save.length = text_to_save.string_size;
 
-	platform->save_prefs(save_test);
+	platform->save_prefs(save);
 
 	end_temporary_memory(memory_for_string_builder, true);
 }

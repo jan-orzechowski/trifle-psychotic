@@ -270,7 +270,7 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r
 	{
 		switch (movement->current_mode)
 		{
-			case movement_mode::WALK:
+			case player_movement_mode::WALK:
 			{
 				if (length(entity->velocity) > 0.05f)
 				{
@@ -287,13 +287,13 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r
 				}
 			}
 			break;
-			case movement_mode::JUMP:
+			case player_movement_mode::JUMP:
 			{
 				entity->current_animation = NULL;
 				entity->animation_duration = 0.0f;
 			}
 			break;
-			case movement_mode::RECOIL:
+			case player_movement_mode::RECOIL:
 			{
 				entity->current_animation = NULL;
 				entity->animation_duration = 0.0f;

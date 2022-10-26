@@ -24,7 +24,7 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
 	level->explosions_max_count = 500;
 	level->explosions = push_array(arena, level->explosions_max_count, entity);
 
-	level->player_movement.current_mode = movement_mode::WALK;
+	level->player_movement.current_mode = player_movement_mode::WALK;
 	level->player_movement.standing_history.buffer_size = 10;
 	level->player_movement.standing_history.buffer = push_array(arena,
 		level->player_movement.standing_history.buffer_size, b32);

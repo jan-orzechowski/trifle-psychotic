@@ -16,16 +16,16 @@ struct read_file_result
 	int size;
 };
 
-struct write_to_tile
+struct write_to_file
 {
 	void* buffer;
 	u32 length;
 };
 
 typedef read_file_result read_file_func(const char* path);
-typedef void save_file_func(const char* path, write_to_tile contents);
+typedef void save_file_func(const char* path, write_to_file contents);
 typedef read_file_result load_prefs_func();
-typedef void save_prefs_func(write_to_tile contents);
+typedef void save_prefs_func(write_to_file contents);
 typedef void start_playing_music_func(string_ref audio_file_name);
 typedef void stop_playing_music_func(int fade_out_ms);
 typedef void render_list_to_output_func(render_list* render);
