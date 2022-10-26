@@ -2,6 +2,31 @@
 
 #include "main.h"
 
+struct collision
+{
+	direction collided_wall;
+	v2 collided_wall_normal;
+	r32 possible_movement_perc;
+};
+
+struct collision_result
+{
+	collision collision_data;
+	entity* collided_enemy;
+	entity* collided_switch;
+	entity* collided_transition;
+	entity* collided_power_up;
+	entity* collided_message_display;
+	entity* collided_platform;
+};
+
+struct entity_collision_data
+{
+	v2 position;
+	v2 collision_rect_offset;
+	v2 collision_rect_dim;
+};
+
 entity_collision_data get_tile_collision_data(chunk_position reference_chunk, tile_position tile_pos);
 entity_collision_data get_entity_collision_data(chunk_position reference_chunk, entity* entity);
 v2 get_collision_dim_from_tile_range(tile_range path);

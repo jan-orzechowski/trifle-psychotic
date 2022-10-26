@@ -2,7 +2,7 @@
 
 #include "jorutils.h"
 #include "jormath.h"
-#include "main.h"
+#include "map_types.h"
 
 tile_position get_tile_position(i32 tile_x, i32 tile_y);
 tile_position get_tile_position(world_position world_pos);

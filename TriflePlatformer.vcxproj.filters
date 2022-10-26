@@ -143,6 +143,27 @@
     <ClInclude Include="code\progress.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="code\graphics_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\entity_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\map_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\scene_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\player_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\platform_api_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\constants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="SDL2.dll" />

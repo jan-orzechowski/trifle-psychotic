@@ -199,8 +199,15 @@ del "$(TargetDir)trifle_psychotic_windows.zip"
   <ItemGroup>
     <ClInclude Include="code\animation.h" />
     <ClInclude Include="code\backdrops.h" />
+    <ClInclude Include="code\constants.h" />
     <ClInclude Include="code\debug.h" />
     <ClInclude Include="code\entities.h" />
+    <ClInclude Include="code\entity_types.h" />
+    <ClInclude Include="code\graphics_types.h" />
+    <ClInclude Include="code\map_types.h" />
+    <ClInclude Include="code\player_types.h" />
+    <ClInclude Include="code\platform_api_types.h" />
+    <ClInclude Include="code\scene_types.h" />
     <ClInclude Include="code\special_entities.h" />
     <ClInclude Include="code\level_initialization.h" />
     <ClInclude Include="code\input.h" />
