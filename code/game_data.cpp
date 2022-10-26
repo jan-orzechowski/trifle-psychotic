@@ -572,16 +572,37 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
 	
 	// other constants
 	{		
+		data->gravity = get_v2(0, 1.0f);
+		data->moving_platform_velocity = 2.0f;
+
 		data->menu_fade_speed = 1.5f;
+		data->game_fade_out_speed = 0.5f;
 		data->game_fade_in_speed = 1.0f;
 		data->introduction_fade_speed = 0.5f;
-		data->introduction_text_speed = 20.0f;
+		data->death_screen_fade_speed = 0.5f;
+		data->credits_screen_fade_speed = 1.5f;
 		
 		data->default_time_to_first_menu_interaction = 0.2f;
 		data->default_introduction_can_be_skipped_timer = 5.0f;
-		
-		data->gravity = get_v2(0, 1.0f);
-		data->moving_platform_velocity = 2.0f;
+				
+		data->introduction_text_speed = 20.0f;
+		data->credits_text_speed = 20.0f;
+
+		string_ref credits_test = copy_c_string(arena,
+"Multi line string 1\n\
+Multi line string 2\n\
+\n\
+Multi line string 3\n\
+Multi line string 4\n\
+\n\
+Multi line string 5\n\
+Multi line string 6\n\
+\n\
+Multi line string 7\n\
+Multi line string 8\n\
+");
+		data->credits_text_lines = get_division_of_text_into_lines(
+			arena, &data->scrolling_text_options, credits_test);
 	}
 
 	// collision data

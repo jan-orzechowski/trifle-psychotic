@@ -159,7 +159,7 @@ void initialize_current_map(game_state* game, level_state* level)
 	level->current_map_initialized = true;
 }
 
-void change_level(game_state* game, scene_change scene_change)
+void change_and_initialize_level(game_state* game, scene_change scene_change)
 {
 	/*printf("przed inicjalizacja permanent arena: %d, transient arena: %d\n",
 						game->arena->size_used, game->transient_arena->size_used);*/

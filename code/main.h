@@ -678,19 +678,19 @@ struct static_game_data
 	animation_frame player_recoil_pose;
 
 	v2 gravity;
+	r32 moving_platform_velocity;
+	
 	r32 player_walking_acceleration;
 	r32 player_in_air_acceleration;
 	r32 player_jump_acceleration;
 	v2 power_up_speed_multipliers;
 
 	r32 default_player_max_health;
-
 	r32 default_player_ignore_enemy_collision_cooldown;
 	r32 default_player_invincibility_cooldown;
 	r32 default_player_recoil_timer;
 	r32 default_player_recoil_acceleration_timer;
 	v2 player_as_target_offset;
-	r32 moving_platform_velocity;
 
 	r32 default_power_up_invincibility_timer;
 	r32 default_power_up_speed_timer;
@@ -705,11 +705,17 @@ struct static_game_data
 	moving_platforms_graphics platforms_gfx;
 	explosions explosion_animations;
 
+	r32 menu_fade_speed;
+	r32 game_fade_in_speed;
+	r32 game_fade_out_speed;
+	r32 death_screen_fade_speed;
+	r32 credits_screen_fade_speed;
+	r32 introduction_fade_speed;
+	r32 default_introduction_can_be_skipped_timer;
+	r32 default_time_to_first_menu_interaction;
+	
 	font ui_font;
 	font title_font;
-
-	render_text_options scrolling_text_options;
-	render_text_options parsing_errors_text_options;
 
 	string_ref title_str;
 	string_ref menu_new_game_str;
@@ -717,18 +723,16 @@ struct static_game_data
 	string_ref menu_credits_str;
 	string_ref menu_exit_str;
 	string_ref choose_level_message;
-
-	r32 menu_fade_speed;
-	r32 game_fade_in_speed;
-	r32 introduction_fade_speed;
-	r32 introduction_text_speed;
-	r32 default_introduction_can_be_skipped_timer;
-	r32 default_time_to_first_menu_interaction;
-
 	string_ref exit_warning_message;
 	string_ref default_death_message;
 	string_ref* death_messages;
 	u32 death_messages_count;	
+	text_lines* credits_text_lines;
+
+	render_text_options scrolling_text_options;
+	render_text_options parsing_errors_text_options;
+	r32 introduction_text_speed;
+	r32 credits_text_speed;
 };
 
 enum class scene
@@ -748,7 +752,6 @@ struct scene_change
 	scene new_scene;
 	b32 restore_checkpoint;
 	string_ref map_to_load;
-	r32 fade_out_speed;
 };
 
 struct introduction_scene_state
@@ -859,6 +862,18 @@ struct death_screen_state
 	r32 skippable_indicator_timer;
 };
 
+struct credits_screen_state
+{
+	r32 time_to_first_interaction;
+	r32 fade_out_perc;
+	r32 fade_in_perc;
+	b32 transition_to_main_menu;
+	r32 text_y_offset;
+
+	i32 skippable_indicator_index;
+	r32 skippable_indicator_timer;
+};
+
 struct game_state
 {
 	b32 initialized;
@@ -876,6 +891,7 @@ struct game_state
 	main_menu_state main_menu;
 	death_screen_state death_screen;
 	level_choice_menu_state level_choice_menu;
+	credits_screen_state credits_screen;
 
 	input_buffer input_buffer;
 

@@ -32,8 +32,7 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 					if (false == level->active_scene_change.change_scene)
 					{
 						level->active_scene_change.change_scene = true;
-						level->active_scene_change.new_scene = scene::MAIN_MENU;
-						level->active_scene_change.fade_out_speed = 0.5f;
+						level->active_scene_change.new_scene = scene::MAIN_MENU;		
 						game->platform.stop_playing_music(2000);
 					}
 				}
@@ -74,7 +73,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			{
 				level->active_scene_change.change_scene = true;
 				level->active_scene_change.new_scene = scene::DEATH;
-				level->active_scene_change.fade_out_speed = 0.5f;
 				level->stop_player_movement = true;
 
 				start_screen_shake(level, 0.6f, 30.0f);
@@ -89,7 +87,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			// przegrywamy - spadliśmy z mapy
 			level->active_scene_change.change_scene = true;
 			level->active_scene_change.new_scene = scene::DEATH;
-			level->active_scene_change.fade_out_speed = 0.5f;
 			level->stop_player_movement = true;
 			game->platform.stop_playing_music(2000);
 		}
@@ -101,7 +98,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			save_completed_levels(&game->platform, level->static_data, game->transient_arena);
 
 			level->active_scene_change.change_scene = true;
-			level->active_scene_change.fade_out_speed = 1.5f;
 			level->stop_player_movement = true;
 			
 			if (level->current_map.next_map.string_size == 0)
@@ -170,7 +166,6 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 			level->active_scene_change.change_scene = true;
 			level->active_scene_change.new_scene = scene::GAME;
 			level->active_scene_change.map_to_load = level->current_map.next_map;
-			level->active_scene_change.fade_out_speed = 1.5f;
 		}
 
 		v2 player_direction_v2 = get_unit_vector(player->velocity);
@@ -397,8 +392,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	
 	if (level->active_scene_change.change_scene)
 	{
-		assert(level->active_scene_change.fade_out_speed > 0.0f);
-		process_fade(&game->render, &level->fade_out_perc, delta_time, false, level->active_scene_change.fade_out_speed);
+		process_fade(&game->render, &level->fade_out_perc, delta_time, 
+			false, level->static_data->game_fade_out_speed);
 	}
 
 	scene_change scene_change = {}; 
@@ -407,7 +402,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 		scene_change = level->active_scene_change;
 	}
 
-	process_fade(&game->render, &level->fade_in_perc, delta_time, true);
+	process_fade(&game->render, &level->fade_in_perc, delta_time, 
+		true, level->static_data->game_fade_in_speed);
 
 	return scene_change;
 }
@@ -452,8 +448,8 @@ void level_introduction_update_and_render(game_state* game, level_state* level, 
 
 	if (level->introduction.skipped == true)
 	{
-		process_fade(&game->render, &level->introduction.fade_out_perc, delta_time, false, 
-			level->static_data->introduction_fade_speed);
+		process_fade(&game->render, &level->introduction.fade_out_perc, delta_time, 
+			false, level->static_data->introduction_fade_speed);
 	}
 
 	if (level->introduction.fade_out_perc >= 1.0f)
@@ -461,8 +457,8 @@ void level_introduction_update_and_render(game_state* game, level_state* level, 
 		level->show_level_introduction = false;
 	}
 
-	process_fade(&game->render, &level->introduction.fade_in_perc, delta_time, true,
-		level->static_data->introduction_fade_speed);
+	process_fade(&game->render, &level->introduction.fade_in_perc, delta_time, 
+		true, level->static_data->introduction_fade_speed);
 }
 
 scene_change level_choice_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
@@ -641,6 +637,60 @@ string_ref get_death_screen_prompt(static_game_data* static_data)
 	return result;
 }
 
+scene_change credits_screen_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
+{
+	scene_change change_to_other_scene = {};
+
+	render_bitmap(&game->render, textures::BACKGROUND_TITLE_SCREEN,
+		get_rect_from_corners(get_v2(0, 0), get_v2(384, 320)),
+		get_rect_from_corners(get_v2(0, 0), get_v2(SCREEN_WIDTH, SCREEN_HEIGHT) / SCALING_FACTOR));
+
+	if (game->credits_screen.fade_in_perc == 0.0f)
+	{
+		render_large_text(&game->render, &static_data->scrolling_text_options,
+			*static_data->credits_text_lines, game->credits_screen.text_y_offset);
+
+		game->credits_screen.text_y_offset -= delta_time * static_data->credits_text_speed;
+	}
+
+	if (game->credits_screen.time_to_first_interaction > 0.0f)
+	{
+		game->credits_screen.time_to_first_interaction -= delta_time;
+	}
+	else
+	{
+		v2 dots_indicator_position = get_v2(
+			SCREEN_WIDTH / SCALING_FACTOR / 2,
+			(SCREEN_HEIGHT / SCALING_FACTOR) - 20.0f);
+		update_and_render_skippable_indicator(&game->render, static_data,
+			&game->credits_screen.skippable_indicator_timer,
+			&game->credits_screen.skippable_indicator_index,
+			delta_time, dots_indicator_position);
+
+		if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
+		{
+			game->credits_screen.transition_to_main_menu = true;
+		}
+	}
+
+	if (game->credits_screen.transition_to_main_menu)
+	{
+		process_fade(&game->render, &game->credits_screen.fade_out_perc, delta_time, 
+			false, static_data->credits_screen_fade_speed);
+
+		if (game->credits_screen.fade_out_perc >= 1.0f)
+		{
+			change_to_other_scene.change_scene = true;
+			change_to_other_scene.new_scene = scene::MAIN_MENU;
+		}
+	}
+
+	process_fade(&game->render, &game->credits_screen.fade_in_perc, delta_time,
+		true, static_data->credits_screen_fade_speed);
+
+	return change_to_other_scene;
+}
+
 scene_change death_screen_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
 {
 	scene_change change_to_other_scene = {};
@@ -679,19 +729,45 @@ scene_change death_screen_update_and_render(game_state* game, static_game_data* 
 
 	if (game->death_screen.transition_to_game)
 	{		
-		process_fade(&game->render, &game->death_screen.fade_out_perc, delta_time, false, 0.5f);
+		process_fade(&game->render, &game->death_screen.fade_out_perc, delta_time, 
+			false, static_data->death_screen_fade_speed);
+
+		if (game->death_screen.fade_out_perc >= 1.0f)
+		{
+			change_to_other_scene.change_scene = true;
+			change_to_other_scene.new_scene = scene::GAME;
+			change_to_other_scene.restore_checkpoint = true;
+		}
 	}
 
-	if (game->death_screen.transition_to_game
-		&& game->death_screen.fade_out_perc >= 1.0f)
+	process_fade(&game->render, &game->death_screen.fade_in_perc, delta_time, 
+		true, static_data->death_screen_fade_speed);
+
+	return change_to_other_scene;
+}
+
+scene_change map_errors_screen_update_and_render(game_state* game)
+{
+	scene_change change_to_other_scene = {};
+
+	if (game->map_errors.string_size > 0)
+	{
+		render_text(&game->render, game->transient_arena,
+			&game->static_data->parsing_errors_text_options, game->map_errors);
+
+		if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
+		{
+			change_to_other_scene.change_scene = true;
+			change_to_other_scene.new_scene = scene::MAIN_MENU;
+			game->main_menu = {};
+		}
+	}
+	else
 	{
 		change_to_other_scene.change_scene = true;
-		change_to_other_scene.fade_out_speed = 1.5f;
-		change_to_other_scene.new_scene = scene::GAME;
-		change_to_other_scene.restore_checkpoint = true;
+		change_to_other_scene.new_scene = scene::MAIN_MENU;
+		game->main_menu = {};
 	}
-
-	process_fade(&game->render, &game->death_screen.fade_in_perc, delta_time, true, 0.5f);
 
 	return change_to_other_scene;
 }
@@ -709,7 +785,6 @@ void main_game_loop(game_state* game, r32 delta_time)
 	{
 		case scene::GAME:
 		{
-			// kod inicjalizacyjny jest poniżej
 			if (false == game->level_initialized)
 			{
 				scene_change.change_scene = true;
@@ -740,24 +815,7 @@ void main_game_loop(game_state* game, r32 delta_time)
 		break;
 		case scene::MAP_ERRORS:
 		{
-			if (game->map_errors.string_size > 0)
-			{			
-				render_text(&game->render, game->transient_arena, 
-					&game->static_data->parsing_errors_text_options, game->map_errors);
-
-				if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
-				{
-					scene_change.change_scene = true;
-					scene_change.new_scene = scene::MAIN_MENU;
-					game->main_menu = {};
-				}
-			}
-			else
-			{
-				scene_change.change_scene = true;
-				scene_change.new_scene = scene::MAIN_MENU;
-				game->main_menu = {};
-			}
+			scene_change = map_errors_screen_update_and_render(game);
 		};
 		break;
 		case scene::DEATH:
@@ -767,7 +825,7 @@ void main_game_loop(game_state* game, r32 delta_time)
 		break;
 		case scene::CREDITS:
 		{
-			
+			scene_change = credits_screen_update_and_render(game, game->static_data, delta_time);
 		};
 		break;
 	}
@@ -779,7 +837,7 @@ void main_game_loop(game_state* game, r32 delta_time)
 		{
 			case scene::GAME:
 			{				
-				change_level(game, scene_change);
+				change_and_initialize_level(game, scene_change);
 			}
 			break;
 			case scene::MAIN_MENU:
@@ -800,7 +858,7 @@ void main_game_loop(game_state* game, r32 delta_time)
 			break;
 			case scene::MAP_ERRORS:
 			{
-				
+				// no initialization needed
 			}
 			break;
 			case scene::DEATH:
@@ -810,7 +868,10 @@ void main_game_loop(game_state* game, r32 delta_time)
 			break;
 			case scene::CREDITS:
 			{
-
+				game->credits_screen = {};
+				game->credits_screen.time_to_first_interaction = game->static_data->default_time_to_first_menu_interaction;
+				game->credits_screen.fade_in_perc = 1.0f;
+				game->credits_screen.text_y_offset = (SCREEN_HEIGHT / SCALING_FACTOR);
 			}
 			break;
 			case scene::EXIT:
