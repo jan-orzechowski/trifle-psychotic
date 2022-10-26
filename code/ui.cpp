@@ -281,3 +281,13 @@ void update_and_render_message_box(render_list* render, level_state* level, memo
 		}
 	}
 }
+
+void render_victory_text(render_list* render, memory_arena* transient_arena, static_game_data* static_data)
+{
+	rect text_area = get_rect_from_center(
+		get_v2(SCREEN_CENTER_IN_PIXELS.x, 50.0f),
+		get_v2(150.0f, 20.0f));
+
+	render_text(render, transient_arena, static_data->title_font,
+		text_area, static_data->victory_str, false);
+}

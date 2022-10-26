@@ -99,7 +99,8 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 
 			level->active_scene_change.change_scene = true;
 			level->stop_player_movement = true;
-			
+			level->show_victory_message = true;
+
 			if (level->current_map.next_map.string_size == 0)
 			{
 				level->active_scene_change.new_scene = scene::LEVEL_CHOICE;
@@ -389,11 +390,20 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	}
 
 	update_and_render_message_box(&game->render, level, game->transient_arena, delta_time);
-	
+
+	if (level->show_victory_message)
+	{
+		render_victory_text(&game->render, game->transient_arena, level->static_data);
+	}
+
 	if (level->active_scene_change.change_scene)
 	{
+		r32 fade_out_speed = level->show_victory_message
+			? level->static_data->game_victory_fade_out_speed
+			: level->static_data->game_fade_out_speed;
+
 		process_fade(&game->render, &level->fade_out_perc, delta_time, 
-			false, level->static_data->game_fade_out_speed);
+			false, fade_out_speed);
 	}
 
 	scene_change scene_change = {}; 

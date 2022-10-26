@@ -218,11 +218,19 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
 	game_input empty_input = {};
 	game_input* input = get_last_frame_input(input_buffer);
 
+	// specjalna pozycja postaci w przypadku zwycięstwa lub porażki
 	if (level->stop_player_movement)
 	{
-		// wartości wybrane dla obróconej pozycji
-		empty_input.mouse_x = SCREEN_CENTER_IN_PIXELS.x * 2 + 10;
-		empty_input.mouse_y = SCREEN_CENTER_IN_PIXELS.y * 2 + 10;
+		if (level->show_victory_message)
+		{
+			empty_input.mouse_x = SCREEN_CENTER_IN_PIXELS.x * 2 - 10;
+			empty_input.mouse_y = SCREEN_CENTER_IN_PIXELS.y * 2 - 10;
+		}
+		else
+		{
+			empty_input.mouse_x = SCREEN_CENTER_IN_PIXELS.x * 2 + 10;
+			empty_input.mouse_y = SCREEN_CENTER_IN_PIXELS.y * 2 + 10;
+		}
 		input = &empty_input;	
 	}
 

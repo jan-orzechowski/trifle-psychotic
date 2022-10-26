@@ -708,6 +708,7 @@ struct static_game_data
 	r32 menu_fade_speed;
 	r32 game_fade_in_speed;
 	r32 game_fade_out_speed;
+	r32 game_victory_fade_out_speed;
 	r32 death_screen_fade_speed;
 	r32 credits_screen_fade_speed;
 	r32 introduction_fade_speed;
@@ -724,6 +725,7 @@ struct static_game_data
 	string_ref menu_exit_str;
 	string_ref choose_level_message;
 	string_ref exit_warning_message;
+	string_ref victory_str;
 	string_ref default_death_message;
 	string_ref* death_messages;
 	u32 death_messages_count;	
@@ -817,6 +819,7 @@ struct level_state
 
 	b32 show_level_introduction;
 	introduction_scene_state introduction;
+	b32 show_victory_message;
 };
 
 struct save

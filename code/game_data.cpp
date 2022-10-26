@@ -494,8 +494,8 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
 		data->menu_credits_str = copy_c_string(arena, "Credits");
 		data->menu_exit_str = copy_c_string(arena, "Exit");
 
-		data->choose_level_message = copy_c_string(arena, "Choose a place to heal:");
-		
+		data->victory_str = copy_c_string(arena, "Victory");		
+		data->choose_level_message = copy_c_string(arena, "Choose a place to heal:");		
 		data->exit_warning_message = copy_c_string(arena, "Are you sure you want to exit? Press ESC again to confirm");
 
 		data->default_death_message = copy_c_string(arena, "You died.");
@@ -578,6 +578,7 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
 		data->menu_fade_speed = 1.5f;
 		data->game_fade_out_speed = 0.5f;
 		data->game_fade_in_speed = 1.0f;
+		data->game_victory_fade_out_speed = 0.2f;
 		data->introduction_fade_speed = 0.5f;
 		data->death_screen_fade_speed = 0.5f;
 		data->credits_screen_fade_speed = 1.5f;
