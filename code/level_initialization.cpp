@@ -37,18 +37,18 @@ void initialize_level_introduction(game_state* game, level_state* level)
 	level->show_level_introduction = false;
 	level->introduction = {};
 
-	if (level->current_map.description.string_size > 0)
+	if (level->current_map.introduction.string_size > 0)
 	{
 		level->introduction.can_be_skipped_timer = game->static_data->default_introduction_can_be_skipped_timer;
 		level->introduction.fade_in_perc = game->static_data->game_fade_in_speed;
 		level->introduction.text_y_offset = (SCREEN_HEIGHT / SCALING_FACTOR);
 		level->show_level_introduction = true;
 
-		if (level->current_map.description_lines == NULL)
+		if (level->current_map.introduction_lines == NULL)
 		{
-			level->current_map.description_lines = get_division_of_text_into_lines(
+			level->current_map.introduction_lines = get_division_of_text_into_lines(
 				game->arena, &game->static_data->scrolling_text_options, 
-				game->level_state->current_map.description);
+				game->level_state->current_map.introduction);
 		}
 	}
 }

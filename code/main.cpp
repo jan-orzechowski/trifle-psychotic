@@ -426,7 +426,7 @@ void level_introduction_update_and_render(game_state* game, level_state* level, 
 	if (level->introduction.fade_in_perc == 0.0f)
 	{
 		render_large_text(&game->render, &level->static_data->scrolling_text_options,
-			*level->current_map.description_lines, level->introduction.text_y_offset);
+			*level->current_map.introduction_lines, level->introduction.text_y_offset);
 
 		level->introduction.text_y_offset -= delta_time * level->static_data->introduction_text_speed;
 	}

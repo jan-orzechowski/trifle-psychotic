@@ -221,8 +221,8 @@ struct map
 
 	tile_position starting_tile;
 	string_ref next_map;
-	string_ref description;
-	text_lines* description_lines;
+	string_ref introduction;
+	text_lines* introduction_lines;
 	string_ref music_file_name;
 	b32 complete_when_all_messengers_killed;
 };

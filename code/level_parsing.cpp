@@ -602,17 +602,17 @@ void parse_map_properties(level_parsing_context* parsing, xml_node* map_node)
 					add_error(parsing);
 				}
 			}
-			else if (compare_to_c_string(name, "description"))
+			else if (compare_to_c_string(name, "introduction"))
 			{
 				if (type.string_size == 0)
 				{
-					parsing->level->description = copy_string(parsing->permanent_arena, value);
+					parsing->level->introduction = copy_string(parsing->permanent_arena, value);
 				}
 				else
 				{
 					snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
 						"Property '%s' should have type '%s' set, has '%s' instead.",
-						"description", "string", get_c_string(parsing->transient_arena, type));
+						"introduction", "string", get_c_string(parsing->transient_arena, type));
 					add_error(parsing);
 				}
 			}
