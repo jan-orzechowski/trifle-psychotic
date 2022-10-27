@@ -77,7 +77,7 @@ void initialize_current_map(game_state* game, level_state* level)
 		// - z tego powodu musimy skorygować początkowe położenie
 		world_position starting_position = get_world_position(level->current_map.starting_tile);
 		starting_position = add_to_position(starting_position,
-			get_v2(0, -(player_type->collision_rect_dim.y / 2) + 0.55f));
+			get_v2(0, -(player_type->collision_rect_dim.y / 2) + 0.57f));
 
 		add_entity(level, starting_position, player_type);
 	}

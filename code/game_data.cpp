@@ -423,7 +423,7 @@ shooting_rotation_sprites* load_shooting_rotation_sprites_with_offset(memory_are
 
 	result->right = get_square_sprite(arena, 24,
 		textures::CHARSET, 0, tile_y, get_v2(5.0f, -15.0f) + offset_in_pixels);
-	result->right_bullet_offset = get_v2(0.85f, -0.60f) + offset_in_tiles;
+	result->right_bullet_offset = get_v2(0.65f, -0.60f) + offset_in_tiles;
 
 	result->right_down = get_square_sprite(arena, 24,
 		textures::CHARSET, 2, tile_y, get_v2(4.0f, -10.0f) + offset_in_pixels);
@@ -529,7 +529,7 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
 		data->levels[3].name = copy_c_string(arena, "4. The Orbital Fortress");
 		data->levels[3].map_name = copy_c_string(arena, "map_04");
 
-		data->levels[4].name = copy_c_string(arena, "5. The Volcano Temple");
+		data->levels[4].name = copy_c_string(arena, "5. The Holy Mountain");
 		data->levels[4].map_name = copy_c_string(arena, "map_05");
 
 		data->levels[5].name = copy_c_string(arena, "Custom level");
@@ -718,9 +718,9 @@ Multi line string 8\n\
 			big_sentry->damage_on_contact = 40.0f;
 			big_sentry->velocity_multiplier = 0.0f;
 			big_sentry->detection_type = detection_type::DETECT_360_DEGREES;
-			big_sentry->detection_distance = 12.0f;
-			big_sentry->stop_movement_distance = 4.0f;
-			big_sentry->forget_detection_distance = 14.0f;
+			big_sentry->detection_distance = 16.0f;
+			big_sentry->stop_movement_distance = 0.0f;
+			big_sentry->forget_detection_distance = 16.0f;
 			big_sentry->default_attack_cooldown = 3.0f;
 			big_sentry->default_attack_series_duration = 0.8f;
 			big_sentry->default_attack_bullet_interval_duration = 0.025f;			
