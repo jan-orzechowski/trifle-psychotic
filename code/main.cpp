@@ -16,8 +16,9 @@
 #include "progress.h"
 #include "level_initialization.h"
 
-scene_change game_update_and_render(game_state* game, level_state* level, r32 delta_time)
+scene_change game_update_and_render(game_state* game, r32 delta_time)
 {	
+	level_state* level = game->level_state;
 	entity* player = get_player(level);
 	game_input* input = get_last_frame_input(&game->input_buffer);
 
@@ -418,8 +419,9 @@ scene_change game_update_and_render(game_state* game, level_state* level, r32 de
 	return scene_change;
 }
 
-void level_introduction_update_and_render(game_state* game, level_state* level, r32 delta_time)
+void level_introduction_update_and_render(game_state* game, r32 delta_time)
 {
+	level_state* level = game->level_state;
 	world_position camera_position = get_world_position(get_tile_position(10, 10));
 	render_backdrops(&game->render, level, camera_position);
 
@@ -471,8 +473,9 @@ void level_introduction_update_and_render(game_state* game, level_state* level, 
 		true, level->static_data->introduction_fade_speed);
 }
 
-scene_change level_choice_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
+scene_change level_choice_update_and_render(game_state* game, r32 delta_time)
 {
+	static_game_data* static_data = game->static_data;
 	game_input* input = get_last_frame_input(&game->input_buffer);
 
 	if (game->level_choice_menu.time_to_first_interaction > 0.0f)
@@ -539,8 +542,9 @@ scene_change level_choice_update_and_render(game_state* game, static_game_data* 
 	return scene_change;
 }
 
-scene_change menu_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
+scene_change menu_update_and_render(game_state* game, r32 delta_time)
 {
+	static_game_data* static_data = game->static_data;
 	game_input* input = get_last_frame_input(&game->input_buffer);
 
 	if (game->main_menu.time_to_first_interaction > 0.0f)
@@ -630,25 +634,9 @@ scene_change menu_update_and_render(game_state* game, static_game_data* static_d
 	return scene_change;
 };
 
-string_ref get_death_screen_prompt(static_game_data* static_data)
+scene_change credits_screen_update_and_render(game_state* game, r32 delta_time)
 {
-	string_ref result = {};
-	i32 text_choice = rand() % 2;
-	if (text_choice == 0)
-	{
-		text_choice = rand() % static_data->death_messages_count;
-		result = static_data->death_messages[text_choice];
-	}
-	else
-	{
-		result = static_data->default_death_message;
-	}
-
-	return result;
-}
-
-scene_change credits_screen_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
-{
+	static_game_data* static_data = game->static_data;
 	scene_change change_to_other_scene = {};
 
 	render_bitmap(&game->render, textures::BACKGROUND_TITLE_SCREEN,
@@ -701,14 +689,23 @@ scene_change credits_screen_update_and_render(game_state* game, static_game_data
 	return change_to_other_scene;
 }
 
-scene_change death_screen_update_and_render(game_state* game, static_game_data* static_data, r32 delta_time)
+scene_change death_screen_update_and_render(game_state* game, r32 delta_time)
 {
+	static_game_data* static_data = game->static_data;
 	scene_change change_to_other_scene = {};
 
 	if (false == game->death_screen.initialized)
 	{
+		string_ref death_screen_prompt = static_data->default_death_message;
+		i32 text_choice = rand() % 2;
+		if (text_choice == 0)
+		{
+			text_choice = rand() % static_data->death_messages_count;
+			death_screen_prompt = static_data->death_messages[text_choice];
+		}
+
 		game->death_screen.timer = 1.0f;
-		game->death_screen.prompt = get_death_screen_prompt(static_data);
+		game->death_screen.prompt = death_screen_prompt;
 		game->death_screen.fade_in_perc = 1.0f;
 		game->death_screen.initialized = true;
 	}
@@ -804,23 +801,23 @@ void main_game_loop(game_state* game, r32 delta_time)
 			{
 				if (game->level_state->show_level_introduction)
 				{
-					level_introduction_update_and_render(game, game->level_state, delta_time);
+					level_introduction_update_and_render(game, delta_time);
 				}
 				else
 				{
-					scene_change = game_update_and_render(game, game->level_state, delta_time);
+					scene_change = game_update_and_render(game, delta_time);
 				}
 			}			
 		};
 		break;
 		case scene::MAIN_MENU:
 		{
-			scene_change = menu_update_and_render(game, game->static_data, delta_time);
+			scene_change = menu_update_and_render(game, delta_time);
 		};
 		break;
 		case scene::LEVEL_CHOICE:
 		{
-			scene_change = level_choice_update_and_render(game, game->static_data, delta_time);
+			scene_change = level_choice_update_and_render(game, delta_time);
 		};
 		break;
 		case scene::MAP_ERRORS:
@@ -830,12 +827,12 @@ void main_game_loop(game_state* game, r32 delta_time)
 		break;
 		case scene::DEATH:
 		{
-			scene_change = death_screen_update_and_render(game, game->static_data, delta_time);
+			scene_change = death_screen_update_and_render(game, delta_time);
 		};
 		break;
 		case scene::CREDITS:
 		{
-			scene_change = credits_screen_update_and_render(game, game->static_data, delta_time);
+			scene_change = credits_screen_update_and_render(game, delta_time);
 		};
 		break;
 	}

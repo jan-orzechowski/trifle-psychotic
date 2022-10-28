@@ -32,32 +32,32 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
 	level->fade_in_perc = static_data->game_fade_in_speed;
 }
 
-void initialize_level_introduction(game_state* game, level_state* level)
+void initialize_level_introduction(level_state* level, memory_arena* arena)
 {
 	level->show_level_introduction = false;
 	level->introduction = {};
 
 	if (level->current_map.introduction.string_size > 0)
 	{
-		level->introduction.can_be_skipped_timer = game->static_data->default_introduction_can_be_skipped_timer;
-		level->introduction.fade_in_perc = game->static_data->game_fade_in_speed;
+		level->introduction.can_be_skipped_timer = level->static_data->default_introduction_can_be_skipped_timer;
+		level->introduction.fade_in_perc = level->static_data->game_fade_in_speed;
 		level->introduction.text_y_offset = (SCREEN_HEIGHT / SCALING_FACTOR);
 		level->show_level_introduction = true;
 
 		if (level->current_map.introduction_lines == NULL)
 		{
 			level->current_map.introduction_lines = get_division_of_text_into_lines(
-				game->arena, &game->static_data->scrolling_text_options, 
-				game->level_state->current_map.introduction);
+				arena, &level->static_data->scrolling_text_options, 
+				level->current_map.introduction);
 		}
 	}
 }
 
-void initialize_current_map(game_state* game, level_state* level)
+void initialize_current_map(level_state* level, memory_arena* arena)
 {
 	assert(false == level->current_map_initialized);
 
-	level->current_map.collision_reference = game->static_data->collision_reference;
+	level->current_map.collision_reference = level->static_data->collision_reference;
 
 	// add player
 	{
@@ -70,7 +70,7 @@ void initialize_current_map(game_state* game, level_state* level)
 		}
 		else
 		{
-			player_type->max_health = game->static_data->default_player_max_health;
+			player_type->max_health = level->static_data->default_player_max_health;
 		}
 
 		// gracz ma środek w innym miejscu niż pozostałe entities 
@@ -83,10 +83,10 @@ void initialize_current_map(game_state* game, level_state* level)
 	}
 
 	level->gates_dict.entries_count = 100;
-	level->gates_dict.entries = push_array(game->arena, level->gates_dict.entries_count, gate_dictionary_entry);
+	level->gates_dict.entries = push_array(arena, level->gates_dict.entries_count, gate_dictionary_entry);
 
 	level->gate_tints_dict.sprite_effects_count = 100;
-	level->gate_tints_dict.sprite_effects = push_array(game->arena, level->gate_tints_dict.sprite_effects_count, sprite_effect*);
+	level->gate_tints_dict.sprite_effects = push_array(arena, level->gate_tints_dict.sprite_effects_count, sprite_effect*);
 	level->gate_tints_dict.probing_jump = 7;
 
 	entity_to_spawn* new_entity = level->current_map.first_entity_to_spawn;
@@ -99,7 +99,7 @@ void initialize_current_map(game_state* game, level_state* level)
 			case entity_type_enum::GATE_RED:
 			case entity_type_enum::GATE_GREEN:
 			{
-				add_gate_entity(level, game->arena, new_entity, false);
+				add_gate_entity(level, arena, new_entity, false);
 			}
 			break;
 			case entity_type_enum::SWITCH_SILVER:
@@ -107,17 +107,17 @@ void initialize_current_map(game_state* game, level_state* level)
 			case entity_type_enum::SWITCH_RED:
 			case entity_type_enum::SWITCH_GREEN:
 			{
-				add_gate_entity(level, game->arena, new_entity, true);
+				add_gate_entity(level, arena, new_entity, true);
 			}
 			break;
 			case entity_type_enum::NEXT_LEVEL_TRANSITION:
 			{
-				add_next_level_transition_entity(level, game->arena, new_entity);
+				add_next_level_transition_entity(level, arena, new_entity);
 			}
 			break;
 			case entity_type_enum::MESSAGE_DISPLAY:
 			{
-				add_message_display_entity(level, game->arena, new_entity);
+				add_message_display_entity(level, arena, new_entity);
 			}
 			break;
 			case entity_type_enum::MOVING_PLATFORM_HORIZONTAL_SILVER:
@@ -129,7 +129,7 @@ void initialize_current_map(game_state* game, level_state* level)
 			case entity_type_enum::MOVING_PLATFORM_VERTICAL_RED:
 			case entity_type_enum::MOVING_PLATFORM_VERTICAL_GREEN:
 			{
-				add_moving_platform_entity(level, game->arena, new_entity);
+				add_moving_platform_entity(level, arena, new_entity);
 			}
 			break;
 			case entity_type_enum::UNKNOWN:
@@ -202,7 +202,7 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
 		{
 			game->map_errors = {};
 			game->level_state->current_map = parsing_result.parsed_map;
-			initialize_current_map(game, game->level_state);
+			initialize_current_map(game->level_state, game->arena);
 			game->level_initialized = true;
 
 			if (scene_change.restore_checkpoint && game->checkpoint.used)
@@ -212,7 +212,7 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
 			else
 			{
 				// wstęp pokazujemy tylko za pierwszym razem
-				initialize_level_introduction(game, game->level_state);
+				initialize_level_introduction(game->level_state, game->arena);
 			}
 
 			save_checkpoint(game);
