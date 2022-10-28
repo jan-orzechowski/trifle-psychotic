@@ -501,16 +501,16 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
 		data->default_death_message = copy_c_string(arena, "You died.");
 		data->death_messages_count = 10;
 		data->death_messages = push_array(arena, data->death_messages_count, string_ref);
-		data->death_messages[0] = copy_c_string(arena, "Text 0");
-		data->death_messages[1] = copy_c_string(arena, "Text 1");
-		data->death_messages[2] = copy_c_string(arena, "Text 2");
-		data->death_messages[3] = copy_c_string(arena, "Text 3");
-		data->death_messages[4] = copy_c_string(arena, "Text 4");
-		data->death_messages[5] = copy_c_string(arena, "Text 5");
-		data->death_messages[6] = copy_c_string(arena, "Text 6");
-		data->death_messages[7] = copy_c_string(arena, "Text 7");
-		data->death_messages[8] = copy_c_string(arena, "Text 8");
-		data->death_messages[9] = copy_c_string(arena, "Text 9");
+		data->death_messages[0] = copy_c_string(arena, "Death is not an event in life:\nwe do not live to experience death.");
+		data->death_messages[1] = copy_c_string(arena, "Next time you die, pay attention.");
+		data->death_messages[2] = copy_c_string(arena, "Every cradle is a grave.");
+		data->death_messages[3] = copy_c_string(arena, "Sleep is good, death is better; but of course, the best would be never to have been born at all.");
+		data->death_messages[4] = copy_c_string(arena, "Only existers suffer harm.");
+		data->death_messages[5] = copy_c_string(arena, "Never to have been born is best. But if we must see the light, the next best is quickly returning whence we came.");
+		data->death_messages[6] = copy_c_string(arena, "You have successfully avoided old age and sickness.");
+		data->death_messages[7] = copy_c_string(arena, "Don't you forget about dying, don't you forget about your friend death.");
+		data->death_messages[8] = copy_c_string(arena, "Long live the new flesh.");
+		data->death_messages[9] = copy_c_string(arena, "You could write a treatise on the sudden transformation of life into archaeology.");
 	}
 
 	// levels in level choice screen
