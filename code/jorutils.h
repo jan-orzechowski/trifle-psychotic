@@ -100,6 +100,16 @@ inline void initialize_memory_arena(memory_arena* arena, memory_index size, byte
 	arena->temporary_memory_stack_frame_count = 0;
 }
 
+inline memory_arena* initialize_memory_arena(memory_index size, byte* base)
+{
+	memory_arena* arena = (memory_arena*)base;
+	arena->size = size;
+	arena->base = base;
+	arena->size_used = sizeof(memory_arena);
+	arena->temporary_memory_stack_frame_count = 0;
+	return arena;
+}
+
 #define push_struct(arena, type) (type *)push_size_impl(arena, sizeof(type))
 #define push_array(arena, count, type) (type *)push_size_impl(arena, (count) * sizeof(type))
 #define push_size(arena, count) push_size_impl(arena, (count))

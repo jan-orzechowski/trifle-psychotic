@@ -407,6 +407,45 @@ void emscripten_main_game_loop(void* passed_data)
 
 #endif
 
+game_state* initialize_game_state()
+{
+	u32 memory_for_permanent_arena_size = megabytes_to_bytes(20);
+	void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);
+	memory_arena* permanent_arena = initialize_memory_arena(memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
+
+	u32 memory_for_transient_arena_size = megabytes_to_bytes(20);
+	void* memory_for_transient_arena = SDL_malloc(memory_for_transient_arena_size);
+	memory_arena* transient_arena = initialize_memory_arena(memory_for_transient_arena_size, (byte*)memory_for_transient_arena);
+
+	game_state* game = push_struct(permanent_arena, game_state);
+
+	game->arena = permanent_arena;
+	game->transient_arena = transient_arena;
+
+	game->platform.read_file = &read_file;
+	game->platform.save_file = &save_file;
+	game->platform.load_prefs = &load_prefs;
+	game->platform.save_prefs = &save_prefs;
+	game->platform.start_playing_music = &start_playing_music;
+	game->platform.stop_playing_music = &stop_playing_music;
+	game->platform.render_list_to_output = &render_list_to_output;
+	
+	game->static_data = push_struct(permanent_arena, static_game_data);;
+	load_static_game_data(&game->platform, game->static_data, permanent_arena, transient_arena);
+
+	game->render.max_push_buffer_size = megabytes_to_bytes(10);
+	game->render.push_buffer_base = (u8*)push_size(permanent_arena, game->render.max_push_buffer_size);
+
+	game->level_state = push_struct(permanent_arena, level_state);
+	game->level_name_buffer = (char*)push_size(permanent_arena, MAX_LEVEL_NAME_LENGTH);
+
+	game->input_buffer = initialize_input_buffer(permanent_arena);
+
+	game->current_scene = scene::MAIN_MENU;
+
+	return game;
+}
+
 int main(int argc, char* args[])
 {
 	GLOBAL_SDL_DATA = init_sdl();
@@ -415,55 +454,19 @@ int main(int argc, char* args[])
 	{
 		bool run = true;
 
-		u32 memory_for_permanent_arena_size = megabytes_to_bytes(20);
-		memory_arena permanent_arena = {};
-		void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);
-		initialize_memory_arena(&permanent_arena, memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
-
-		memory_arena transient_arena = {};
-		u32 memory_for_transient_arena_size = megabytes_to_bytes(30);
-		void* memory_for_transient_arena = SDL_malloc(memory_for_transient_arena_size);
-		initialize_memory_arena(&transient_arena, memory_for_transient_arena_size, (byte*)memory_for_transient_arena);
+		game_state* game = initialize_game_state();
 
 		int max_path_length = 4048; // maksymalna długość ścieżki na Linuksie, Windowsach i MacOS
-		sdl->path_buffer = get_string_builder(&transient_arena, max_path_length);
-
-		store_preferences_file_path(sdl, &permanent_arena);
-
-		game_state game = {};
-
-		game.platform.read_file = &read_file;
-		game.platform.save_file = &save_file;
-		game.platform.load_prefs = &load_prefs;
-		game.platform.save_prefs = &save_prefs;
-		game.platform.start_playing_music = &start_playing_music;
-		game.platform.stop_playing_music = &stop_playing_music;
-		game.platform.render_list_to_output = &render_list_to_output;
-
-		game.arena = &permanent_arena;
-		game.transient_arena = &transient_arena;
-
-		game.render.max_push_buffer_size = megabytes_to_bytes(10);
-		game.render.push_buffer_base = (u8*)push_size(&permanent_arena, game.render.max_push_buffer_size);
-
-		game.current_scene = scene::GAME;
-
-		game.level_state = push_struct(&permanent_arena, level_state);
-		game.level_name_buffer = (char*)push_size(&permanent_arena, MAX_LEVEL_NAME_LENGTH);
-
-		static_game_data* static_data = push_struct(&permanent_arena, static_game_data);
-		game.static_data = static_data;
-
-		load_static_game_data(&game.platform, static_data, &permanent_arena, &transient_arena);
-		game.input_buffer = initialize_input_buffer(&permanent_arena);
+		sdl->path_buffer = get_string_builder(game->transient_arena, max_path_length);
+		store_preferences_file_path(sdl, game->arena);
 
 #if TRIFLE_DEBUG
 		// kasujemy progres
-		save_completed_levels(&game.platform, game.static_data, &transient_arena);
+		save_completed_levels(&game->platform, game->static_data, game->transient_arena);
 #endif
 
 #ifdef __EMSCRIPTEN__
-		game.show_exit_game_option = false;
+		game->show_exit_game_option = false;
 
 		r32 target_hz = TARGET_HZ;
 		if (is_browser_firefox())
@@ -472,9 +475,9 @@ int main(int argc, char* args[])
 			target_hz *= 1.5f;
 		}
 
-		emscripten_set_main_loop_arg(emscripten_main_game_loop, (void*)&game, target_hz, true);
+		emscripten_set_main_loop_arg(emscripten_main_game_loop, (void*)game, target_hz, true);
 #else		
-		game.show_exit_game_option = true;
+		game->show_exit_game_option = true;
 
 		r32 target_elapsed_ms = 1000 / TARGET_HZ;
 		r32 elapsed_work_ms = 0;
@@ -492,11 +495,11 @@ int main(int argc, char* args[])
 					run = false;
 				}
 
-				write_to_input_buffer(&game.input_buffer, &new_input);
+				write_to_input_buffer(&game->input_buffer, &new_input);
 
-				main_game_loop(&game, delta_time);
+				main_game_loop(game, delta_time);
 
-				if (game.exit_game)
+				if (game->exit_game)
 				{
 					run = false;
 				}
@@ -522,13 +525,13 @@ int main(int argc, char* args[])
 		}
 #endif
 
-		if (game.game_level_memory.arena)
+		if (game->game_level_memory.arena)
 		{
-			end_temporary_memory(game.game_level_memory, false);
+			end_temporary_memory(game->game_level_memory, false);
 		}
 
-		check_arena(game.arena);
-		check_arena(game.transient_arena);
+		check_arena(game->arena);
+		check_arena(game->transient_arena);
 	}
 	else
 	{
