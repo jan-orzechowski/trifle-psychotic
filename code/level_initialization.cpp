@@ -216,8 +216,11 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
 			}
 			else
 			{
-				// wstęp pokazujemy tylko za pierwszym razem
-				initialize_level_introduction(game->level_state, game->arena);
+				if (false == game->skip_introduction)
+				{
+					// wstęp pokazujemy tylko za pierwszym razem
+					initialize_level_introduction(game->level_state, game->arena);
+				}
 			}
 
 			save_checkpoint(game);

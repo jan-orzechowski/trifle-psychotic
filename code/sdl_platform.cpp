@@ -483,6 +483,8 @@ int main(int args_count, char* args[])
 		if (game->cmd_level_to_load.string_size > 0)
 		{
 			game->current_scene = scene::GAME;
+			game->exit_level_closes_game = true;
+			game->skip_introduction = true;
 		}
 
 #if TRIFLE_DEBUG

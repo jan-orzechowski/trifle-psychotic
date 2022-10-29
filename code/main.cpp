@@ -32,9 +32,17 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
 				{
 					if (false == level->active_scene_change.change_scene)
 					{
-						level->active_scene_change.change_scene = true;
-						level->active_scene_change.new_scene = scene::MAIN_MENU;		
-						game->platform.stop_playing_music(2000);
+						if (game->exit_level_closes_game)
+						{
+							level->active_scene_change.change_scene = true;
+							level->active_scene_change.new_scene = scene::EXIT;
+						}
+						else
+						{
+							level->active_scene_change.change_scene = true;
+							level->active_scene_change.new_scene = scene::MAIN_MENU;
+							game->platform.stop_playing_music(2000);
+						}						
 					}
 				}
 			}
@@ -410,6 +418,13 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
 	scene_change scene_change = {}; 
 	if (level->fade_out_perc >= 1.0f)
 	{
+		scene_change = level->active_scene_change;
+	}
+
+	if (level->active_scene_change.change_scene
+		&& game->exit_level_closes_game)
+	{
+		// wychodzimy bez czekania na fade
 		scene_change = level->active_scene_change;
 	}
 
