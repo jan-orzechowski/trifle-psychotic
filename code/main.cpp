@@ -22,6 +22,13 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
 	entity* player = get_player(level);
 	game_input* input = get_last_frame_input(&game->input_buffer);
 
+#if TRIFLE_DEBUG
+	if (input->down.number_of_presses > 0)
+	{
+		level->enemies_to_kill_counter = -1;
+	}
+#endif
+
 	if (level->show_message)
 	{
 		if (level->min_message_timer < 0.0f)
