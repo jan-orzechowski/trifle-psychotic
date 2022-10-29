@@ -88,38 +88,39 @@ void mark_level_as_completed(static_game_data* data, char* name_buffer, i32 stri
 
 void load_completed_levels(platform_api* platform, static_game_data* data)
 {
-	read_file_result prefs = platform->load_prefs();
-	char* str = (char*)prefs.contents;
-
 	// forma pliku: oddzielona przecinkami lista map bez rozszerzenia, np. map_01,map02
-
-	char buffer[MAX_LEVEL_NAME_LENGTH] = {};
-	u32 current_char_index = 0;
-	while (*str)
+	read_file_result prefs = platform->load_prefs();
+	if (prefs.contents != NULL)
 	{
-		if (current_char_index == MAX_LEVEL_NAME_LENGTH)
+		char* str = (char*)prefs.contents;
+		char buffer[MAX_LEVEL_NAME_LENGTH] = {};
+		u32 current_char_index = 0;
+		while (*str)
 		{
-			mark_level_as_completed(data, buffer, current_char_index);
-			current_char_index = 0;
-		}
-
-		char c = *str;
-		if (is_whitespace(c) || c == ',')
-		{
-			if (current_char_index > 0)
+			if (current_char_index == MAX_LEVEL_NAME_LENGTH)
 			{
 				mark_level_as_completed(data, buffer, current_char_index);
 				current_char_index = 0;
 			}
-		}
-		else
-		{
-			buffer[current_char_index] = c;
-			current_char_index++;
+
+			char c = *str;
+			if (is_whitespace(c) || c == ',')
+			{
+				if (current_char_index > 0)
+				{
+					mark_level_as_completed(data, buffer, current_char_index);
+					current_char_index = 0;
+				}
+			}
+			else
+			{
+				buffer[current_char_index] = c;
+				current_char_index++;
+			}
+
+			str++;
 		}
 
-		str++;
+		delete prefs.contents;
 	}
-
-	delete prefs.contents;
 }
