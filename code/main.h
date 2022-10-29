@@ -204,6 +204,8 @@ struct game_state
 
 	static_game_data* static_data;
 	platform_api platform;
+
+	string_ref cmd_level_to_load;
 };
 
 void main_game_loop(game_state* game, r32 delta_time);

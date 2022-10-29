@@ -167,7 +167,12 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
 	temporary_memory auxillary_memory_for_loading = begin_temporary_memory(game->transient_arena);
 	{
 		string_ref level_to_load_name = {};
-		if (scene_change.restore_checkpoint
+		if (game->cmd_level_to_load.string_size > 0)
+		{
+			level_to_load_name = game->cmd_level_to_load;
+			game->cmd_level_to_load = {}; // ładujemy tylko raz
+		}
+		else if (scene_change.restore_checkpoint
 			&& game->checkpoint.used
 			&& game->checkpoint.map_name.string_size > 0)
 		{

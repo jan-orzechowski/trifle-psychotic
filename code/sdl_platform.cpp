@@ -446,7 +446,26 @@ game_state* initialize_game_state()
 	return game;
 }
 
-int main(int argc, char* args[])
+string_ref parse_starting_level_from_command_line(memory_arena* arena, char* args[], int args_count)
+{
+	string_ref result = {};
+	if (args != NULL)
+	{
+		// pierwsze pomijamy - to ścieżka do exe
+		for (i32 option_index = 1; option_index < args_count; option_index++)
+		{
+			char* option = args[option_index];
+			if (*option != 0)
+			{
+				result = copy_c_string(arena, option);
+				break;
+			}
+		}
+	}
+	return result;
+}
+
+int main(int args_count, char* args[])
 {
 	GLOBAL_SDL_DATA = init_sdl();
 	sdl_data* sdl = &GLOBAL_SDL_DATA;
@@ -459,6 +478,12 @@ int main(int argc, char* args[])
 		int max_path_length = 4048; // maksymalna długość ścieżki na Linuksie, Windowsach i MacOS
 		sdl->path_buffer = get_string_builder(game->transient_arena, max_path_length);
 		store_preferences_file_path(sdl, game->arena);
+		
+		game->cmd_level_to_load = parse_starting_level_from_command_line(game->arena, args, args_count);
+		if (game->cmd_level_to_load.string_size > 0)
+		{
+			game->current_scene = scene::GAME;
+		}
 
 #if TRIFLE_DEBUG
 		// kasujemy progres
