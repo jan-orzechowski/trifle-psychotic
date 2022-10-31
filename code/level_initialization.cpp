@@ -216,7 +216,7 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
 			}
 			else
 			{
-				if (false == game->skip_introduction)
+				if (false == game->skip_introductions)
 				{
 					// wstęp pokazujemy tylko za pierwszym razem
 					initialize_level_introduction(game->level_state, game->arena);

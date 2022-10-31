@@ -484,7 +484,8 @@ int main(int args_count, char* args[])
 		{
 			game->current_scene = scene::GAME;
 			game->exit_level_closes_game = true;
-			game->skip_introduction = true;
+			game->skip_introductions = true;
+			game->skip_deaths_prompts = true;
 		}
 
 #if TRIFLE_DEBUG

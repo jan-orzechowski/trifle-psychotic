@@ -207,7 +207,8 @@ struct game_state
 
 	string_ref cmd_level_to_load;
 	b32 exit_level_closes_game;
-	b32 skip_introduction;
+	b32 skip_introductions;
+	b32 skip_deaths_prompts;
 };
 
 void main_game_loop(game_state* game, r32 delta_time);

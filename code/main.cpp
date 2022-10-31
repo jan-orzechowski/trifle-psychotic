@@ -435,6 +435,14 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
 		scene_change = level->active_scene_change;
 	}
 
+	if (level->active_scene_change.change_scene
+		&& level->active_scene_change.new_scene == scene::DEATH
+		&& game->skip_deaths_prompts)
+	{
+		scene_change.new_scene = scene::GAME;
+		scene_change.restore_checkpoint = true;
+	}
+
 	process_fade(&game->render, &level->fade_in_perc, delta_time, 
 		true, level->static_data->game_fade_in_speed);
 
