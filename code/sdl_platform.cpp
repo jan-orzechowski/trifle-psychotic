@@ -19,6 +19,8 @@ struct sdl_data
 {
 	b32 initialized;
 	b32 fullscreen;
+	i32 screen_width;
+	i32 screen_height;
 
 	SDL_Window* window;
 	SDL_Renderer* renderer;
@@ -63,8 +65,8 @@ SDL_Rect get_sdl_rect(rect rect)
 	SDL_Rect result = {};
 	result.x = (int)round(rect.min_corner.x);
 	result.y = (int)round(rect.min_corner.y);
-	result.w = (int)round((rect.max_corner.x - rect.min_corner.x));
-	result.h = (int)round((rect.max_corner.y - rect.min_corner.y));
+	result.w = (int)round(rect.max_corner.x - rect.min_corner.x);
+	result.h = (int)round(rect.max_corner.y - rect.min_corner.y);
 	return result;
 }
 
@@ -267,6 +269,9 @@ sdl_data init_sdl()
 #ifndef __EMSCRIPTEN__
 				SDL_SetWindowFullscreen(sdl_game.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 				sdl_game.fullscreen = true;
+
+				SDL_GetRendererOutputSize(sdl_game.renderer,
+					&sdl_game.screen_width, &sdl_game.screen_height);
 #endif
 
 				SDL_SetRenderDrawColor(sdl_game.renderer, 0xFF, 0xFF, 0xFF, 0xFF);
@@ -673,9 +678,21 @@ void render_list_to_output(render_list* render)
 				v4 sdl_tint = entry->tint_color * 255;
 
 				// naprawienie dziwnego zachowania SDL w fullscreenie - odwrócone bitmapy zmieniały pozycję na ekranie
-				if (GLOBAL_SDL_DATA.fullscreen && flip == SDL_FLIP_HORIZONTAL)
+				if (flip == SDL_FLIP_HORIZONTAL && GLOBAL_SDL_DATA.fullscreen)
 				{
-					dst.x -= CHARSET_WIDTH / 2;
+					// nie mam pojęcia, dlaczego to robi różnicę
+					if (GLOBAL_SDL_DATA.screen_width == 1920 && GLOBAL_SDL_DATA.screen_height == 1080)
+					{
+						dst.x -= 185;
+					}
+					else if (GLOBAL_SDL_DATA.screen_width == 1920 && GLOBAL_SDL_DATA.screen_height == 1200)
+					{
+						dst.x -= 126;
+					}
+					else if (GLOBAL_SDL_DATA.screen_width == 1536)
+					{
+						dst.x -= 95;
+					}
 				}
 
 				if (entry->render_in_additive_mode)
