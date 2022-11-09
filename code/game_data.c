@@ -865,6 +865,41 @@ Multi line string 8\n\
 
             messenger->fired_bullet_type = messenger_bullet;
         }
+
+        {
+            entity_type* yellow_father = add_entity_type(data, ENTITY_TYPE_ENEMY_YELLOW_FATHER);
+            yellow_father->flags = (entity_flags)((u32)ENTITY_FLAG_BLOCKS_MOVEMENT
+                | (u32)ENTITY_FLAG_FLIES_TOWARDS_PLAYER
+                | (u32)ENTITY_FLAG_ENEMY
+                | (u32)ENTITY_FLAG_PLAYER_RECOIL_ON_CONTACT);
+            yellow_father->max_health = 3000.0f;
+            yellow_father->damage_on_contact = 20.0f;
+            yellow_father->velocity_multiplier = 3.0f;
+            yellow_father->player_acceleration_on_collision = 4.0f;
+            yellow_father->detection_type = DETECT_360_DEGREES;
+            yellow_father->detection_distance = 25.0f;
+            yellow_father->stop_movement_distance = 0.0f;
+            yellow_father->forget_detection_distance = 25.0f;
+            yellow_father->default_attack_cooldown = 0.6f;
+            yellow_father->default_attack_series_duration = 0.4f;
+            yellow_father->default_attack_bullet_interval_duration = 0.05f;
+            yellow_father->collision_rect_dim = get_v2(0.6f, 2.0f);
+            yellow_father->collision_rect_offset = get_v2(0.0f, -0.4f);
+            yellow_father->idle_pose = get_walk_idle_pose(arena, get_v2(3 * 24, 8 * 24), false, get_v2(0.0f, -4.0f));
+            yellow_father->rotation_sprites = load_shooting_rotation_sprites_with_offset(arena, 8, get_v2(0, -4));
+            add_death_animation(arena, yellow_father, data->explosion_animations.size_96x96);
+            yellow_father->death_animation_offset = get_v2(0.0f, -0.75f);
+            yellow_father->looking_position_offset = get_v2(0.0f, -1.2f);
+
+            entity_type* yellow_father_bullet = add_bullet_type(data);
+            yellow_father_bullet->flags = ENTITY_FLAG_DAMAGES_PLAYER;
+            yellow_father_bullet->damage_on_contact = 15.0f;
+            yellow_father_bullet->constant_velocity = 10.0f;
+            yellow_father_bullet->idle_pose = get_bullet_graphics(arena, 3, 0);
+            add_death_animations_standard(arena, yellow_father_bullet, data);
+
+            yellow_father->fired_bullet_type = yellow_father_bullet;
+        }
     }
 
     // sprite effects

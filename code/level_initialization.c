@@ -145,7 +145,8 @@ void initialize_current_map(level_state* level, memory_arena* arena)
 
                 add_entity_at_world_position(level, position, type);
 
-                if (new_entity->type == ENTITY_TYPE_ENEMY_MESSENGER)
+                if (new_entity->type == ENTITY_TYPE_ENEMY_MESSENGER
+                    || new_entity->type == ENTITY_TYPE_ENEMY_YELLOW_FATHER)
                 {
                     level->enemies_to_kill_counter++;
                 }

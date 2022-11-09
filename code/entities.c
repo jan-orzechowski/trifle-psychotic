@@ -131,7 +131,7 @@ tile_range find_walking_path(map* level, tile_position start_tile)
     tile_position good_start_tile = {0};
 
     tile_position test_tile = start_tile;
-    i32 distance_checking_limit = 10;
+    i32 distance_checking_limit = 20;
     for (i32 distance = 0; distance < distance_checking_limit; distance++)
     {
         test_tile.y = start_tile.y + distance;
@@ -738,6 +738,14 @@ void move_entity_towards_player(level_state* level, entity* entity_to_move, enti
         get_world_position_difference(player->position, entity_to_move->position));
 
     entity_to_move->velocity = scalar_multiply_v2(direction, velocity);
+    if (entity_to_move->velocity.x < 0.0f)
+    {
+        entity_to_move->direction = DIRECTION_W;
+    }
+    else
+    {
+        entity_to_move->direction = DIRECTION_E;
+    }
 
     world_position new_position = add_to_world_position(entity_to_move->position, 
         scalar_multiply_v2(scalar_multiply_v2(direction, velocity), delta_time));
@@ -1015,6 +1023,13 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
 
             if (entity_to_move->player_detected)
             {
+                if (has_entity_flags_set(entity_to_move, ENTITY_FLAG_ENEMY))
+                {
+                    enemy_attack(level, entity_to_move, player, delta_time);
+                }
+
+                set_entity_rotated_graphics(entity_to_move, &player->position);                              
+
                 if (distance_to_player_length > entity_to_move->type->forget_detection_distance)
                 {
                     entity_to_move->player_detected = false;
@@ -1023,6 +1038,10 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
                 {
                     move_entity_towards_player(level, entity_to_move, player, delta_time);
                 }
+            }
+            else
+            {
+                set_entity_rotated_graphics(entity_to_move, NULL);
             }
 
             if (has_entity_flags_set(entity_to_move, ENTITY_FLAG_ENEMY)

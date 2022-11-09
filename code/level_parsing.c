@@ -85,6 +85,7 @@ entity_type_enum get_entity_type_enum_from_gid(i32 gid, i32 entity_tileset_first
         case 9:  result = ENTITY_TYPE_ENEMY_ROBOT; break;
         case 10: result = ENTITY_TYPE_ENEMY_MESSENGER; break;
         case 20: result = ENTITY_TYPE_ENEMY_BIG_SENTRY; break;
+        case 25: result = ENTITY_TYPE_ENEMY_YELLOW_FATHER; break;
         case 11: result = ENTITY_TYPE_POWER_UP_HEALTH; break;
         case 12: result = ENTITY_TYPE_POWER_UP_SPEED; break;
         case 13: result = ENTITY_TYPE_POWER_UP_SPREAD; break;
