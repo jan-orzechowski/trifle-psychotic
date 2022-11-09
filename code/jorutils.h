@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <float.h>
+#include <stdbool.h>
 
 typedef int8_t int8;
 typedef int16_t int16;
@@ -55,8 +56,8 @@ typedef uint8_t byte;
 
 #define R32_MAX_VALUE (FLT_MAX)
 
-#define min(arg1, arg2) ((arg1) < (arg2) ? (arg1) : (arg2))
-#define max(arg1, arg2) ((arg1) > (arg2) ? (arg1) : (arg2))	
+//#define min(arg1, arg2) ((arg1) < (arg2) ? (arg1) : (arg2))
+//#define max(arg1, arg2) ((arg1) > (arg2) ? (arg1) : (arg2))	
 #define min_of_three(arg1, arg2, arg3) (min(arg1, min(arg2, arg3)))
 #define max_of_three(arg1, arg2, arg3) (max(arg1, max(arg2, arg3)))
 
@@ -83,31 +84,31 @@ typedef uint8_t byte;
 
 #define pi32 3.14159265359f
 
-struct memory_arena
+typedef struct memory_arena
 {
-	byte* base;
-	memory_index size;
-	memory_index size_used;
+    byte* base;
+    memory_index size;
+    memory_index size_used;
 
-	u32 temporary_memory_stack_frame_count;
-};
-
-inline void initialize_memory_arena(memory_arena* arena, memory_index size, byte* base)
-{
-	arena->size = size;
-	arena->base = base;
-	arena->size_used = 0;
-	arena->temporary_memory_stack_frame_count = 0;
-}
+    u32 temporary_memory_stack_frame_count;
+} memory_arena;
+//
+//inline void initialize_memory_arena(memory_arena* arena, memory_index size, byte* base)
+//{
+//	arena->size = size;
+//	arena->base = base;
+//	arena->size_used = 0;
+//	arena->temporary_memory_stack_frame_count = 0;
+//}
 
 inline memory_arena* initialize_memory_arena(memory_index size, byte* base)
 {
-	memory_arena* arena = (memory_arena*)base;
-	arena->size = size;
-	arena->base = base;
-	arena->size_used = sizeof(memory_arena);
-	arena->temporary_memory_stack_frame_count = 0;
-	return arena;
+    memory_arena* arena = (memory_arena*)base;
+    arena->size = size;
+    arena->base = base;
+    arena->size_used = sizeof(memory_arena);
+    arena->temporary_memory_stack_frame_count = 0;
+    return arena;
 }
 
 #define push_struct(arena, type) (type *)push_size_impl(arena, sizeof(type))
@@ -116,61 +117,61 @@ inline memory_arena* initialize_memory_arena(memory_index size, byte* base)
 
 inline void* push_size_impl(memory_arena* arena, memory_index size_to_push)
 {
-	assert((arena->size_used + size_to_push) <= arena->size);
+    assert((arena->size_used + size_to_push) <= arena->size);
 
-	void* result = arena->base + arena->size_used;
-	arena->size_used += size_to_push;
-	return result;
+    void* result = arena->base + arena->size_used;
+    arena->size_used += size_to_push;
+    return result;
 }
 
 inline void zero_memory(memory_index size, void* base)
 {
-	u8* byte = (u8*)base;
-	while (size--)
-	{
-		*byte++ = 0;
-	}
+    u8* byte = (u8*)base;
+    while (size--)
+    {
+        *byte++ = 0;
+    }
 }
 
-struct temporary_memory
+typedef struct temporary_memory
 {
-	memory_arena* arena;
-	memory_index size_used_at_creation;
-};
+    memory_arena* arena;
+    memory_index size_used_at_creation;
+} temporary_memory;
 
 internal temporary_memory begin_temporary_memory(memory_arena* arena)
 {
-	temporary_memory result = {};
+    temporary_memory result = {0};
 
-	result.arena = arena;
-	result.size_used_at_creation = arena->size_used;
+    result.arena = arena;
+    result.size_used_at_creation = arena->size_used;
 
-	arena->temporary_memory_stack_frame_count++;
+    arena->temporary_memory_stack_frame_count++;
 
-	return result;
+    return result;
 }
 
 internal void end_temporary_memory(temporary_memory temp, b32 zero_bytes)
 {
-	memory_arena* arena = temp.arena;
-	assert(arena->temporary_memory_stack_frame_count > 0);
-	assert(arena->size_used >= temp.size_used_at_creation);
+    memory_arena* arena = temp.arena;
+    assert(arena->temporary_memory_stack_frame_count > 0);
+    assert(arena->size_used >= temp.size_used_at_creation);
 
-	if (zero_bytes)
-	{
-		u32 size_of_temporary_memory = arena->size_used - temp.size_used_at_creation;
-		void* temporary_memory_base = arena->base + temp.size_used_at_creation;
-		zero_memory(size_of_temporary_memory, temporary_memory_base);
-	}
+    if (zero_bytes)
+    {
+        u32 size_of_temporary_memory = arena->size_used - temp.size_used_at_creation;
+        void* temporary_memory_base = arena->base + temp.size_used_at_creation;
+        zero_memory(size_of_temporary_memory, temporary_memory_base);
+    }
 
-	arena->size_used = temp.size_used_at_creation;
-	arena->temporary_memory_stack_frame_count--;
+    arena->size_used = temp.size_used_at_creation;
+    arena->temporary_memory_stack_frame_count--;
 }
 
 internal void check_arena(memory_arena* arena)
 {
-	// to oznacza, że nie pomyliliśmy nic, i zakończyliśmy tyle ramek pamięci tymczasowej, ile utworzyliśmy
-	assert(arena->temporary_memory_stack_frame_count == 0);
+    // to oznacza, że nie pomyliliśmy nic, i zakończyliśmy tyle ramek pamięci tymczasowej, ile utworzyliśmy
+    assert(arena->temporary_memory_stack_frame_count == 0);
 }
 
 #define zero_struct(some_struct) zero_memory(sizeof(some_struct), some_struct)
@@ -180,16 +181,16 @@ internal void check_arena(memory_arena* arena)
 
 inline b32 are_flags_set(u32* flags, u32 flag_values_to_check)
 {
-	b32 result = *flags & flag_values_to_check;
-	return result;
+    b32 result = *flags & flag_values_to_check;
+    return result;
 }
 
 inline void set_flags(u32* flags, u32 flag_values_to_check)
 {
-	*flags |= flag_values_to_check;
+    *flags |= flag_values_to_check;
 }
 
 inline void unset_flags(u32* flags, u32 flag_values_to_check)
 {
-	*flags &= ~flag_values_to_check;
+    *flags &= ~flag_values_to_check;
 }

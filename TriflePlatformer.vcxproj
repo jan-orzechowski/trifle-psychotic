@@ -125,8 +125,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalOptions>-wd26812 -wd4244 -wd4018 -wd4267 -wd4201 -wd4505 -MTd -DTRIFLE_DEBUG=1 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-TC -wd26812 -wd4244 -wd4018 -wd4267 -wd4201 -wd4505 -MTd -DTRIFLE_DEBUG=1 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <TreatWarningAsError>false</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -152,9 +153,10 @@ del "$(TargetDir)trifle_psychotic_windows.zip"
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp14</LanguageStandard>
-      <AdditionalOptions>-MT -wd4244 -wd4018 -wd4267 -wd4201 -wd4505 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-TC -MT -wd4244 -wd4018 -wd4267 -wd4201 -wd4505 %(AdditionalOptions)</AdditionalOptions>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <TreatWarningAsError>false</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -174,27 +176,27 @@ del "$(TargetDir)trifle_psychotic_windows.zip"
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="code\animation.cpp" />
-    <ClCompile Include="code\backdrops.cpp" />
-    <ClCompile Include="code\debug.cpp" />
-    <ClCompile Include="code\entities.cpp" />
-    <ClCompile Include="code\special_entities.cpp" />
-    <ClCompile Include="code\level_initialization.cpp" />
-    <ClCompile Include="code\input.cpp" />
-    <ClCompile Include="code\jormath.cpp" />
-    <ClCompile Include="code\jorstring.cpp" />
-    <ClCompile Include="code\level_parsing.cpp" />
-    <ClCompile Include="code\main.cpp" />
-    <ClCompile Include="code\map.cpp" />
-    <ClCompile Include="code\collision.cpp" />
-    <ClCompile Include="code\player.cpp" />
-    <ClCompile Include="code\progress.cpp" />
-    <ClCompile Include="code\rendering.cpp" />
-    <ClCompile Include="code\sdl_platform.cpp" />
-    <ClCompile Include="code\text_rendering.cpp" />
-    <ClCompile Include="code\tmx_parsing.cpp" />
-    <ClCompile Include="code\game_data.cpp" />
-    <ClCompile Include="code\ui.cpp" />
+    <ClCompile Include="code\animation.c" />
+    <ClCompile Include="code\backdrops.c" />
+    <ClCompile Include="code\debug.c" />
+    <ClCompile Include="code\entities.c" />
+    <ClCompile Include="code\special_entities.c" />
+    <ClCompile Include="code\level_initialization.c" />
+    <ClCompile Include="code\input.c" />
+    <ClCompile Include="code\jormath.c" />
+    <ClCompile Include="code\jorstring.c" />
+    <ClCompile Include="code\level_parsing.c" />
+    <ClCompile Include="code\main.c" />
+    <ClCompile Include="code\map.c" />
+    <ClCompile Include="code\collision.c" />
+    <ClCompile Include="code\player.c" />
+    <ClCompile Include="code\progress.c" />
+    <ClCompile Include="code\rendering.c" />
+    <ClCompile Include="code\sdl_platform.c" />
+    <ClCompile Include="code\text_rendering.c" />
+    <ClCompile Include="code\tmx_parsing.c" />
+    <ClCompile Include="code\game_data.c" />
+    <ClCompile Include="code\ui.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\animation.h" />

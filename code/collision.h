@@ -2,30 +2,30 @@
 
 #include "main.h"
 
-struct collision
+typedef struct collision
 {
-	direction collided_wall;
-	v2 collided_wall_normal;
-	r32 possible_movement_perc;
-};
+    direction collided_wall;
+    v2 collided_wall_normal;
+    r32 possible_movement_perc;
+} collision;
 
-struct collision_result
+typedef struct collision_result
 {
-	collision collision_data;
-	entity* collided_enemy;
-	entity* collided_switch;
-	entity* collided_transition;
-	entity* collided_power_up;
-	entity* collided_message_display;
-	entity* collided_platform;
-};
+    collision collision_data;
+    entity* collided_enemy;
+    entity* collided_switch;
+    entity* collided_transition;
+    entity* collided_power_up;
+    entity* collided_message_display;
+    entity* collided_platform;
+} collision_result;
 
-struct entity_collision_data
+typedef struct entity_collision_data
 {
-	v2 position;
-	v2 collision_rect_offset;
-	v2 collision_rect_dim;
-};
+    v2 position;
+    v2 collision_rect_offset;
+    v2 collision_rect_dim;
+} entity_collision_data;
 
 entity_collision_data get_tile_collision_data(chunk_position reference_chunk, tile_position tile_pos);
 entity_collision_data get_entity_collision_data(chunk_position reference_chunk, entity* entity);

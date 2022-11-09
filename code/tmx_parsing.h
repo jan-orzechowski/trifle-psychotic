@@ -2,77 +2,79 @@
 
 #include "jorstring.h"
 
-enum xml_token_type
+typedef enum xml_token_type
 {
-	LEFT_CHEVRON, // <
-	CLOSING_LEFT_CHEVRON, // </
-	RIGHT_CHEVRON, // >
-	SELF_CLOSING_RIGHT_CHEVRON, // />
-	LEFT_PROLOG_CHEVRON, // <?
-	RIGHT_PROLOG_CHEVRON, // ?>
-	TAG,
-	ATTRIBUTE_NAME,
-	ATTRIBUTE_VALUE,
-	INNER_TEXT
-};
+    LEFT_CHEVRON, // <
+    CLOSING_LEFT_CHEVRON, // </
+    RIGHT_CHEVRON, // >
+    SELF_CLOSING_RIGHT_CHEVRON, // />
+    LEFT_PROLOG_CHEVRON, // <?
+    RIGHT_PROLOG_CHEVRON, // ?>
+    TAG,
+    ATTRIBUTE_NAME,
+    ATTRIBUTE_VALUE,
+    INNER_TEXT
+} xml_token_type;
 
+typedef struct xml_token xml_token;
 struct xml_token
 {
-	xml_token_type type;
-	string_ref value;
-	xml_token* next;
+    xml_token_type type;
+    string_ref value;
+    xml_token* next;
 };
 
-struct xml_scanner
+typedef struct xml_scanner
 {
-	char* source;
-	u32 source_length;
-	memory_arena* arena;
+    char* source;
+    u32 source_length;
+    memory_arena* arena;
 
-	u32 current_char_index;
+    u32 current_char_index;
 
-	xml_token* first_token;
-	xml_token* last_token;
-	u32 token_count;
-};
+    xml_token* first_token;
+    xml_token* last_token;
+    u32 token_count;
+} xml_scanner;
 
-struct xml_parser
+typedef struct xml_parser
 {
-	xml_scanner scan;
-	u32 current_token_index;
-	xml_token* current_token;
-	memory_arena* arena;
-	u32 nodes_count;
-};
+    xml_scanner scan;
+    u32 current_token_index;
+    xml_token* current_token;
+    memory_arena* arena;
+    u32 nodes_count;
+} xml_parser;
 
-struct xml_attribute;
+typedef struct xml_attribute xml_attribute;
 
+typedef struct xml_node xml_node;
 struct xml_node
 {
-	string_ref tag;
-	xml_node* parent;
-	xml_node* next; // np. następne dziecko tego samego rodzica
-	string_ref inner_text;
+    string_ref tag;
+    xml_node* parent;
+    xml_node* next; // np. następne dziecko tego samego rodzica
+    string_ref inner_text;
 
-	xml_attribute* first_attribute;
-	u32 attributes_count;
+    xml_attribute* first_attribute;
+    u32 attributes_count;
 
-	xml_node* first_child;
-	u32 children_count;
+    xml_node* first_child;
+    u32 children_count;
 };
 
 struct xml_attribute
 {
-	string_ref name;
-	string_ref value;
-	xml_attribute* next;
+    string_ref name;
+    string_ref value;
+    xml_attribute* next;
 };
 
-struct xml_node_search_result
+typedef struct xml_node_search_result
 {
-	xml_node** found_nodes;
-	u32 found_nodes_count;
-};
+    xml_node** found_nodes;
+    u32 found_nodes_count;
+} xml_node_search_result;
 
 xml_node* scan_and_parse_tmx(memory_arena* transient_arena, void* file_contents, u32 file_size);
 

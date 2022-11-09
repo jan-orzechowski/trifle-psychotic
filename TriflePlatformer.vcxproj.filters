@@ -15,67 +15,67 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="code\main.cpp">
+    <ClCompile Include="code\main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\tmx_parsing.cpp">
+    <ClCompile Include="code\tmx_parsing.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\jormath.cpp">
+    <ClCompile Include="code\jormath.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\jorstring.cpp">
+    <ClCompile Include="code\jorstring.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\game_data.cpp">
+    <ClCompile Include="code\game_data.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\text_rendering.cpp">
+    <ClCompile Include="code\text_rendering.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\animation.cpp">
+    <ClCompile Include="code\animation.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\special_entities.cpp">
+    <ClCompile Include="code\special_entities.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\map.cpp">
+    <ClCompile Include="code\map.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\sdl_platform.cpp">
+    <ClCompile Include="code\sdl_platform.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\collision.cpp">
+    <ClCompile Include="code\collision.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\entities.cpp">
+    <ClCompile Include="code\entities.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\player.cpp">
+    <ClCompile Include="code\player.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\rendering.cpp">
+    <ClCompile Include="code\rendering.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\input.cpp">
+    <ClCompile Include="code\input.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\ui.cpp">
+    <ClCompile Include="code\ui.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\level_parsing.cpp">
+    <ClCompile Include="code\level_parsing.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\debug.cpp">
+    <ClCompile Include="code\debug.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\backdrops.cpp">
+    <ClCompile Include="code\backdrops.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\level_initialization.cpp">
+    <ClCompile Include="code\level_initialization.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\progress.cpp">
+    <ClCompile Include="code\progress.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -4,20 +4,20 @@
 #include "map.h"
 #include "collision.h"
 
-struct shooting_rotation
+typedef struct shooting_rotation
 {
-	v2 bullet_offset;
-	sprite rotated_sprite;
-	b32 flip_horizontally;
-};
+    v2 bullet_offset;
+    sprite rotated_sprite;
+    b32 flip_horizontally;
+} shooting_rotation;
 
-b32 are_flags_set(entity_flags* flags, entity_flags flag_values_to_check);
-void set_flags(entity_flags* flags, entity_flags flag_values_to_check);
-void unset_flags(entity_flags* flags, entity_flags flag_values_to_check);
-b32 are_entity_flags_set(entity* entity, entity_flags flag_values);
+b32 are_entity_flags_set(entity_flags* flags, entity_flags flag_values_to_check);
+void set_entity_flags(entity_flags* flags, entity_flags flag_values_to_check);
+void unset_entity_flags(entity_flags* flags, entity_flags flag_values_to_check);
+b32 has_entity_flags_set(entity* entity, entity_flags flag_values);
 
-entity* add_entity(level_state* level, world_position position, entity_type* type);
-entity* add_entity(level_state* level, tile_position position, entity_type* type);
+entity* add_entity_at_world_position(level_state* level, world_position position, entity_type* type);
+entity* add_entity_at_tile_position(level_state* level, tile_position position, entity_type* type);
 void remove_entity(entity* entity_to_remove);
 
 void fire_bullet(level_state* level, entity_type* bullet_type, world_position bullet_starting_position, v2 bullet_offset, v2 velocity);

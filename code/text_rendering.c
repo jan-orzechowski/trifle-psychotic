@@ -7,7 +7,7 @@
 string_ref peek_next_word(string_ref text, u32 current_index_in_text)
 {
     assert(current_index_in_text < text.string_size);
-    string_ref result = {};
+    string_ref result = {0};
     for (u32 word_char_index = current_index_in_text;
         word_char_index < text.string_size;
         word_char_index++)
@@ -46,7 +46,7 @@ string_ref* get_next_line(memory_arena* arena, text_lines* lines, u32 max_lines_
 
 text_area_limits get_text_area_limits(render_text_options* options)
 {
-    text_area_limits result = {};
+    text_area_limits result = {0};
 
     assert(options->font.width_in_pixels);
     assert(options->font.height_in_pixels);
@@ -178,7 +178,7 @@ text_lines* get_division_of_text_into_lines(memory_arena* arena, render_text_opt
 
 text_viewport get_text_viewport(font font, text_lines lines, rect writing_area)
 {
-    text_viewport result = {};
+    text_viewport result = {0};
     r32 line_height = font.height_in_pixels + font.line_spacing + 1;
 
     // przycinamy writing area
@@ -367,7 +367,7 @@ void render_text(render_list* render, memory_arena* transient_arena, render_text
 
     if (options->allow_horizontal_overflow)
     {        
-        string_ref line_to_render = {};
+        string_ref line_to_render = {0};
         line_to_render.ptr = text.ptr;
         line_to_render.string_size = text.string_size;
 
@@ -387,9 +387,9 @@ void render_text(render_list* render, memory_arena* transient_arena, render_text
     end_temporary_memory(writing_memory, true);
 }
 
-void render_text(render_list* render, memory_arena* transient_arena, font font, rect writing_area, string_ref text, b32 wrap)
+void render_text_basic(render_list* render, memory_arena* transient_arena, font font, rect writing_area, string_ref text, b32 wrap)
 {
-    render_text_options options = {};
+    render_text_options options = {0};
     options.font = font;
     options.writing_area = writing_area;
     options.allow_horizontal_overflow = (false == wrap);
@@ -398,7 +398,6 @@ void render_text(render_list* render, memory_arena* transient_arena, font font, 
 
 void render_large_text(render_list* render, render_text_options* options, text_lines text_lines, r32 y_offset)
 {
-    text_area_limits limits = get_text_area_limits(options);
     rect new_writing_area = move_rect(options->writing_area, get_v2(0.0f, y_offset));
 
     text_viewport viewport = get_text_viewport(options->font, text_lines, new_writing_area);
