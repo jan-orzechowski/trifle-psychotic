@@ -835,7 +835,7 @@ Multi line string 8\n\
 				| (u32)entity_flags::WALKS_HORIZONTALLY
 				| (u32)entity_flags::ENEMY
 				| (u32)entity_flags::PLAYER_RECOIL_ON_CONTACT);
-			messenger->max_health = 100.0f;
+			messenger->max_health = 80.0f;
 			messenger->damage_on_contact = 10.0f;
 			messenger->velocity_multiplier = 4.0f;
 			messenger->player_acceleration_on_collision = 3.0f;
