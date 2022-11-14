@@ -17,11 +17,11 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
     level->entities = push_array(arena, level->entities_max_count, entity);
 
     level->bullets_count = 0;
-    level->bullets_max_count = 5000;
+    level->bullets_max_count = 1000; // w zrobionych przeze mnie poziomach maks to ok. 700
     level->bullets = push_array(arena, level->bullets_max_count, bullet);
 
     level->explosions_count = 0;
-    level->explosions_max_count = 500;
+    level->explosions_max_count = 200; // zmierzony maks to ok. 150
     level->explosions = push_array(arena, level->explosions_max_count, entity);
 
     level->player_movement.current_mode = PLAYER_MOVEMENT_MODE_WALK;
@@ -30,6 +30,13 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
         level->player_movement.standing_history.buffer_size, b32);
 
     level->fade_in_perc = static_data->game_fade_in_speed;
+
+    level->gates_dict.entries_count = 100;
+    level->gates_dict.entries = push_array(arena, level->gates_dict.entries_count, gate_dictionary_entry);
+
+    level->gate_tints_dict.sprite_effects_count = 100;
+    level->gate_tints_dict.sprite_effects = push_array(arena, level->gate_tints_dict.sprite_effects_count, sprite_effect*);
+    level->gate_tints_dict.probing_jump = 7;
 }
 
 void initialize_level_introduction(level_state* level, memory_arena* arena)
@@ -81,13 +88,6 @@ void initialize_current_map(level_state* level, memory_arena* arena)
 
         add_entity_at_world_position(level, starting_position, player_type);
     }
-
-    level->gates_dict.entries_count = 100;
-    level->gates_dict.entries = push_array(arena, level->gates_dict.entries_count, gate_dictionary_entry);
-
-    level->gate_tints_dict.sprite_effects_count = 100;
-    level->gate_tints_dict.sprite_effects = push_array(arena, level->gate_tints_dict.sprite_effects_count, sprite_effect*);
-    level->gate_tints_dict.probing_jump = 7;
 
     entity_to_spawn* new_entity = level->current_map.first_entity_to_spawn;
     while (new_entity)
@@ -162,9 +162,6 @@ void initialize_current_map(level_state* level, memory_arena* arena)
 
 void change_and_initialize_level(game_state* game, scene_change scene_change)
 {
-    /*printf("przed inicjalizacja permanent arena: %d, transient arena: %d\n",
-                        game->arena->size_used, game->transient_arena->size_used);*/
-
     temporary_memory auxillary_memory_for_loading = begin_temporary_memory(game->transient_arena);
     {
         string_ref level_to_load_name = {0};
@@ -231,7 +228,4 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
 
         end_temporary_memory(auxillary_memory_for_loading, true);
     }
-
-    /*	printf("po inicjalizacji permanent arena: %d, transient arena: %d\n",
-            game->arena->size_used, game->transient_arena->size_used);*/
 }

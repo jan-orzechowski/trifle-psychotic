@@ -414,11 +414,11 @@ void emscripten_main_game_loop(void* passed_data)
 
 game_state* initialize_game_state()
 {
-    u32 memory_for_permanent_arena_size = megabytes_to_bytes(20);
+    u32 memory_for_permanent_arena_size = megabytes_to_bytes(5);
     void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);
     memory_arena* permanent_arena = initialize_memory_arena(memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
 
-    u32 memory_for_transient_arena_size = megabytes_to_bytes(20);
+    u32 memory_for_transient_arena_size = megabytes_to_bytes(1);
     void* memory_for_transient_arena = SDL_malloc(memory_for_transient_arena_size);
     memory_arena* transient_arena = initialize_memory_arena(memory_for_transient_arena_size, (byte*)memory_for_transient_arena);
 
@@ -438,7 +438,7 @@ game_state* initialize_game_state()
     game->static_data = push_struct(permanent_arena, static_game_data);;
     load_static_game_data(&game->platform, game->static_data, permanent_arena, transient_arena);
 
-    game->render.max_push_buffer_size = megabytes_to_bytes(10);
+    game->render.max_push_buffer_size = megabytes_to_bytes(1);
     game->render.push_buffer_base = (u8*)push_size(permanent_arena, game->render.max_push_buffer_size);
 
     game->level_state = push_struct(permanent_arena, level_state);
