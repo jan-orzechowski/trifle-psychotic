@@ -13,7 +13,7 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
     level->static_data = static_data;
 
     level->entities_count = 0;
-    level->entities_max_count = 1000;
+    level->entities_max_count = MAX_ENTITIES_COUNT;
     level->entities = push_array(arena, level->entities_max_count, entity);
 
     level->bullets_count = 0;

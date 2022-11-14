@@ -25,21 +25,27 @@ typedef struct level_parsing_context
 entity_to_spawn* add_entity_to_spawn(map* level, memory_arena* arena,
     entity_type_enum type, tile_position position, v4 gate_color)
 {
-    entity_to_spawn* new_entity = push_struct(arena, entity_to_spawn);
-    new_entity->type = type;
-    new_entity->position = position;
-    new_entity->color = gate_color;
+    entity_to_spawn* new_entity = NULL;
+    if (level->entities_to_spawn_count < MAX_ENTITIES_COUNT)
+    {
+        new_entity = push_struct(arena, entity_to_spawn);
+        new_entity->type = type;
+        new_entity->position = position;
+        new_entity->color = gate_color;
 
-    if (level->first_entity_to_spawn == NULL)
-    {
-        level->first_entity_to_spawn = new_entity;
-        level->last_entity_to_spawn = new_entity;
+        if (level->first_entity_to_spawn == NULL)
+        {
+            level->first_entity_to_spawn = new_entity;
+            level->last_entity_to_spawn = new_entity;
+        }
+        else
+        {
+            level->last_entity_to_spawn->next = new_entity;
+            level->last_entity_to_spawn = level->last_entity_to_spawn->next;
+        }
     }
-    else
-    {
-        level->last_entity_to_spawn->next = new_entity;
-        level->last_entity_to_spawn = level->last_entity_to_spawn->next;
-    }
+
+    level->entities_to_spawn_count++;
 
     return new_entity;
 }
@@ -854,9 +860,33 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
                 level.width = parse_i32(width);
                 level.height = parse_i32(height);
 
-                level.map = parse_map_layer(&parsing, map_node, "map", true);
-                level.background = parse_map_layer(&parsing, map_node, "background", true);
-                level.foreground = parse_map_layer(&parsing, map_node, "foreground", true);
+                b32 parse_map = true;
+                if (level.width > MAX_MAP_SIDE_SIZE)
+                {
+                    snprintf(errors.message_buffer, errors.message_buffer_size,
+                        "Map width is set to %d, exceeding the limit of %d", level.width, MAX_MAP_SIDE_SIZE);
+                    add_error_to_report(transient_arena, &errors, errors.message_buffer);
+                    parse_map = false;
+                }
+
+                if (level.height > MAX_MAP_SIDE_SIZE)
+                {
+                    snprintf(errors.message_buffer, errors.message_buffer_size,
+                        "Map height is set to %d, exceeding the limit of %d", level.height, MAX_MAP_SIDE_SIZE);
+                    add_error_to_report(transient_arena, &errors, errors.message_buffer);
+                    parse_map = false;
+                }
+
+                if (parse_map)
+                {
+                    level.map = parse_map_layer(&parsing, map_node, "map", true);
+                    level.background = parse_map_layer(&parsing, map_node, "background", true);
+                    level.foreground = parse_map_layer(&parsing, map_node, "foreground", true);
+                }
+                else
+                {
+                    goto end_of_read_map_from_tmx_file_function;
+                }
             }
             else
             {
@@ -894,6 +924,13 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
         else
         {
             add_error_to_report(transient_arena, &errors, "The 'objectgroup' element is missing.");
+        }
+
+        if (level.entities_to_spawn_count > MAX_ENTITIES_COUNT)
+        {
+            snprintf(errors.message_buffer, errors.message_buffer_size,
+                "Entities count is %d, exceeding the limit of %d", level.entities_to_spawn_count, MAX_ENTITIES_COUNT);
+            add_error_to_report(transient_arena, &errors, errors.message_buffer);
         }
     }
     else
