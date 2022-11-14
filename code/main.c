@@ -231,7 +231,8 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
 
             if (entity->health < 0.0f)
             {
-                if (entity->type->type_enum == ENTITY_TYPE_ENEMY_MESSENGER)
+                if (entity->type->type_enum == ENTITY_TYPE_ENEMY_MESSENGER
+                    || entity->type->type_enum == ENTITY_TYPE_ENEMY_YELLOW_FATHER)
                 {
                     level->enemies_to_kill_counter--;
                 }
