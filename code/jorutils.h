@@ -170,8 +170,10 @@ internal void end_temporary_memory(temporary_memory temp, b32 zero_bytes)
 
 internal void check_arena(memory_arena* arena)
 {
+#if TRIFLE_DEBUG
     // to oznacza, że nie pomyliliśmy nic, i zakończyliśmy tyle ramek pamięci tymczasowej, ile utworzyliśmy
     assert(arena->temporary_memory_stack_frame_count == 0);
+#endif
 }
 
 #define zero_struct(some_struct) zero_memory(sizeof(some_struct), some_struct)

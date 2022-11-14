@@ -204,7 +204,7 @@ void render_entity_sprite(render_list* render, world_position camera_position, w
         if (tint_modified)
         {
             assert(tint.r >= 0 && tint.r <= 1 && tint.g >= 0 && tint.g <= 1 && tint.b >= 0 && tint.b <= 1);
-            if (are_flags_set(&visual_effect->flags, SPRITE_EFFECT_FLAG_ADDITIVE_MODE))
+            if (are_sprite_effect_flags_set(&visual_effect->flags, SPRITE_EFFECT_FLAG_ADDITIVE_MODE))
             {
                 v4 no_tint = get_v4(1.0f, 1.0f, 1.0f, 1.0f);
                 render_bitmap_with_effects(render, part->texture, part->texture_rect, screen_rect, no_tint, false, flip);

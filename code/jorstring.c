@@ -215,7 +215,7 @@ b32 ends_with(string_ref str, const char* suffix)
     b32 result = false;	
     if (str.string_size > 0)
     {
-        u32 suffix_length = get_c_string_length(suffix, str.string_size);
+        u32 suffix_length = get_c_string_length_with_limit(suffix, str.string_size);
         if (suffix_length <= str.string_size)
         {
             result = true;				

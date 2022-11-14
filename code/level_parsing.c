@@ -204,8 +204,8 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
         add_error_from_buffer(parsing);
     }
 
-    entity_type_enum type = get_entity_type_enum_from_gid(gid, parsing->entity_tileset_first_gid);
-    switch (type)
+    entity_type_enum entity_type = get_entity_type_enum_from_gid(gid, parsing->entity_tileset_first_gid);
+    switch (entity_type)
     {
         case ENTITY_TYPE_GATE_SILVER:
         case ENTITY_TYPE_GATE_GOLD:
@@ -277,7 +277,7 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
 
             if (false == is_zero_v4(gate_color))
             {
-                add_entity_to_spawn(parsing->level, parsing->transient_arena, type, position, gate_color);
+                add_entity_to_spawn(parsing->level, parsing->transient_arena, entity_type, position, gate_color);
             }
         }
         break;
@@ -357,7 +357,7 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
 
             if (next_level_name.string_size)
             {
-                add_entity_to_spawn(parsing->level, parsing->transient_arena, type, position, get_zero_v4());
+                add_entity_to_spawn(parsing->level, parsing->transient_arena, entity_type, position, get_zero_v4());
                 parsing->level->next_map = copy_string(parsing->permanent_arena, next_level_name);
             }
         }
@@ -384,7 +384,7 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
                             if (message_str.string_size <= 1000)
                             {
                                 entity_to_spawn* message_entity = 
-                                    add_entity_to_spawn(parsing->level, parsing->transient_arena, type, position, get_zero_v4());
+                                    add_entity_to_spawn(parsing->level, parsing->transient_arena, entity_type, position, get_zero_v4());
                                 message_entity->message = copy_string(parsing->permanent_arena, message_str);
                             }
                             else
@@ -414,7 +414,7 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
         break;
         default:
         {
-            add_entity_to_spawn(parsing->level, parsing->transient_arena, type, position, get_zero_v4());
+            add_entity_to_spawn(parsing->level, parsing->transient_arena, entity_type, position, get_zero_v4());
         }
         break;
     }

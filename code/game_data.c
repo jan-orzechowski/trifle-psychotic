@@ -121,7 +121,7 @@ animation* get_walk_animation(memory_arena* arena, v2 bitmap_offset, b32 add_hea
     r32 frame_duration = 0.2f;
     textures texture = TEXTURE_CHARSET;
 
-    r32 parts_count = add_head ? 2 : 1;
+    u32 parts_count = add_head ? 2 : 1;
 
     new_animation->frames[0].sprite.parts_count = parts_count;
     new_animation->frames[1].sprite.parts_count = parts_count;
@@ -163,7 +163,7 @@ animation_frame get_walk_idle_pose(memory_arena* arena, v2 bitmap_offset, b32 ad
 {
     animation_frame result = {0};
 
-    r32 parts_count = add_head ? 2 : 1;
+    u32 parts_count = add_head ? 2 : 1;
 
     result.sprite.parts_count = parts_count;
     result.sprite.parts = push_array(arena, parts_count, sprite_part);
