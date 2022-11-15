@@ -116,6 +116,7 @@ entity_type_enum get_entity_type_enum_from_gid(i32 gid, i32 entity_tileset_first
         case 2:  result = ENTITY_TYPE_PLAYER; break;
         case 3:  result = ENTITY_TYPE_NEXT_LEVEL_TRANSITION; break;
         case 4:  result = ENTITY_TYPE_MESSAGE_DISPLAY; break;
+        case 5:  result = ENTITY_TYPE_CHECKPOINT; break;
     }
 
     return result;

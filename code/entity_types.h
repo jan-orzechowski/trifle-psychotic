@@ -41,6 +41,7 @@ typedef enum entity_type_enum
     ENTITY_TYPE_MOVING_PLATFORM_VERTICAL_GREEN,
     ENTITY_TYPE_NEXT_LEVEL_TRANSITION,
     ENTITY_TYPE_MESSAGE_DISPLAY,
+    ENTITY_TYPE_CHECKPOINT,
     _LAST_ENTITY_TYPE
 } entity_type_enum;
 
@@ -62,8 +63,7 @@ typedef enum entity_flags
     ENTITY_FLAG_FLIES_VERTICALLY =              (1 << 13),
     ENTITY_FLAG_FLIES_TOWARDS_PLAYER =          (1 << 14),
     ENTITY_FLAG_POWER_UP =                      (1 << 15),
-    ENTITY_FLAG_MESSAGE_DISPLAY =               (1 << 16),
-    ENTITY_FLAG_TINTED_DISPLAY =                (1 << 17),
+    ENTITY_FLAG_TINTED_DISPLAY =                (1 << 16),
 } entity_flags;
 
 typedef enum detection_type

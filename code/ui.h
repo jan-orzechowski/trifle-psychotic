@@ -16,3 +16,4 @@ void update_and_render_skippable_indicator(render_list* render, static_game_data
     r32* message_dots_timer, i32* message_dots_index, r32 delta_time, v2 indicator_position);
 void update_and_render_message_box(render_list* render, level_state* level, memory_arena* transient_arena, r32 delta_time);
 void render_victory_text(render_list* render, memory_arena* transient_arena, static_game_data* static_data);
+void render_checkpoint_text(render_list* render, memory_arena* transient_arena, static_game_data* static_data);

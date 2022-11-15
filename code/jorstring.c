@@ -80,6 +80,14 @@ string_ref copy_string_to_buffer(char* buffer, u32 buffer_length, string_ref str
     return result;
 }
 
+string_ref get_string_from_buffer(char* buffer, u32 buffer_length)
+{
+    string_ref result = {0};
+    result.ptr = buffer;
+    result.string_size = get_c_string_length_with_limit(buffer, buffer_length);
+    return result;
+}
+
 char* get_c_string(memory_arena* arena, string_ref str)
 {
     char* new_c_str = (char*)push_size(arena, str.string_size + 1);

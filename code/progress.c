@@ -1,38 +1,55 @@
-#include "progress.h"
+﻿#include "progress.h"
 #include "player.h"
+#include <string.h>
 
-void save_checkpoint(game_state* game)
-{
-    assert(game->level_initialized);
-    assert(game->level_state->current_map_initialized);
+void save_checkpoint(level_state* state, checkpoint* check)
+{   
+    assert(state->current_map_initialized);
 
-    game->checkpoint = (save){0};
-    game->checkpoint.used = true;
-    game->checkpoint.map_name = copy_string_to_buffer(game->level_name_buffer, 
-        MAX_LEVEL_NAME_LENGTH, game->level_state->current_map_name);
+    memcpy(check->entities, state->entities, sizeof(entity) * MAX_ENTITIES_COUNT);
+    check->entities_count = state->entities_count;
 
-    entity* player = get_player(game->level_state);
-    if (player->type)
-    {
-        game->checkpoint.player_max_health = player->type->max_health;
-    }
+    check->enemies_to_kill_counter = state->enemies_to_kill_counter;
+    check->power_ups = state->power_ups;
+
+    memcpy(check->gates_dict.entries, state->gates_dict.entries, sizeof(gate_dictionary_entry) * MAX_GATES_COUNT);
+    check->gates_dict.entries_count = state->gates_dict.entries_count;
+
+    // polegamy na tym, że string ref wskazuje na bufor w game_state, poza pamięcią poziomu
+    check->map_name = state->current_map_name; 
+
+    check->used = true;
 }
 
-void restore_checkpoint(game_state* game)
+void restore_checkpoint(level_state* state, checkpoint* check)
 {
-    assert(game->level_initialized);
-    assert(game->level_state->current_map_initialized);
+    assert(state->current_map_initialized);
 
-    entity* player = get_player(game->level_state);
-    if (player->type && game->checkpoint.used)
-    {
-        player->type->max_health = game->checkpoint.player_max_health;
-        player->health = player->type->max_health;
+    memcpy(state->entities, check->entities, sizeof(entity) * MAX_ENTITIES_COUNT);
+    state->entities_count = check->entities_count;
 
-#if TRIFLE_DEBUG
-        printf("wczytane max health: %d\n", game->checkpoint.player_max_health);
-#endif
-    }
+    state->enemies_to_kill_counter = check->enemies_to_kill_counter;
+    state->power_ups = check->power_ups;
+
+    memcpy(state->gates_dict.entries, check->gates_dict.entries, sizeof(gate_dictionary_entry) * MAX_GATES_COUNT);
+    state->gates_dict.entries_count = check->gates_dict.entries_count;
+
+    // resetowanie wartości
+
+    state->player_ignore_enemy_collision_cooldown = 0.0f;
+    state->player_invincibility_cooldown = 0.0f;
+    state->player_movement.recoil_acceleration = get_zero_v2();
+    state->player_movement.recoil_acceleration_timer = 0.0f;
+    state->player_movement.recoil_timer = 0.0f;    
+    state->stop_player_movement = false;
+
+    entity* player = get_player(state);
+    player->health = player->type->max_health;
+    player->acceleration = get_zero_v2();
+    player->velocity = get_zero_v2();
+
+    memset(state->bullets, 0, sizeof(bullet) * state->bullets_max_count);
+    memset(state->explosions, 0, sizeof(explosion) * state->explosions_max_count);
 }
 
 void save_completed_levels(platform_api* platform, static_game_data* data, memory_arena* transient_arena)

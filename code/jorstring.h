@@ -28,6 +28,7 @@ b32 is_empty_string(string_ref);
 b32 equals_string_ref(string_ref a, string_ref b);
 string_ref copy_string(memory_arena*, string_ref);
 string_ref copy_string_to_buffer(char* buffer, u32 buffer_length, string_ref str);
+string_ref get_string_from_buffer(char* buffer, u32 buffer_length);
 char* get_c_string(memory_arena*, string_ref);
 b32 compare_to_c_string(string_ref, const char*);
 u32 get_c_string_length_with_limit(const char*, u32);

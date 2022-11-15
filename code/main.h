@@ -34,6 +34,7 @@ typedef struct map
     entity_to_spawn* first_entity_to_spawn;
     entity_to_spawn* last_entity_to_spawn;
     i32 entities_to_spawn_count;
+    i32 gate_entities_to_spawn_count;
 
     r32 initial_max_player_health;
 
@@ -116,6 +117,7 @@ typedef struct static_game_data
     string_ref choose_level_message;
     string_ref exit_warning_message;
     string_ref victory_str;
+    string_ref checkpoint_str;
     string_ref default_death_message;
     string_ref* death_messages;
     u32 death_messages_count;	
@@ -178,7 +180,19 @@ typedef struct level_state
     b32 show_level_introduction;
     introduction_scene_state introduction;
     b32 show_victory_message;
+    r32 show_checkpoint_message_timer;
 } level_state;
+
+typedef struct checkpoint
+{
+    b32 used;
+    string_ref map_name;
+    entity* entities;
+    u32 entities_count;
+    i32 enemies_to_kill_counter;
+    power_ups power_ups;
+    gate_dictionary gates_dict;
+} checkpoint;
 
 typedef struct game_state
 {
@@ -191,8 +205,7 @@ typedef struct game_state
     level_state* level_state;
     memory_arena* arena;
     memory_arena* transient_arena;	
-    
-    save checkpoint;
+     
     char* level_name_buffer;
     main_menu_state main_menu;
     death_screen_state death_screen;
@@ -213,6 +226,8 @@ typedef struct game_state
     b32 exit_level_closes_game;
     b32 skip_introductions;
     b32 skip_deaths_prompts;
+ 
+    checkpoint checkpoint;
 } game_state;
 
 void main_game_loop(game_state* game, r32 delta_time);

@@ -292,3 +292,13 @@ void render_victory_text(render_list* render, memory_arena* transient_arena, sta
     render_text_basic(render, transient_arena, static_data->title_font,
         text_area, static_data->victory_str, false);
 }
+
+void render_checkpoint_text(render_list* render, memory_arena* transient_arena, static_game_data* static_data)
+{
+    rect text_area = get_rect_from_center_and_dimensions(
+        get_v2(SCREEN_CENTER_IN_PIXELS.x, 50.0f),
+        get_v2(240.0f, 20.0f));
+
+    render_text_basic(render, transient_arena, static_data->title_font,
+        text_area, static_data->checkpoint_str, false);
+}

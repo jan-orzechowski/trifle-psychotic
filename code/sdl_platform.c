@@ -7,6 +7,7 @@
 #include "rendering.h"
 #include "input.h"
 #include "progress.h"
+#include "level_initialization.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -443,6 +444,8 @@ game_state* initialize_game_state()
 
     game->level_state = push_struct(permanent_arena, level_state);
     game->level_name_buffer = (char*)push_size(permanent_arena, MAX_LEVEL_NAME_LENGTH);
+
+    initialize_memory_for_checkpoint(game, permanent_arena);
 
     game->input_buffer = initialize_input_buffer(permanent_arena);
 

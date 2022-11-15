@@ -496,6 +496,7 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
         data->menu_exit_str = copy_c_string(arena, "Exit");
 
         data->victory_str = copy_c_string(arena, "Victory");		
+        data->checkpoint_str = copy_c_string(arena, "Checkpoint");		
         data->choose_level_message = copy_c_string(arena, "Choose a place to heal:");		
         data->exit_warning_message = copy_c_string(arena, "Are you sure you want to exit? Press ESC again to confirm");
 

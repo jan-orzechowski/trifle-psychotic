@@ -82,10 +82,3 @@ typedef struct credits_screen_state
     i32 skippable_indicator_index;
     r32 skippable_indicator_timer;
 } credits_screen_state;
-
-typedef struct save
-{
-    b32 used;
-    string_ref map_name;
-    u32 player_max_health;
-} save;

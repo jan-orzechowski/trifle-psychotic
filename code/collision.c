@@ -290,7 +290,6 @@ b32 check_if_sight_line_is_obstructed(level_state* level, world_position start, 
         }
     }
     
-
 check_sight_line_end:
     return path_obstructed;
 }
@@ -487,9 +486,9 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
                                         result.collided_transition = entity_to_check;
                                     }
 
-                                    if (has_entity_flags_set(entity_to_check, ENTITY_FLAG_MESSAGE_DISPLAY))
+                                    if (entity_to_check->type->type_enum == ENTITY_TYPE_CHECKPOINT)
                                     {
-                                        result.collided_message_display = entity_to_check;
+                                        result.collided_checkpoint = entity_to_check;
                                     }
                                 }
                             }

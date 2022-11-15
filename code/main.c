@@ -170,7 +170,7 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
                 level->message_to_show = collision.collided_message_display->type->message;
                 level->min_message_timer = 1.0f;
                 level->messagebox_dimensions = get_v2(150, 120);
-                collision.collided_message_display->type->message = (string_ref){0};
+                collision.collided_message_display->type->type_enum = ENTITY_TYPE_UNKNOWN; // wiadomość pokazuje się tylko raz
             }
         }
 
@@ -183,6 +183,13 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
             level->active_scene_change.change_scene = true;
             level->active_scene_change.new_scene = SCENE_GAME;
             level->active_scene_change.map_to_load = level->current_map.next_map;
+        }
+
+        if (collision.collided_checkpoint)
+        {
+            collision.collided_checkpoint->type->type_enum = ENTITY_TYPE_UNKNOWN; // checkpoint działa tylko raz
+            save_checkpoint(level, &game->checkpoint);
+            level->show_checkpoint_message_timer = 4.0f;
         }
 
         if (false == is_zero_v2(player->velocity))
@@ -409,6 +416,11 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
     if (level->show_victory_message)
     {
         render_victory_text(&game->render, game->transient_arena, level->static_data);
+    }
+    else if (level->show_checkpoint_message_timer > 0.0f)
+    {
+        render_checkpoint_text(&game->render, game->transient_arena, level->static_data);
+        level->show_checkpoint_message_timer -= delta_time;
     }
 
     if (level->active_scene_change.change_scene)

@@ -4,17 +4,22 @@
 #include "level_parsing.h"
 #include "progress.h"
 
+void initialize_memory_for_checkpoint(game_state* game, memory_arena* arena)
+{
+    game->checkpoint.entities = push_array(arena, MAX_ENTITIES_COUNT, entity);
+    game->checkpoint.gates_dict.entries = push_array(arena, MAX_GATES_COUNT, gate_dictionary_entry);
+}
+
 void initialize_level_state(level_state* level, static_game_data* static_data, string_ref map_name, memory_arena* arena)
 {
     *level = (level_state){0};
 
-    level->current_map_name = copy_string(arena, map_name);
-
+    level->current_map_name = map_name;
     level->static_data = static_data;
 
     level->entities_count = 0;
+    level->entities = push_array(arena, MAX_ENTITIES_COUNT, entity);
     level->entities_max_count = MAX_ENTITIES_COUNT;
-    level->entities = push_array(arena, level->entities_max_count, entity);
 
     level->bullets_count = 0;
     level->bullets_max_count = 1000; // w zrobionych przeze mnie poziomach maks to ok. 700
@@ -31,12 +36,12 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
 
     level->fade_in_perc = static_data->game_fade_in_speed;
 
-    level->gates_dict.entries_count = 100;
-    level->gates_dict.entries = push_array(arena, level->gates_dict.entries_count, gate_dictionary_entry);
+    level->gates_dict.entries = push_array(arena, MAX_GATES_COUNT, gate_dictionary_entry);
+    level->gates_dict.entries_count = MAX_GATES_COUNT;
 
-    level->gate_tints_dict.sprite_effects_count = 100;
-    level->gate_tints_dict.sprite_effects = push_array(arena, level->gate_tints_dict.sprite_effects_count, sprite_effect*);
-    level->gate_tints_dict.probing_jump = 7;
+    level->gate_tints_dict.sprite_effects = push_array(arena, MAX_GATES_COUNT, sprite_effect*);
+    level->gate_tints_dict.sprite_effects_count = MAX_GATES_COUNT;
+    level->gate_tints_dict.probing_jump = 7; 
 }
 
 void initialize_level_introduction(level_state* level, memory_arena* arena)
@@ -120,6 +125,11 @@ void initialize_current_map(level_state* level, memory_arena* arena)
                 add_message_display_entity(level, arena, new_entity);
             }
             break;
+            case ENTITY_TYPE_CHECKPOINT:
+            {
+                add_checkpoint_entity(level, arena, new_entity);
+            }
+            break;
             case ENTITY_TYPE_MOVING_PLATFORM_HORIZONTAL_SILVER:
             case ENTITY_TYPE_MOVING_PLATFORM_HORIZONTAL_GOLD:
             case ENTITY_TYPE_MOVING_PLATFORM_HORIZONTAL_RED:
@@ -174,11 +184,11 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
             && game->checkpoint.used
             && game->checkpoint.map_name.string_size > 0)
         {
-            level_to_load_name = copy_string(game->transient_arena, game->checkpoint.map_name);
+            level_to_load_name = game->checkpoint.map_name;
         }
         else if (scene_change.map_to_load.string_size)
         {
-            level_to_load_name = copy_string(game->transient_arena, scene_change.map_to_load);
+            level_to_load_name = scene_change.map_to_load;
         }
 
         if (level_to_load_name.string_size == 0)
@@ -186,12 +196,16 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
             level_to_load_name = copy_c_string(game->transient_arena, "map_01");
         }
 
+        // nazwę przechowujemy poza pamięcią poziomu - potrzebne przy checkpointach
+        copy_string_to_buffer(game->level_name_buffer, MAX_LEVEL_NAME_LENGTH, level_to_load_name);
+        level_to_load_name = get_string_from_buffer(game->level_name_buffer, MAX_LEVEL_NAME_LENGTH);
+
         if (game->game_level_memory.size_used_at_creation != 0)
         {
             end_temporary_memory(game->game_level_memory, true);
         }
         game->game_level_memory = begin_temporary_memory(game->arena);
-
+        
         initialize_level_state(game->level_state, game->static_data, level_to_load_name, game->arena);
         tmx_map_parsing_result parsing_result = load_map(&game->platform, level_to_load_name, game->arena, game->transient_arena);
         if (parsing_result.errors->errors_count > 0)
@@ -210,7 +224,7 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
 
             if (scene_change.restore_checkpoint && game->checkpoint.used)
             {
-                restore_checkpoint(game);
+                restore_checkpoint(game->level_state, &game->checkpoint);
             }
             else
             {
@@ -219,9 +233,9 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
                     // wstęp pokazujemy tylko za pierwszym razem
                     initialize_level_introduction(game->level_state, game->arena);
                 }
-            }
 
-            save_checkpoint(game);
+                save_checkpoint(game->level_state, &game->checkpoint);
+            }
 
             game->platform.start_playing_music(game->level_state->current_map.music_file_name);
         }

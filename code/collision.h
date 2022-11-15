@@ -17,6 +17,7 @@ typedef struct collision_result
     entity* collided_transition;
     entity* collided_power_up;
     entity* collided_message_display;
+    entity* collided_checkpoint;
     entity* collided_platform;
 } collision_result;
 

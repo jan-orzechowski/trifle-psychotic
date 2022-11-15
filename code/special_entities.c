@@ -452,43 +452,45 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
     add_entity_at_tile_position(level, entity_position, type);
 }
 
-void add_next_level_transition_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+entity_type* add_vertical_empty_type_entity(level_state* level, memory_arena* arena, tile_position position)
 {
-    entity_type* transition_type = push_struct(arena, entity_type);
-    transition_type->type_enum = ENTITY_TYPE_NEXT_LEVEL_TRANSITION;
+    entity_type* new_type = push_struct(arena, entity_type);
 
-    tile_range occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map,
-        new_entity_to_spawn->position, 20);
-    transition_type->collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
+    u32 max_size = 20;
+
+    tile_range occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map, position, max_size);
+    new_type->collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);;
 
     world_position new_position = add_to_world_position(
         get_world_pos_from_tile_pos(occupied_tiles.start),
         scalar_divide_v2(get_tile_position_difference(occupied_tiles.end, occupied_tiles.start), 2));
 
-    set_entity_flags(&transition_type->flags, ENTITY_FLAG_INDESTRUCTIBLE);
+    add_entity_at_world_position(level, new_position, new_type);
 
-    add_entity_at_world_position(level, new_position, transition_type);
+    return new_type;
+}
+
+void add_next_level_transition_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+{
+    entity_type* new_type = add_vertical_empty_type_entity(level, arena, new_entity_to_spawn->position);
+    new_type->type_enum = ENTITY_TYPE_NEXT_LEVEL_TRANSITION;
+
+    set_entity_flags(&new_type->flags, ENTITY_FLAG_INDESTRUCTIBLE);    
 }
 
 void add_message_display_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
 {
-    entity_type* new_type = push_struct(arena, entity_type);
-
-    u32 max_size = 10;
-
-    tile_range occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map,
-        new_entity_to_spawn->position, max_size);
-    v2 collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
-
-    new_type->collision_rect_dim = collision_rect_dim;
-    new_type->message = new_entity_to_spawn->message;
-
-    world_position new_position = add_to_world_position(
-        get_world_pos_from_tile_pos(occupied_tiles.start),
-        scalar_divide_v2(get_tile_position_difference(occupied_tiles.end, occupied_tiles.start), 2));
+    entity_type* new_type = add_vertical_empty_type_entity(level, arena, new_entity_to_spawn->position);
+    new_type->type_enum = ENTITY_TYPE_MESSAGE_DISPLAY;
 
     set_entity_flags(&new_type->flags, ENTITY_FLAG_INDESTRUCTIBLE);
-    set_entity_flags(&new_type->flags, ENTITY_FLAG_MESSAGE_DISPLAY);
-
-    add_entity_at_world_position(level, new_position, new_type);
+    new_type->message = new_entity_to_spawn->message; 
 }
+
+void add_checkpoint_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+{
+    entity_type* new_type = add_vertical_empty_type_entity(level, arena, new_entity_to_spawn->position);
+    new_type->type_enum = ENTITY_TYPE_CHECKPOINT;
+    set_entity_flags(&new_type->flags, ENTITY_FLAG_INDESTRUCTIBLE);
+}
+
