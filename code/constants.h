@@ -21,6 +21,12 @@
 #define CHUNK_SIDE_IN_TILES 16
 
 #define MAX_LEVEL_NAME_LENGTH 100
+
+#define ENTITY_STATIC_TYPES_MAX_COUNT 15
+#define ENTITY_DYNAMIC_TYPES_MAX_COUNT 200
+#define BULLET_TYPES_MAX_COUNT 10
 #define MAX_ENTITIES_COUNT 1000
 #define MAX_MAP_SIDE_SIZE 500
 #define MAX_GATES_COUNT 100
+#define MAX_BULLETS_COUNT 1000 /* w zrobionych przeze mnie poziomach maks to ok. 700 */
+#define MAX_EXPLOSIONS_COUNT 200 /* zmierzony maks to ok. 150 */

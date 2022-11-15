@@ -5,6 +5,19 @@
 #include "map.h"
 #include "entities.h"
 
+entity_type* add_empty_dynamic_entity_type(level_state* level)
+{
+    entity_type* result = NULL;
+    assert(level->entity_dynamic_types_count < ENTITY_DYNAMIC_TYPES_MAX_COUNT);
+    if (level->entity_dynamic_types_count < ENTITY_DYNAMIC_TYPES_MAX_COUNT)
+    {
+        result = &level->entity_dynamic_types[level->entity_dynamic_types_count];
+        level->entity_dynamic_types_count++;
+    }
+
+    return result;
+}
+
 u32 get_hash_from_color(v4 color)
 {
     u32 result = ((u32)color.r * 13 + (u32)color.g * 7 + (u32)color.b * 3);
@@ -109,7 +122,7 @@ void open_gates_with_given_color(level_state* level, v4 color)
                     sprite* sprite = &entry->entity->type->idle_pose.sprite;
                     for (u32 sprite_index = 1; sprite_index < sprite->parts_count - 1; sprite_index++)
                     {
-                        sprite->parts[sprite_index].texture = TEXTURE_NONE;
+                        sprite->parts[sprite_index].hide = true;
                     }
                 
                     invalidate_paths_after_gate_opening(level);
@@ -128,9 +141,45 @@ void open_gates_with_given_color(level_state* level, v4 color)
     }
 }
 
+void update_gate_entities_after_checkpoint_load(level_state* level)
+{
+    for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
+    {
+        entity* entity = level->entities + entity_index;
+        if (false == entity->used)
+        {
+            continue;
+        }
+
+        // szukamy otwartych bram
+        if (has_entity_flags_set(entity, ENTITY_FLAG_GATE))
+        {
+            sprite* sprite = &entity->type->idle_pose.sprite;
+            if (has_entity_flags_set(entity, ENTITY_FLAG_BLOCKS_MOVEMENT))
+            {
+                for (u32 sprite_index = 1; sprite_index < sprite->parts_count - 1; sprite_index++)
+                {
+                    sprite->parts[sprite_index].hide = false;
+                }
+            }
+            else
+            {
+                for (u32 sprite_index = 1; sprite_index < sprite->parts_count - 1; sprite_index++)
+                {
+                    sprite->parts[sprite_index].hide = true;
+                }
+            }           
+        }
+    }
+}
+
 void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn, b32 is_switch)
 {
-    entity_type* new_type = push_struct(arena, entity_type);
+    entity_type* new_type = add_empty_dynamic_entity_type(level);
+    if (new_type == NULL)
+    {
+        return;
+    }
 
     v2 collision_rect_dim;
     tile_range occupied_tiles;
@@ -250,7 +299,12 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 
     // dodanie wyświetlaczy
 
-    entity_type* new_display_type = push_struct(arena, entity_type);
+    entity_type* new_display_type = add_empty_dynamic_entity_type(level);
+    if (new_display_type == NULL)
+    {
+        return;
+    }
+
     set_entity_flags(&new_display_type->flags, ENTITY_FLAG_TINTED_DISPLAY);
     new_display_type->color = new_entity_to_spawn->color;
 
@@ -365,7 +419,11 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
 
     if (type == NULL)
     {
-        type = push_struct(arena, entity_type);
+        type = add_empty_dynamic_entity_type(level);
+        if (type == NULL)
+        {
+            return;
+        }
 
         moving_platform_graphics platform_gfx = level->static_data->platforms_gfx.blue;
         switch (new_entity_to_spawn->type)
@@ -449,45 +507,54 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
     add_entity_at_tile_position(level, entity_position, type);
 }
 
-entity_type* add_vertical_empty_type_entity(level_state* level, memory_arena* arena, tile_position position)
+entity_type* add_vertical_empty_type_entity(level_state* level, tile_position position)
 {
-    entity_type* new_type = push_struct(arena, entity_type);
+    entity_type* new_type = add_empty_dynamic_entity_type(level);
+    if (new_type)
+    {
+        u32 max_size = 20;
 
-    u32 max_size = 20;
+        tile_range occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map, position, max_size);
+        new_type->collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);;
 
-    tile_range occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map, position, max_size);
-    new_type->collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);;
+        world_position new_position = add_to_world_position(
+            get_world_pos_from_tile_pos(occupied_tiles.start),
+            scalar_divide_v2(get_tile_position_difference(occupied_tiles.end, occupied_tiles.start), 2));
 
-    world_position new_position = add_to_world_position(
-        get_world_pos_from_tile_pos(occupied_tiles.start),
-        scalar_divide_v2(get_tile_position_difference(occupied_tiles.end, occupied_tiles.start), 2));
-
-    add_entity_at_world_position(level, new_position, new_type);
-
+        add_entity_at_world_position(level, new_position, new_type);
+    }
     return new_type;
 }
 
-void add_next_level_transition_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+void add_next_level_transition_entity(level_state* level, entity_to_spawn* new_entity_to_spawn)
 {
-    entity_type* new_type = add_vertical_empty_type_entity(level, arena, new_entity_to_spawn->position);
-    new_type->type_enum = ENTITY_TYPE_NEXT_LEVEL_TRANSITION;
-
-    set_entity_flags(&new_type->flags, ENTITY_FLAG_INDESTRUCTIBLE);    
+    entity_type* new_type = add_vertical_empty_type_entity(level, new_entity_to_spawn->position);
+    if (new_type)
+    {
+        new_type->type_enum = ENTITY_TYPE_NEXT_LEVEL_TRANSITION;
+        set_entity_flags(&new_type->flags, ENTITY_FLAG_INDESTRUCTIBLE);    
+    }
 }
 
-void add_message_display_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+void add_message_display_entity(level_state* level, entity_to_spawn* new_entity_to_spawn)
 {
-    entity_type* new_type = add_vertical_empty_type_entity(level, arena, new_entity_to_spawn->position);
-    new_type->type_enum = ENTITY_TYPE_MESSAGE_DISPLAY;
+    entity_type* new_type = add_vertical_empty_type_entity(level, new_entity_to_spawn->position);
+    if (new_type)
+    {
+        new_type->type_enum = ENTITY_TYPE_MESSAGE_DISPLAY;
 
-    set_entity_flags(&new_type->flags, ENTITY_FLAG_INDESTRUCTIBLE);
-    new_type->message = new_entity_to_spawn->message; 
+        set_entity_flags(&new_type->flags, ENTITY_FLAG_INDESTRUCTIBLE);
+        new_type->message = new_entity_to_spawn->message;
+    }
 }
 
-void add_checkpoint_entity(level_state* level, memory_arena* arena, entity_to_spawn* new_entity_to_spawn)
+void add_checkpoint_entity(level_state* level, entity_to_spawn* new_entity_to_spawn)
 {
-    entity_type* new_type = add_vertical_empty_type_entity(level, arena, new_entity_to_spawn->position);
-    new_type->type_enum = ENTITY_TYPE_CHECKPOINT;
-    set_entity_flags(&new_type->flags, ENTITY_FLAG_INDESTRUCTIBLE);
+    entity_type* new_type = add_vertical_empty_type_entity(level, new_entity_to_spawn->position);
+    if (new_type)
+    {
+        new_type->type_enum = ENTITY_TYPE_CHECKPOINT;
+        set_entity_flags(&new_type->flags, ENTITY_FLAG_INDESTRUCTIBLE);
+    }
 }
 

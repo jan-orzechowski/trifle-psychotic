@@ -63,7 +63,7 @@ typedef enum entity_flags
     ENTITY_FLAG_FLIES_VERTICALLY =              (1 << 13),
     ENTITY_FLAG_FLIES_TOWARDS_PLAYER =          (1 << 14),
     ENTITY_FLAG_POWER_UP =                      (1 << 15),
-    ENTITY_FLAG_TINTED_DISPLAY =                (1 << 16),
+    ENTITY_FLAG_TINTED_DISPLAY =                (1 << 16)
 } entity_flags;
 
 typedef enum detection_type

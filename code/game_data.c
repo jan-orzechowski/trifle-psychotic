@@ -5,9 +5,6 @@
 #include "rendering.h"
 #include "ui.h"
 
-#define ENTITY_TYPES_MAX_COUNT 20
-#define BULLET_TYPES_MAX_COUNT 10
-
 sprite_part get_square_sprite_part(v2 offset, u32 square_side, textures texture, u32 tile_x, u32 tile_y)
 {
     sprite_part result = {0};
@@ -235,7 +232,7 @@ animation_frame get_bullet_graphics(memory_arena* arena, u32 x, u32 y)
 
 entity_type* add_entity_type(static_game_data* data, entity_type_enum type)
 {
-    assert(data->entity_types_count < ENTITY_TYPES_MAX_COUNT);
+    assert(data->entity_types_count < ENTITY_STATIC_TYPES_MAX_COUNT);
 
     entity_type* result = &data->entity_types[data->entity_types_count];
     data->entity_types_count++;
@@ -617,7 +614,7 @@ Multi line string 8\n\
 
     // entity types arrays
     {
-        data->entity_types = push_array(arena, ENTITY_TYPES_MAX_COUNT, entity_type);
+        data->entity_types = push_array(arena, ENTITY_STATIC_TYPES_MAX_COUNT, entity_type);
         data->entity_types_count = 0;
 
         data->bullet_types = push_array(arena, BULLET_TYPES_MAX_COUNT, entity_type);

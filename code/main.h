@@ -151,6 +151,9 @@ typedef struct level_state
     u32 explosions_max_count;
     u32 explosions_count;
 
+    entity_type* entity_dynamic_types;
+    u32 entity_dynamic_types_count;
+ 
     gate_dictionary gates_dict;
     sprite_effect_dictionary gate_tints_dict;
     entity_type* moving_platform_types[8];
@@ -187,11 +190,14 @@ typedef struct checkpoint
 {
     b32 used;
     string_ref map_name;
+    
     entity* entities;
     u32 entities_count;
+    entity_type* entity_dynamic_types;
+    u32 entity_dynamic_types_count;
+
     i32 enemies_to_kill_counter;
     power_ups power_ups;
-    gate_dictionary gates_dict;
 } checkpoint;
 
 typedef struct game_state

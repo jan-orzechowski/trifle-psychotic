@@ -1,5 +1,6 @@
 ﻿#include "progress.h"
 #include "player.h"
+#include "special_entities.h"
 #include <string.h>
 
 void save_checkpoint(level_state* state, checkpoint* check)
@@ -12,9 +13,9 @@ void save_checkpoint(level_state* state, checkpoint* check)
     check->enemies_to_kill_counter = state->enemies_to_kill_counter;
     check->power_ups = state->power_ups;
 
-    memcpy(check->gates_dict.entries, state->gates_dict.entries, sizeof(gate_dictionary_entry) * MAX_GATES_COUNT);
-    check->gates_dict.entries_count = state->gates_dict.entries_count;
-
+    memcpy(check->entity_dynamic_types, state->entity_dynamic_types, sizeof(entity_type) * ENTITY_DYNAMIC_TYPES_MAX_COUNT);
+    check->entity_dynamic_types_count = state->entity_dynamic_types_count;
+    
     // polegamy na tym, że string ref wskazuje na bufor w game_state, poza pamięcią poziomu
     check->map_name = state->current_map_name; 
 
@@ -31,8 +32,8 @@ void restore_checkpoint(level_state* state, checkpoint* check)
     state->enemies_to_kill_counter = check->enemies_to_kill_counter;
     state->power_ups = check->power_ups;
 
-    memcpy(state->gates_dict.entries, check->gates_dict.entries, sizeof(gate_dictionary_entry) * MAX_GATES_COUNT);
-    state->gates_dict.entries_count = check->gates_dict.entries_count;
+    memcpy(state->entity_dynamic_types, check->entity_dynamic_types, sizeof(entity_type) * ENTITY_DYNAMIC_TYPES_MAX_COUNT);
+    state->entity_dynamic_types_count = check->entity_dynamic_types_count;
 
     // resetowanie wartości
 
@@ -50,6 +51,8 @@ void restore_checkpoint(level_state* state, checkpoint* check)
 
     memset(state->bullets, 0, sizeof(bullet) * state->bullets_max_count);
     memset(state->explosions, 0, sizeof(explosion) * state->explosions_max_count);
+
+    update_gate_entities_after_checkpoint_load(state);
 }
 
 void save_completed_levels(platform_api* platform, static_game_data* data, memory_arena* transient_arena)

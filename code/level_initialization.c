@@ -7,7 +7,7 @@
 void initialize_memory_for_checkpoint(game_state* game, memory_arena* arena)
 {
     game->checkpoint.entities = push_array(arena, MAX_ENTITIES_COUNT, entity);
-    game->checkpoint.gates_dict.entries = push_array(arena, MAX_GATES_COUNT, gate_dictionary_entry);
+    game->checkpoint.entity_dynamic_types = push_array(arena, ENTITY_DYNAMIC_TYPES_MAX_COUNT, entity_type);
 }
 
 void initialize_level_state(level_state* level, static_game_data* static_data, string_ref map_name, memory_arena* arena)
@@ -22,11 +22,11 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
     level->entities_max_count = MAX_ENTITIES_COUNT;
 
     level->bullets_count = 0;
-    level->bullets_max_count = 1000; // w zrobionych przeze mnie poziomach maks to ok. 700
+    level->bullets_max_count = MAX_BULLETS_COUNT; 
     level->bullets = push_array(arena, level->bullets_max_count, bullet);
 
     level->explosions_count = 0;
-    level->explosions_max_count = 200; // zmierzony maks to ok. 150
+    level->explosions_max_count = MAX_EXPLOSIONS_COUNT;
     level->explosions = push_array(arena, level->explosions_max_count, entity);
 
     level->player_movement.current_mode = PLAYER_MOVEMENT_MODE_WALK;
@@ -38,6 +38,9 @@ void initialize_level_state(level_state* level, static_game_data* static_data, s
 
     level->gates_dict.entries = push_array(arena, MAX_GATES_COUNT, gate_dictionary_entry);
     level->gates_dict.entries_count = MAX_GATES_COUNT;
+
+    level->entity_dynamic_types_count = 0;
+    level->entity_dynamic_types = push_array(arena, ENTITY_DYNAMIC_TYPES_MAX_COUNT, entity_type);
 
     level->gate_tints_dict.sprite_effects = push_array(arena, MAX_GATES_COUNT, sprite_effect*);
     level->gate_tints_dict.sprite_effects_count = MAX_GATES_COUNT;
@@ -117,17 +120,17 @@ void initialize_current_map(level_state* level, memory_arena* arena)
             break;
             case ENTITY_TYPE_NEXT_LEVEL_TRANSITION:
             {
-                add_next_level_transition_entity(level, arena, new_entity);
+                add_next_level_transition_entity(level, new_entity);
             }
             break;
             case ENTITY_TYPE_MESSAGE_DISPLAY:
             {
-                add_message_display_entity(level, arena, new_entity);
+                add_message_display_entity(level, new_entity);
             }
             break;
             case ENTITY_TYPE_CHECKPOINT:
             {
-                add_checkpoint_entity(level, arena, new_entity);
+                add_checkpoint_entity(level, new_entity);
             }
             break;
             case ENTITY_TYPE_MOVING_PLATFORM_HORIZONTAL_SILVER:

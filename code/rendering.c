@@ -181,6 +181,11 @@ void render_entity_sprite(render_list* render, world_position camera_position, w
     for (u32 part_index = 0; part_index < sprite.parts_count; part_index++)
     {
         sprite_part* part = &sprite.parts[part_index];
+        if (part->hide)
+        {
+            continue;
+        }
+
         v2 offset = part->offset_in_pixels;
 
         b32 flip = false;

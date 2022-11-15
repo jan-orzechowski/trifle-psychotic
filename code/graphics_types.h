@@ -37,8 +37,8 @@ typedef enum sprite_effects_types
 
 typedef enum sprite_effect_flags
 {
-    SPRITE_EFFECT_FLAG_REPEATS = (1 << 0),
-    SPRITE_EFFECT_FLAG_ADDITIVE_MODE = (1 << 1),
+    SPRITE_EFFECT_FLAG_REPEATS =        (1 << 0),
+    SPRITE_EFFECT_FLAG_ADDITIVE_MODE =  (1 << 1),
     SPRITE_EFFECT_FLAG_REVERSE_VALUES = (1 << 2)
 } sprite_effect_flags;
 
@@ -67,6 +67,7 @@ typedef struct sprite_part
     rect texture_rect;
     v2 offset_in_pixels;
     direction default_direction;
+    b32 hide;
 } sprite_part;
 
 typedef struct sprite
