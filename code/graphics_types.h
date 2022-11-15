@@ -42,22 +42,15 @@ typedef enum sprite_effect_flags
     SPRITE_EFFECT_FLAG_REVERSE_VALUES = (1 << 2)
 } sprite_effect_flags;
 
-typedef struct sprite_effect_stage
-{
-    r32 amplitude;
-    r32 phase_shift;
-    r32 vertical_shift;
-    r32 period; // jeśli 0, to mamy stałą funkcję
-    r32 stage_duration;
-} sprite_effect_stage;
-
 typedef struct sprite_effect
 {
     sprite_effects_types type;
     v4 color;
-    sprite_effect_stage* stages;
-    u32 stages_count;
-    r32 total_duration;
+    r32 amplitude;
+    r32 phase_shift;
+    r32 vertical_shift;
+    r32 period; // jeśli 0, to mamy stałą funkcję
+    r32 duration;
     sprite_effect_flags flags;
 } sprite_effect;
 

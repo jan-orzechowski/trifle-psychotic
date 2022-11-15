@@ -8,7 +8,6 @@ b32 are_sprite_effect_flags_set(sprite_effect_flags* flags, sprite_effect_flags 
 void set_sprite_effect_flags(sprite_effect_flags* flags, sprite_effect_flags flag_values_to_check);
 void unset_sprite_effect_flags(sprite_effect_flags* flags, sprite_effect_flags flag_values_to_check);
 
-r32 get_stage_tint(sprite_effect_stage* stage, r32 total_time);
 v4 get_tint(sprite_effect* effect, r32 time);
 
 void start_visual_effect(entity* entity, sprite_effect* effect);

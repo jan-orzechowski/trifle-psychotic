@@ -909,57 +909,43 @@ Multi line string 8\n\
         data->sprite_effects = push_array(arena, data->sprite_effects_count, sprite_effect);
 
         sprite_effect* death = add_sprite_effect(data, SPRITE_EFFECT_TYPE_DEATH);
-        death->stages_count = 1;
-        death->stages = push_array(arena, death->stages_count, sprite_effect_stage);
-        death->stages[0].period = 0.0f;
-        death->stages[0].amplitude = 1.0f;
-        death->total_duration = 0.0f;
+        death->period = 0.0f;
+        death->amplitude = 1.0f;
+        death->duration = 0.0f;
         death->color = get_v4(255, 0, 0, 0);
 
         sprite_effect* bullet_hit = add_sprite_effect(data, SPRITE_EFFECT_TYPE_BULLET_HIT);
-        bullet_hit->stages_count = 1;
-        bullet_hit->stages = push_array(arena, bullet_hit->stages_count, sprite_effect_stage);
-        bullet_hit->stages[0].period = 1.0f;
-        bullet_hit->stages[0].amplitude = 0.8f;
-        bullet_hit->total_duration = 1.0f;
+        bullet_hit->period = 1.0f;
+        bullet_hit->amplitude = 0.8f;
+        bullet_hit->duration = 1.0f;
         bullet_hit->flags = SPRITE_EFFECT_FLAG_ADDITIVE_MODE;
         bullet_hit->color = get_v4(255, 95, 31, 0);
 
         sprite_effect* invinvibility = add_sprite_effect(data, SPRITE_EFFECT_TYPE_INVINCIBILITY);
-        invinvibility->stages_count = 1;
-        invinvibility->stages = push_array(arena, invinvibility->stages_count, sprite_effect_stage);
-        invinvibility->stages[0].period = 10.0f;
-        invinvibility->stages[0].amplitude = 1.5f;
+        invinvibility->period = 10.0f;
+        invinvibility->amplitude = 1.5f;
         invinvibility->flags = (sprite_effect_flags)((u32)SPRITE_EFFECT_FLAG_REPEATS | (u32)SPRITE_EFFECT_FLAG_ADDITIVE_MODE);
         invinvibility->color = get_v4(0, 0, 255, 0);
 
         sprite_effect* shock = add_sprite_effect(data, SPRITE_EFFECT_TYPE_SHOCK);
-        shock->stages_count = 1;
-        shock->stages = push_array(arena, shock->stages_count, sprite_effect_stage);
-        shock->stages[0].period = 1.5f;
-        shock->stages[0].amplitude = 1.5f;
-        shock->total_duration = 1.5f;
+        shock->period = 1.5f;
+        shock->amplitude = 1.5f;
+        shock->duration = 1.5f;
         shock->flags = SPRITE_EFFECT_FLAG_ADDITIVE_MODE;
         shock->color = get_v4(255, 255, 255, 0);
 
         sprite_effect* recoil = add_sprite_effect(data, SPRITE_EFFECT_TYPE_RECOIL);
-        recoil->stages_count = 1;
-        recoil->stages = push_array(arena, recoil->stages_count, sprite_effect_stage);
-        recoil->stages[0].period = 0.5f;
-        recoil->stages[0].amplitude = 1.5f;
+        recoil->period = 0.5f;
+        recoil->amplitude = 1.5f;
         recoil->flags = (sprite_effect_flags)((u32)SPRITE_EFFECT_FLAG_REPEATS | (u32)SPRITE_EFFECT_FLAG_ADDITIVE_MODE);
         recoil->color = get_v4(255, 255, 255, 0);
 
         sprite_effect* gate_display_fade = add_sprite_effect(data, SPRITE_EFFECT_TYPE_GATE_DISPLAY_INACTIVE);
-        gate_display_fade->stages_count = 1;
-        gate_display_fade->stages = push_array(arena, gate_display_fade->stages_count, sprite_effect_stage);
-        gate_display_fade->stages[0].amplitude = 1.2f;
+        gate_display_fade->amplitude = 1.2f;
         gate_display_fade->color = get_v4(100, 100, 100, 0);
 
         sprite_effect* speed_up = add_sprite_effect(data, SPRITE_EFFECT_TYPE_SPEED);
-        speed_up->stages_count = 1;
-        speed_up->stages = push_array(arena, speed_up->stages_count, sprite_effect_stage);
-        speed_up->stages[0].amplitude = 1.2f;
+        speed_up->amplitude = 1.2f;
         speed_up->flags = (sprite_effect_flags)((u32)SPRITE_EFFECT_FLAG_REPEATS | (u32)SPRITE_EFFECT_FLAG_ADDITIVE_MODE);
         speed_up->color = get_v4(0, 120, 0, 0);
     }

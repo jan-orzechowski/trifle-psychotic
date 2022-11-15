@@ -21,72 +21,48 @@ void unset_sprite_effect_flags(sprite_effect_flags* flags, sprite_effect_flags f
     unset_flags((u32*)flags, (u32)flag_values_to_check);
 }
 
-r32 get_stage_tint(sprite_effect_stage* stage, r32 total_time)
-{
-    r32 result;
-    if (stage->period == 0)
-    {
-        result = stage->amplitude; // stała wartość
-    }
-    else
-    {
-        // używamy pi zamiast 2pi ze względu na to, że niżej mamy odbicie ujemnych wartości
-        result = stage->amplitude * sinf((total_time * pi32 / stage->period) + stage->phase_shift);
-    }
-
-    if (result < 0)
-    {
-        result = -result;
-    }
-
-    result += stage->vertical_shift;
-
-    if (result < 0.0f)
-    {
-        result = 0.0f;
-    }
-
-    if (result > 1.0f)
-    {
-        result = 1.0f;
-    }
-
-    return result;
-}
-
 v4 get_tint(sprite_effect* effect, r32 time)
 {
     v4 result = scalar_divide_v4(effect->color, 255);
-    if (effect->total_duration == 0 || (time >= 0.0f && time <= effect->total_duration))
+    if (effect->duration == 0 || (time >= 0.0f && time <= effect->duration))
     {
-        b32 found = false;
-        r32 tint_value = 1.0f;
-        for (u32 stage_index = 0; stage_index < effect->stages_count; stage_index++)
+        r32 tint_value;
+
+        if (effect->period == 0)
         {
-            sprite_effect_stage* stage = effect->stages + stage_index;
-            if (stage->stage_duration == 0 || (time <= stage->stage_duration))
-            {
-                tint_value = get_stage_tint(stage, time);
-                found = true;
-                break;
-            }
-            else
-            {
-                time -= stage->stage_duration;
-            }
+            tint_value = effect->amplitude; // stała wartość
+        }
+        else
+        {
+            // używamy pi zamiast 2pi ze względu na to, że niżej mamy odbicie ujemnych wartości
+            tint_value = effect->amplitude * sinf((time * pi32 / effect->period) + effect->phase_shift);
         }
 
-        if (found)
+        if (tint_value < 0)
         {
-            result = scalar_multiply_v4(scalar_divide_v4(effect->color, 255), tint_value);
-
-            if (are_entity_flags_set(&effect->flags, SPRITE_EFFECT_FLAG_REVERSE_VALUES))
-            {
-                if (result.r != 0) { result.r = (1.0f - result.r); }
-                if (result.g != 0) { result.g = (1.0f - result.g); }
-                if (result.b != 0) { result.b = (1.0f - result.b); }
-            }
+            tint_value = -tint_value;
         }
+
+        tint_value += effect->vertical_shift;
+
+        if (tint_value < 0.0f)
+        {
+            tint_value = 0.0f;
+        }
+
+        if (tint_value > 1.0f)
+        {
+            tint_value = 1.0f;
+        }
+                
+        result = scalar_multiply_v4(scalar_divide_v4(effect->color, 255), tint_value);
+
+        if (are_entity_flags_set(&effect->flags, SPRITE_EFFECT_FLAG_REVERSE_VALUES))
+        {
+            if (result.r != 0) { result.r = (1.0f - result.r); }
+            if (result.g != 0) { result.g = (1.0f - result.g); }
+            if (result.b != 0) { result.b = (1.0f - result.b); }
+        }        
     }
 
     return result;
@@ -221,7 +197,7 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r
 {
     if (entity->visual_effect)
     {
-        if (entity->visual_effect->total_duration == 0.0f)
+        if (entity->visual_effect->duration == 0.0f)
         {
             // efekt bez końca
             entity->visual_effect_duration += delta_time;
@@ -235,7 +211,7 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r
         {
             entity->visual_effect_duration += delta_time;
 
-            if (entity->visual_effect_duration > entity->visual_effect->total_duration)
+            if (entity->visual_effect_duration > entity->visual_effect->duration)
             {				
                 // zapętlenie lub skończenie efektu 
                 if (are_flags_set((u32*)&entity->visual_effect->flags, (u32)SPRITE_EFFECT_FLAG_REPEATS))

@@ -320,15 +320,12 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
     {
         tint_effect = push_struct(arena, sprite_effect);
         tint_effect->type = SPRITE_EFFECT_TYPE_GATE_DISPLAY_ACTIVE;
-        tint_effect->stages_count = 1;
-        tint_effect->stages = push_array(arena, tint_effect->stages_count, sprite_effect_stage);
         tint_effect->color = new_entity_to_spawn->color;
-        tint_effect->stages[0].amplitude = 1.0f;
-        tint_effect->stages[0].vertical_shift = 0.7f;
-        tint_effect->stages[0].phase_shift = 0;
-        tint_effect->stages[0].period = 3.0f;
-        tint_effect->stages[0].stage_duration = 0.0f;
-        tint_effect->total_duration = tint_effect->stages[0].stage_duration;
+        tint_effect->amplitude = 1.0f;
+        tint_effect->vertical_shift = 0.7f;
+        tint_effect->phase_shift = 0;
+        tint_effect->period = 3.0f;
+        tint_effect->duration = 0.0f;
 
         set_entity_flags(&tint_effect->flags, SPRITE_EFFECT_FLAG_REPEATS);
         set_sprite_effect_for_color(level->gate_tints_dict, tint_effect);
