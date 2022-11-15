@@ -877,7 +877,7 @@ Multi line string 8\n\
             yellow_father->damage_on_contact = 20.0f;
             yellow_father->velocity_multiplier = 3.0f;
             yellow_father->player_acceleration_on_collision = 4.0f;
-            yellow_father->detection_type = DETECT_360_DEGREES;
+            yellow_father->detection_type = DETECT_360_DEGREES_IGNORE_WALLS;
             yellow_father->detection_distance = 25.0f;
             yellow_father->stop_movement_distance = 0.0f;
             yellow_father->forget_detection_distance = 25.0f;

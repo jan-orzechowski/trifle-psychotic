@@ -409,6 +409,7 @@ b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, worl
                 }
                 break;
                 case DETECT_360_DEGREES:
+                case DETECT_360_DEGREES_IGNORE_WALLS:
                 {
                     result = true;
                 }
@@ -422,7 +423,7 @@ b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, worl
             }
         }
 
-        if (result)
+        if (result && looking_entity->type->detection_type != DETECT_360_DEGREES_IGNORE_WALLS)
         {
             if (check_if_sight_line_is_obstructed(level, looking_point, point))
             {
@@ -726,45 +727,6 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
     else
     {
         entity_to_move->velocity = get_zero_v2();
-    }
-}
-
-void move_entity_towards_player(level_state* level, entity* entity_to_move, entity* player, r32 delta_time)
-{
-    assert(entity_to_move->type->velocity_multiplier != 0.0f);
-    r32 velocity = entity_to_move->type->velocity_multiplier;
-
-    v2 direction = get_unit_v2(
-        get_world_position_difference(player->position, entity_to_move->position));
-
-    entity_to_move->velocity = scalar_multiply_v2(direction, velocity);
-    if (entity_to_move->velocity.x < 0.0f)
-    {
-        entity_to_move->direction = DIRECTION_W;
-    }
-    else
-    {
-        entity_to_move->direction = DIRECTION_E;
-    }
-
-    world_position new_position = add_to_world_position(entity_to_move->position, 
-        scalar_multiply_v2(scalar_multiply_v2(direction, velocity), delta_time));
-    v2 movement_delta = get_world_position_difference(new_position, entity_to_move->position);
-    entity_to_move->position = new_position;
-
-    if (has_entity_flags_set(entity_to_move, ENTITY_FLAG_ENEMY))
-    {
-        // sprawdzenie kolizji z graczem
-        chunk_position reference_chunk = get_chunk_pos_from_world_pos(entity_to_move->position);
-        collision new_collision = check_minkowski_collision(
-            get_entity_collision_data(reference_chunk, entity_to_move),
-            get_entity_collision_data(reference_chunk, player),
-            movement_delta, 1.0f);
-
-        if (new_collision.collided_wall != DIRECTION_NONE)
-        {
-            handle_player_and_enemy_collision(level, player, entity_to_move);
-        }
     }
 }
 

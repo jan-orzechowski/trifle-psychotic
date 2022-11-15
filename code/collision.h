@@ -37,3 +37,4 @@ collision check_minkowski_collision(entity_collision_data a, entity_collision_da
 tile_range find_path_fragment_not_blocked_by_entities(level_state* level, tile_range path);
 collision_result move(level_state* level, entity* moving_entity, world_position target_pos);
 b32 move_bullet(level_state* level, bullet* moving_bullet, world_position target_pos);
+void move_entity_towards_player(level_state* level, entity* entity_to_move, entity* player, r32 delta_time);

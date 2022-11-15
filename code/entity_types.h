@@ -72,7 +72,8 @@ typedef enum detection_type
     DETECT_180_DEGREES_IN_FRONT,
     DETECT_90_DEGREES_IN_FRONT,
     DETECT_360_DEGREES,
-    DETECT_180_DEGREES_BELOW
+    DETECT_180_DEGREES_BELOW,
+    DETECT_360_DEGREES_IGNORE_WALLS
 } detection_type;
 
 typedef struct entity_to_spawn entity_to_spawn;

@@ -675,6 +675,47 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, world_position target
     return (hit_entity || hit_wall);
 }
 
+void move_entity_towards_player(level_state* level, entity* entity_to_move, entity* player, r32 delta_time)
+{
+    assert(entity_to_move->type->velocity_multiplier != 0.0f);
+    r32 velocity = entity_to_move->type->velocity_multiplier;
+
+    v2 distance_to_player = get_world_position_difference(player->position, entity_to_move->position);
+    v2 direction = get_unit_v2(distance_to_player);
+
+    entity_to_move->velocity = scalar_multiply_v2(direction, velocity);
+    if (entity_to_move->velocity.x < 0.0f)
+    {
+        entity_to_move->direction = DIRECTION_W;
+    }
+    else
+    {
+        entity_to_move->direction = DIRECTION_E;
+    }
+
+    world_position new_position = add_to_world_position(entity_to_move->position,
+        scalar_multiply_v2(scalar_multiply_v2(direction, velocity), delta_time));
+    v2 movement_delta = get_world_position_difference(new_position, entity_to_move->position);
+
+    if (has_entity_flags_set(entity_to_move, ENTITY_FLAG_ENEMY))
+    {
+        // sprawdzenie kolizji z graczem
+        chunk_position reference_chunk = get_chunk_pos_from_world_pos(entity_to_move->position);
+        collision collision = check_minkowski_collision(
+            get_entity_collision_data(reference_chunk, entity_to_move),
+            get_entity_collision_data(reference_chunk, player),
+            movement_delta, 1.0f);
+
+        if (collision.collided_wall != DIRECTION_NONE)
+        {
+            handle_player_and_enemy_collision(level, player, entity_to_move);
+        }
+
+        v2 possible_movement = scalar_multiply_v2(movement_delta, (collision.possible_movement_perc - 0.01f));
+        entity_to_move->position = add_to_world_position(entity_to_move->position, possible_movement);
+    }
+}
+
 b32 is_standing_on_ground(level_state* level, entity* entity_to_check, collision_result* collision_to_fill)
 {
     b32 result = false;
