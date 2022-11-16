@@ -43,6 +43,7 @@ build
 gfx
 audio
 _dev_files
+VTune Profiler Results
 
 # Visual Studio 20152017 cacheoptions directory
 .vs
