@@ -1,6 +1,6 @@
 ﻿#include "tmx_parsing.h"
 
-inline b32 is_scanner_at_end(xml_scanner* scan)
+b32 is_scanner_at_end(xml_scanner* scan)
 {
     b32 result = (scan->current_char_index >= scan->source_length);
     return result;
@@ -36,7 +36,7 @@ xml_token* add_token_with_value(xml_scanner* scan, xml_token_type type, string_r
     return new_token;
 }
 
-inline char get_current_char(xml_scanner* scan)
+char get_current_char(xml_scanner* scan)
 {
     if (false == is_scanner_at_end(scan))
     {
@@ -49,7 +49,7 @@ inline char get_current_char(xml_scanner* scan)
     }
 }
 
-inline void advance(xml_scanner* scan)
+void advance(xml_scanner* scan)
 {
     if (false == is_scanner_at_end(scan))
     {
@@ -57,7 +57,7 @@ inline void advance(xml_scanner* scan)
     }
 }
 
-inline char peek(xml_scanner* scan)
+char peek(xml_scanner* scan)
 {
     if (false == is_scanner_at_end(scan))
     {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "main.h"
+#include "map_types.h"
 
 typedef struct collision
 {

@@ -380,8 +380,8 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
         tint_effect->phase_shift = 0;
         tint_effect->period = 3.0f;
         tint_effect->duration = 0.0f;
-
-        set_entity_flags(&tint_effect->flags, SPRITE_EFFECT_FLAG_REPEATS);
+        
+        set_sprite_effect_flags(&tint_effect->flags, SPRITE_EFFECT_FLAG_REPEATS);
         set_sprite_effect_for_color(level->gate_tints_dict, tint_effect);
     }
 

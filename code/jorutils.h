@@ -10,6 +10,7 @@
 #include <math.h>
 #include <float.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 typedef int8_t int8;
 typedef int16_t int16;
@@ -56,8 +57,10 @@ typedef uint8_t byte;
 
 #define R32_MAX_VALUE (FLT_MAX)
 
-//#define min(arg1, arg2) ((arg1) < (arg2) ? (arg1) : (arg2))
-//#define max(arg1, arg2) ((arg1) > (arg2) ? (arg1) : (arg2))	
+#undef min
+#undef max
+#define min(arg1, arg2) ((arg1) < (arg2) ? (arg1) : (arg2))
+#define max(arg1, arg2) ((arg1) > (arg2) ? (arg1) : (arg2))	
 #define min_of_three(arg1, arg2, arg3) (min(arg1, min(arg2, arg3)))
 #define max_of_three(arg1, arg2, arg3) (max(arg1, max(arg2, arg3)))
 
@@ -92,16 +95,8 @@ typedef struct memory_arena
 
     u32 temporary_memory_stack_frame_count;
 } memory_arena;
-//
-//inline void initialize_memory_arena(memory_arena* arena, memory_index size, byte* base)
-//{
-//	arena->size = size;
-//	arena->base = base;
-//	arena->size_used = 0;
-//	arena->temporary_memory_stack_frame_count = 0;
-//}
 
-inline memory_arena* initialize_memory_arena(memory_index size, byte* base)
+internal memory_arena* initialize_memory_arena(memory_index size, byte* base)
 {
     memory_arena* arena = (memory_arena*)base;
     arena->size = size;
@@ -115,7 +110,7 @@ inline memory_arena* initialize_memory_arena(memory_index size, byte* base)
 #define push_array(arena, count, type) (type *)push_size_impl(arena, (count) * sizeof(type))
 #define push_size(arena, count) push_size_impl(arena, (count))
 
-inline void* push_size_impl(memory_arena* arena, memory_index size_to_push)
+internal void* push_size_impl(memory_arena* arena, memory_index size_to_push)
 {
     assert((arena->size_used + size_to_push) <= arena->size);
 
@@ -124,7 +119,7 @@ inline void* push_size_impl(memory_arena* arena, memory_index size_to_push)
     return result;
 }
 
-inline void zero_memory(memory_index size, void* base)
+internal void zero_memory(memory_index size, void* base)
 {
     u8* byte = (u8*)base;
     while (size--)
@@ -181,18 +176,18 @@ internal void check_arena(memory_arena* arena)
 #define swap_pointers(a, b, type) { type* temp = a; a = b; b = temp; }
 #define swap_values(a, b, type) { type temp = a; a = b; b = temp; }
 
-inline b32 are_flags_set(u32* flags, u32 flag_values_to_check)
+internal b32 are_flags_set(u32* flags, u32 flag_values_to_check)
 {
     b32 result = *flags & flag_values_to_check;
     return result;
 }
 
-inline void set_flags(u32* flags, u32 flag_values_to_check)
+internal void set_flags(u32* flags, u32 flag_values_to_check)
 {
     *flags |= flag_values_to_check;
 }
 
-inline void unset_flags(u32* flags, u32 flag_values_to_check)
+internal void unset_flags(u32* flags, u32 flag_values_to_check)
 {
     *flags &= ~flag_values_to_check;
 }

@@ -56,8 +56,8 @@ v4 get_tint(sprite_effect* effect, r32 time)
         }
                 
         result = scalar_multiply_v4(scalar_divide_v4(effect->color, 255), tint_value);
-
-        if (are_entity_flags_set(&effect->flags, SPRITE_EFFECT_FLAG_REVERSE_VALUES))
+        
+        if (are_sprite_effect_flags_set(&effect->flags, SPRITE_EFFECT_FLAG_REVERSE_VALUES))
         {
             if (result.r != 0) { result.r = (1.0f - result.r); }
             if (result.g != 0) { result.g = (1.0f - result.g); }

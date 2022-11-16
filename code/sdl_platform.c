@@ -419,7 +419,7 @@ game_state* initialize_game_state()
     void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);
     memory_arena* permanent_arena = initialize_memory_arena(memory_for_permanent_arena_size, (byte*)memory_for_permanent_arena);
 
-    u32 memory_for_transient_arena_size = megabytes_to_bytes(1);
+    u32 memory_for_transient_arena_size = megabytes_to_bytes(2);
     void* memory_for_transient_arena = SDL_malloc(memory_for_transient_arena_size);
     memory_arena* transient_arena = initialize_memory_arena(memory_for_transient_arena_size, (byte*)memory_for_transient_arena);
 
@@ -487,6 +487,7 @@ int main(int args_count, char* args[])
         sdl->path_buffer = get_string_builder(game->transient_arena, max_path_length);
         store_preferences_file_path(sdl, game->arena);
         
+#ifndef __EMSCRIPTEN__
         game->cmd_level_to_load = parse_starting_level_from_command_line(game->arena, args, args_count);
         if (game->cmd_level_to_load.string_size > 0)
         {
@@ -495,6 +496,7 @@ int main(int args_count, char* args[])
             game->skip_introductions = true;
             game->skip_deaths_prompts = true;
         }
+#endif
 
 #if TRIFLE_DEBUG
         // kasujemy progres
