@@ -285,6 +285,7 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
             if (false == is_zero_v4(gate_color))
             {
                 add_entity_to_spawn(parsing->level, parsing->transient_arena, entity_type, position, gate_color);
+                parsing->level->gate_entities_to_spawn_count++;                
             }
         }
         break;
@@ -931,6 +932,13 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
         {
             snprintf(errors.message_buffer, errors.message_buffer_size,
                 "Entities count is %d, exceeding the limit of %d", level.entities_to_spawn_count, MAX_ENTITIES_COUNT);
+            add_error_to_report(transient_arena, &errors, errors.message_buffer);
+        }
+
+        if (level.gate_entities_to_spawn_count > MAX_GATES_COUNT)
+        {
+            snprintf(errors.message_buffer, errors.message_buffer_size,
+                "Gates and switches count is %d, exceeding the limit of %d", level.entities_to_spawn_count, MAX_GATES_COUNT);
             add_error_to_report(transient_arena, &errors, errors.message_buffer);
         }
     }
