@@ -78,7 +78,7 @@ sprite_effect* add_sprite_effect(static_game_data* data, sprite_effects_types ty
     i32 index = (i32)type;
     assert(index > 0 && index < data->sprite_effects_count);
     sprite_effect* result = &data->sprite_effects[index];
-    assert((i32)result->type == 0); // sprawdzamy, czy typ był nieużywany
+    assert((i32)result->type == 0); // we check if the type was unused
     result->type = type;
     return result;
 }

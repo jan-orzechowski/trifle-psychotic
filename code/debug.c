@@ -94,7 +94,7 @@ void debug_render_entity_collision_boxes(render_list* render, level_state* level
 
         if (is_in_neighbouring_chunk(camera_pos.chunk_pos, entity->position))
         {
-            // istotne - offset sprite'a nie ma tu znaczenia
+            // sprite offset doesn't matter here
             v2 relative_position = get_world_pos_diff(entity->position, camera_pos);
             v2 center = add_v2(relative_position, entity->type->collision_rect_offset);
             v2 size = entity->type->collision_rect_dim;

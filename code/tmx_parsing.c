@@ -161,7 +161,7 @@ bool scan_token(xml_scanner* scan)
             }
             else
             {
-                // błąd - samodzielny ?
+                // error: a lone '?'
                 invalid_code_path;
             }
         }
@@ -191,7 +191,7 @@ bool scan_token(xml_scanner* scan)
             }
             else
             {
-                // błąd - samodzielny / bez >
+                // error: a '/' without '>'
                 invalid_code_path;
             }
         }
@@ -211,7 +211,7 @@ bool scan_token(xml_scanner* scan)
             }
             else
             {
-                // mamy błąd - było = bez "
+                // error: '=' without '"'
                 invalid_code_path;
             }
 
@@ -223,7 +223,7 @@ bool scan_token(xml_scanner* scan)
             }
             else
             {
-                // błąd - jako value nie mamy legalnego tekstu
+                // error: value is not a valid text
                 invalid_code_path;
             }
 
@@ -235,12 +235,12 @@ bool scan_token(xml_scanner* scan)
         break;
         case '"':
         {
-            // błąd - nie powinniśmy napotykać " poza ==
+            // error: '"' without '='
             invalid_code_path;
         }
         break;
 
-        // ignorujemy whitespace
+        // ignore whitespace
         case ' ':
         case '\r':
         case '\t':
@@ -249,7 +249,7 @@ bool scan_token(xml_scanner* scan)
 
         default:
         {
-            // w tym wypadku mamy attribute name - przypadek inner tekst jest obsłużony przy >
+            // in this case we have an attribute name - the case of inner text is handled with the case of '>'
             if (is_charater_allowed_for_text(c, false))
             {
                 string_ref attr_value = scan_text(scan, false);
@@ -392,7 +392,7 @@ xml_node* parse_tokens(xml_parser* pars)
                 }
                 else
                 {
-                    // XML ma zawsze jeden root element
+                    // XML has always one root element
                     current_node = new_node;
                 }
 
@@ -401,7 +401,7 @@ xml_node* parse_tokens(xml_parser* pars)
                     && t->type != RIGHT_CHEVRON
                     && t->type != SELF_CLOSING_RIGHT_CHEVRON)
                 {
-                    // teraz mamy pary atrybut wartość
+                    // we have pairs value-attribute
                     if (t->type == ATTRIBUTE_NAME)
                     {
                         xml_attribute* new_attribute = push_struct(pars->arena, xml_attribute);
@@ -415,13 +415,13 @@ xml_node* parse_tokens(xml_parser* pars)
                         }
                         else
                         {
-                            // błąd - nazwa bez wartości
+                            // error: name without value
                             invalid_code_path;
                         }
                     }
                     else
                     {
-                        //błąd - oczekiwany attribute name
+                        // error: expected attribute name
                         invalid_code_path;
                     }
 
@@ -437,7 +437,7 @@ xml_node* parse_tokens(xml_parser* pars)
                 }
                 else
                 {
-                    // mamy błąd - doszliśmy do końca, a nie ma taga zamykającego
+                    // error: we arrived at the end without a closing tag
                     invalid_code_path;
                 }
 
@@ -446,7 +446,7 @@ xml_node* parse_tokens(xml_parser* pars)
             }
             else
             {
-                // błąd - element bez taga
+                // error: element without a tag
                 invalid_code_path;
             }
         }
@@ -461,13 +461,12 @@ xml_node* parse_tokens(xml_parser* pars)
             }
             else
             {
-                // błąd
+                // error
             }
         }
 
-        if (t->type == CLOSING_LEFT_CHEVRON) // czyli </tag>
+        if (t->type == CLOSING_LEFT_CHEVRON) // </tag>
         {
-            // musimy iść w górę
             t = get_next_token(pars);
             if (t && t->type == TAG)
             {
@@ -481,29 +480,29 @@ xml_node* parse_tokens(xml_parser* pars)
                     }
                     else
                     {
+                        // we finished
                         break;
-                        // skończyliśmy dokument
                     }
                 }
                 else if (current_node
                     && current_node->parent
                     && equals_string_ref(current_node->parent->tag, tag))
                 {
-                    // to wystąpi w takiej sytuacji: <tag><innytag/></tag>
+                    // it happens in situation like this: <tag><innytag/></tag>
                     if (current_node->parent->parent)
                     {
                         current_node = current_node->parent->parent;
                     }
                     else
                     {
+                        // we finished
                         break;
-                        // skończyliśmy dokument
                     }
                 }
                 else
                 {
+                    // error: we don't have a matching opening tag
                     invalid_code_path;
-                    // błąd - nie mamy pasującego otwierającego taga
                 }
 
                 t = get_next_token(pars);

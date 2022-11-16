@@ -53,7 +53,7 @@ struct xml_node
 {
     string_ref tag;
     xml_node* parent;
-    xml_node* next; // np. następne dziecko tego samego rodzica
+    xml_node* next; // the next node with the same parent
     string_ref inner_text;
 
     xml_attribute* first_attribute;

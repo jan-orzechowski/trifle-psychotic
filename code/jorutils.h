@@ -47,8 +47,6 @@ typedef double r64;
 typedef size_t memory_index;
 typedef uint8_t byte;
 
-// Utility macros
-
 #define I32_MAX_VALUE ((i32)0x7FFFFFFF)
 #define I64_MAX_VALUE ((i64)0x7FFFFFFFFFFFFFFF)
 
@@ -82,8 +80,6 @@ typedef uint8_t byte;
 #define terabytes_to_bytes(value) (gigabytes_to_bytes(value) * 1024LL)
 
 #define array_count(arg) (sizeof(arg) / sizeof((arg)[0]))
-
-// Constants
 
 #define pi32 3.14159265359f
 
@@ -166,7 +162,6 @@ internal void end_temporary_memory(temporary_memory temp, b32 zero_bytes)
 internal void check_arena(memory_arena* arena)
 {
 #if TRIFLE_DEBUG
-    // to oznacza, że nie pomyliliśmy nic, i zakończyliśmy tyle ramek pamięci tymczasowej, ile utworzyliśmy
     assert(arena->temporary_memory_stack_frame_count == 0);
 #endif
 }

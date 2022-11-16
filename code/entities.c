@@ -116,7 +116,7 @@ void remove_bullet(level_state* level, i32* bullet_index)
         bullet* last_bullet = &level->bullets[level->bullets_count - 1];
         level->bullets[*bullet_index] = *last_bullet;
         level->bullets_count--;
-        *last_bullet = (bullet){0}; // czyszczenie
+        *last_bullet = (bullet){0};
 
         if (*bullet_index > 0)
         {
@@ -235,7 +235,7 @@ void find_flying_path_for_enemy(level_state* level, entity* enemy, b32 vertical)
 {
     tile_range new_path = find_flying_path(level, get_tile_pos_from_world_pos(enemy->position), vertical);
     
-    // dodajemy ograniczenie, by zatrzymywać się dwa pola nad ziemią
+    // we stop two tiles above the ground
     if (new_path.start.x != 0 && new_path.start.y != 0)
     {
         if (new_path.end.y - 2 > new_path.start.y)
@@ -252,7 +252,6 @@ void find_path_for_moving_platform(level_state* level, entity* entity, b32 verti
 {
     if (vertical)
     {	
-        // musimy wziąć pod uwagę cały rozmiar platformy
         tile_position platform_middle_position = get_tile_pos_from_world_pos(entity->position);
         tile_position platform_left_position = add_to_tile_pos(platform_middle_position, -1, 0);
         tile_position platform_right_position = add_to_tile_pos(platform_middle_position, 1, 0);
@@ -276,12 +275,11 @@ void find_path_for_moving_platform(level_state* level, entity* entity, b32 verti
 
         if (entity->path.start.x != 0 && entity->path.start.y != 0)
         {
-            // zatrzymujemy się przed sufitem, żeby nie zmiażdżyć gracza
+            // we have to stop before hitting ceiling to not crush the player
             tile_position tile_above = get_tile_pos(entity->path.start.x, entity->path.start.y - 1);
             tile_position two_tiles_above = get_tile_pos(entity->path.start.x, entity->path.start.y - 2);
             if (is_tile_colliding(&level->current_map, tile_above))
             {
-                // przesuwamy dwa do dołu
                 if (entity->path.start.y + 2 < entity->path.end.y)
                 {
                     entity->path.start.y += 2;
@@ -290,23 +288,19 @@ void find_path_for_moving_platform(level_state* level, entity* entity, b32 verti
             else 
             if (is_tile_colliding(&level->current_map, two_tiles_above))
             {
-                // przesuwamy jeden do dołu
                 if (entity->path.start.y + 1 < entity->path.end.y)
                 {
                     entity->path.start.y += 1;
                 }
             }
         }
-
-        //printf("moving platform from (%d,%d) to (%d,%d)\n",
-        //	entity->path.start.x, entity->path.start.y, entity->path.end.x, entity->path.end.y);
     }
     else
     {
         find_flying_path_for_enemy(level, entity, false);
         if (entity->path.start.x != 0 && entity->path.start.y != 0)
         {
-            // z racji szerokości platformy musimy zatrzymać się o pole wcześniej
+            // because of the platform width we must end a tile before
             if (entity->path.start.x + 2 < entity->path.end.x)
             {
                 entity->path.start.x++;
@@ -316,20 +310,18 @@ void find_path_for_moving_platform(level_state* level, entity* entity, b32 verti
     }
 }
 
-// domyślnie trójkąt jest zwrócony podstawą w prawo
-// można podać x i y odwrotnie dla trójkątów zwróconych podstawą w górę lub w dół
+// by default the triangle's base is pointing right
+// for triangles with bases pointing upwards of downwards pass swapped x and y 
 b32 is_point_within_right_triangle(r32 triangle_height, r32 relative_x, r32 relative_y, b32 invert_sign)
 {
     b32 result = false;
     relative_x = (invert_sign ? -relative_x : relative_x);
     if (relative_x < triangle_height)
     {
-        // trzeba pamiętać, że y idą do dołu ekranu
-        r32 max_y = relative_x; // bok wyrażony f(x) = x
-        r32 min_y = -relative_x; // bok wyrażony f(x) = -x
+        r32 max_y = relative_x; // the side expressed as f(x) = x
+        r32 min_y = -relative_x; // the other side expressed as f(x) = -x
         if (relative_y <= max_y && relative_y >= min_y)
         {
-            // znajdujemy się w trójkącie
             result = true;
         }
     }
@@ -341,9 +333,6 @@ b32 is_point_visible_within_90_degrees(world_position looking_point, direction l
 {
     assert(looking_direction != DIRECTION_NONE);
 
-    // sprawdzamy trójkąt z wierzchołkiem umiejscowionym w patrzącym entity
-    // kąt przy tym wierzchołku jest prosty
-    // a więc boki trójkąta można określić funkcjami f(x)=x, f(x)=-1
     b32 result = false;
     r32 triangle_height = max_looking_distance;
 
@@ -357,7 +346,7 @@ b32 is_point_visible_within_90_degrees(world_position looking_point, direction l
     {
         result = is_point_within_right_triangle(triangle_height, relative_pos.x, relative_pos.y, true);
     }
-    else // odwracamy x i y
+    else // we swap x and y
     if (looking_direction == DIRECTION_N && relative_pos.y > 0.0f)
     {
         result = is_point_within_right_triangle(triangle_height, relative_pos.y, relative_pos.x, false);
@@ -448,7 +437,7 @@ entity* add_explosion(level_state* level, world_position position, animation* ex
         new_explosion->current_animation = explosion_animation;
         new_explosion->animation_duration = 0.0f;
 
-        // lustrzane odbicie animacji dla większej różnorodności wizualnej
+        // we sometimes flip the bitmap for a greater visual variance
         b32 flip = (rand() % 2 == 1);
         if (flip)
         {
@@ -469,11 +458,11 @@ void remove_explosion(level_state* level, i32* explosion_index)
         assert(*explosion_index >= 0);
         assert(*explosion_index < level->explosions_max_count);
 
-        // compact array - działa też w przypadku explosion_index == explosions_count - 1
+        // compact array
         entity* last_explosion = &level->explosions[level->explosions_count - 1];
         level->explosions[*explosion_index] = *last_explosion;
         level->explosions_count--;
-        *last_explosion = (entity){0}; // czyszczenie
+        *last_explosion = (entity){0};
 
         if (*explosion_index > 0)
         {
@@ -500,7 +489,7 @@ shooting_rotation get_entity_shooting_rotation(shooting_rotation_sprites* rotati
         angle = 360.0f + angle;
     }
 
-    // przypomnienie: N jest w dół ekranu!
+    // remainder: N points downwards on the screen
 
     direction direction = DIRECTION_NONE;
     if      (0.0f    < angle && angle <= 45.0f)   direction = DIRECTION_E;
@@ -646,7 +635,7 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
 
         if (has_entity_flags_set(entity_to_move, ENTITY_FLAG_ENEMY))
         {
-            // sprawdzenie kolizji z graczem
+            // checking collision with the player
             chunk_position reference_chunk = get_chunk_pos_from_world_pos(entity_to_move->position);
             collision new_collision = check_minkowski_collision(
                 get_entity_collision_data(reference_chunk, entity_to_move),
@@ -670,28 +659,25 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
                 get_entity_collision_data(reference_chunk, player),
                 movement_delta, 1.0f);
 
-            // jeśli platforma jedzie do góry i gracz stoi na niej
+            // if a platform moves upwards and the player is standing on it
             if (new_collision.collided_wall == DIRECTION_N
                 && has_entity_flags_set(entity_to_move, ENTITY_FLAG_MOVING_PLATFORM_VERTICAL)
                 && movement_delta.y < 0.0f)
             {
-                // przesuwamy gracza wyżej
                 world_position player_target_position = add_to_world_pos(player->position,
                     subtract_v2(movement_delta, get_v2(0.0f, 0.01f)));				
 
                 collision_result collision = move(level, player, player_target_position);
                 if (collision.collision_data.collided_wall == DIRECTION_NONE)
                 {
-                    // jeśli gracz się nie zablokował, możemy jechać
                     entity_to_move->position = add_to_world_pos(entity_to_move->position, movement_delta);
                 }				
             }
-            // jeśli platforma jedzie do dołu i gracz jest pod nią
+            // if a platform moves downwards and the player is below it 
             else if (new_collision.collided_wall == DIRECTION_S
                 && has_entity_flags_set(entity_to_move, ENTITY_FLAG_MOVING_PLATFORM_VERTICAL)
                 && movement_delta.y > 0.0f)
             {
-                // popychamy gracza do dołu
                 world_position player_target_position = add_to_world_pos(player->position,
                     add_v2(movement_delta, get_v2(0.0f, 0.01f)));
 
@@ -810,7 +796,6 @@ void enemy_attack(level_state* level, entity* enemy, entity* player, r32 delta_t
         {
             if (false == enemy->player_detected)
             {
-                // zaczynamy od ataku
                 enemy->attack_series_duration = enemy->type->default_attack_series_duration;
             }
 
@@ -818,7 +803,6 @@ void enemy_attack(level_state* level, entity* enemy, entity* player, r32 delta_t
 
             if (enemy->attack_cooldown > 0.0f)
             {
-                // nie robimy nic
                 enemy->attack_cooldown -= delta_time;
 
                 if (enemy->attack_cooldown <= 0.0f)
@@ -834,12 +818,10 @@ void enemy_attack(level_state* level, entity* enemy, entity* player, r32 delta_t
 
                     if (enemy->attack_bullet_interval_duration > 0.0f)
                     {
-                        // przerwa, nic nie robimy
                         enemy->attack_bullet_interval_duration -= delta_time;
                     }
                     else
                     {
-                        // wystrzeliwujemy jeden pocisk
                         enemy_fire_bullet(level, enemy, player, level->static_data->player_as_target_offset);
                         enemy->attack_bullet_interval_duration =
                             enemy->type->default_attack_bullet_interval_duration;
@@ -847,7 +829,6 @@ void enemy_attack(level_state* level, entity* enemy, entity* player, r32 delta_t
                 }
                 else
                 {
-                    // przywracamy cooldown
                     enemy->attack_cooldown = enemy->type->default_attack_cooldown;
                 }
             }
@@ -912,7 +893,7 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
         }
         else
         {
-            // wracamy na początek
+            // we go back to the start
             entity_to_move->goal_path_point = 0;
             current_goal = entity_to_move->path.start;
             current_start = entity_to_move->path.end;
@@ -921,8 +902,7 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
         if (has_entity_flags_set(entity_to_move, ENTITY_FLAG_ENEMY))
         {
             enemy_attack(level, entity_to_move, player, delta_time);
-
-            // zatrzymywanie się lub podchodzenie w zależności od pozycji gracza				
+	
             if (entity_to_move->player_detected)
             {
                 set_entity_rotated_graphics(entity_to_move, &player->position);

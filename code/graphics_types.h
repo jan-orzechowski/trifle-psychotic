@@ -19,7 +19,8 @@ typedef enum textures
     TEXTURE_BACKGROUND_TITLE_SCREEN
 } textures;
 
-// polegamy na tym, by _FIRST było pierwsze, a _LAST ostatnie, dla policzenia ile potrzebujemy miejsc w słowniku
+// important: _LAST value must be actually last, and _FIRST - first! 
+// it allows for iterating through the enum in a for loop
 typedef enum sprite_effects_types
 {
     _FIRST_SPRITE_EFFECT_TYPE,
@@ -49,7 +50,7 @@ typedef struct sprite_effect
     r32 amplitude;
     r32 phase_shift;
     r32 vertical_shift;
-    r32 period; // jeśli 0, to mamy stałą funkcję
+    r32 period; // if 0, the function is constant
     r32 duration;
     sprite_effect_flags flags;
 } sprite_effect;
@@ -177,11 +178,11 @@ typedef struct explosions
 
 typedef struct backdrop_properties
 {
-    // jeśli 0, backdrop jest nieruchomy, jeśli 1, porusza się tak jak gracz
     textures texture;
     v2 size;
     i32 x_slowdown;
     i32 y_slowdown;
+    // if 0, a backdrop is static, if 1, it moves with the player's speed
     r32 x_speed;
     r32 y_speed;
 } backdrop_properties;

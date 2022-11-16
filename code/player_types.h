@@ -20,7 +20,7 @@ typedef struct player_standing_history
 typedef struct player_movement
 {
     player_movement_mode current_mode;
-    u32 frame_duration; // 0 oznacza bieżącą klatkę
+    u32 frame_duration; // 0 means the current frame
     player_movement_mode previous_mode;
     u32 previous_mode_frame_duration;
 

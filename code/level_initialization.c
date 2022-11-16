@@ -88,8 +88,8 @@ void initialize_current_map(level_state* level, memory_arena* arena)
             player_type->max_health = level->static_data->default_player_max_health;
         }
 
-        // gracz ma środek w innym miejscu niż pozostałe entities 
-        // - z tego powodu musimy skorygować początkowe położenie
+        // the player character has center in different place than other entities 
+        // because of that we have to offset the initial position
         world_position starting_position = get_world_pos_from_tile_pos(level->current_map.starting_tile);
         starting_position = add_to_world_pos(starting_position,
             get_v2(0, -(player_type->collision_rect_dim.y / 2) + 0.57f));
@@ -147,7 +147,7 @@ void initialize_current_map(level_state* level, memory_arena* arena)
             break;
             case ENTITY_TYPE_UNKNOWN:
             {
-                // ignorujemy
+                // ignore
             }
             break;
             default:
@@ -181,7 +181,7 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
         if (game->cmd_level_to_load.string_size > 0)
         {
             level_to_load_name = game->cmd_level_to_load;
-            game->cmd_level_to_load = (string_ref){0}; // ładujemy tylko raz
+            game->cmd_level_to_load = (string_ref){0}; // we load a level from the command line only once
         }
         else if (scene_change.restore_checkpoint
             && game->checkpoint.used
@@ -199,7 +199,7 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
             level_to_load_name = copy_c_string(game->transient_arena, "map_01");
         }
 
-        // nazwę przechowujemy poza pamięcią poziomu - potrzebne przy checkpointach
+        // the name of the level is stored outside of the level temporary memory - important for checkpoints
         copy_string_to_buffer(game->level_name_buffer, MAX_LEVEL_NAME_LENGTH, level_to_load_name);
         level_to_load_name = get_string_from_buffer(game->level_name_buffer, MAX_LEVEL_NAME_LENGTH);
 
@@ -233,7 +233,6 @@ void change_and_initialize_level(game_state* game, scene_change scene_change)
             {
                 if (false == game->skip_introductions)
                 {
-                    // wstęp pokazujemy tylko za pierwszym razem
                     initialize_level_introduction(game->level_state, game->arena);
                 }
 

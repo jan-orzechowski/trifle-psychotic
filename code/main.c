@@ -84,7 +84,6 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
     {
         if (player->health <= 0.0f)
         {
-            // przegrywamy
             if (false == level->active_scene_change.change_scene)
             {
                 level->active_scene_change.change_scene = true;
@@ -100,7 +99,7 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
 
         if (get_tile_pos_from_world_pos(player->position).y > level->current_map.height)
         {
-            // przegrywamy - spadliśmy z mapy
+            // the player has fallen out of the map
             level->active_scene_change.change_scene = true;
             level->active_scene_change.new_scene = SCENE_DEATH;
             level->stop_player_movement = true;
@@ -170,7 +169,7 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
                 level->message_to_show = collision.collided_message_display->type->message;
                 level->min_message_timer = 1.0f;
                 level->messagebox_dimensions = get_v2(150, 120);
-                collision.collided_message_display->type->type_enum = ENTITY_TYPE_UNKNOWN; // wiadomość pokazuje się tylko raz
+                collision.collided_message_display->type->type_enum = ENTITY_TYPE_UNKNOWN; // we show the message only once
             }
         }
 
@@ -187,7 +186,7 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
 
         if (collision.collided_checkpoint)
         {
-            collision.collided_checkpoint->type->type_enum = ENTITY_TYPE_UNKNOWN; // checkpoint działa tylko raz
+            collision.collided_checkpoint->type->type_enum = ENTITY_TYPE_UNKNOWN; // checkpoint works only once
             save_checkpoint(level, &game->checkpoint);
             level->show_checkpoint_message_timer = 4.0f;
         }
@@ -270,7 +269,7 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
                 }
                 else
                 {
-                    // dla ustawienia początkowej grafiki, zanim gracz zostanie wykryty
+                    // setting the initial graphics, before the player is detected for the first time
                     if (entity->shooting_sprite.parts_count == 0)
                     {
                         set_entity_rotated_graphics(entity, NULL);
@@ -442,7 +441,7 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
     if (level->active_scene_change.change_scene
         && game->exit_level_closes_game)
     {
-        // wychodzimy bez czekania na fade
+        // we exit without waiting for fade
         scene_change = level->active_scene_change;
     }
 

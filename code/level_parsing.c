@@ -164,7 +164,7 @@ void parse_entity_from_tile(level_parsing_context* parsing, u32 tile_index, i32 
         break;
         case ENTITY_TYPE_UNKNOWN:
         {
-            // pomijamy
+            // ignore
             debug_breakpoint;
         }
         break;
@@ -188,8 +188,7 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
         r32 x = parse_r32(x_str, '.');
         r32 y = parse_r32(y_str, '.');
 
-        // przesunięcie dodane, ponieważ Tiled trakuje lewy dolny róg jako origin pola
-        // znacznie bardziej intuicyjne jest w edytorze traktowanie tak środka
+        // offset is added here because Tiled treats lower left corner as a tile origin
         i32 tile_x = (i32)((x / TILE_SIDE_IN_PIXELS) + 0.5f);
         i32 tile_y = (i32)((y / TILE_SIDE_IN_PIXELS) - 0.5f);
         position = get_tile_pos(tile_x, tile_y);
@@ -247,14 +246,14 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
                             v4 color = parse_color_from_hexadecimal(color_str);
                             if (false == is_zero_v4(color))
                             {
-                                // Tiled zapisuje alpha jako pierwsze
+                                // Tiled stores alpha in the first channel
                                 v4 swapped_color = get_v4(
                                     color.g,
                                     color.b,
                                     color.a,
                                     color.r
                                 );
-                                // alpha pomijamy
+                                // ignore alpha
                                 swapped_color.a = 255;
                                 gate_color = swapped_color;
                                 break;
@@ -417,7 +416,7 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
         break;
         case  ENTITY_TYPE_UNKNOWN:
         {
-            // pomijamy
+            // ignore
         }
         break;
         default:
@@ -700,7 +699,7 @@ map_layer parse_map_layer(level_parsing_context* parsing,
                                 && gid <= parsing->entity_tileset_last_gid)
                             {
                                 parse_entity_from_tile(parsing, tile_index, gid);
-                                // dodajemy puste pole w miejscu, gdzie zostało zdefiniowane entity
+                                // we add an empty tile in the place in which an entity was placed
                                 layer.tiles[tile_index] = 1;
                             }
                             else
@@ -757,7 +756,6 @@ tmx_map_parsing_result read_map_from_tmx_file(memory_arena* permanent_arena, mem
     tmx_map_parsing_result result = {0};
     map level = {0};
 
-    // dla późniejszego sprawdzenia, czy pozycja startowa została ustawiona
     level.starting_tile = get_tile_pos(-1, -1);
 
     temporary_memory memory_for_parsing = {0};

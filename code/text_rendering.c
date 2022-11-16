@@ -109,10 +109,10 @@ text_lines* get_division_of_text_into_lines(memory_arena* arena, render_text_opt
         string_ref next_word = peek_next_word(text, char_index);
         if (next_word.string_size)
         {
-            // mamy słowo            
+            // we got a word          
             if (next_word.string_size > (limits.max_line_length - current_line->string_size))
             {
-                // nowa linia
+                // a new line
                 current_line = get_next_line(arena, lines, limits.max_lines_count);
                 if (current_line)
                 {
@@ -121,7 +121,7 @@ text_lines* get_division_of_text_into_lines(memory_arena* arena, render_text_opt
                 }
                 else
                 {
-                    // skończyło nam się miejsce - nie czytamy dalej
+                    // there is no more space - we don't read further
                     break;
                 }
             }
@@ -137,11 +137,11 @@ text_lines* get_division_of_text_into_lines(memory_arena* arena, render_text_opt
             {
                 if (limits.max_line_length - current_line->string_size < 1)
                 {
-                    // koniec linii - pomijamy
+                    // we are at the end of the line - ignore
                 }
                 else
                 {
-                    // nowa linia
+                    // a new line
                     char* last_char = current_line->ptr + current_line->string_size;
 
                     current_line = get_next_line(arena, lines, limits.max_lines_count);
@@ -152,17 +152,17 @@ text_lines* get_division_of_text_into_lines(memory_arena* arena, render_text_opt
                     }
                     else
                     {
-                        // skończyło nam się miejsce - nie czytamy dalej
+                        // there is no more space - we don't read further
                         break;
                     }
                 }
             }
             else
             {
-                // spacja
+                // space
                 if (limits.max_line_length - current_line->string_size < 1)
                 {
-                    // koniec linii - pomijamy
+                    // we are at the end of the line - ignore
                 }
                 else
                 {
@@ -181,7 +181,7 @@ text_viewport get_text_viewport(font font, text_lines lines, rect writing_area)
     text_viewport result = {0};
     r32 line_height = font.height_in_pixels + font.line_spacing;
 
-    // przycinamy writing area
+    // crop the writing area
     {
         r32 total_text_height = lines.lines_count * line_height;
         r32 writing_area_height = writing_area.max_corner.y - writing_area.min_corner.y;
@@ -251,7 +251,7 @@ rect get_glyph_rect(font font, u32 code)
 
     if (font.uppercase_only)
     {
-        //zamiana liter małych na duże
+        // changing lowercase letters to uppercase 
         if (index > 63)
         {
             index -= 32;

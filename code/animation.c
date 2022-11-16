@@ -30,11 +30,11 @@ v4 get_tint(sprite_effect* effect, r32 time)
 
         if (effect->period == 0)
         {
-            tint_value = effect->amplitude; // stała wartość
+            tint_value = effect->amplitude; // constant value
         }
         else
-        {
-            // używamy pi zamiast 2pi ze względu na to, że niżej mamy odbicie ujemnych wartości
+        {            
+            // we use pi instead of 2*pi because later we flip the negative values - so the period is effectively two times shorter
             tint_value = effect->amplitude * sinf((time * pi32 / effect->period) + effect->phase_shift);
         }
 
@@ -74,15 +74,15 @@ i32 get_sprite_effect_priority(sprite_effects_types type)
     i32 priority = 0;
     switch (type)
     {
-        case SPRITE_EFFECT_TYPE_OTHER:		          priority = -1; break;
+        case SPRITE_EFFECT_TYPE_OTHER:		           priority = -1; break;
         case SPRITE_EFFECT_TYPE_BULLET_HIT:            priority = 1; break;
-        case SPRITE_EFFECT_TYPE_SHOCK:			      priority = 2; break;
-        case SPRITE_EFFECT_TYPE_SPEED:			      priority = 3; break;
-        case SPRITE_EFFECT_TYPE_RECOIL:			      priority = 4; break;
+        case SPRITE_EFFECT_TYPE_SHOCK:			       priority = 2; break;
+        case SPRITE_EFFECT_TYPE_SPEED:			       priority = 3; break;
+        case SPRITE_EFFECT_TYPE_RECOIL:			       priority = 4; break;
         case SPRITE_EFFECT_TYPE_GATE_DISPLAY_ACTIVE:   priority = 5; break;
         case SPRITE_EFFECT_TYPE_GATE_DISPLAY_INACTIVE: priority = 6; break;
         case SPRITE_EFFECT_TYPE_INVINCIBILITY:         priority = 9; break;
-        case SPRITE_EFFECT_TYPE_DEATH:		          priority = 10; break;
+        case SPRITE_EFFECT_TYPE_DEATH:		           priority = 10; break;
         invalid_default_case;
     }
     return priority;
@@ -93,7 +93,6 @@ b32 should_sprite_effect_type_override_current_effect_type(
 {
     i32 old_priority = get_sprite_effect_priority(old_effect_type);
     i32 new_priority = get_sprite_effect_priority(new_effect_type);
-    // w przypadku, gdy oba mają ten sam typ lub priorytet, nie nadpisujemy
     b32 should_override = (new_priority > old_priority);
     return should_override;
 }
@@ -197,13 +196,11 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r
 {
     if (entity->visual_effect)
     {
-        if (entity->visual_effect->duration == 0.0f)
+        if (entity->visual_effect->duration == 0.0f) // repeating effect
         {
-            // efekt bez końca
             entity->visual_effect_duration += delta_time;
             if (entity->visual_effect_duration > R32_MAX_VALUE - 10.0f)
             {
-                // zapętlenie
                 entity->visual_effect_duration = 0;
             }
         }
@@ -213,7 +210,6 @@ void animate_entity(player_movement* movement, entity* entity, r32 delta_time, r
 
             if (entity->visual_effect_duration > entity->visual_effect->duration)
             {				
-                // zapętlenie lub skończenie efektu 
                 if (are_flags_set((u32*)&entity->visual_effect->flags, (u32)SPRITE_EFFECT_FLAG_REPEATS))
                 {
                     entity->visual_effect_duration = 0;
@@ -302,7 +298,6 @@ void render_entity_animation_frame(render_list* render, world_position camera_po
     }
 }
 
-// strength 20 jest ok, 30 jest mocne, 40 - chyba zbyt
 void start_screen_shake(level_state* level, r32 duration_in_seconds, r32 strength)
 {
     level->screen_shake_duration = duration_in_seconds;

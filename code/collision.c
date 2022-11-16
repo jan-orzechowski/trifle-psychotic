@@ -4,7 +4,7 @@
 #include "entities.h"
 #include "player.h"
 
-// nie ma znaczenia, czy sprawdzamy na osi x, czy y
+// it works both for x and y axes
 b32 check_line_intersection(r32 start_coord, r32 movement_delta, r32 line_coord, r32* movement_perc)
 {
     b32 result = false;
@@ -12,22 +12,22 @@ b32 check_line_intersection(r32 start_coord, r32 movement_delta, r32 line_coord,
     r32 distance_to_line = line_coord - start_coord;
     if (movement_delta == 0)
     {
-        result = false; // jesteśmy równolegli do ściany        
+        result = false; // we are parallel to the wall      
     }
     else if (start_coord == line_coord)
     {
-        result = false; // stoimy dokładnie na ścianie
+        result = false; // we are exactly on the wall
     }
     else
     {
         *movement_perc = distance_to_line / movement_delta;
         if (*movement_perc < 0.0f)
         {
-            result = false; // ściana jest w drugą stronę
+            result = false; // the wall is in other direction
         }
         else if (*movement_perc > 1.0f)
         {
-            result = false; // nie trafimy w tej klatce
+            result = false; // we won't hit the wall in this frame
         }
         else
         {
@@ -37,7 +37,7 @@ b32 check_line_intersection(r32 start_coord, r32 movement_delta, r32 line_coord,
     return result;
 }
 
-// działa także, gdy zamienimy x z y
+// it also works when we swap x and y
 b32 check_segment_intersection(r32 movement_start_x, r32 movement_start_y,
     r32 movement_delta_x, r32 movement_delta_y,
     r32 line_x, r32 min_segment_y, r32 max_segment_y, r32* min_movement_perc)
@@ -49,7 +49,7 @@ b32 check_segment_intersection(r32 movement_start_x, r32 movement_start_y,
         v2 movement_start = get_v2(movement_start_x, movement_start_y);
         v2 movement_delta = get_v2(movement_delta_x, movement_delta_y);
         v2 intersection_pos = add_v2(movement_start, multiply_v2(movement_delta, movement_perc));
-        // wiemy, że trafiliśmy w linię - sprawdzamy, czy mieścimy się w zakresie, który nas interesuje
+        // we know we hit the line - now we check if we hit it in the segment that interests us
         if (intersection_pos.y > min_segment_y && intersection_pos.y < max_segment_y)
         {
             result = true;
@@ -102,13 +102,13 @@ v2 get_collision_dim_from_tile_range(tile_range path)
     v2 distance = get_tile_pos_diff(path.end, path.start);
     if (distance.x > 0)
     {
-        // pozioma
+        // horizontal
         result.x = distance.x + 1.0f;
         result.y = 1.0f;
     }
     else
     {
-        // pionowa
+        // vertical
         result.x = 1.0f;
         result.y = distance.y + 1.0f;
     }
@@ -127,9 +127,8 @@ collision check_minkowski_collision(
         add_v2(a.position, a.collision_rect_offset),
         add_v2(b.position, b.collision_rect_offset));
 
-    // środkiem zsumowanej figury jest (0,0,0)
-    // pozycję playera traktujemy jako odległość od 0
-    // 0 jest pozycją entity, z którym sprawdzamy kolizję
+    // the center of the summed figure is (0,0,0) - this is also the position of entity with which we check collision
+    // we treat the player position as distance from 0   
 
     v2 minkowski_dimensions = add_v2(a.collision_rect_dim, b.collision_rect_dim);
     v2 min_corner = multiply_v2(minkowski_dimensions, -0.5f);
@@ -182,7 +181,6 @@ rect get_tiles_area_to_check_for_collision(world_position entity_position, v2 co
     tile_position entity_tile = get_tile_pos_from_world_pos(entity_position);
     tile_position target_tile = get_tile_pos_from_world_pos(target_pos);
 
-    // domyślne zachowanie casta to obcięcie części ułamkowej
     i32 x_margin = (i32)ceil(collision_rect_dim.x);
     i32 y_margin = (i32)ceil(collision_rect_dim.y);
 
@@ -294,7 +292,7 @@ check_sight_line_end:
     return path_obstructed;
 }
 
-// uwaga - zakładamy, że początkowe i końcowe pole leżą na linii równoległej do jednej z osi układu współrzędnych
+// this function assumes that the path passed as argument is parallel to one of the axes
 tile_range find_path_fragment_not_blocked_by_entities(level_state* level, tile_range path)
 {
     tile_range result = get_invalid_tile_range();
@@ -452,7 +450,7 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
 
                         if (new_collision.collided_wall != DIRECTION_NONE)
                         {
-                            // bierzemy tutaj uwagę tylko entities, z którymi kolidowalibyśmy wcześniej niż ze ścianą
+                            // we check only entities with which we would collide before colliding the wall
                             if (new_collision.possible_movement_perc < closest_tile_collision.possible_movement_perc)
                             {
                                 if (has_entity_flags_set(moving_entity, ENTITY_FLAG_PLAYER))
@@ -513,12 +511,12 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
                 }
             }
 
-            // przesuwamy się o tyle, o ile możemy
+            // we move the distance that we can
             if ((closest_collision.possible_movement_perc - movement_apron) > 0.0f)
             {
                 v2 possible_movement = multiply_v2(movement_delta, (closest_collision.possible_movement_perc - movement_apron));
                 moving_entity->position = add_to_world_pos(moving_entity->position, possible_movement);
-                // pozostałą deltę zmniejszamy o tyle, o ile się poruszyliśmy
+                // we decrease the remaining delta by the distance we actually moved
                 movement_delta = subtract_v2(movement_delta, possible_movement);
             }
 
@@ -528,8 +526,8 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
             {
                 v2 wall_normal = closest_collision.collided_wall_normal;
 
-                // i sprawdzamy, co zrobić z pozostałą deltą - czy możemy się poruszyć wzdłuż ściany lub odbić
-                i32 how_many_times_subtract = 1; // 1 dla ślizgania się, 2 dla odbijania    
+                // we have to do something with the remaining delta - either slide along the wall or bounce
+                i32 how_many_times_subtract = 1; // 1 for sliding, 2 for bouncing
                 v2 bounced = multiply_v2(
                     wall_normal, 
                     inner_v2(wall_normal, moving_entity->velocity));
@@ -547,7 +545,7 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
             }
             else
             {
-                // jeśli nie było kolizji, nie ma potrzeby kolejnych iteracji
+                // if there was no collision, there is no need for further iterations
                 break;
             }
         }
@@ -629,7 +627,7 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, world_position target
                         {
                             if (entity_index == 0)
                             {
-                                // mamy gracza							
+                                // we got the player					
                                 if (distance < collision_closest_distance)
                                 {
                                     collision_closest_distance = distance;
@@ -641,7 +639,7 @@ b32 move_bullet(level_state* level, bullet* moving_bullet, world_position target
                         {
                             if (entity_index != 0)
                             {
-                                // mamy przeciwnika
+                                // we got an enemy
                                 if (distance < collision_closest_distance)
                                 {
                                     collision_closest_distance = distance;
@@ -699,7 +697,7 @@ void move_entity_towards_player(level_state* level, entity* entity_to_move, enti
 
     if (has_entity_flags_set(entity_to_move, ENTITY_FLAG_ENEMY))
     {
-        // sprawdzenie kolizji z graczem
+        // checking collision with the player
         chunk_position reference_chunk = get_chunk_pos_from_world_pos(entity_to_move->position);
         collision collision = check_minkowski_collision(
             get_entity_collision_data(reference_chunk, entity_to_move),
@@ -724,7 +722,7 @@ b32 is_standing_on_ground(level_state* level, entity* entity_to_check, collision
     world_position target_pos = add_to_world_pos(test_entity.position, get_v2(0.0f, 0.1f));
     collision_result collision = move(level, &test_entity, target_pos);
 
-    // przypadkowo możemy mieć kolizję z inną ścianą niż górna - ale tutaj to pomijamy
+    // we can accidentally collide with a wall other than the upper one - but here we ignore that
     if (collision.collision_data.collided_wall == DIRECTION_S)
     {
         result = true;

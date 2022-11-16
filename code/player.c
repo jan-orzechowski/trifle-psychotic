@@ -59,7 +59,7 @@ void apply_power_up(level_state* level, entity* player, entity* power_up)
         break;
     }
 
-    power_up->health = -10.0f; // usuwamy obiekt
+    power_up->health = -10.0f; // delete the entity
 }
 
 void damage_player(level_state* level, r32 damage_amount, b32 ignore_after_damage_invincibility)
@@ -82,7 +82,7 @@ void handle_player_and_switch_collision(level_state* level, collision_result col
 {
     if (collision.collided_switch)
     {
-        // na przycisk musimy nacisnąć od góry
+        // the player must press a switch from above
         if (collision.collision_data.collided_wall == DIRECTION_S)
         {
             v4 color = collision.collided_switch->type->color;
@@ -168,8 +168,8 @@ void player_fire_bullet(level_state* level, game_input* input, entity* player)
                 bullet_type = level->static_data->player_power_up_bullet_type;
             }
 
-            // bez tego mamy rozjazd - kierunek lotu pocisku jest obliczany na podstawie położenia myszy względem środka ekranu
-            // ale pocisk nie jest wystrzeliwany ze środka, tylko z rotation.bullet_offset
+            // a bullet is not fired from the center of the screen, but from the rotation.bullet_offset point
+            // this corrects for the difference
             v2 adjusted_shooting_direction = get_unit_v2(
                 subtract_v2(relative_mouse_pos, 
                             multiply_v2(rotation.bullet_offset, TILE_SIDE_IN_PIXELS)));
@@ -230,7 +230,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
     game_input empty_input = {0};
     game_input* input = get_last_frame_input(input_buffer);
 
-    // specjalna pozycja postaci w przypadku zwycięstwa lub porażki
+    // special positions for the player character in cases of victory or defeat
     if (level->stop_player_movement)
     {
         if (level->show_victory_message)
@@ -258,7 +258,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
         handle_player_and_switch_collision(level, standing_on);
     }
 
-    // zmiana statusu
+    // changing movement mode
     switch (level->player_movement.current_mode)
     {
         case PLAYER_MOVEMENT_MODE_WALK:
@@ -301,7 +301,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
         player->attack_cooldown -= delta_time;
     }
 
-    // przetwarzanie inputu
+    // processing input
     player->acceleration = get_zero_v2();
     switch (level->player_movement.current_mode)
     {
@@ -393,7 +393,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
     {
         if (level->player_movement.current_mode != PLAYER_MOVEMENT_MODE_JUMP)
         {
-            // jeśli platforma porusza się w dół, "przyklejamy" gracza do platformy
+            // if a platform moves downwards, we "glue" the player to the platform
             if (standing_on.collided_platform->velocity.y > 0.1f)
             {
                 r32 closest_y_distance_from_platform =
@@ -408,8 +408,8 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
                 target_pos = add_to_world_pos(target_pos, get_v2(0.0f, difference - 0.01f));
             }
 
-            // nie jest to zgodne z fizyką, ale bardziej intuicyjne dla gracza
-            // platforma przemieszcza gracza tylko wtedy, kiedy nie ma własnej prędkości
+            // it's not realistic, but it looks more plausible to the player
+            // a platform moves player only when the player isn't moving on his/her own
             if (length_v2(player->velocity) < 0.05f)
             {
                 target_pos = add_to_world_pos(target_pos, 

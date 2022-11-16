@@ -19,7 +19,6 @@ tile_position get_tile_pos(i32 tile_x, i32 tile_y)
 tile_position get_tile_pos_from_world_pos(world_position world_pos)
 {
     tile_position result = {0};
-    // origin pola (0,0) to punkt (0,0) - środek wypada w (0,5;0,5) itd.
     i32 tile_in_chunk_x = floor(world_pos.pos_in_chunk.x);
     i32 tile_in_chunk_y = floor(world_pos.pos_in_chunk.y);
     result.x = (world_pos.chunk_pos.x * CHUNK_SIDE_IN_TILES) + tile_in_chunk_x;
@@ -38,7 +37,6 @@ tile_position get_tile_pos_from_index(map* level, u32 tile_index)
 chunk_position get_chunk_pos_from_tile_pos(tile_position tile_pos)
 {
     chunk_position result = {0};
-    // np. (3,15) -> (0,0), (4,16) -> (1,2)
     result.x = floor((r32)(tile_pos.x + 1) / (r32)CHUNK_SIDE_IN_TILES);
     result.y = floor((r32)(tile_pos.y + 1) / (r32)CHUNK_SIDE_IN_TILES);
     return result;
@@ -106,7 +104,6 @@ world_position renormalize_world_position(world_position world_pos)
 
 v2 get_tile_pos_diff(tile_position a, tile_position b)
 {
-    // +0,5, -0,5 kasują się
     v2 result = get_v2((r32)(a.x - b.x), (r32)(a.y - b.y));
     return result;
 }
@@ -217,7 +214,7 @@ b32 is_tile_value_colliding(map* level, u32 tile_value)
     b32 result = false;
     if (tile_value == 0)
     {
-        // pozwalamy na wypadnięcie poza mapę
+        // we allow falling out of the map
         result = false;
     }
     else

@@ -95,7 +95,6 @@ void invalidate_paths_after_gate_opening(level_state* level)
             continue;
         }
 
-        // w przypadku przeciwników i platform latających pionowo otworzenie bramy nic nie zmienia
         if (has_entity_flags_set(entity, ENTITY_FLAG_WALKS_HORIZONTALLY)
             || has_entity_flags_set(entity, ENTITY_FLAG_FLIES_HORIZONTALLY)
             || has_entity_flags_set(entity, ENTITY_FLAG_MOVING_PLATFORM_HORIZONTAL))
@@ -113,7 +112,7 @@ void open_gates_with_given_color(level_state* level, v4 color)
     {
         if (entry->entity != NULL)
         {
-            // na wypadek kolizji hashy
+            // in the case of hash collision
             if (equals_v4(entry->entity->type->color, color))
             {
                 if (has_entity_flags_set(entry->entity, ENTITY_FLAG_GATE))
@@ -132,7 +131,7 @@ void open_gates_with_given_color(level_state* level, v4 color)
                     start_visual_effect_by_type(level, entry->entity, SPRITE_EFFECT_TYPE_GATE_DISPLAY_INACTIVE);
                 }
 
-                // w ten sposób nie będziemy otwierać bram ponownie
+                // this will prevent from opening gates more than one time
                 entry->entity = NULL;
             }
         }
@@ -151,7 +150,7 @@ void update_gate_entities_after_checkpoint_load(level_state* level)
             continue;
         }
 
-        // szukamy otwartych bram
+        // we look for opened gates
         if (has_entity_flags_set(entity, ENTITY_FLAG_GATE))
         {
             sprite* sprite = &entity->type->idle_pose.sprite;
@@ -185,7 +184,7 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
     tile_range occupied_tiles;
     if (is_switch)
     {
-        u32 max_size = 1; // krótsze jednak wyglądają lepiej
+        u32 max_size = 1;
         occupied_tiles = find_horizontal_range_of_free_tiles(&level->current_map, 
             new_entity_to_spawn->position, max_size);
         collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);
@@ -297,7 +296,7 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
     entity* new_entity = add_entity_at_world_position(level, new_position, new_type);
     add_gate_to_dictionary(arena, level->gates_dict, new_entity);
 
-    // dodanie wyświetlaczy
+    // adding color display
 
     entity_type* new_display_type = add_empty_dynamic_entity_type(level);
     if (new_display_type == NULL)
@@ -366,9 +365,7 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
 
     entity* display_entity = add_entity_at_world_position(level, new_position, new_display_type);
     add_gate_to_dictionary(arena, level->gates_dict, display_entity);
-
-    // efekt kolorystyczny
-
+    
     sprite_effect* tint_effect = get_sprite_effect_by_color(level->gate_tints_dict, new_entity_to_spawn->color);
     if (tint_effect == NULL)
     {
@@ -482,7 +479,7 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
         }
     }
 
-    // jeśli znajdujemy się przy ścianie, odsuwamy się
+    // if we are next to a wall, we move away
     tile_position entity_position = new_entity_to_spawn->position;
     tile_position tile_to_left = get_tile_pos(entity_position.x - 1, entity_position.y);
     tile_position tile_to_right = get_tile_pos(entity_position.x + 1, entity_position.y);
@@ -490,7 +487,7 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
     b32 right_tile_collides = is_tile_colliding(&level->current_map, tile_to_right);
     if (left_tile_collides && right_tile_collides)
     {
-        // nie mamy gdzie przesunąć
+        // we don't have place to move
     }
     else
     {

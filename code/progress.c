@@ -16,7 +16,7 @@ void save_checkpoint(level_state* state, checkpoint* check)
     memcpy(check->entity_dynamic_types, state->entity_dynamic_types, sizeof(entity_type) * ENTITY_DYNAMIC_TYPES_MAX_COUNT);
     check->entity_dynamic_types_count = state->entity_dynamic_types_count;
     
-    // polegamy na tym, że string ref wskazuje na bufor w game_state, poza pamięcią poziomu
+    // we rely on the fact that current_map_name is allocated in a buffer in game_state, outside of the level temporary memory
     check->map_name = state->current_map_name; 
 
     check->used = true;
@@ -35,7 +35,7 @@ void restore_checkpoint(level_state* state, checkpoint* check)
     memcpy(state->entity_dynamic_types, check->entity_dynamic_types, sizeof(entity_type) * ENTITY_DYNAMIC_TYPES_MAX_COUNT);
     state->entity_dynamic_types_count = check->entity_dynamic_types_count;
 
-    // resetowanie wartości
+    // reseting the values
 
     state->player_ignore_enemy_collision_cooldown = 0.0f;
     state->player_invincibility_cooldown = 0.0f;
@@ -108,7 +108,7 @@ void mark_level_as_completed_from_buffer(static_game_data* data, char* name_buff
 
 void load_completed_levels(platform_api* platform, static_game_data* data)
 {
-    // forma pliku: oddzielona przecinkami lista map bez rozszerzenia, np. map_01,map02
+    // the file contains a list of map names (without extensions), delimited by a comma, e. g. 'map_01,map02'
     read_file_result prefs = platform->load_prefs();
     if (prefs.contents != NULL)
     {

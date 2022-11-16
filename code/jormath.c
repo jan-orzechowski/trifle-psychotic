@@ -1,7 +1,7 @@
 ﻿#include "jormath.h"
 #include <SDL.h>
 
-// podstawowe
+// basic
 
 i32 sign_i32(i32 value)
 {
@@ -47,7 +47,7 @@ i32 power(i32 num, u32 exponent)
     return result;
 }
 
-// wektory
+// vectors
 
 v2 get_v2(r32 x, r32 y)
 {
@@ -440,72 +440,6 @@ v4 get_unit_v4(v4 a)
     v4 result = divide_v4(a, length_v4(a));
     return result;
 }
-//
-//v2 scale_v2(v2 a, r32 new_length)
-//{
-//    r32 ratio = new_length / SDL_sqrt(length(a));
-//    v2 result = a * ratio;
-//    return result;
-//}
-//
-//v3 scale(v3 a, r32 new_length)
-//{
-//    r32 ratio = new_length / SDL_sqrt(length(a));
-//    v3 result = a * ratio;
-//    return result;
-//}
-//
-//v4 scale(v4 a, r32 new_length)
-//{
-//    r32 ratio = new_length / SDL_sqrt(length(a));
-//    v4 result = a * ratio;
-//    return result;
-//}
-
-//v2 hadamard(v2 a, v2 b)
-//{
-//    v2 result = {0};
-//    result.x = a.x * b.x;
-//    result.y = a.y * b.y;
-//    return result;
-//}
-//
-//v3 hadamard(v3 a, v3 b)
-//{
-//    v3 result = {0};
-//    result.x = a.x * b.x;
-//    result.y = a.y * b.y;
-//    result.z = a.z * b.z;
-//    return result;
-//}
-//
-//v4 hadamard(v4 a, v4 b)
-//{
-//    v4 result = {0};
-//    result.x = a.x * b.x;
-//    result.y = a.y * b.y;
-//    result.z = a.z * b.z;
-//    result.w = a.w * b.w;
-//    return result;
-//}
-//
-//v2 normalize_v2(v2 a)
-//{
-//    v2 result = a / length_v2(a);
-//    return result;
-//}
-//
-//v3 normalize_v3(v3 a)
-//{
-//    v3 result = a / length_v3(a);
-//    return result;
-//}
-//
-//v4 normalize_v4(v4 a)
-//{
-//    v4 result = a / length_v4(a);
-//    return result;
-//}
 
 v2 get_rotated_unit_v2(r32 angle, b32 radians)
 {
@@ -543,7 +477,7 @@ v2 reflection_over_y_axis_v2(v2 a)
     return result;
 }
 
-// arytmetyka
+// arithmetics
 
 r32 square_r32(r32 a)
 {
@@ -563,7 +497,7 @@ b32 is_r32_nan(r32 a)
     return result;
 }
 
-// prostokąty
+// rectangles
 
 v2 get_rect_min_corner(rect rect)
 {
@@ -668,7 +602,6 @@ v2 get_rect_dimensions(rect rect)
 
 b32 are_intersecting(rect a, rect b)
 {
-    // sprawdzamy, czy odcinki na osi przecinają się
     b32 x_axis_intersect = !(b.max_corner.x <= a.min_corner.x || b.min_corner.x >= a.max_corner.x);
     b32 y_axis_intersect = !(b.max_corner.y <= a.min_corner.y || b.min_corner.y >= a.max_corner.y);
     b32 result = (x_axis_intersect && y_axis_intersect);
@@ -706,85 +639,3 @@ v2 get_normal_coordinates_relative_to_rect(v2 world_coords, rect rect)
     v2 result = get_v2(new_x, new_y);
     return result;
 }
-//
-//r32 clamp(r32 min, r32 value, r32 max)
-//{
-//    r32 result = value;
-//
-//    if (result < min)
-//    {
-//        result = min;
-//    }
-//
-//    if (result > max)
-//    {
-//        result = max;
-//    }
-//
-//    return result;
-//}
-//
-//r32 clamp_01(r32 value)
-//{
-//    r32 result = clamp(0.0f, value, 1.0f);
-//    return result;
-//}
-//
-//v2 clamp_01(v2 vec)
-//{
-//    v2 result = {0};
-//    result.x = clamp_01(vec.x);
-//    result.y = clamp_01(vec.y);
-//    return result;
-//}
-//
-//v3 clamp_01(v3 vec)
-//{
-//    v3 result = {0};
-//    result.x = clamp_01(vec.x);
-//    result.y = clamp_01(vec.y);
-//    result.z = clamp_01(vec.z);
-//    return result;
-//}
-//
-//v4 clamp_01(v4 vec)
-//{
-//    v4 result = {0};
-//    result.x = clamp_01(vec.x);
-//    result.y = clamp_01(vec.y);
-//    result.z = clamp_01(vec.z);
-//    result.w = clamp_01(vec.w);
-//    return result;
-//}
-//
-//r32 lerp(r32 a, r32 perc, r32 b)
-//{
-//    r32 result = a + ((b - a) * perc);
-//    //alternatywnie: r32 result = (1.0f - perc) * a + (perc * b);
-//    return result;
-//}
-//
-//v2 lerp(v2 a, r32 perc, v2 b)
-//{
-//    v2 result = a + ((b - a) * perc);
-//    return result;
-//}
-//
-//v3 lerp(v3 a, r32 perc, v3 b)
-//{
-//    v3 result = a + ((b - a) * perc);
-//    return result;
-//}
-//
-//v4 lerp(v4 a, r32 perc, v4 b)
-//{
-//    v4 result = a + ((b - a) * perc);
-//    return result;
-//}
-//
-//// od perpendicular - prostopadły wektor
-//v2 perp(v2 a)
-//{
-//    v2 result = get_v2(-a.y, a.x);
-//    return result;
-//};

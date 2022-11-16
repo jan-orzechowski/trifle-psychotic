@@ -119,7 +119,7 @@ b32 compare_to_c_string(string_ref my_str, const char* c_str)
     {
         if (my_str_char_index == my_str.string_size)
         {
-            // stringi są różnej długości - przeszliśmy my_str, a nie przeszliśmy c_str
+            // strings are of different length - we went through my_str, but not through c_str
             result = false;
             break;
         }
@@ -138,7 +138,7 @@ b32 compare_to_c_string(string_ref my_str, const char* c_str)
 
     if (my_str_char_index < my_str.string_size)
     {
-        // stringi są różnej długości - przeszliśmy c_str, a nie przeszliśmy my_str
+        // strings are of different length - we went through c_str, but not through my_str
         result = false;
     }
 
@@ -451,7 +451,6 @@ i32 parse_i32_from_range(char* start, char* end)
 
 u32 how_many_digits(u32 num)
 {
-    // u32 max to 4,294,967,295
     u32 result = 0;
     if (num < 10) { result = 1; }
     else if (num < 100) { result = 2; }
@@ -549,13 +548,13 @@ i32* parse_array_of_i32(memory_arena* arena, u32 array_length, string_ref str, c
                 }
                 else
                 {
-                    // błąd - wyczerpaliśmy miejsce, a jest jeszcze string do parsowania
+                    // error: there is no more space, but string is not fully parsed
                     break;
                 }
             }
             else
             {
-                // przypadek gdy mamy podwójny delimiter bądź plik zaczął się od delimitera
+                // the case when we have a double delimiter or the file started with a delimiter
                 end = 0;
                 continue;
             }
@@ -564,12 +563,10 @@ i32* parse_array_of_i32(memory_arena* arena, u32 array_length, string_ref str, c
         {
             if (start == 0)
             {
-                // zaczyna się nowa liczba
                 start = c;
             }
             else
             {
-                // mamy starą liczbę
                 continue;
             }
         }
@@ -577,7 +574,7 @@ i32* parse_array_of_i32(memory_arena* arena, u32 array_length, string_ref str, c
         {
             if (start != 0)
             {
-                // traktujemy jako delimiter
+                // we treat this as a delimiter
                 end = c;
                 i32 new_int = (i32)parse_i32_from_range(start, end);
                 if (current_int_index < array_length)
@@ -588,19 +585,18 @@ i32* parse_array_of_i32(memory_arena* arena, u32 array_length, string_ref str, c
                 }
                 else
                 {
-                    // błąd - wyczerpaliśmy miejsce, a jest jeszcze string do parsowania
+                    // error: there is no more space, but string is not fully parsed
                     break;
                 }
             }
             else
             {
-                // po prostu idziemy naprzód
                 continue;
             }
         }
         else
         {
-            // mamy błąd - napotkaliśmy coś, co nie jest ani liczbą, ani delimiterem...
+            // error: we found something that is neither a number nor delimiter
             continue;
         }
     }

@@ -103,8 +103,8 @@ void update_backdrops_movement(backdrop_properties* backdrop, v2* backdrop_offse
         backdrop_offset->x += (backdrop->x_speed * delta_time);
         backdrop_offset->y += (backdrop->y_speed * delta_time);
 
-        // w przypadku ruchu gracza w przeciwnym kierunku dodajemy dodatkowe przesunięcie, żeby ruchy nie zniwelowały się
-        // i nie powstało wrażenie, że tło jest statyczne - wygląda to lepiej z perspektywy gracza
+        // if the player moves in a opposite direction, we add additional offset to prevent movements from negating each other
+        // and creating an illusion that a backdrop is static - it looks better from the player's perspective
         v2 player_moved_distance = multiply_v2(multiply_v2(player->velocity, player->type->velocity_multiplier), delta_time);
         if (length_v2(player_moved_distance) > 0.01f)
         {

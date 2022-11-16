@@ -121,11 +121,11 @@ read_file_result read_file(const char* path)
     if (file)
     {
         int64_t file_size = SDL_RWsize(file);
-        if (file_size != -1 // błąd
-            && file_size < 1024 * 1024 * 5) // zabezpieczenie
+        if (file_size != -1 // error
+            && file_size < 1024 * 1024 * 5) // safeguard
         {
             result.size = file_size;
-            result.contents = calloc(file_size + 1, sizeof(byte)); // dodatkowy bajt na końcu przyda się przy parsowaniu
+            result.contents = calloc(file_size + 1, sizeof(byte));
             for (int byte_index = 0;
                 byte_index < file_size;
                 ++byte_index)
@@ -242,9 +242,9 @@ sdl_data init_sdl()
     sdl_data sdl_game = {0};
     b32 success = true;
 
-    // SDL_INIT_EVERYTHING powoduje błąd w Emscripten
+    // SDL_INIT_EVERYTHING causes error in Emscripten
     int init = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO); 
-    if (init == 0) // wg dokumentacji oznacza to sukces
+    if (init == 0) // success
     {
         if (false == SDL_ShowCursor(SDL_DISABLE))
         {
@@ -459,7 +459,7 @@ string_ref parse_starting_level_from_command_line(memory_arena* arena, char* arg
     string_ref result = {0};
     if (args != NULL)
     {
-        // pierwsze pomijamy - to ścieżka do exe
+        // we omit the first option - it's a path to the exe
         for (i32 option_index = 1; option_index < args_count; option_index++)
         {
             char* option = args[option_index];
@@ -483,7 +483,7 @@ int main(int args_count, char* args[])
 
         game_state* game = initialize_game_state();
 
-        int max_path_length = 4048; // maksymalna długość ścieżki na Linuksie, Windowsach i MacOS
+        int max_path_length = 4048; // max path length on Linux, Windows, and MacOS
         sdl->path_buffer = get_string_builder(game->transient_arena, max_path_length);
         store_preferences_file_path(sdl, game->arena);
         
@@ -499,7 +499,7 @@ int main(int args_count, char* args[])
 #endif
 
 #if TRIFLE_DEBUG
-        // kasujemy progres
+        // we erase the progress
         save_completed_levels(&game->platform, game->static_data, game->transient_arena);
 #endif
 
@@ -509,7 +509,7 @@ int main(int args_count, char* args[])
         r32 target_hz = TARGET_HZ;
         if (is_browser_firefox())
         {
-            // hack poprawiający szybkość w Firefoksie - bez tego gra jest bardzo spowolniona
+            // hack improving speed in Firefox - without this game looks very slowed down
             target_hz *= 1.5f;
         }
 
@@ -609,13 +609,13 @@ void render_rect(sdl_data* sdl, rect rectangle)
     rectangle.max_corner.x = round(rectangle.max_corner.x);
     rectangle.max_corner.y = round(rectangle.max_corner.y);
 
-    SDL_RenderDrawLine(sdl->renderer, // dół
+    SDL_RenderDrawLine(sdl->renderer, // down
         rectangle.min_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.min_corner.y);
-    SDL_RenderDrawLine(sdl->renderer, // lewa
+    SDL_RenderDrawLine(sdl->renderer, // left
         rectangle.min_corner.x, rectangle.min_corner.y, rectangle.min_corner.x, rectangle.max_corner.y);
-    SDL_RenderDrawLine(sdl->renderer, // prawa
+    SDL_RenderDrawLine(sdl->renderer, // right
         rectangle.max_corner.x, rectangle.min_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
-    SDL_RenderDrawLine(sdl->renderer, // góra
+    SDL_RenderDrawLine(sdl->renderer, // up
         rectangle.min_corner.x, rectangle.max_corner.y, rectangle.max_corner.x, rectangle.max_corner.y);
 }
 
@@ -682,10 +682,10 @@ void render_list_to_output(render_list* render)
                 SDL_RendererFlip flip = (entry->flip_horizontally ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
                 v4 sdl_tint = multiply_v4(entry->tint_color, 255.0f);
 
-                // naprawienie dziwnego zachowania SDL w fullscreenie - odwrócone bitmapy zmieniały pozycję na ekranie
+                // this fixes weird behavior of SDL in the fullscreen mode - flipped bitmaps changed position depending on resolution
                 if (flip == SDL_FLIP_HORIZONTAL && GLOBAL_SDL_DATA.fullscreen)
                 {
-                    // nie mam pojęcia, dlaczego to robi różnicę
+                    // I have no idea why this makes a difference for SDL
                     if (GLOBAL_SDL_DATA.screen_width == 1920 && GLOBAL_SDL_DATA.screen_height == 1080)
                     {
                         dst.x -= 185;
@@ -801,6 +801,6 @@ void render_list_to_output(render_list* render)
 
     SDL_RenderPresent(GLOBAL_SDL_DATA.renderer);
 
-    // zapisujemy od nowa - nie trzeba zerować
+    // we will just overwrite it - there is no need to zero memory
     render->push_buffer_size = 0;
 }

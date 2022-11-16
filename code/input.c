@@ -4,7 +4,7 @@
 input_buffer initialize_input_buffer(memory_arena* arena)
 {
     input_buffer result = {0};
-    result.size = 60 * 2; // 2 sekundy
+    result.size = 60 * 2; // 2 seconds
     result.buffer = push_array(arena, result.size, game_input);
     return result;
 }
@@ -36,7 +36,6 @@ game_input* get_last_frame_input(input_buffer* buffer)
     return result;
 }
 
-// żeby działało na dowolnych przyciskach, trzeba dodać nowy enum
 b32 was_up_key_pressed_in_last_frames(input_buffer* buffer, u32 number_of_frames)
 {
     b32 result = false;

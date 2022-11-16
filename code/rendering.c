@@ -14,8 +14,8 @@ void* push_render_element(render_list* render, u32 size, render_list_entry_type 
         result = (render_list_entry_header*)(render->push_buffer_base + render->push_buffer_size);
         result->type = type;
 
-        // dajemy wskaźnik do elementu, nie do headera - ten zostanie odczytany w render_list_to_output
-        result = result + 1; // przesuwamy się o rozmiar headera
+        // we return a pointer to the element, and not to the header (header will be read in render_list_to_output)
+        result = result + 1; // we move by a header size
         render->push_buffer_size += (size + header_size);
     }
     else
@@ -92,7 +92,7 @@ rect get_tile_bitmap_rect(u32 tile_id)
     }
     else
     {
-        // id liczą się od 1, nie od zera
+        // tile ids start from 1, not from zero
         u32 column = (tile_id - 1) % TILESET_WIDTH_IN_TILES;
         u32 row = (tile_id - 1) / TILESET_WIDTH_IN_TILES;
 
@@ -153,7 +153,7 @@ void render_map_layer(render_list* render, map_layer layer, tile_position camera
                 i32 x_coord_in_world = camera_tile_pos.x + x_coord_relative;
 
                 u32 tile_value = get_tile_value_in_layer_from_coords(layer, x_coord_in_world, y_coord_in_world);
-                if (tile_value != 0 && tile_value != 1) // przezroczyste pola
+                if (tile_value != 0 && tile_value != 1) // transparent tiles
                 {
                     rect tile_bitmap = get_tile_bitmap_rect(tile_value);
 

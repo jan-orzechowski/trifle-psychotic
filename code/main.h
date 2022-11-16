@@ -30,7 +30,7 @@ typedef struct map
     v2 first_backdrop_offset;
     v2 second_backdrop_offset;
 
-    // linked lista entities to spawn jest usuwana po zakończeniu inicjalizacji
+    // linked list of entities to spawn is deleted after the level initialization
     entity_to_spawn* first_entity_to_spawn;
     entity_to_spawn* last_entity_to_spawn;
     i32 entities_to_spawn_count;

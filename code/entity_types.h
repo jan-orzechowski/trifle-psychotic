@@ -4,9 +4,8 @@
 #include "map_types.h"
 #include "graphics_types.h"
 
-// istotne - _LAST musi być ostatnie, a UNKNOWN pierwsze! 
-// to pozwala na iterację po wszystkich enumach w pętli for
-// w tym enumie nie możemy przypisywać konkretnych wartości liczbowych
+// important: _LAST value must be actually last, and UNKNOWN - first! 
+// it allows for iterating through the enum in a for loop
 typedef enum entity_type_enum
 {
     ENTITY_TYPE_UNKNOWN,
@@ -124,7 +123,7 @@ struct entity_type
 
     entity_type* fired_bullet_type;
 
-    v4 color; // używane w przypadku bram i przełączników
+    v4 color; // used for switches and gates
     string_ref message;
 };
 
