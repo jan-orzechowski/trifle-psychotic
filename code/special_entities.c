@@ -201,9 +201,9 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
     new_type->collision_rect_dim = collision_rect_dim;
     new_type->color = new_entity_to_spawn->color;
 
-    world_position new_position = add_to_world_position(
+    world_position new_position = add_to_world_pos(
         get_world_pos_from_tile_pos(occupied_tiles.start),
-        scalar_divide_v2(get_tile_position_difference(occupied_tiles.end, occupied_tiles.start), 2));
+        divide_v2(get_tile_pos_diff(occupied_tiles.end, occupied_tiles.start), 2));
 
     if (is_switch)
     {
@@ -238,8 +238,8 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
                 *part = switch_gfx.frame_middle;
             }
 
-            part->offset_in_pixels = scalar_multiply_v2(
-                get_tile_pos_and_world_position_difference(
+            part->offset_in_pixels = multiply_v2(
+                get_tile_pos_and_world_pos_diff(
                     get_tile_pos(occupied_tiles.start.x + distance, occupied_tiles.start.y),
                     new_position),
                 TILE_SIDE_IN_PIXELS);
@@ -280,8 +280,8 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
                 *part = gate_gfx.gate;
             }
 
-            part->offset_in_pixels = scalar_multiply_v2(
-                get_tile_pos_and_world_position_difference(
+            part->offset_in_pixels = multiply_v2(
+                get_tile_pos_and_world_pos_diff(
                     get_tile_pos(occupied_tiles.start.x, occupied_tiles.start.y - 1 + distance), 
                     new_position),
                 TILE_SIDE_IN_PIXELS);
@@ -333,8 +333,8 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
                 *part = display_gfx.switch_middle_display;
             }
 
-            part->offset_in_pixels = scalar_multiply_v2(
-                get_tile_pos_and_world_position_difference(
+            part->offset_in_pixels = multiply_v2(
+                get_tile_pos_and_world_pos_diff(
                     get_tile_pos(occupied_tiles.start.x + distance, occupied_tiles.start.y), 
                     new_position),
                 TILE_SIDE_IN_PIXELS);
@@ -349,14 +349,14 @@ void add_gate_entity(level_state* level, memory_arena* arena, entity_to_spawn* n
         frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
 
         frame.sprite.parts[0] = display_gfx.gate_upper_display;
-        frame.sprite.parts[0].offset_in_pixels = scalar_multiply_v2(
-            get_tile_pos_and_world_position_difference(
+        frame.sprite.parts[0].offset_in_pixels = multiply_v2(
+            get_tile_pos_and_world_pos_diff(
                 get_tile_pos(occupied_tiles.start.x, occupied_tiles.start.y - 1),
                 new_position),
             TILE_SIDE_IN_PIXELS);
         frame.sprite.parts[1] = display_gfx.gate_lower_display;
-        frame.sprite.parts[1].offset_in_pixels = scalar_multiply_v2(
-            get_tile_pos_and_world_position_difference(
+        frame.sprite.parts[1].offset_in_pixels = multiply_v2(
+            get_tile_pos_and_world_pos_diff(
                 get_tile_pos(occupied_tiles.start.x, occupied_tiles.end.y + 1),
                 new_position),
             TILE_SIDE_IN_PIXELS);
@@ -459,10 +459,10 @@ void add_moving_platform_entity(level_state* level, memory_arena* arena, entity_
         frame.sprite.parts_count = 3;
         frame.sprite.parts = push_array(arena, frame.sprite.parts_count, sprite_part);
         frame.sprite.parts[0] = platform_gfx.left;
-        frame.sprite.parts[0].offset_in_pixels = scalar_multiply_v2(get_v2(-1, 0), TILE_SIDE_IN_PIXELS);
+        frame.sprite.parts[0].offset_in_pixels = multiply_v2(get_v2(-1, 0), TILE_SIDE_IN_PIXELS);
         frame.sprite.parts[1] = platform_gfx.middle;
         frame.sprite.parts[2] = platform_gfx.right;
-        frame.sprite.parts[2].offset_in_pixels = scalar_multiply_v2(get_v2(1, 0), TILE_SIDE_IN_PIXELS);
+        frame.sprite.parts[2].offset_in_pixels = multiply_v2(get_v2(1, 0), TILE_SIDE_IN_PIXELS);
         type->idle_pose = frame;
 
         type->collision_rect_dim = get_v2(3, 1);
@@ -517,9 +517,9 @@ entity_type* add_vertical_empty_type_entity(level_state* level, tile_position po
         tile_range occupied_tiles = find_vertical_range_of_free_tiles(&level->current_map, position, max_size);
         new_type->collision_rect_dim = get_collision_dim_from_tile_range(occupied_tiles);;
 
-        world_position new_position = add_to_world_position(
+        world_position new_position = add_to_world_pos(
             get_world_pos_from_tile_pos(occupied_tiles.start),
-            scalar_divide_v2(get_tile_position_difference(occupied_tiles.end, occupied_tiles.start), 2));
+            divide_v2(get_tile_pos_diff(occupied_tiles.end, occupied_tiles.start), 2));
 
         add_entity_at_world_position(level, new_position, new_type);
     }

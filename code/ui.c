@@ -18,7 +18,7 @@ b32 was_rect_clicked(game_input* input, rect screen_rect)
     b32 result = false;
     if (input->is_left_mouse_key_held)
     {
-        v2 relative_mouse_pos = scalar_divide_v2(get_v2(input->mouse_x, input->mouse_y), SCALING_FACTOR);
+        v2 relative_mouse_pos = divide_v2(get_v2(input->mouse_x, input->mouse_y), SCALING_FACTOR);
         result = is_point_inside_rect(screen_rect, relative_mouse_pos);
     }
     return result;
@@ -77,7 +77,7 @@ void render_hitpoint_bar(static_game_data* static_data, render_list* render, ent
 
 void render_crosshair(static_game_data* static_data, render_list* render, game_input* input)
 {
-    v2 relative_mouse_pos = scalar_divide_v2(get_v2(input->mouse_x, input->mouse_y), SCALING_FACTOR);
+    v2 relative_mouse_pos = divide_v2(get_v2(input->mouse_x, input->mouse_y), SCALING_FACTOR);
     rect screen_rect = get_rect_from_center_and_dimensions(relative_mouse_pos, get_v2(13, 13));
     render_bitmap(render, TEXTURE_CHARSET, static_data->ui_gfx.crosshair, screen_rect);
 }

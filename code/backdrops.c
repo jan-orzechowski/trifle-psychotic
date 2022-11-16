@@ -26,7 +26,7 @@ void render_scrolling_repeated_backdrop(render_list* render, backdrop_properties
     assert(backdrop.texture != TEXTURE_NONE);
     assert(false == is_zero_v2(backdrop.size));
 
-    v2 backdrop_size_in_tiles = scalar_divide_v2(backdrop.size, TILE_SIDE_IN_PIXELS);
+    v2 backdrop_size_in_tiles = divide_v2(backdrop.size, TILE_SIDE_IN_PIXELS);
     if (backdrop.x_slowdown != 0)
     {
         backdrop_size_in_tiles.x *= backdrop.x_slowdown;
@@ -46,7 +46,7 @@ void render_scrolling_repeated_backdrop(render_list* render, backdrop_properties
         backdrop_origin_tile_pos.y = 0;
     }
 
-    v2 backdrop_offset = add_v2(get_world_pos_and_tile_position_difference(camera_position, backdrop_origin_tile_pos),
+    v2 backdrop_offset = add_v2(get_world_pos_and_tile_pos_dff(camera_position, backdrop_origin_tile_pos),
         offset_in_tiles);
 
     if (backdrop.x_slowdown != 0)
@@ -105,7 +105,7 @@ void update_backdrops_movement(backdrop_properties* backdrop, v2* backdrop_offse
 
         // w przypadku ruchu gracza w przeciwnym kierunku dodajemy dodatkowe przesunięcie, żeby ruchy nie zniwelowały się
         // i nie powstało wrażenie, że tło jest statyczne - wygląda to lepiej z perspektywy gracza
-        v2 player_moved_distance = scalar_multiply_v2(scalar_multiply_v2(player->velocity, player->type->velocity_multiplier), delta_time);
+        v2 player_moved_distance = multiply_v2(multiply_v2(player->velocity, player->type->velocity_multiplier), delta_time);
         if (length_v2(player_moved_distance) > 0.01f)
         {
             if (backdrop->x_speed != 0 && sign_r32(backdrop->x_speed) != sign_r32(player_moved_distance.x))

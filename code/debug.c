@@ -11,7 +11,7 @@
 
 void debug_render_tile(render_list* render, tile_position tile_pos, v4 color, world_position camera_pos)
 {
-    v2 position = get_tile_pos_and_world_position_difference(tile_pos, camera_pos);
+    v2 position = get_tile_pos_and_world_pos_diff(tile_pos, camera_pos);
     rect screen_rect = get_tile_screen_rect(position);
     render_rectangle(render, screen_rect, color, false);
 }
@@ -69,12 +69,12 @@ void debug_render_tile_collision_boxes(render_list* render, level_state* level, 
             {
                 tile_position tile_pos = get_tile_pos(x_coord_in_world, y_coord_in_world);
                 entity_collision_data tile_collision = get_tile_collision_data(camera_pos.chunk_pos, tile_pos);
-                v2 relative_position = get_tile_pos_and_world_position_difference(tile_pos, camera_pos);
+                v2 relative_position = get_tile_pos_and_world_pos_diff(tile_pos, camera_pos);
                 v2 center = add_v2(relative_position, tile_collision.collision_rect_offset);
                 v2 size = tile_collision.collision_rect_dim;
                 rect collision_rect = get_rect_from_center_and_dimensions(
-                    add_v2(SCREEN_CENTER_IN_PIXELS, scalar_multiply_v2(center, TILE_SIDE_IN_PIXELS)),
-                    scalar_multiply_v2(size, TILE_SIDE_IN_PIXELS));
+                    add_v2(SCREEN_CENTER_IN_PIXELS, multiply_v2(center, TILE_SIDE_IN_PIXELS)),
+                    multiply_v2(size, TILE_SIDE_IN_PIXELS));
 
                 render_rectangle(render, collision_rect, get_zero_v4(), true);
             }
@@ -95,16 +95,16 @@ void debug_render_entity_collision_boxes(render_list* render, level_state* level
         if (is_in_neighbouring_chunk(camera_pos.chunk_pos, entity->position))
         {
             // istotne - offset sprite'a nie ma tu znaczenia
-            v2 relative_position = get_world_position_difference(entity->position, camera_pos);
+            v2 relative_position = get_world_pos_diff(entity->position, camera_pos);
             v2 center = add_v2(relative_position, entity->type->collision_rect_offset);
             v2 size = entity->type->collision_rect_dim;
             rect collision_rect = get_rect_from_center_and_dimensions(
-                add_v2(SCREEN_CENTER_IN_PIXELS, scalar_multiply_v2(center, TILE_SIDE_IN_PIXELS)),
-                scalar_multiply_v2(size, TILE_SIDE_IN_PIXELS));
+                add_v2(SCREEN_CENTER_IN_PIXELS, multiply_v2(center, TILE_SIDE_IN_PIXELS)),
+                multiply_v2(size, TILE_SIDE_IN_PIXELS));
 
             render_rectangle(render, collision_rect, (v4){ 0, 0, 0, 0 }, true);
 
-            v2 entity_position = add_v2(SCREEN_CENTER_IN_PIXELS, scalar_multiply_v2(relative_position, TILE_SIDE_IN_PIXELS));
+            v2 entity_position = add_v2(SCREEN_CENTER_IN_PIXELS, multiply_v2(relative_position, TILE_SIDE_IN_PIXELS));
             render_point(render, entity_position, get_v4(1, 0, 0, 0));
         }
     }
@@ -115,8 +115,8 @@ void debug_render_bullet_collision_boxes(render_list* render, level_state* level
     for (i32 bullet_index = 0; bullet_index < level->bullets_count; bullet_index++)
     {
         bullet* bullet = level->bullets + bullet_index;
-        v2 relative_position = get_world_position_difference(bullet->position, camera_pos);		
-        v2 entity_position = add_v2(SCREEN_CENTER_IN_PIXELS, scalar_multiply_v2(relative_position, TILE_SIDE_IN_PIXELS));
+        v2 relative_position = get_world_pos_diff(bullet->position, camera_pos);		
+        v2 entity_position = add_v2(SCREEN_CENTER_IN_PIXELS, multiply_v2(relative_position, TILE_SIDE_IN_PIXELS));
         render_point(render, entity_position, get_v4(1, 0, 0, 0));		
     }
 }

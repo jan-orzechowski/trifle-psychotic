@@ -680,7 +680,7 @@ void render_list_to_output(render_list* render)
                 SDL_Rect src = get_sdl_rect(entry->source_rect);
                 SDL_Rect dst = get_sdl_rect(entry->destination_rect);
                 SDL_RendererFlip flip = (entry->flip_horizontally ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
-                v4 sdl_tint = scalar_multiply_v4(entry->tint_color, 255.0f);
+                v4 sdl_tint = multiply_v4(entry->tint_color, 255.0f);
 
                 // naprawienie dziwnego zachowania SDL w fullscreenie - odwrócone bitmapy zmieniały pozycję na ekranie
                 if (flip == SDL_FLIP_HORIZONTAL && GLOBAL_SDL_DATA.fullscreen)
@@ -735,7 +735,7 @@ void render_list_to_output(render_list* render)
 
                 if (false == is_zero_v4(entry->color))
                 {
-                    v4 sdl_tint = scalar_multiply_v4(entry->color, 255.0f);
+                    v4 sdl_tint = multiply_v4(entry->color, 255.0f);
                     SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, sdl_tint.r, sdl_tint.g, sdl_tint.b, sdl_tint.a);
                 }
 
@@ -763,7 +763,7 @@ void render_list_to_output(render_list* render)
 
                 if (false == is_zero_v4(entry->color))
                 {
-                    v4 sdl_tint = scalar_multiply_v4(entry->color, 255.0f);
+                    v4 sdl_tint = multiply_v4(entry->color, 255.0f);
                     SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, sdl_tint.r, sdl_tint.g, sdl_tint.b, sdl_tint.a);
                 }
 
@@ -781,7 +781,7 @@ void render_list_to_output(render_list* render)
             {
                 render_list_entry_fade* entry = (render_list_entry_fade*)data;
 
-                v4 sdl_color = scalar_multiply_v4(entry->color, 255.0f);
+                v4 sdl_color = multiply_v4(entry->color, 255.0f);
                 sdl_color.a = entry->percentage * 255;
 
                 SDL_Rect fullscreen = { 0,0, SCREEN_WIDTH, SCREEN_HEIGHT };

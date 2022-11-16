@@ -91,7 +91,7 @@ void initialize_current_map(level_state* level, memory_arena* arena)
         // gracz ma środek w innym miejscu niż pozostałe entities 
         // - z tego powodu musimy skorygować początkowe położenie
         world_position starting_position = get_world_pos_from_tile_pos(level->current_map.starting_tile);
-        starting_position = add_to_world_position(starting_position,
+        starting_position = add_to_world_pos(starting_position,
             get_v2(0, -(player_type->collision_rect_dim.y / 2) + 0.57f));
 
         add_entity_at_world_position(level, starting_position, player_type);

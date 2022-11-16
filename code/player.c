@@ -153,7 +153,7 @@ void player_fire_bullet(level_state* level, game_input* input, entity* player)
     if (player->attack_cooldown <= 0)
     {
         v2 relative_mouse_pos = subtract_v2(
-            scalar_divide_v2(get_v2(input->mouse_x, input->mouse_y), SCALING_FACTOR), 
+            divide_v2(get_v2(input->mouse_x, input->mouse_y), SCALING_FACTOR), 
             SCREEN_CENTER_IN_PIXELS);
         
         if (false == is_zero_v2(relative_mouse_pos))
@@ -172,21 +172,21 @@ void player_fire_bullet(level_state* level, game_input* input, entity* player)
             // ale pocisk nie jest wystrzeliwany ze środka, tylko z rotation.bullet_offset
             v2 adjusted_shooting_direction = get_unit_v2(
                 subtract_v2(relative_mouse_pos, 
-                            scalar_multiply_v2(rotation.bullet_offset, TILE_SIDE_IN_PIXELS)));
+                            multiply_v2(rotation.bullet_offset, TILE_SIDE_IN_PIXELS)));
 
             if (is_power_up_active(level->power_ups.spread))
             {
                 fire_bullet(level, bullet_type, player->position, rotation.bullet_offset,
-                    scalar_multiply_v2(adjusted_shooting_direction, bullet_type->constant_velocity));
+                    multiply_v2(adjusted_shooting_direction, bullet_type->constant_velocity));
                 fire_bullet(level, bullet_type, player->position, rotation.bullet_offset,
-                    scalar_multiply_v2(rotate_v2(adjusted_shooting_direction, 15, false), bullet_type->constant_velocity));
+                    multiply_v2(rotate_v2(adjusted_shooting_direction, 15, false), bullet_type->constant_velocity));
                 fire_bullet(level, bullet_type, player->position, rotation.bullet_offset,
-                    scalar_multiply_v2(rotate_v2(adjusted_shooting_direction, -15, false), bullet_type->constant_velocity));
+                    multiply_v2(rotate_v2(adjusted_shooting_direction, -15, false), bullet_type->constant_velocity));
             }
             else
             {
                 fire_bullet(level, bullet_type, player->position, rotation.bullet_offset,
-                    scalar_multiply_v2(adjusted_shooting_direction, bullet_type->constant_velocity));
+                    multiply_v2(adjusted_shooting_direction, bullet_type->constant_velocity));
             }
 
             player->attack_cooldown = player->type->default_attack_cooldown;
@@ -196,7 +196,7 @@ void player_fire_bullet(level_state* level, game_input* input, entity* player)
 
 void set_player_rotated_graphics_based_on_mouse_position(game_input* input, entity* player)
 {
-    v2 relative_mouse_pos = subtract_v2(scalar_divide_v2(get_v2(input->mouse_x, input->mouse_y), SCALING_FACTOR), SCREEN_CENTER_IN_PIXELS);
+    v2 relative_mouse_pos = subtract_v2(divide_v2(get_v2(input->mouse_x, input->mouse_y), SCALING_FACTOR), SCREEN_CENTER_IN_PIXELS);
     if (false == is_zero_v2(relative_mouse_pos))
     {
         v2 shooting_direction = get_unit_v2(relative_mouse_pos);
@@ -318,7 +318,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
                     && get_if_was_standing(&level->player_movement.standing_history, 1))
                 {
                     player->acceleration = add_v2(player->acceleration,
-                        scalar_multiply_v2(get_v2(0.0f, -1.0f), level->static_data->player_jump_acceleration));
+                        multiply_v2(get_v2(0.0f, -1.0f), level->static_data->player_jump_acceleration));
                     
                     change_player_movement_mode(&level->player_movement, PLAYER_MOVEMENT_MODE_JUMP);
                     break;
@@ -328,13 +328,13 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
             if (input->left.number_of_presses > 0)
             {
                 player->acceleration = add_v2(player->acceleration,
-                    scalar_multiply_v2(get_v2(-1.0f, 0.0f), level->static_data->player_walking_acceleration));
+                    multiply_v2(get_v2(-1.0f, 0.0f), level->static_data->player_walking_acceleration));
             }
 
             if (input->right.number_of_presses > 0)
             {
                 player->acceleration = add_v2(player->acceleration, 
-                    scalar_multiply_v2(get_v2(1.0f, 0.0f), level->static_data->player_walking_acceleration));
+                    multiply_v2(get_v2(1.0f, 0.0f), level->static_data->player_walking_acceleration));
             }
         }
         break;
@@ -350,13 +350,13 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
             if (input->left.number_of_presses > 0)
             {
                 player->acceleration = add_v2(player->acceleration,
-                    scalar_multiply_v2(get_v2(-1, 0), level->static_data->player_in_air_acceleration));
+                    multiply_v2(get_v2(-1, 0), level->static_data->player_in_air_acceleration));
             }
 
             if (input->right.number_of_presses > 0)
             {
                 player->acceleration = add_v2(player->acceleration,
-                    scalar_multiply_v2(get_v2(1, 0), level->static_data->player_in_air_acceleration));
+                    multiply_v2(get_v2(1, 0), level->static_data->player_in_air_acceleration));
             }
         }
         break;
@@ -382,12 +382,12 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
         player->acceleration.y *= level->static_data->power_up_speed_multipliers.y;
     }
 
-    player->velocity = scalar_multiply_v2(
-        add_v2(player->velocity, scalar_multiply_v2(player->acceleration, delta_time)), 
+    player->velocity = multiply_v2(
+        add_v2(player->velocity, multiply_v2(player->acceleration, delta_time)), 
         player->type->slowdown_multiplier);
 
-    world_position target_pos = add_to_world_position(player->position,
-        scalar_multiply_v2(player->velocity, (player->type->velocity_multiplier * delta_time)));
+    world_position target_pos = add_to_world_pos(player->position,
+        multiply_v2(player->velocity, (player->type->velocity_multiplier * delta_time)));
 
     if (standing_on.collided_platform)
     {
@@ -402,18 +402,18 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
                     + player->type->collision_rect_offset.y;
 
                 r32 actual_y_distance_from_platform =
-                    -(get_world_position_difference(target_pos, standing_on.collided_platform->position).y);
+                    -(get_world_pos_diff(target_pos, standing_on.collided_platform->position).y);
 
                 r32 difference = actual_y_distance_from_platform - closest_y_distance_from_platform;
-                target_pos = add_to_world_position(target_pos, get_v2(0.0f, difference - 0.01f));
+                target_pos = add_to_world_pos(target_pos, get_v2(0.0f, difference - 0.01f));
             }
 
             // nie jest to zgodne z fizyką, ale bardziej intuicyjne dla gracza
             // platforma przemieszcza gracza tylko wtedy, kiedy nie ma własnej prędkości
             if (length_v2(player->velocity) < 0.05f)
             {
-                target_pos = add_to_world_position(target_pos, 
-                    scalar_multiply_v2(standing_on.collided_platform->velocity, delta_time));
+                target_pos = add_to_world_pos(target_pos, 
+                    multiply_v2(standing_on.collided_platform->velocity, delta_time));
             }
         }
     }
@@ -443,7 +443,7 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
                 damage_player(level, enemy->type->damage_on_contact, false);
 
                 v2 direction = get_unit_v2(
-                    get_world_position_difference(player->position, enemy->position));
+                    get_world_pos_diff(player->position, enemy->position));
 
                 r32 acceleration = enemy->type->player_acceleration_on_collision;
 
@@ -451,7 +451,7 @@ void handle_player_and_enemy_collision(level_state* level, entity* player, entit
                     level->static_data->default_player_recoil_timer;
                 level->player_movement.recoil_acceleration_timer = 
                     level->static_data->default_player_recoil_acceleration_timer;
-                level->player_movement.recoil_acceleration = scalar_multiply_v2(direction, acceleration);
+                level->player_movement.recoil_acceleration = multiply_v2(direction, acceleration);
 
                 level->player_ignore_enemy_collision_cooldown 
                     = level->static_data->default_player_ignore_enemy_collision_cooldown;

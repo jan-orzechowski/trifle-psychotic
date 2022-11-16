@@ -261,7 +261,7 @@ v4 subtract_v4(v4 a, v4 b)
     return result;
 }
 
-v2 scalar_multiply_v2(v2 a, r32 b)
+v2 multiply_v2(v2 a, r32 b)
 {
     v2 result = {0};
 
@@ -271,7 +271,7 @@ v2 scalar_multiply_v2(v2 a, r32 b)
     return result;
 }
 
-v3 scalar_multiply_v3(v3 a, r32 b)
+v3 multiply_v3(v3 a, r32 b)
 {
     v3 result = {0};
 
@@ -282,7 +282,7 @@ v3 scalar_multiply_v3(v3 a, r32 b)
     return result;
 }
 
-v4 scalar_multiply_v4(v4 a, r32 b)
+v4 multiply_v4(v4 a, r32 b)
 {
     v4 result = {0};
 
@@ -294,7 +294,7 @@ v4 scalar_multiply_v4(v4 a, r32 b)
     return result;
 }
 
-v2 scalar_divide_v2(v2 a, r32 b)
+v2 divide_v2(v2 a, r32 b)
 {
     v2 result = {0};
 
@@ -304,7 +304,7 @@ v2 scalar_divide_v2(v2 a, r32 b)
     return result;
 }
 
-v3 scalar_divide_v3(v3 a, r32 b)
+v3 divide_v3(v3 a, r32 b)
 {
     v3 result = {0};
 
@@ -315,7 +315,7 @@ v3 scalar_divide_v3(v3 a, r32 b)
     return result;
 }
 
-v4 scalar_divide_v4(v4 a, r32 b)
+v4 divide_v4(v4 a, r32 b)
 {
     v4 result = {0};
 
@@ -425,19 +425,19 @@ v4 get_zero_v4()
 
 v2 get_unit_v2(v2 a)
 {
-    v2 result = scalar_divide_v2(a, length_v2(a));
+    v2 result = divide_v2(a, length_v2(a));
     return result;
 }
 
 v3 get_unit_v3(v3 a)
 {
-    v3 result = scalar_divide_v3(a, length_v3(a));
+    v3 result = divide_v3(a, length_v3(a));
     return result;
 }
 
 v4 get_unit_v4(v4 a)
 {
-    v4 result = scalar_divide_v4(a, length_v4(a));
+    v4 result = divide_v4(a, length_v4(a));
     return result;
 }
 //
@@ -579,7 +579,7 @@ v2 get_rect_max_corner(rect rect)
 
 v2 get_rect_center(rect rect)
 {
-    v2 result = scalar_multiply_v2(add_v2(rect.min_corner, rect.max_corner), 0.5f);
+    v2 result = multiply_v2(add_v2(rect.min_corner, rect.max_corner), 0.5f);
     return result;
 }
 

@@ -409,7 +409,7 @@ void add_death_animations_standard(memory_arena* arena, entity_type* type, stati
 shooting_rotation_sprites* load_shooting_rotation_sprites_with_offset(memory_arena* arena, u32 tile_y, v2 offset_in_pixels)
 {
     shooting_rotation_sprites* result = push_struct(arena, shooting_rotation_sprites);
-    v2 offset_in_tiles = scalar_divide_v2(offset_in_pixels, TILE_SIDE_IN_PIXELS);
+    v2 offset_in_tiles = divide_v2(offset_in_pixels, TILE_SIDE_IN_PIXELS);
 
     result->up = get_square_sprite(arena, 24,
         TEXTURE_CHARSET, 4, tile_y, add_v2(get_v2(3.0f, -15.0f), offset_in_pixels));

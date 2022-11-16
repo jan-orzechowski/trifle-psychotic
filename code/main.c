@@ -261,7 +261,7 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
                 {
                     set_entity_rotated_graphics(entity, &player->position);
                 
-                    v2 distance_to_player = get_world_position_difference(player->position, entity->position);
+                    v2 distance_to_player = get_world_pos_diff(player->position, entity->position);
                     r32 distance_to_player_length = length_v2(distance_to_player);
                     if (distance_to_player_length > entity->type->forget_detection_distance)
                     {
@@ -291,8 +291,8 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
             {
                 if (bullet->type)
                 {
-                    world_position bullet_target_pos = add_to_world_position(bullet->position, 
-                        scalar_multiply_v2(bullet->velocity, delta_time));
+                    world_position bullet_target_pos = add_to_world_pos(bullet->position, 
+                        multiply_v2(bullet->velocity, delta_time));
                     b32 hit = move_bullet(level, bullet, bullet_target_pos);
                     if (hit)
                     {
@@ -329,13 +329,13 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
         {
             level->screen_shake_duration -= delta_time;
             r32 vertical_shake = sin(level->screen_shake_duration * level->screen_shake_multiplier) / 2;
-            camera_position = add_to_world_position(camera_position, get_v2(vertical_shake, 0.0f));
+            camera_position = add_to_world_pos(camera_position, get_v2(vertical_shake, 0.0f));
         }
 
         chunk_position reference_chunk = camera_position.chunk_pos;
         tile_position camera_tile_pos = get_tile_pos_from_world_pos(camera_position);
         v2 camera_tile_offset_in_chunk = get_tile_offset_in_chunk(reference_chunk, camera_tile_pos);
-        v2 camera_offset_in_chunk = get_world_pos_and_chunk_position_difference(camera_position, reference_chunk);
+        v2 camera_offset_in_chunk = get_world_pos_and_chunk_pos_diff(camera_position, reference_chunk);
         v2 camera_offset_in_tile = subtract_v2(camera_offset_in_chunk, camera_tile_offset_in_chunk);
     
         render_backdrops(&game->render, level, camera_position);
@@ -595,7 +595,7 @@ scene_change menu_update_and_render(game_state* game, r32 delta_time)
 
     render_bitmap(&game->render, TEXTURE_BACKGROUND_TITLE_SCREEN,
         get_rect_from_corners(get_v2(0, 0), get_v2(384, 320)),
-        get_rect_from_corners(get_v2(0, 0), scalar_divide_v2(get_v2(SCREEN_WIDTH, SCREEN_HEIGHT), SCALING_FACTOR)));
+        get_rect_from_corners(get_v2(0, 0), divide_v2(get_v2(SCREEN_WIDTH, SCREEN_HEIGHT), SCALING_FACTOR)));
 
     rect title_area = get_rect_from_corners(
         get_v2(30, 20),
@@ -682,7 +682,7 @@ scene_change credits_screen_update_and_render(game_state* game, r32 delta_time)
 
     render_bitmap(&game->render, TEXTURE_BACKGROUND_TITLE_SCREEN,
         get_rect_from_corners(get_v2(0, 0), get_v2(384, 320)),
-        get_rect_from_corners(get_v2(0, 0), scalar_divide_v2(get_v2(SCREEN_WIDTH, SCREEN_HEIGHT), SCALING_FACTOR)));
+        get_rect_from_corners(get_v2(0, 0), divide_v2(get_v2(SCREEN_WIDTH, SCREEN_HEIGHT), SCALING_FACTOR)));
 
     if (game->credits_screen.fade_in_perc == 0.0f)
     {

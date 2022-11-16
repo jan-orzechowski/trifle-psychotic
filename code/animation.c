@@ -23,7 +23,7 @@ void unset_sprite_effect_flags(sprite_effect_flags* flags, sprite_effect_flags f
 
 v4 get_tint(sprite_effect* effect, r32 time)
 {
-    v4 result = scalar_divide_v4(effect->color, 255);
+    v4 result = divide_v4(effect->color, 255);
     if (effect->duration == 0 || (time >= 0.0f && time <= effect->duration))
     {
         r32 tint_value;
@@ -55,7 +55,7 @@ v4 get_tint(sprite_effect* effect, r32 time)
             tint_value = 1.0f;
         }
                 
-        result = scalar_multiply_v4(scalar_divide_v4(effect->color, 255), tint_value);
+        result = multiply_v4(divide_v4(effect->color, 255), tint_value);
         
         if (are_sprite_effect_flags_set(&effect->flags, SPRITE_EFFECT_FLAG_REVERSE_VALUES))
         {
@@ -346,7 +346,7 @@ void start_entity_death_animation(level_state* level, entity* entity)
     {
         i32 random = rand() % entity->type->death_animation_variants_count;
         animation* death_animation = entity->type->death_animation_variants[random];
-        world_position position = add_to_world_position(entity->position, entity->type->death_animation_offset);
+        world_position position = add_to_world_pos(entity->position, entity->type->death_animation_offset);
         add_explosion(level, position, death_animation);
     }
 }

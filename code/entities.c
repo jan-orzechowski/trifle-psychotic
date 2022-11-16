@@ -254,8 +254,8 @@ void find_path_for_moving_platform(level_state* level, entity* entity, b32 verti
     {	
         // musimy wziąć pod uwagę cały rozmiar platformy
         tile_position platform_middle_position = get_tile_pos_from_world_pos(entity->position);
-        tile_position platform_left_position = add_to_tile_position(platform_middle_position, -1, 0);
-        tile_position platform_right_position = add_to_tile_position(platform_middle_position, 1, 0);
+        tile_position platform_left_position = add_to_tile_pos(platform_middle_position, -1, 0);
+        tile_position platform_right_position = add_to_tile_pos(platform_middle_position, 1, 0);
 
         tile_range middle_path = find_vertical_range_of_free_tiles_downwards(&level->current_map, 
             platform_middle_position, level->current_map.height);
@@ -347,7 +347,7 @@ b32 is_point_visible_within_90_degrees(world_position looking_point, direction l
     b32 result = false;
     r32 triangle_height = max_looking_distance;
 
-    v2 relative_pos = get_world_position_difference(point_to_check, looking_point);
+    v2 relative_pos = get_world_pos_diff(point_to_check, looking_point);
     if (looking_direction == DIRECTION_E && relative_pos.x > 0.0f)
     {
         result = is_point_within_right_triangle(triangle_height, relative_pos.x, relative_pos.y, false);
@@ -374,10 +374,10 @@ b32 is_point_visible_within_90_degrees(world_position looking_point, direction l
 b32 is_point_visible_for_entity(level_state* level, entity* looking_entity, world_position point)
 {
     b32 result = false;
-    world_position looking_point = add_to_world_position(looking_entity->position, looking_entity->type->looking_position_offset);
+    world_position looking_point = add_to_world_pos(looking_entity->position, looking_entity->type->looking_position_offset);
     if (looking_entity->type->detection_type != DETECT_NOTHING)
     {
-        v2 distance_to_point = get_world_position_difference(point, looking_point);
+        v2 distance_to_point = get_world_pos_diff(point, looking_point);
         if (length_v2(distance_to_point) <= looking_entity->type->detection_distance)
         {
             switch (looking_entity->type->detection_type)
@@ -584,7 +584,7 @@ void set_entity_rotated_graphics(entity* entity, world_position* target)
     {
         if (target)
         {
-            v2 shooting_direction = get_unit_v2(get_world_position_difference(*target, entity->position));
+            v2 shooting_direction = get_unit_v2(get_world_pos_diff(*target, entity->position));
             shooting_rotation rotation = get_entity_shooting_rotation(entity->type->rotation_sprites, shooting_direction);
             entity->shooting_sprite = rotation.rotated_sprite;
             entity->shooting_sprite.flip_horizontally = rotation.flip_horizontally;
@@ -605,9 +605,9 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
 {
     if (false == tile_pos_equals(current_goal, current_start))
     {
-        v2 distance = get_tile_pos_and_world_position_difference(current_goal, entity_to_move->position);
+        v2 distance = get_tile_pos_and_world_pos_diff(current_goal, entity_to_move->position);
         r32 distance_length = length_v2(distance);
-        v2 distance_to_start = get_tile_pos_and_world_position_difference(current_start, entity_to_move->position);
+        v2 distance_to_start = get_tile_pos_and_world_pos_diff(current_start, entity_to_move->position);
         r32 distance_to_start_length = length_v2(distance_to_start);
 
         v2 direction = get_zero_v2();
@@ -630,7 +630,7 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
             velocity *= ((distance_to_start_length + margin) / slowdown_threshold);
         }
 
-        entity_to_move->velocity = scalar_multiply_v2(direction, velocity);
+        entity_to_move->velocity = multiply_v2(direction, velocity);
         if (entity_to_move->velocity.x < 0.0f)
         {
             entity_to_move->direction = DIRECTION_W;
@@ -640,9 +640,9 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
             entity_to_move->direction = DIRECTION_E;
         }
 
-        world_position new_position = add_to_world_position(entity_to_move->position, 
-            scalar_multiply_v2(scalar_multiply_v2(direction, velocity), delta_time));
-        v2 movement_delta = get_world_position_difference(new_position, entity_to_move->position);
+        world_position new_position = add_to_world_pos(entity_to_move->position, 
+            multiply_v2(multiply_v2(direction, velocity), delta_time));
+        v2 movement_delta = get_world_pos_diff(new_position, entity_to_move->position);
 
         if (has_entity_flags_set(entity_to_move, ENTITY_FLAG_ENEMY))
         {
@@ -676,14 +676,14 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
                 && movement_delta.y < 0.0f)
             {
                 // przesuwamy gracza wyżej
-                world_position player_target_position = add_to_world_position(player->position,
+                world_position player_target_position = add_to_world_pos(player->position,
                     subtract_v2(movement_delta, get_v2(0.0f, 0.01f)));				
 
                 collision_result collision = move(level, player, player_target_position);
                 if (collision.collision_data.collided_wall == DIRECTION_NONE)
                 {
                     // jeśli gracz się nie zablokował, możemy jechać
-                    entity_to_move->position = add_to_world_position(entity_to_move->position, movement_delta);
+                    entity_to_move->position = add_to_world_pos(entity_to_move->position, movement_delta);
                 }				
             }
             // jeśli platforma jedzie do dołu i gracz jest pod nią
@@ -692,13 +692,13 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
                 && movement_delta.y > 0.0f)
             {
                 // popychamy gracza do dołu
-                world_position player_target_position = add_to_world_position(player->position,
+                world_position player_target_position = add_to_world_pos(player->position,
                     add_v2(movement_delta, get_v2(0.0f, 0.01f)));
 
                 collision_result collision = move(level, player, player_target_position);
                 if (collision.collision_data.collided_wall == DIRECTION_NONE)
                 {
-                    entity_to_move->position = add_to_world_position(entity_to_move->position, movement_delta);
+                    entity_to_move->position = add_to_world_pos(entity_to_move->position, movement_delta);
                 }
                 else
                 {
@@ -707,12 +707,12 @@ void move_entity_on_path(level_state* level, entity* entity_to_move, tile_positi
             }
             else if (new_collision.collided_wall == DIRECTION_NONE)
             {
-                entity_to_move->position = add_to_world_position(entity_to_move->position,
-                    scalar_multiply_v2(movement_delta, new_collision.possible_movement_perc));
+                entity_to_move->position = add_to_world_pos(entity_to_move->position,
+                    multiply_v2(movement_delta, new_collision.possible_movement_perc));
             }
         }
 
-        if (length_v2(get_tile_pos_and_world_position_difference(current_goal, entity_to_move->position)) < 0.01f)
+        if (length_v2(get_tile_pos_and_world_pos_diff(current_goal, entity_to_move->position)) < 0.01f)
         {
             if (entity_to_move->goal_path_point == 0)
             {
@@ -749,7 +749,7 @@ void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bulle
             if (false == hit_entity->player_detected)
             {
                 direction previous_direction = hit_entity->direction;
-                v2 bullet_direction = get_world_position_difference(moving_bullet->position, hit_entity->position);
+                v2 bullet_direction = get_world_pos_diff(moving_bullet->position, hit_entity->position);
                 if (bullet_direction.x < 0)
                 {
                     hit_entity->direction = DIRECTION_W;
@@ -775,8 +775,8 @@ void handle_entity_and_bullet_collision(level_state* level, bullet* moving_bulle
 
 void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 target_offset)
 {
-    world_position target_position = add_to_world_position(target->position, target_offset);
-    v2 target_relative_pos = get_world_position_difference(target_position, enemy->position);
+    world_position target_position = add_to_world_pos(target->position, target_offset);
+    v2 target_relative_pos = get_world_pos_diff(target_position, enemy->position);
     v2 direction_to_target = get_unit_v2(target_relative_pos);
 
     v2 bullet_offset = get_zero_v2();
@@ -792,18 +792,18 @@ void enemy_fire_bullet(level_state* level, entity* enemy, entity* target, v2 tar
             : get_v2(-enemy->type->fired_bullet_offset.x, enemy->type->fired_bullet_offset.y));
     }
 
-    direction_to_target = get_unit_v2(get_world_position_difference(
-        target_position, add_to_world_position(enemy->position, bullet_offset)));
+    direction_to_target = get_unit_v2(get_world_pos_diff(
+        target_position, add_to_world_pos(enemy->position, bullet_offset)));
 
     fire_bullet(level, enemy->type->fired_bullet_type, enemy->position, bullet_offset,
-        scalar_multiply_v2(direction_to_target, enemy->type->fired_bullet_type->constant_velocity));				
+        multiply_v2(direction_to_target, enemy->type->fired_bullet_type->constant_velocity));				
 }
 
 void enemy_attack(level_state* level, entity* enemy, entity* player, r32 delta_time)
 {
     if (enemy->type->fired_bullet_type)
     {
-        world_position player_as_target = add_to_world_position(player->position, 
+        world_position player_as_target = add_to_world_pos(player->position, 
             level->static_data->player_as_target_offset);
 
         if (is_point_visible_for_entity(level, enemy, player_as_target))
@@ -864,7 +864,7 @@ void enemy_attack(level_state* level, entity* enemy, entity* player, r32 delta_t
 
 void process_entity_movement(level_state* level, entity* entity_to_move, entity* player, r32 delta_time)
 {
-    v2 distance_to_player = get_world_position_difference(player->position, entity_to_move->position);
+    v2 distance_to_player = get_world_pos_diff(player->position, entity_to_move->position);
     r32 distance_to_player_length = length_v2(distance_to_player);
 
     if (false == entity_to_move->has_path)
@@ -972,7 +972,7 @@ void process_entity_movement(level_state* level, entity* entity_to_move, entity*
     {
         if (has_entity_flags_set(entity_to_move, ENTITY_FLAG_FLIES_TOWARDS_PLAYER))
         {
-            world_position player_as_target = add_to_world_position(player->position, 
+            world_position player_as_target = add_to_world_pos(player->position, 
                 level->static_data->player_as_target_offset);
             if (is_point_visible_for_entity(level, entity_to_move, player_as_target))
             {

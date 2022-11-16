@@ -201,7 +201,7 @@ void render_entity_sprite(render_list* render, world_position camera_position, w
             offset = reflection_over_y_axis_v2(part->offset_in_pixels);
         }
 
-        v2 position = get_world_position_difference(entity_position, camera_position);
+        v2 position = get_world_pos_diff(entity_position, camera_position);
         v2 render_rect_dim = get_rect_dimensions(part->texture_rect);
         rect screen_rect = get_screen_rect(position, render_rect_dim);
         screen_rect = move_rect(screen_rect, offset);
