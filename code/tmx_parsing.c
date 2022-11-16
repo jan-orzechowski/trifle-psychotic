@@ -666,14 +666,6 @@ string_ref get_attribute_value(xml_node* node, const char* attribute_name)
     return result;
 }
 
-void push_next_found_node(memory_arena* arena, xml_node_search_result* search_results, xml_node* new_found_node)
-{
-    // zakładamy, ze dalsza część pamięci jest wolna, i możemy w ten sposób zrobić pseudo "dynamiczną" tablicę
-    xml_node** new_pointer = push_struct(arena, xml_node*);
-    *new_pointer = new_found_node;
-    search_results->found_nodes_count++;
-}
-
 xml_node_search_result* find_all_nodes_with_tag(memory_arena* arena, xml_node* root_node, const char* tag)
 {
     xml_node_search_result* result = push_struct(arena, xml_node_search_result);
