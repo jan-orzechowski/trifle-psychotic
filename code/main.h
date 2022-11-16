@@ -1,9 +1,5 @@
 ﻿#pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
 #include "jorutils.h"
 #include "jormath.h"
 #include "jorstring.h"

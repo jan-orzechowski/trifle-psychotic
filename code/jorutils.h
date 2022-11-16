@@ -4,37 +4,20 @@
 #define local_persist static 
 #define global_variable static
 
-// Types
-
+#include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <float.h>
-#include <stdbool.h>
-#include <stddef.h>
-
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-
-typedef int32 bool32;
-
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
-
-typedef float real32;
-typedef double real64;
-
-// Alternative
 
 typedef int8_t i8;
 typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
-typedef int32 b32;
+typedef int32_t b32;
 
 typedef uint8_t u8;
 typedef uint16_t u16;
