@@ -49,14 +49,13 @@ typedef struct key_press
 
 typedef struct game_input
 {
-    b32 is_left_mouse_key_held;
+    b32 is_fire_button_held;
     i32 mouse_x;
     i32 mouse_y;
     key_press up;
     key_press down;
     key_press left;
     key_press right;
-    key_press fire;
     key_press escape;
     b32 quit;
 } game_input;

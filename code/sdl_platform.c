@@ -345,11 +345,6 @@ game_input get_input_from_sdl_events()
         {
             new_input.quit = true;
         }
-
-        if (e.type == SDL_MOUSEBUTTONDOWN)
-        {
-            new_input.fire.number_of_presses++;
-        }
     }
 
     const Uint8* state = SDL_GetKeyboardState(NULL);
@@ -364,7 +359,12 @@ game_input get_input_from_sdl_events()
     Uint32 mouse_buttons = SDL_GetMouseState(&new_input.mouse_x, &new_input.mouse_y);
     if (mouse_buttons & SDL_BUTTON_LMASK)
     {
-        new_input.is_left_mouse_key_held = true;
+        new_input.is_fire_button_held = true;
+    }
+
+    if (state[SDL_SCANCODE_SPACE])
+    {
+        new_input.is_fire_button_held = true;
     }
 
     return new_input;

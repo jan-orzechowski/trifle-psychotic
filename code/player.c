@@ -307,7 +307,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
     {
         case PLAYER_MOVEMENT_MODE_WALK:
         {
-            if (input->is_left_mouse_key_held)
+            if (input->is_fire_button_held)
             {
                 player_fire_bullet(level, input, player);
             }
@@ -342,7 +342,7 @@ world_position process_input(level_state* level, input_buffer* input_buffer, ent
         {
             player->acceleration = level->static_data->gravity;
 
-            if (input->is_left_mouse_key_held)
+            if (input->is_fire_button_held)
             {
                 player_fire_bullet(level, input, player);
             }

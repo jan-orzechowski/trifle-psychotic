@@ -16,7 +16,7 @@ rect get_whole_screen_text_area(r32 margin)
 b32 was_rect_clicked(game_input* input, rect screen_rect)
 {
     b32 result = false;
-    if (input->is_left_mouse_key_held)
+    if (input->is_fire_button_held)
     {
         v2 relative_mouse_pos = divide_v2(get_v2(input->mouse_x, input->mouse_y), SCALING_FACTOR);
         result = is_point_inside_rect(screen_rect, relative_mouse_pos);
