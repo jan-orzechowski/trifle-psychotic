@@ -179,7 +179,7 @@ text_lines* get_division_of_text_into_lines(memory_arena* arena, render_text_opt
 text_viewport get_text_viewport(font font, text_lines lines, rect writing_area)
 {
     text_viewport result = {0};
-    r32 line_height = font.height_in_pixels + font.line_spacing + 1;
+    r32 line_height = font.height_in_pixels + font.line_spacing;
 
     // przycinamy writing area
     {
@@ -197,7 +197,7 @@ text_viewport get_text_viewport(font font, text_lines lines, rect writing_area)
         r32 height_not_visible = -writing_area.min_corner.y;
         u32 invisible_lines_count = (u32)floor(height_not_visible / line_height);
 
-        r32 height_not_used = invisible_lines_count * line_height;
+        r32 height_not_used = invisible_lines_count * line_height - 1.0f;
         writing_area.min_corner.y += height_not_used;
 
         if (invisible_lines_count < lines.lines_count)
@@ -228,7 +228,7 @@ text_viewport get_text_viewport(font font, text_lines lines, rect writing_area)
         }
         else
         {
-            last_visible_line = lines.lines_count - invisible_lines_count;
+            last_visible_line = lines.lines_count - invisible_lines_count + 1;
         }
     }
     else
@@ -399,7 +399,12 @@ void render_text_basic(render_list* render, memory_arena* transient_arena, font 
 void render_large_text(render_list* render, render_text_options* options, text_lines text_lines, r32 y_offset)
 {
     rect new_writing_area = move_rect(options->writing_area, get_v2(0.0f, y_offset));
-
     text_viewport viewport = get_text_viewport(options->font, text_lines, new_writing_area);
+
+#if TRIFLE_DEBUG
+    render_rectangle(render, new_writing_area, get_v4(1, 1, 1, 0), true);
+    render_rectangle(render, viewport.cropped_writing_area, get_v4(1, 0, 0, 0), true);
+#endif
+
     render_text_lines(render, options, &viewport, NULL);
 }

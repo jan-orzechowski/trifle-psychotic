@@ -585,8 +585,8 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
         data->default_time_to_first_menu_interaction = 0.2f;
         data->default_introduction_can_be_skipped_timer = 5.0f;
                 
-        data->introduction_text_speed = 20.0f;
-        data->credits_text_speed = 20.0f;
+        data->introduction_text_speed = 15.0f;
+        data->credits_text_speed = 15.0f;
 
         string_ref credits_test = copy_c_string(arena,
 "Multi line string 1\n\
