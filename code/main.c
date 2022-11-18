@@ -343,7 +343,9 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
         render_map_layer(&game->render, level->current_map.map, camera_tile_pos, camera_offset_in_tile);
         
 #if TRIFLE_DEBUG
+#if TRIFLE_DEBUG_COLLISION
         debug_render_tile_collision_boxes(&game->render, level, camera_position);
+#endif
 #endif
 
         // draw entities
@@ -392,8 +394,10 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
         render_map_layer(&game->render, level->current_map.foreground, camera_tile_pos, camera_offset_in_tile);
 
 #if TRIFLE_DEBUG
+#if TRIFLE_DEBUG_COLLISION
         debug_render_entity_collision_boxes(&game->render, level, camera_position);
         debug_render_bullet_collision_boxes(&game->render, level, camera_position);
+#endif
         debug_render_player_information(game, level);
 #endif
 
