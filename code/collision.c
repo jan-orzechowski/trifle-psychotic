@@ -488,6 +488,11 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
                                     {
                                         result.collided_checkpoint = entity_to_check;
                                     }
+
+                                    if (entity_to_check->type->type_enum == ENTITY_TYPE_MESSAGE_DISPLAY)
+                                    {
+                                        result.collided_message_display = entity_to_check;
+                                    }
                                 }
                             }
 
