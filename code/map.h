@@ -39,5 +39,5 @@ tile_range find_vertical_range_of_free_tiles(map* level, tile_position starting_
 tile_range find_vertical_range_of_free_tiles_downwards(map* level, tile_position starting_tile, u32 length_limit);
 b32 is_good_for_walk_path(map* level, u32 tile_x, u32 tile_y);
 tile_position get_closest_end_from_tile_range(tile_range range, world_position position);
-tile_range get_invalid_tile_range();
+tile_range get_invalid_tile_range(void);
 b32 is_tile_range_valid(tile_range range);

@@ -366,7 +366,7 @@ tile_position get_closest_end_from_tile_range(tile_range range, world_position p
     return result;
 }
 
-tile_range get_invalid_tile_range()
+tile_range get_invalid_tile_range(void)
 {
     tile_range result = {0};
     result.start = get_tile_pos(-1, -1);

@@ -61,7 +61,7 @@ animation_frame get_tile_graphics(memory_arena* arena, u32 tile_value)
     return result;
 }
 
-u32 count_sprite_effects_types()
+u32 count_sprite_effects_types(void)
 {
     u32 result = 0;
     for (i32 enum_value = (i32)_FIRST_SPRITE_EFFECT_TYPE;
@@ -288,7 +288,7 @@ switch_graphics load_switch_graphics(u32 index)
     return result;
 }
 
-display_graphics load_gate_switch_displays()
+display_graphics load_gate_switch_displays(void)
 {
     v2 offset = get_v2(5 * 24.0f, 4 * 24.0f);
 
@@ -324,7 +324,7 @@ animation_frame load_power_up_graphics(memory_arena* arena, u32 index)
     return result;
 }
 
-ui_graphics load_ui_graphics()
+ui_graphics load_ui_graphics(void)
 {
     v2 offset = get_v2(192.0f, 48.0f);
 

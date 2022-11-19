@@ -71,7 +71,7 @@ SDL_Rect get_sdl_rect(rect rect)
     return result;
 }
 
-void print_sdl_error()
+void print_sdl_error(void)
 {
 #ifdef TRIFLE_DEBUG
     const char* error = SDL_GetError();
@@ -80,7 +80,7 @@ void print_sdl_error()
 #endif
 }
 
-void print_sdl_image_error()
+void print_sdl_image_error(void)
 {
 #ifdef TRIFLE_DEBUG
     const char* error = IMG_GetError();
@@ -89,7 +89,7 @@ void print_sdl_image_error()
 #endif
 }
 
-void print_sdl_mixer_error()
+void print_sdl_mixer_error(void)
 {
 #ifdef TRIFLE_DEBUG
     const char* error = Mix_GetError();
@@ -176,7 +176,7 @@ void store_preferences_file_path(sdl_data* sdl, memory_arena* permanent_arena)
     }
 }
 
-read_file_result load_prefs()
+read_file_result load_prefs(void)
 {
     read_file_result result = {0};
     if (GLOBAL_SDL_DATA.preferences_file_path.ptr != NULL)
@@ -237,7 +237,7 @@ void stop_playing_music(int fade_out_ms)
     }
 }
 
-sdl_data init_sdl()
+sdl_data init_sdl(void)
 {
     sdl_data sdl_game = {0};
     b32 success = true;
@@ -334,7 +334,7 @@ sdl_data init_sdl()
     }
 }
 
-game_input get_input_from_sdl_events()
+game_input get_input_from_sdl_events(void)
 {
     game_input new_input = {0};
 
@@ -413,7 +413,7 @@ void emscripten_main_game_loop(void* passed_data)
 
 #endif
 
-game_state* initialize_game_state()
+game_state* initialize_game_state(void)
 {
     u32 memory_for_permanent_arena_size = megabytes_to_bytes(5);
     void* memory_for_permanent_arena = SDL_malloc(memory_for_permanent_arena_size);

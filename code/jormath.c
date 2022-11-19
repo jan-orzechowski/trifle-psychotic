@@ -405,19 +405,19 @@ b32 is_zero_v4(v4 a)
     return result;
 }
 
-v2 get_zero_v2()
+v2 get_zero_v2(void)
 {
     v2 result = {0};
     return result;
 }
 
-v3 get_zero_v3()
+v3 get_zero_v3(void)
 {
     v3 result = {0};
     return result;
 }
 
-v4 get_zero_v4()
+v4 get_zero_v4(void)
 {
     v4 result = {0};
     return result;

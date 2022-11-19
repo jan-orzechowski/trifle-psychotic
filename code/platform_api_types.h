@@ -24,7 +24,7 @@ typedef struct write_to_file
 
 typedef read_file_result read_file_func(const char* path);
 typedef void save_file_func(const char* path, write_to_file contents);
-typedef read_file_result load_prefs_func();
+typedef read_file_result load_prefs_func(void);
 typedef void save_prefs_func(write_to_file contents);
 typedef void start_playing_music_func(string_ref audio_file_name);
 typedef void stop_playing_music_func(int fade_out_ms);
