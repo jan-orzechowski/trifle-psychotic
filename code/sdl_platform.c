@@ -483,7 +483,7 @@ int main(int args_count, char* args[])
 
         game_state* game = initialize_game_state();
 
-        int max_path_length = 4048; // max path length on Linux, Windows, and MacOS
+        int max_path_length = 4096; // max path length on Linux, Windows, and MacOS
         sdl->path_buffer = get_string_builder(game->transient_arena, max_path_length);
         store_preferences_file_path(sdl, game->arena);
         
@@ -551,7 +551,7 @@ int main(int args_count, char* args[])
                 r32 how_long_to_sleep_ms = target_elapsed_ms - elapsed_work_ms;
                 if (how_long_to_sleep_ms > 1)
                 {
-                    SDL_Delay(how_long_to_sleep_ms);
+                    SDL_Delay((Uint32)how_long_to_sleep_ms);
                 }
 
                 r32 total_elapsed_ms = get_elapsed_miliseconds(start_work_counter, SDL_GetPerformanceCounter());
@@ -696,7 +696,7 @@ void render_list_to_output(render_list* render)
                     }
                     else if (GLOBAL_SDL_DATA.screen_width == 1536)
                     {
-                        dst.x -= 95;
+                        dst.x -= 136;
                     }
                 }
 
