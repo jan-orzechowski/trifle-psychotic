@@ -373,22 +373,16 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
         for (i32 bullet_index = 0; bullet_index < level->bullets_count; bullet_index++)
         {
             bullet* bullet = level->bullets + bullet_index;
-            if (is_in_neighbouring_chunk(camera_position.chunk_pos, bullet->position))
-            {
-                render_entity_sprite(&game->render,
-                    camera_position, bullet->position, DIRECTION_NONE,
-                    NULL, 0, bullet->type->idle_pose.sprite);
-            }
+            render_entity_sprite(&game->render,
+                camera_position, bullet->position, DIRECTION_NONE,
+                NULL, 0, bullet->type->idle_pose.sprite);            
         }
 
         // draw explosions
         for (i32 explosion_index = 0; explosion_index < level->explosions_count; explosion_index++)
         {
             entity* explosion = level->explosions + explosion_index;
-            if (is_in_neighbouring_chunk(camera_position.chunk_pos, explosion->position))
-            {
-                render_entity_animation_frame(&game->render, camera_position, explosion);
-            }
+            render_entity_animation_frame(&game->render, camera_position, explosion);           
         }
 
         render_map_layer(&game->render, level->current_map.foreground, camera_tile_pos, camera_offset_in_tile);
