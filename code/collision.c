@@ -375,6 +375,52 @@ tile_range find_path_fragment_not_blocked_by_entities(level_state* level, tile_r
     return result;
 }
 
+void fill_collision_result_based_on_entity_type(collision_result* result, level_state* level, 
+    entity* moving_entity, entity* collided_entity)
+{
+    if (has_entity_flags_set(moving_entity, ENTITY_FLAG_PLAYER))
+    {
+        if (has_entity_flags_set(collided_entity, ENTITY_FLAG_ENEMY))
+        {
+            if (false == ignore_player_and_enemy_collisions(level))
+            {
+                result->collided_enemy = collided_entity;
+            }
+        }
+
+        if (has_entity_flags_set(collided_entity, ENTITY_FLAG_MOVING_PLATFORM_HORIZONTAL)
+            || has_entity_flags_set(collided_entity, ENTITY_FLAG_MOVING_PLATFORM_VERTICAL))
+        {
+            result->collided_platform = collided_entity;
+        }
+
+        if (has_entity_flags_set(collided_entity, ENTITY_FLAG_SWITCH))
+        {
+            result->collided_switch = collided_entity;
+        }
+
+        if (has_entity_flags_set(collided_entity, ENTITY_FLAG_POWER_UP))
+        {
+            result->collided_power_up = collided_entity;
+        }
+
+        if (collided_entity->type->type_enum == ENTITY_TYPE_NEXT_LEVEL_TRANSITION)
+        {
+            result->collided_transition = collided_entity;
+        }
+
+        if (collided_entity->type->type_enum == ENTITY_TYPE_CHECKPOINT)
+        {
+            result->collided_checkpoint = collided_entity;
+        }
+
+        if (collided_entity->type->type_enum == ENTITY_TYPE_MESSAGE_DISPLAY)
+        {
+            result->collided_message_display = collided_entity;
+        }
+    }
+}
+
 collision_result move(level_state* level, entity* moving_entity, world_position target_pos)
 {
     collision_result result = {0};
@@ -453,47 +499,7 @@ collision_result move(level_state* level, entity* moving_entity, world_position 
                             // we check only entities with which we would collide before colliding the wall
                             if (new_collision.possible_movement_perc < closest_tile_collision.possible_movement_perc)
                             {
-                                if (has_entity_flags_set(moving_entity, ENTITY_FLAG_PLAYER))
-                                {
-                                    if (has_entity_flags_set(entity_to_check, ENTITY_FLAG_ENEMY))
-                                    {
-                                        if (false == ignore_player_and_enemy_collisions(level))
-                                        {
-                                            result.collided_enemy = entity_to_check;
-                                        }										
-                                    }
-
-                                    if (has_entity_flags_set(entity_to_check, ENTITY_FLAG_MOVING_PLATFORM_HORIZONTAL)
-                                        || has_entity_flags_set(entity_to_check, ENTITY_FLAG_MOVING_PLATFORM_VERTICAL))
-                                    {
-                                        result.collided_platform = entity_to_check;
-                                    }
-
-                                    if (has_entity_flags_set(entity_to_check, ENTITY_FLAG_SWITCH))
-                                    {
-                                        result.collided_switch = entity_to_check;
-                                    }
-
-                                    if (has_entity_flags_set(entity_to_check, ENTITY_FLAG_POWER_UP))
-                                    {
-                                        result.collided_power_up = entity_to_check;
-                                    }
-
-                                    if (entity_to_check->type->type_enum == ENTITY_TYPE_NEXT_LEVEL_TRANSITION)
-                                    {
-                                        result.collided_transition = entity_to_check;
-                                    }
-
-                                    if (entity_to_check->type->type_enum == ENTITY_TYPE_CHECKPOINT)
-                                    {
-                                        result.collided_checkpoint = entity_to_check;
-                                    }
-
-                                    if (entity_to_check->type->type_enum == ENTITY_TYPE_MESSAGE_DISPLAY)
-                                    {
-                                        result.collided_message_display = entity_to_check;
-                                    }
-                                }
+                                fill_collision_result_based_on_entity_type(&result, level, moving_entity, entity_to_check);
                             }
 
                             if (has_entity_flags_set(entity_to_check, ENTITY_FLAG_BLOCKS_MOVEMENT))
