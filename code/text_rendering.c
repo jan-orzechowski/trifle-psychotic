@@ -189,8 +189,8 @@ text_viewport get_text_viewport(font font, text_lines lines, rect writing_area)
         writing_area.max_corner.y -= height_not_used;
     }
 
-    u32 first_visible_line = 0;
-    u32 last_visible_line = 0;
+    i32 first_visible_line = 0;
+    i32 last_visible_line = 0;
 
     if (writing_area.min_corner.y < 0)
     {
@@ -206,7 +206,8 @@ text_viewport get_text_viewport(font font, text_lines lines, rect writing_area)
         }
         else
         {
-            first_visible_line = lines.lines_count;
+            // that signals that no text is visible
+            first_visible_line = -1;
         }
     }
     else
@@ -229,17 +230,24 @@ text_viewport get_text_viewport(font font, text_lines lines, rect writing_area)
         else
         {
             last_visible_line = lines.lines_count - invisible_lines_count + 1;
+
+            if (last_visible_line > lines.lines_count - 1)
+            {
+                last_visible_line = lines.lines_count - 1;
+            }
         }
     }
     else
     {
-        last_visible_line = lines.lines_count;
+        last_visible_line = lines.lines_count - 1;
     }
 
     result.first_line_to_render_index = first_visible_line;
     result.last_line_to_render_index = last_visible_line;
     result.cropped_writing_area = writing_area;
     result.text_lines = lines;
+
+    assert(last_visible_line < lines.lines_count);
 
     return result;
 }
@@ -307,7 +315,7 @@ void render_text_lines(render_list* render, render_text_options* options, text_v
     }
 
     u32 first_line = 0;
-    u32 last_line = lines->lines_count;
+    u32 last_line = lines->lines_count - 1;
     r32 first_x = options->writing_area.min_corner.x;
     r32 first_y = options->writing_area.min_corner.y;
     r32 x = 0;
@@ -319,11 +327,17 @@ void render_text_lines(render_list* render, render_text_options* options, text_v
         first_y = viewport->cropped_writing_area.min_corner.y;
         first_line = viewport->first_line_to_render_index;
         last_line = viewport->last_line_to_render_index;
+
+        if (first_line < 0 || last_line < 0)
+        {
+            // in this case no text is visible
+            return;
+        }
     }
 
     y = first_y;
     for (u32 line_index = first_line;
-        line_index < last_line;
+        line_index <= last_line;
         line_index++)
     {
         string_ref line = lines->lines[line_index];

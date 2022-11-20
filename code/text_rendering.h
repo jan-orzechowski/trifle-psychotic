@@ -13,8 +13,8 @@ typedef struct text_viewport
 {
     rect cropped_writing_area;
     text_lines text_lines;
-    u32 first_line_to_render_index;
-    u32 last_line_to_render_index;
+    i32 first_line_to_render_index;
+    i32 last_line_to_render_index;
 } text_viewport;
 
 text_area_limits get_text_area_limits(render_text_options* options);
