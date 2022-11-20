@@ -118,6 +118,7 @@ typedef struct static_game_data
     string_ref* death_messages;
     u32 death_messages_count;	
     text_lines* credits_text_lines;
+    text_lines* ending_text_lines;
 
     render_text_options scrolling_text_options;
     render_text_options parsing_errors_text_options;

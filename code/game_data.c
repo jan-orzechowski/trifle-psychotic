@@ -447,6 +447,17 @@ shooting_rotation_sprites* load_shooting_rotation_sprites(memory_arena* arena, u
     return result;
 }
 
+string_ref load_text_from_file(memory_arena* arena, platform_api* platform, const char* path)
+{
+    string_ref result = {0};
+    read_file_result file = platform->read_file(path);
+    if (file.contents)
+    {
+        result = copy_c_string_with_length(arena, file.contents, file.size);
+    }
+    return result;
+}
+
 void load_static_game_data(platform_api* platform, static_game_data* data, memory_arena* arena, memory_arena* transient_arena)
 {	
     temporary_memory transient_memory = begin_temporary_memory(transient_arena);
@@ -510,6 +521,14 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
         data->death_messages[7] = copy_c_string(arena, "Don't you forget about dying, don't you forget about your friend death.");
         data->death_messages[8] = copy_c_string(arena, "Long live the new flesh.");
         data->death_messages[9] = copy_c_string(arena, "You could write a treatise on the sudden transformation of life into archaeology.");
+
+        string_ref credits_text = load_text_from_file(arena, platform, "data/credits.txt");
+        data->credits_text_lines = get_division_of_text_into_lines(
+            arena, &data->scrolling_text_options, credits_text);
+
+        string_ref ending_text = load_text_from_file(arena, platform, "data/ending.txt");
+        data->ending_text_lines = get_division_of_text_into_lines(
+            arena, &data->scrolling_text_options, ending_text);
     }
 
     // levels in level choice screen
@@ -587,22 +606,6 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
                 
         data->introduction_text_speed = 15.0f;
         data->credits_text_speed = 15.0f;
-
-        string_ref credits_test = copy_c_string(arena,
-"Multi line string 1\n\
-Multi line string 2\n\
-\n\
-Multi line string 3\n\
-Multi line string 4\n\
-\n\
-Multi line string 5\n\
-Multi line string 6\n\
-\n\
-Multi line string 7\n\
-Multi line string 8\n\
-");
-        data->credits_text_lines = get_division_of_text_into_lines(
-            arena, &data->scrolling_text_options, credits_test);
     }
 
     // collision data
