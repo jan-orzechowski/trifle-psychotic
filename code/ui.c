@@ -108,6 +108,12 @@ void render_counter(static_game_data* static_data, render_list* render, memory_a
     rect box_area = add_side_length(text_area, get_v2(4, 4));
     box_area = move_rect(box_area, get_v2(2, 0));
 
+    // when we have only one digit, we center it
+    if (counter < 10)
+    {
+        text_area = move_rect(text_area, get_v2(4, 0));
+    }
+
     render_ui_box(static_data, render, box_area);
     render_text_basic(render, transient_arena, static_data->ui_font, text_area, counter_value_str, false);
 }
