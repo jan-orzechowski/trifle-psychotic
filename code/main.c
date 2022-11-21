@@ -341,18 +341,41 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
 
         render_map_layer(&game->render, level->current_map.background, camera_tile_pos, camera_offset_in_tile);
         render_map_layer(&game->render, level->current_map.map, camera_tile_pos, camera_offset_in_tile);
-        
+        render_map_layer(&game->render, level->current_map.foreground, camera_tile_pos, camera_offset_in_tile);
+
 #if TRIFLE_DEBUG
 #if TRIFLE_DEBUG_COLLISION
         debug_render_tile_collision_boxes(&game->render, level, camera_position);
 #endif
 #endif
 
-        // draw entities
+        // draw gates and switches
         for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
         {
             entity* entity = level->entities + entity_index;
             if (false == entity->used)
+            {
+                continue;
+            }
+
+            if (has_entity_flags_set(entity, ENTITY_FLAG_GATE)
+                || has_entity_flags_set(entity, ENTITY_FLAG_SWITCH))
+            {
+                render_entity_animation_frame(&game->render, camera_position, entity);
+            }
+        }
+
+        // draw other entities
+        for (i32 entity_index = 0; entity_index < level->entities_count; entity_index++)
+        {
+            entity* entity = level->entities + entity_index;
+            if (false == entity->used)
+            {
+                continue;
+            }
+
+            if (has_entity_flags_set(entity, ENTITY_FLAG_GATE)
+                || has_entity_flags_set(entity, ENTITY_FLAG_SWITCH))
             {
                 continue;
             }
@@ -384,8 +407,6 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
             entity* explosion = level->explosions + explosion_index;
             render_entity_animation_frame(&game->render, camera_position, explosion);           
         }
-
-        render_map_layer(&game->render, level->current_map.foreground, camera_tile_pos, camera_offset_in_tile);
 
 #if TRIFLE_DEBUG
 #if TRIFLE_DEBUG_COLLISION
