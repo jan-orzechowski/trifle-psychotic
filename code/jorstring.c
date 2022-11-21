@@ -72,11 +72,21 @@ string_ref copy_string_to_buffer(char* buffer, u32 buffer_length, string_ref str
 {
     string_ref result = {0};
     result.ptr = buffer;
-    result.string_size = buffer_length < str.string_size ? buffer_length : str.string_size;
+    if (str.string_size > buffer_length - 1)
+    {
+        result.string_size = buffer_length - 1;
+    }
+    else
+    {
+        result.string_size = str.string_size;
+    }
+
     for (u32 char_index = 0; char_index < result.string_size; char_index++)
     {
         *(buffer + char_index) = *(str.ptr + char_index);
     }
+    *(buffer + result.string_size) = '\0';
+
     return result;
 }
 
