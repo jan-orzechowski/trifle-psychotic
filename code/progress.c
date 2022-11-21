@@ -98,6 +98,24 @@ void mark_level_as_completed(static_game_data* data, string_ref name)
     }
 }
 
+b32 check_if_all_levels_are_completed(static_game_data* data)
+{
+    b32 result = true;
+    for (u32 level_index = 0; level_index < data->levels_count; level_index++)
+    {
+        level_choice* level = data->levels + level_index;        
+        if (false == compare_to_c_string(level->map_name, "custom"))
+        {
+            if (false == level->completed)
+            {
+                result = false;
+                break;
+            }
+        }
+    }
+    return result;
+}
+
 void mark_level_as_completed_from_buffer(static_game_data* data, char* name_buffer, i32 string_size)
 {
     string_ref name = {0};

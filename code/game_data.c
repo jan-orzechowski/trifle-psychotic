@@ -454,6 +454,7 @@ string_ref load_text_from_file(memory_arena* arena, platform_api* platform, cons
     if (file.contents)
     {
         result = copy_c_string_with_length(arena, file.contents, file.size);
+        free(file.contents);
     }
     return result;
 }

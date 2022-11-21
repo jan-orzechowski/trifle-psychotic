@@ -677,6 +677,16 @@ scene_change credits_screen_update_and_render(game_state* game, r32 delta_time)
     static_game_data* static_data = game->static_data;
     scene_change change_to_other_scene = {0};
 
+    text_lines* text_to_show;
+    if (game->credits_screen.ending_text_mode)
+    {
+        text_to_show = static_data->ending_text_lines;
+    }
+    else
+    {
+        text_to_show = static_data->credits_text_lines;
+    }
+
     render_bitmap(&game->render, TEXTURE_BACKGROUND_TITLE_SCREEN,
         get_rect_from_corners(get_v2(0, 0), get_v2(384, 320)),
         get_rect_from_corners(get_v2(0, 0), divide_v2(get_v2(SCREEN_WIDTH, SCREEN_HEIGHT), SCALING_FACTOR)));
@@ -684,16 +694,32 @@ scene_change credits_screen_update_and_render(game_state* game, r32 delta_time)
     if (game->credits_screen.fade_in_perc == 0.0f)
     {
         render_large_text(&game->render, &static_data->scrolling_text_options,
-            *static_data->credits_text_lines, game->credits_screen.text_y_offset);
+            *text_to_show, game->credits_screen.text_y_offset);
 
         game->credits_screen.text_y_offset -= delta_time * static_data->credits_text_speed;
     }
 
-    if (game->credits_screen.time_to_first_interaction > 0.0f)
+    b32 can_exit = false;
+    if (game->credits_screen.ending_text_mode)
     {
-        game->credits_screen.time_to_first_interaction -= delta_time;
+        if (game->credits_screen.text_y_offset < (-SCREEN_HEIGHT) / 2)
+        {
+            can_exit = true;
+        }
     }
     else
+    {
+        if (game->credits_screen.time_to_first_interaction > 0.0f)
+        {
+            game->credits_screen.time_to_first_interaction -= delta_time;
+        }
+        else
+        {
+            can_exit = true;
+        }
+    }
+        
+    if (can_exit)
     {
         v2 dots_indicator_position = get_v2(
             SCREEN_WIDTH / SCALING_FACTOR / 2,
@@ -877,6 +903,7 @@ void main_game_loop(game_state* game, r32 delta_time)
 
     if (scene_change.change_scene)
     {
+        scene previous_scene = game->current_scene;
         game->current_scene = scene_change.new_scene;
         switch (scene_change.new_scene)
         {
@@ -893,12 +920,25 @@ void main_game_loop(game_state* game, r32 delta_time)
             }
             break;
             case SCENE_LEVEL_CHOICE:
-            {
-                game->level_choice_menu = (level_choice_menu_state){0};
-                game->level_choice_menu.time_to_first_interaction = game->static_data->default_time_to_first_menu_interaction;
-                game->level_choice_menu.fade_in_perc = 1.0f;
+            {                
+                if (previous_scene == SCENE_GAME 
+                    && check_if_all_levels_are_completed(game->static_data))
+                {
+                    game->current_scene = SCENE_CREDITS;
+                    game->credits_screen = (credits_screen_state){ 0 };
+                    game->credits_screen.time_to_first_interaction = game->static_data->default_time_to_first_menu_interaction;
+                    game->credits_screen.fade_in_perc = 1.0f;
+                    game->credits_screen.ending_text_mode = true;
+                    game->credits_screen.text_y_offset = (SCREEN_HEIGHT / SCALING_FACTOR);
+                }
+                else
+                {
+                    game->level_choice_menu = (level_choice_menu_state){ 0 };
+                    game->level_choice_menu.time_to_first_interaction = game->static_data->default_time_to_first_menu_interaction;
+                    game->level_choice_menu.fade_in_perc = 1.0f;
 
-                load_completed_levels(&game->platform, game->static_data);
+                    load_completed_levels(&game->platform, game->static_data);
+                }              
             }
             break;
             case SCENE_MAP_ERRORS:

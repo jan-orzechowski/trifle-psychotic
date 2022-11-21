@@ -79,6 +79,7 @@ typedef struct credits_screen_state
     b32 transition_to_main_menu;
     r32 text_y_offset;
 
+    b32 ending_text_mode;
     i32 skippable_indicator_index;
     r32 skippable_indicator_timer;
 } credits_screen_state;
