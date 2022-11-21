@@ -3,6 +3,13 @@
 #include "text_rendering.h"
 #include "ui.h"
 
+rect get_whole_screen_rect()
+{
+    rect result = get_rect_from_corners(
+        get_v2(0, 0), get_v2(SCREEN_WIDTH / SCALING_FACTOR, SCREEN_HEIGHT/ SCALING_FACTOR));
+    return result;
+}
+
 rect get_whole_screen_text_area(r32 margin)
 {
     r32 window_border = 4.0f * 2;
@@ -160,9 +167,10 @@ rect render_menu_option_at_coords(font font, game_state* game, u32 x_coord, u32 
 void render_ui_box(static_game_data* static_data, render_list* render, rect textbox_rect)
 {
     v2 dimensions = get_rect_dimensions(textbox_rect);
-
-    v4 background_color = get_v4(255, 255, 255, 255);
-    render_rectangle(render, textbox_rect, background_color, false);
+    
+    v4 background_color = get_v4(0.0f, 0.0f, 0.0f, 1.0f);
+    rect background_rect = add_side_length(textbox_rect, get_v2(0, 4));
+    render_rectangle(render, background_rect, background_color, false);
 
     v2 tile_dimensions = get_v2(4, 4);
     u32 tile_x_count = ceil(dimensions.x / tile_dimensions.x);

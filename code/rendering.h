@@ -8,7 +8,7 @@ typedef enum render_list_entry_type
     RENDER_LIST_ENTRY_FADE,
     RENDER_LIST_ENTRY_BITMAP,
     RENDER_LIST_ENTRY_BITMAP_WITH_EFFECTS,
-    RENDER_LIST_ENTRY_DEBUG_RECTANGLE,
+    RENDER_LIST_ENTRY_RECTANGLE,
 } render_list_entry_type;
 
 typedef struct render_list_entry_header
@@ -45,12 +45,12 @@ typedef struct render_list_entry_bitmap_with_effects
     b32 flip_horizontally;
 } render_list_entry_bitmap_with_effects;
 
-typedef struct render_list_entry_debug_rectangle
+typedef struct render_list_entry_rectangle
 {
     v4 color;
     b32 render_outline_only;
     rect destination_rect;
-} render_list_entry_debug_rectangle;
+} render_list_entry_rectangle;
 
 void* push_render_element(render_list* render, u32 size, render_list_entry_type type);
 void render_bitmap(render_list* render, textures texture, rect source_rect, rect destination_rect);

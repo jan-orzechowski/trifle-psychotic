@@ -38,8 +38,8 @@ void render_bitmap(render_list* render, textures texture, rect source_rect, rect
 
 void render_rectangle(render_list* render, rect screen_rect_to_fill, v4 color, b32 render_outline_only)
 {
-    render_list_entry_debug_rectangle* entry = (render_list_entry_debug_rectangle*)push_render_element(
-        render, sizeof(render_list_entry_debug_rectangle), RENDER_LIST_ENTRY_DEBUG_RECTANGLE);
+    render_list_entry_rectangle* entry = (render_list_entry_rectangle*)push_render_element(
+        render, sizeof(render_list_entry_rectangle), RENDER_LIST_ENTRY_RECTANGLE);
 
     entry->destination_rect = screen_rect_to_fill;
     entry->color = color;

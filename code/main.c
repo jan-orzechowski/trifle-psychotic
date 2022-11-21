@@ -168,7 +168,7 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
                 level->show_message = true;
                 level->message_to_show = collision.collided_message_display->type->message;
                 level->min_message_timer = 1.0f;
-                level->messagebox_dimensions = get_v2(150, 120);
+                level->messagebox_dimensions = get_v2(150, 130);
                 collision.collided_message_display->type->type_enum = ENTITY_TYPE_UNKNOWN; // we show the message only once
             }
         }

@@ -3,6 +3,7 @@
 #include "jormath.h"
 #include "rendering.h"
 
+rect get_whole_screen_rect();
 rect get_whole_screen_text_area(r32 margin);
 b32 was_rect_clicked(game_input* input, rect screen_rect);
 void set_rect_length_to_fit_text(rect* option_rect, font font, string_ref text);

@@ -729,13 +729,17 @@ void render_list_to_output(render_list* render)
                 base_address += sizeof(render_list_entry_bitmap_with_effects);
             }
             break;
-            case RENDER_LIST_ENTRY_DEBUG_RECTANGLE:
+            case RENDER_LIST_ENTRY_RECTANGLE:
             {
-                render_list_entry_debug_rectangle* entry = (render_list_entry_debug_rectangle*)data;
+                render_list_entry_rectangle* entry = (render_list_entry_rectangle*)data;
 
                 if (false == is_zero_v4(entry->color))
                 {
                     v4 sdl_tint = multiply_v4(entry->color, 255.0f);
+                    if (entry->color.a != 1.0f)
+                    {
+                        SDL_SetRenderDrawBlendMode(GLOBAL_SDL_DATA.renderer, SDL_BLENDMODE_BLEND);
+                    }
                     SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, sdl_tint.r, sdl_tint.g, sdl_tint.b, sdl_tint.a);
                 }
 
@@ -752,9 +756,10 @@ void render_list_to_output(render_list* render)
                 if (false == is_zero_v4(entry->color))
                 {
                     SDL_SetRenderDrawColor(GLOBAL_SDL_DATA.renderer, 255, 255, 255, 0);
+                    SDL_SetRenderDrawBlendMode(GLOBAL_SDL_DATA.renderer, SDL_BLENDMODE_NONE);
                 }
 
-                base_address += sizeof(render_list_entry_debug_rectangle);
+                base_address += sizeof(render_list_entry_rectangle);
             }
             break;
             case RENDER_LIST_ENTRY_CLEAR:

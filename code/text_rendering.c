@@ -314,8 +314,8 @@ void render_text_lines(render_list* render, render_text_options* options, text_v
         lines = &viewport->text_lines;
     }
 
-    u32 first_line = 0;
-    u32 last_line = lines->lines_count - 1;
+    i32 first_line = 0;
+    i32 last_line = lines->lines_count - 1;
     r32 first_x = options->writing_area.min_corner.x;
     r32 first_y = options->writing_area.min_corner.y;
     r32 x = 0;
@@ -336,14 +336,14 @@ void render_text_lines(render_list* render, render_text_options* options, text_v
     }
 
     y = first_y;
-    for (u32 line_index = first_line;
+    for (i32 line_index = first_line;
         line_index <= last_line;
         line_index++)
     {
         string_ref line = lines->lines[line_index];
         
         x = first_x;
-        for (u32 char_index = 0;
+        for (i32 char_index = 0;
             char_index < line.string_size;
             char_index++)
         {
