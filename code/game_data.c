@@ -813,7 +813,7 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
             robot->default_attack_cooldown = 1.2f;
             robot->default_attack_series_duration = 0.6f;
             robot->default_attack_bullet_interval_duration = 0.15f;	
-            robot->collision_rect_dim = get_v2(0.35f, 1.6f);
+            robot->collision_rect_dim = get_v2(0.45f, 1.6f);
             robot->collision_rect_offset = get_v2(0.0f, -0.70f);	
             robot->idle_pose = get_walk_idle_pose(arena, get_v2(0, 2 * 24), true, get_v2(0.0f, 1.0f));
             robot->walk_animation = get_walk_animation(arena, get_v2(0, 2 * 24), true, get_v2(0.0f, 1.0f));
@@ -849,7 +849,7 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
             messenger->default_attack_cooldown = 1.0f;
             messenger->default_attack_series_duration = 0.2f;
             messenger->default_attack_bullet_interval_duration = 0.05f;	
-            messenger->collision_rect_dim = get_v2(0.4f, 1.7f);
+            messenger->collision_rect_dim = get_v2(0.45f, 1.7f);
             messenger->collision_rect_offset = get_v2(0.0f, -0.4f);
             messenger->idle_pose = get_walk_idle_pose(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
             messenger->walk_animation = get_walk_animation(arena, get_v2(0, 4 * 24), false, get_v2(0.0f, -4.0f));
