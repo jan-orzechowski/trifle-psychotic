@@ -462,6 +462,7 @@ void level_introduction_update_and_render(game_state* game, r32 delta_time)
     level_state* level = game->level_state;
     world_position camera_position = get_world_pos_from_tile_pos(get_tile_pos(10, 10));
     render_backdrops(&game->render, level, camera_position);
+    render_rectangle(&game->render, get_whole_screen_rect(), get_v4(0.0f, 0.0f, 0.0f, 0.3f), false);
 
     if (level->introduction.fade_in_perc == 0.0f)
     {
@@ -592,7 +593,7 @@ scene_change menu_update_and_render(game_state* game, r32 delta_time)
 
     render_bitmap(&game->render, TEXTURE_BACKGROUND_TITLE_SCREEN,
         get_rect_from_corners(get_v2(0, 0), get_v2(384, 320)),
-        get_rect_from_corners(get_v2(0, 0), divide_v2(get_v2(SCREEN_WIDTH, SCREEN_HEIGHT), SCALING_FACTOR)));
+        get_whole_screen_rect());
 
     rect title_area = get_rect_from_corners(
         get_v2(30, 20),
@@ -689,7 +690,8 @@ scene_change credits_screen_update_and_render(game_state* game, r32 delta_time)
 
     render_bitmap(&game->render, TEXTURE_BACKGROUND_TITLE_SCREEN,
         get_rect_from_corners(get_v2(0, 0), get_v2(384, 320)),
-        get_rect_from_corners(get_v2(0, 0), divide_v2(get_v2(SCREEN_WIDTH, SCREEN_HEIGHT), SCALING_FACTOR)));
+        get_whole_screen_rect());
+    render_rectangle(&game->render, get_whole_screen_rect(), get_v4(0.0f, 0.0f, 0.0f, 0.3f), false);
 
     if (game->credits_screen.fade_in_perc == 0.0f)
     {
