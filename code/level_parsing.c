@@ -386,6 +386,11 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
                     if (compare_to_c_string(name, "message"))
                     {
                         string_ref message_str = get_attribute_value(prop, "value");
+                        if (message_str.string_size == 0)
+                        {
+                            message_str = prop->inner_text;
+                        }
+
                         if (message_str.string_size)
                         {
                             if (message_str.string_size <= 1000)
@@ -405,10 +410,17 @@ void parse_entity(level_parsing_context* parsing, xml_node* node)
                         else
                         {
                             snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
-                                "There is a message display entity with no 'message' property set at position (%d, %d).",
+                                "There is a message display entity with empty 'message' property set at position (%d, %d).",
                                 position.x, position.y);
                             add_error_from_buffer(parsing);
                         }
+                    }
+                    else
+                    {
+                        snprintf(parsing->errors->message_buffer, parsing->errors->message_buffer_size,
+                            "There is a message display entity with no 'message' property set at position (%d, %d).",
+                            position.x, position.y);
+                        add_error_from_buffer(parsing);
                     }
                 }
             }
