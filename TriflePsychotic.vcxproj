@@ -22,7 +22,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{6d70971b-2b96-42f8-9f8d-5131b0dce3c1}</ProjectGuid>
-    <RootNamespace>TriflePlatformer</RootNamespace>
+    <RootNamespace>TriflePsychotic</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
