@@ -579,6 +579,14 @@ scene_change level_choice_update_and_render(game_state* game, r32 delta_time)
     {
         process_fade(&game->render, &game->level_choice_menu.fade_out_perc, delta_time, 
             false, static_data->menu_fade_speed);
+
+        if (game->level_choice_menu.active_scene_change.new_scene == SCENE_GAME
+            && game->menu_music_initialized 
+            && false == game->menu_music_stopped)
+        {
+            game->platform.stop_playing_music(1000);
+            game->menu_music_stopped = true;
+        }
     }
     else
     {
@@ -647,6 +655,13 @@ scene_change menu_update_and_render(game_state* game, r32 delta_time)
             game->main_menu.active_scene_change.change_scene = true;
             game->main_menu.active_scene_change.new_scene = SCENE_GAME;
             game->main_menu.active_scene_change.restore_checkpoint = true;
+
+            if (game->menu_music_initialized
+                && false == game->menu_music_stopped)
+            {
+                game->platform.stop_playing_music(1000);
+                game->menu_music_stopped = true;
+            }
         }
     }
 
@@ -988,6 +1003,23 @@ void main_game_loop(game_state* game, r32 delta_time)
             }
             break;
         }
+    }
+
+    // music management in non-game scenes
+    if (game->current_scene == SCENE_MAIN_MENU 
+        || game->current_scene == SCENE_CREDITS
+        || game->current_scene == SCENE_LEVEL_CHOICE)
+    {
+        if (false == game->menu_music_initialized)
+        {
+            game->platform.start_playing_music(game->static_data->main_menu_music_file);
+            game->menu_music_initialized = true;
+            game->menu_music_stopped = false;
+        }
+    }
+    else
+    {
+        game->menu_music_initialized = false;
     }
 
     game->platform.render_list_to_output(&game->render);

@@ -209,9 +209,9 @@ void start_playing_music(string_ref audio_file_name)
         empty_string_builder(&sdl->path_buffer);
         push_c_string_to_builder(&sdl->path_buffer, "audio/");
         push_string_to_builder(&sdl->path_buffer, audio_file_name);
-        if (false == ends_with(audio_file_name, ".ogg")
-            || false == ends_with(audio_file_name, ".mp3")
-            || false == ends_with(audio_file_name, ".wav"))
+        if (false == (ends_with(audio_file_name, ".ogg")
+            || ends_with(audio_file_name, ".mp3")
+            || ends_with(audio_file_name, ".wav")))
         {
             push_c_string_to_builder(&sdl->path_buffer, ".ogg");
         }

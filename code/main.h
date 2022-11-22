@@ -119,6 +119,7 @@ typedef struct static_game_data
     u32 death_messages_count;	
     text_lines* credits_text_lines;
     text_lines* ending_text_lines;
+    string_ref main_menu_music_file;
 
     render_text_options scrolling_text_options;
     render_text_options parsing_errors_text_options;
@@ -229,6 +230,8 @@ typedef struct game_state
     b32 exit_level_closes_game;
     b32 skip_introductions;
     b32 skip_deaths_prompts;
+    b32 menu_music_initialized;
+    b32 menu_music_stopped;
  
     checkpoint checkpoint;
 } game_state;

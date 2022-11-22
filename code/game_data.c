@@ -607,6 +607,8 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
                 
         data->introduction_text_speed = 15.0f;
         data->credits_text_speed = 15.0f;
+
+        data->main_menu_music_file = copy_c_string(arena, "kevin_macleod_hiding_your_reality.ogg");
     }
 
     // collision data
