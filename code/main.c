@@ -188,7 +188,7 @@ scene_change game_update_and_render(game_state* game, r32 delta_time)
         {
             collision.collided_checkpoint->type->type_enum = ENTITY_TYPE_UNKNOWN; // checkpoint works only once
             save_checkpoint(level, &game->checkpoint);
-            level->show_checkpoint_message_timer = 4.0f;
+            level->show_checkpoint_message_timer = 3.0f;
         }
 
         if (false == is_zero_v2(player->velocity))
