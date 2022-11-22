@@ -194,6 +194,7 @@ typedef struct checkpoint
     entity_type* entity_dynamic_types;
     u32 entity_dynamic_types_count;
 
+    r32 max_player_health;
     i32 enemies_to_kill_counter;
     power_ups power_ups;
 } checkpoint;

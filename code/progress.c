@@ -9,13 +9,14 @@ void save_checkpoint(level_state* state, checkpoint* check)
 
     memcpy(check->entities, state->entities, sizeof(entity) * MAX_ENTITIES_COUNT);
     check->entities_count = state->entities_count;
-
-    check->enemies_to_kill_counter = state->enemies_to_kill_counter;
-    check->power_ups = state->power_ups;
-
+    
     memcpy(check->entity_dynamic_types, state->entity_dynamic_types, sizeof(entity_type) * ENTITY_DYNAMIC_TYPES_MAX_COUNT);
     check->entity_dynamic_types_count = state->entity_dynamic_types_count;
     
+    check->enemies_to_kill_counter = state->enemies_to_kill_counter;
+    check->power_ups = state->power_ups;
+    check->max_player_health = get_player(state)->type->max_health;
+
     // we rely on the fact that current_map_name is allocated in a buffer in game_state, outside of the level temporary memory
     check->map_name = state->current_map_name; 
 
@@ -45,6 +46,7 @@ void restore_checkpoint(level_state* state, checkpoint* check)
     state->stop_player_movement = false;
 
     entity* player = get_player(state);
+    player->type->max_health = check->max_player_health;
     player->health = player->type->max_health;
     player->acceleration = get_zero_v2();
     player->velocity = get_zero_v2();
