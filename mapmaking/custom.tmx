@@ -6,9 +6,10 @@
   <property name="backdrop_slowdown_y" type="int" value="15"/>
   <property name="initial_health" type="int" value="150"/>
   <property name="introduction">This is a custom level!
-Make it what you want.
-More information is available at
-</property>
+
+
+
+Check out the 'mapmaking' folder in the game's directory. You can open .tmx files with the Tiled editor (www.mapeditor.org) and make your own levels.</property>
   <property name="music" value="kevin_macleod_energizing"/>
   <property name="second_backdrop" value="red_planet_sky"/>
   <property name="second_backdrop_slowdown_x" type="int" value="40"/>
