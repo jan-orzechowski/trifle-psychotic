@@ -31,9 +31,75 @@
                 width: 100% !important; 
                 height: 100% !important; 
             }
+
+            #loading {
+                width: 100px;
+                height: 100px;
+                position: relative;
+                top: 300px;
+                left: 50%;
+                translate: -50% -50%;
+                z-index: 100;
+            }
+
+            #loading p {
+                translate: 5% -50%;
+                font-family: 'Anonymous Pro',Lato,LatoExtended,sans-serif; /* matching for itch.io page theme*/
+                font-size: x-large;
+                color: rgb(215, 46, 46);
+            }
+
+            #spinner {
+                position: relative;
+                left: 10%;
+
+                height: 30px;
+                width: 30px;
+                margin: 0;
+                margin-top: 20px;
+                margin-left: 20px;
+                display: inline-block;
+                vertical-align: top;
+
+                -webkit-animation: rotation .8s linear infinite;
+                -moz-animation: rotation .8s linear infinite;
+                -o-animation: rotation .8s linear infinite;
+                animation: rotation 0.8s linear infinite;
+
+                border-left: 5px solid rgb(235, 235, 235);
+                border-right: 5px solid rgb(235, 235, 235);
+                border-bottom: 5px solid rgb(235, 235, 235);
+                border-top: 5px solid rgb(120, 120, 120);
+                
+                border-radius: 100%;
+                background-color: rgb(215, 46, 46);
+            }
+
+            @-webkit-keyframes rotation {
+                from {-webkit-transform: rotate(0deg);}
+                to {-webkit-transform: rotate(360deg);}
+            }
+            @-moz-keyframes rotation {
+                from {-moz-transform: rotate(0deg);}
+                to {-moz-transform: rotate(360deg);}
+            }
+            @-o-keyframes rotation {
+                from {-o-transform: rotate(0deg);}
+                to {-o-transform: rotate(360deg);}
+            }
+            @keyframes rotation {
+                from {transform: rotate(0deg);}
+                to {transform: rotate(360deg);}
+            }
+
         </style>
     </head>
     <body id="body">
+        <div id="loading">
+            <div id="spinner"></div>
+            <p>Loading...</p>
+        </div>
+
         <div id="canvas_parent">
             <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
         </div>
@@ -64,6 +130,7 @@
             addEventListener('resize', (event) => { resize_canvas(); });
             
             let canvas = document.getElementById('canvas');
+            let loading = document.getElementById('loading');
 
             var Module = {         
                 canvas: (function() {
@@ -72,7 +139,13 @@
                         e.preventDefault();
                         }, false);
                     return canvas;
-                })()
+                })(),
+
+                monitorRunDependencies: function(how_many_left) {
+                    if (how_many_left === 0) {
+                        loading.style.display = 'none';
+                    }
+                }
             };
 
             let scrolling_key_codes = [ 32, 37, 38, 39, 40 ];
