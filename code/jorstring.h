@@ -20,6 +20,7 @@ typedef struct text_lines
 {
     string_ref* lines;
     u32 lines_count;
+    r32 total_height;
 } text_lines;
 
 string_ref get_string_ref(const char*, u32);

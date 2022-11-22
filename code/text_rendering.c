@@ -173,6 +173,8 @@ text_lines* get_division_of_text_into_lines(memory_arena* arena, render_text_opt
         }
     }
 
+    lines->total_height = lines->lines_count * (options->font.height_in_pixels + options->font.line_spacing);
+
     return lines;
 }
 

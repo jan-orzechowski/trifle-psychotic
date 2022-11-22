@@ -518,6 +518,11 @@ void level_introduction_update_and_render(game_state* game, r32 delta_time)
         }
     }
 
+    if (level->introduction.text_y_offset < -(level->current_map.introduction_lines->total_height + 20.0f))
+    {
+        level->introduction.skipped = true;
+    }
+
     if (level->introduction.skipped == true)
     {
         process_fade(&game->render, &level->introduction.fade_out_perc, delta_time, 
@@ -714,14 +719,14 @@ scene_change credits_screen_update_and_render(game_state* game, r32 delta_time)
     static_game_data* static_data = game->static_data;
     scene_change change_to_other_scene = {0};
 
-    text_lines* text_to_show;
+    text_lines* text_lines_to_show;
     if (game->credits_screen.ending_text_mode)
     {
-        text_to_show = static_data->ending_text_lines;
+        text_lines_to_show = static_data->ending_text_lines;
     }
     else
     {
-        text_to_show = static_data->credits_text_lines;
+        text_lines_to_show = static_data->credits_text_lines;
     }
 
     render_bitmap(&game->render, TEXTURE_BACKGROUND_TITLE_SCREEN,
@@ -732,7 +737,7 @@ scene_change credits_screen_update_and_render(game_state* game, r32 delta_time)
     if (game->credits_screen.fade_in_perc == 0.0f)
     {
         render_large_text(&game->render, &static_data->scrolling_text_options,
-            *text_to_show, game->credits_screen.text_y_offset);
+            *text_lines_to_show, game->credits_screen.text_y_offset);
 
         game->credits_screen.text_y_offset -= delta_time * static_data->credits_text_speed;
     }
@@ -771,6 +776,11 @@ scene_change credits_screen_update_and_render(game_state* game, r32 delta_time)
         {
             game->credits_screen.transition_to_next_scene = true;
         }
+    }
+
+    if (game->credits_screen.text_y_offset < -(text_lines_to_show->total_height + 20.0f))
+    {
+        game->credits_screen.transition_to_next_scene = true;
     }
 
     if (game->credits_screen.transition_to_next_scene)
