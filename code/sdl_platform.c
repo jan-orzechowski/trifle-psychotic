@@ -126,13 +126,21 @@ read_file_result read_file(const char* path)
         {
             result.size = file_size;
             result.contents = calloc(file_size + 1, sizeof(byte));
-            for (int byte_index = 0;
-                byte_index < file_size;
-                ++byte_index)
+
+#ifdef TRIFLE_DEBUG
+            printf("read file result: address: %d, size: %d\n", (int)result.contents, (int)result.size);
+#endif
+
+            if (result.contents != 0)
             {
-                SDL_RWread(file, (void*)((char*)result.contents + byte_index), sizeof(char), 1);
-            }
-            *((char*)result.contents + file_size) = 0;
+                for (int byte_index = 0;
+                    byte_index < file_size;
+                    ++byte_index)
+                {
+                    SDL_RWread(file, (void*)((char*)result.contents + byte_index), sizeof(char), 1);
+                }
+                *((char*)result.contents + file_size) = 0;
+            }    
         }
         else
         {
@@ -693,6 +701,10 @@ void render_list_to_output(render_list* render)
                     else if (GLOBAL_SDL_DATA.screen_width == 1920 && GLOBAL_SDL_DATA.screen_height == 1200)
                     {
                         dst.x -= 126;
+                    }
+                    else if (GLOBAL_SDL_DATA.screen_width == 1536 && GLOBAL_SDL_DATA.screen_height == 960)
+                    {
+                        dst.x -= 95;
                     }
                     else if (GLOBAL_SDL_DATA.screen_width == 1536)
                     {

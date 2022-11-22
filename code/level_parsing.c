@@ -456,7 +456,7 @@ void parse_backdrop_texture_property(backdrop_properties* backdrop, string_ref n
     else if (compare_to_c_string(name, "clouds"))
     {
         backdrop->texture = TEXTURE_BACKGROUND_CLOUDS;
-        backdrop->size = get_v2(2048, 400);
+        backdrop->size = get_v2(1024, 320);
     }
     else if (compare_to_c_string(name, "red_planet_desert"))
     {

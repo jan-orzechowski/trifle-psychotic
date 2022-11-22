@@ -61,7 +61,8 @@ b32 was_any_key_pressed_in_last_frames(input_buffer* buffer, u32 number_of_frame
             || input->up.number_of_presses > 0
             || input->down.number_of_presses > 0
             || input->left.number_of_presses > 0
-            || input->right.number_of_presses > 0)
+            || input->right.number_of_presses > 0
+            || input->escape.number_of_presses > 0)
         {
             result = true;
             break;

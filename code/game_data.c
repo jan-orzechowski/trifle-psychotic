@@ -881,9 +881,9 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
             yellow_father->velocity_multiplier = 3.0f;
             yellow_father->player_acceleration_on_collision = 4.0f;
             yellow_father->detection_type = DETECT_360_DEGREES_IGNORE_WALLS;
-            yellow_father->detection_distance = 25.0f;
+            yellow_father->detection_distance = 15.0f;
             yellow_father->stop_movement_distance = 0.0f;
-            yellow_father->forget_detection_distance = 25.0f;
+            yellow_father->forget_detection_distance = 15.0f;
             yellow_father->default_attack_cooldown = 0.6f;
             yellow_father->default_attack_series_duration = 0.4f;
             yellow_father->default_attack_bullet_interval_duration = 0.05f;

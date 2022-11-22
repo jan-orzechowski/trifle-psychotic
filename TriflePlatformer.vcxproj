@@ -128,6 +128,7 @@
       <AdditionalOptions>-TC -wd26812 -wd4244 -wd4018 -wd4267 -wd4201 -wd4505 -MTd -DTRIFLE_DEBUG=1  -DTRIFLE_DEBUG_COLLISION=0 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <TreatWarningAsError>false</TreatWarningAsError>
+      <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
