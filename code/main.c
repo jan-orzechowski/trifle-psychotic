@@ -769,11 +769,11 @@ scene_change credits_screen_update_and_render(game_state* game, r32 delta_time)
 
         if (was_any_key_pressed_in_last_frames(&game->input_buffer, 1))
         {
-            game->credits_screen.transition_to_main_menu = true;
+            game->credits_screen.transition_to_next_scene = true;
         }
     }
 
-    if (game->credits_screen.transition_to_main_menu)
+    if (game->credits_screen.transition_to_next_scene)
     {
         process_fade(&game->render, &game->credits_screen.fade_out_perc, delta_time, 
             false, static_data->credits_screen_fade_speed);
@@ -781,7 +781,15 @@ scene_change credits_screen_update_and_render(game_state* game, r32 delta_time)
         if (game->credits_screen.fade_out_perc >= 1.0f)
         {
             change_to_other_scene.change_scene = true;
-            change_to_other_scene.new_scene = SCENE_MAIN_MENU;
+
+            if (game->credits_screen.ending_text_mode)
+            {
+                change_to_other_scene.new_scene = SCENE_CREDITS;
+            }
+            else
+            {
+                change_to_other_scene.new_scene = SCENE_MAIN_MENU;
+            }
         }
     }
 
@@ -994,7 +1002,8 @@ void main_game_loop(game_state* game, r32 delta_time)
                 game->credits_screen = (credits_screen_state){0};
                 game->credits_screen.time_to_first_interaction = game->static_data->default_time_to_first_menu_interaction;
                 game->credits_screen.fade_in_perc = 1.0f;
-                game->credits_screen.text_y_offset = (SCREEN_HEIGHT / SCALING_FACTOR);
+                game->credits_screen.ending_text_mode = false;
+                game->credits_screen.text_y_offset = (SCREEN_HEIGHT / SCALING_FACTOR);                
             }
             break;
             case SCENE_EXIT:

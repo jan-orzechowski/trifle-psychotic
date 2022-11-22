@@ -76,7 +76,7 @@ typedef struct credits_screen_state
     r32 time_to_first_interaction;
     r32 fade_out_perc;
     r32 fade_in_perc;
-    b32 transition_to_main_menu;
+    b32 transition_to_next_scene;
     r32 text_y_offset;
 
     b32 ending_text_mode;
