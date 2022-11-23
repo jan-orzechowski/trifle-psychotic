@@ -1,0 +1,71 @@
+PROGRAMMING, LEVEL DESIGN, AND WRITING
+
+Jan Orzechowski
+(janorzechowski.com)
+
+
+
+USED CODE LIBRARIES
+
+Simple DirectMedia Layer 2.0
+(libsdl.org)
+
+SDL_image 2.0
+(github.com/libsdl-org/SDL_image)
+
+SDL_mixer 2.0
+(github.com/libsdl-org/SDL_mixer)
+
+(all licensed under zlib)
+
+Web version (available at janorzechowski.com) is compiled using Emscripten (emscripten.org)
+
+
+
+GRAPHICS
+
+Carl "surt" Olsson
+(opengameart.org/users/surt)
+- tiles, characters, projectiles, and other miscellaneous sprites (CC-BY 3.0 license)
+
+Emcee Flesher 
+(opengameart.org/users/emcee-flesher)
+- tile recolors, backgrounds, main character animation (CC-BY 4.0 license)
+
+Joshua "JRob774" Robertson 
+(opengameart.org/users/jrob774)
+- explosions (CC-BY 3.0 license)
+
+
+
+FONTS 
+
+devurandom 
+(opengameart.org/users/usrshare)
+- "Torus Sans" (public domain)
+
+DStecks 
+(dstecks.itch.io)
+- "Freeport Monospace" (public domain)
+
+
+
+MUSIC
+
+Kevin MacLeod 
+(incompetech.com)
+- "Energizing"
+- "Hiding Your Reality"
+- "Hot Pursuit"
+- "I Can Feel It Coming"
+- "Jet Fueled Vixen"
+- "Outfoxing the Fox"
+(licensed under CC-BY 4.0)
+
+
+
+SPECIAL THANKS
+
+Paulina Prus
+
+Aryeh Nielsen
