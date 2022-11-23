@@ -686,30 +686,12 @@ void render_list_to_output(render_list* render)
 
                 SDL_Texture* texture = get_texture(GLOBAL_SDL_DATA, entry->texture);
                 SDL_Rect src = get_sdl_rect(entry->source_rect);
-                SDL_Rect dst = get_sdl_rect(entry->destination_rect);
-                SDL_RendererFlip flip = (entry->flip_horizontally ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
+                SDL_Rect dst = get_sdl_rect(entry->destination_rect);               
                 v4 sdl_tint = multiply_v4(entry->tint_color, 255.0f);
 
-                // this fixes weird behavior of SDL in the fullscreen mode - flipped bitmaps changed position depending on resolution
-                if (flip == SDL_FLIP_HORIZONTAL && GLOBAL_SDL_DATA.fullscreen)
+                if (entry->flip_horizontally)
                 {
-                    // I have no idea why this makes a difference for SDL
-                    if (GLOBAL_SDL_DATA.screen_width == 1920 && GLOBAL_SDL_DATA.screen_height == 1080)
-                    {
-                        dst.x -= 185;
-                    }
-                    else if (GLOBAL_SDL_DATA.screen_width == 1920 && GLOBAL_SDL_DATA.screen_height == 1200)
-                    {
-                        dst.x -= 126;
-                    }
-                    else if (GLOBAL_SDL_DATA.screen_width == 1536 && GLOBAL_SDL_DATA.screen_height == 960)
-                    {
-                        dst.x -= 95;
-                    }
-                    else if (GLOBAL_SDL_DATA.screen_width == 1536)
-                    {
-                        dst.x -= 136;
-                    }
+                    src = get_sdl_rect(move_rect(entry->source_rect, get_v2(0.0f, 240.0f)));
                 }
 
                 if (entry->render_in_additive_mode)
@@ -717,7 +699,7 @@ void render_list_to_output(render_list* render)
                     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_ADD);
                     SDL_SetTextureColorMod(texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
 
-                    SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, flip);
+                    SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, SDL_FLIP_NONE);
 
                     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
                     SDL_SetTextureColorMod(texture, 255, 255, 255);
@@ -728,13 +710,13 @@ void render_list_to_output(render_list* render)
                     {
                         SDL_SetTextureColorMod(texture, sdl_tint.r, sdl_tint.g, sdl_tint.b);
 
-                        SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, flip);
+                        SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, SDL_FLIP_NONE);
 
                         SDL_SetTextureColorMod(texture, 255, 255, 255);
                     }
                     else
                     {
-                        SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, flip);
+                        SDL_RenderCopyEx(GLOBAL_SDL_DATA.renderer, texture, &src, &dst, 0, NULL, SDL_FLIP_NONE);
                     }
                 }
 
