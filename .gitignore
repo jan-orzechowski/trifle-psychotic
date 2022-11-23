@@ -40,7 +40,6 @@ SDL2_mixer.dll
 
 # dev folders
 build
-gfx
 audio
 _dev_files
 VTune Profiler Results

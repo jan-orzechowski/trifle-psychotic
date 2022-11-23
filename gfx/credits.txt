@@ -1,0 +1,23 @@
+GRAPHICS
+
+Carl "surt" Olsson
+https://opengameart.org/users/surt
+tileset, characters, projectiles, and other miscellaneous sprites (CC-BY 3.0 license)
+
+Emcee Flesher 
+https://opengameart.org/users/emcee-flesher
+tileset recolor, backgrounds, main character animations (CC-BY 4.0 license)
+
+Joshua "JRob774" Robertson 
+https://opengameart.org/users/jrob774
+explosions (CC-BY 3.0 license)
+
+FONTS 
+
+devurandom 
+https://opengameart.org/users/usrshare
+UI font "Torus Sans" (public domain)
+
+DStecks 
+https://dstecks.itch.io/
+Title font "Freeport Monospace" (public domain)
