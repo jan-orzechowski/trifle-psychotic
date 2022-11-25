@@ -28,5 +28,5 @@
 #define MAX_ENTITIES_COUNT 1000
 #define MAX_MAP_SIDE_SIZE 500
 #define MAX_GATES_COUNT 100
-#define MAX_BULLETS_COUNT 1000 /* w zrobionych przeze mnie poziomach maks to ok. 700 */
-#define MAX_EXPLOSIONS_COUNT 200 /* zmierzony maks to ok. 150 */
+#define MAX_BULLETS_COUNT 1000 /* in offical game levels measured max is about 700 */
+#define MAX_EXPLOSIONS_COUNT 200 /* measured max is about 150 */
