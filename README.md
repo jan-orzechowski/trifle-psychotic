@@ -26,8 +26,8 @@ The project uses SDL2 (2.42.1), SDL2_image (2.6.2), and SDL2_mixer (2.6.2) libra
 
 You can grab them here:
 * [SDL2](https://github.com/libsdl-org/SDL/releases/tag/release-2.24.1)
-* [SDL_image]https://github.com/libsdl-org/SDL_image/releases/tag/release-2.6.2)
-* [SDL_mixer]https://github.com/libsdl-org/SDL_mixer/releases/tag/release-2.6.2)
+* [SDL_image](https://github.com/libsdl-org/SDL_image/releases/tag/release-2.6.2)
+* [SDL_mixer](https://github.com/libsdl-org/SDL_mixer/releases/tag/release-2.6.2)
 
 You will need DLLs, LIBs, and include headers. To get them, look into `devel` folders in these releases, eg. `SDL2_mixer-devel-2.6.2-VC`. The contents of these folders should be put in `sdl` folder in the repository's main directory, in a subfolder of a respective library, so the paths will look like this: `(main directory)/sdl/SDL2`, `(main directory)/sdl/SDL2_image`, `(main directory)/sdl/SDL2_mixer/`. DLLs should be in the main directory.
 
