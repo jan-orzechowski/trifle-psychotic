@@ -436,17 +436,7 @@ entity* add_explosion(level_state* level, world_position position, animation* ex
         new_explosion->position = renormalize_world_position(position);
         new_explosion->current_animation = explosion_animation;
         new_explosion->animation_duration = 0.0f;
-
-        // we sometimes flip the bitmap for a greater visual variance
-        b32 flip = (rand() % 2 == 1);
-        if (flip)
-        {
-            new_explosion->direction = DIRECTION_W;		
-        }
-        else
-        {
-            new_explosion->direction = DIRECTION_E;
-        }
+        new_explosion->direction = DIRECTION_E;
     }
     return new_explosion;
 }
