@@ -636,6 +636,14 @@ scene_change menu_update_and_render(game_state* game, r32 delta_time)
     render_text_basic(&game->render, game->transient_arena, static_data->title_font,
         title_area, static_data->title_str, true);
     
+    rect version_text_area = get_rect_from_corners(
+        get_v2((SCREEN_WIDTH / SCALING_FACTOR) - 35,
+               (SCREEN_HEIGHT / SCALING_FACTOR) - 10),
+        get_v2((SCREEN_WIDTH / SCALING_FACTOR),
+               (SCREEN_HEIGHT / SCALING_FACTOR)));
+    render_text_basic(&game->render, game->transient_arena, static_data->ui_font,
+        version_text_area, static_data->game_version, false);
+
     i32 options_x = 140;
     i32 option_y = 140;
     i32 option_y_spacing = 20;

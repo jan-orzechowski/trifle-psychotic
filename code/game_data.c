@@ -987,5 +987,7 @@ void load_static_game_data(platform_api* platform, static_game_data* data, memor
         data->default_power_up_health_bonus = 20.0f;
     }
 
+    data->game_version = copy_c_string(arena, "1.0.1");
+
     end_temporary_memory(transient_memory, true);
 }

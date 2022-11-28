@@ -125,6 +125,8 @@ typedef struct static_game_data
     render_text_options parsing_errors_text_options;
     r32 introduction_text_speed;
     r32 credits_text_speed;
+
+    string_ref game_version;
 } static_game_data;
 
 typedef struct level_state
