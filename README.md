@@ -10,6 +10,13 @@ My main website: [janorzechowski.com](https://janorzechowski.com/)
 
 Overview of the game's architecture can be found here: [ARCHITECTURE.md](/ARCHITECTURE.md).
 
+## Screenshots
+
+![Screenshot 1](/screenshots/trifle_psychotic_004.jpg?raw=true)
+![Screenshot 2](/screenshots/trifle_psychotic_006.jpg?raw=true)
+![Screenshot 3](/screenshots/trifle_psychotic_002.jpg?raw=true)
+![Screenshot 4](/screenshots/trifle_psychotic_005.jpg?raw=true)
+
 ## License
 
 The game's code is released under the zlib license.
