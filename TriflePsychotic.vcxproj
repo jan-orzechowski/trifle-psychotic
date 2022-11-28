@@ -229,6 +229,7 @@ del "$(TargetDir)trifle_psychotic_windows.zip"
     <ClInclude Include="code\jorstring.h" />
     <ClInclude Include="code\game_data.h" />
     <ClInclude Include="code\ui.h" />
+    <ClInclude Include="icon\resource.h" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="SDL2.dll">
@@ -246,6 +247,12 @@ del "$(TargetDir)trifle_psychotic_windows.zip"
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <FileType>Document</FileType>
     </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="icon\TriflePsychotic.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon\icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
