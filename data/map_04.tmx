@@ -414,7 +414,7 @@ Somewhere inside, there is a map with Yellow Father's location. If you manage to
   </object>
   <object id="322" gid="5072" x="880" y="800" width="16" height="16">
    <properties>
-    <property name="color" type="color" value="#ffff0000"/>
+    <property name="color" type="color" value="#ff0000ff"/>
    </properties>
   </object>
   <object id="323" gid="5077" x="1760" y="720" width="16" height="16">
