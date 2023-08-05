@@ -2,7 +2,7 @@
 
 ## About
 
-Trifle Psychotic is a​ retro sci-fi platformer written in ANSI C.
+Trifle Psychotic is a retro sci-fi platformer written in C99.
 
 The game can be played and/or downloaded here: [itch.io](https://janorzechowski.itch.io/trifle-psychotic)
 
